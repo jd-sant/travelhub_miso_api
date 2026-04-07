@@ -13,6 +13,8 @@ def seed_user_with_role(
     email: str = "ana@example.com",
     password: str = "securePassword1",
     role_name: str = "traveler",
+    full_name: str = "Ana García",
+    hotel_name: str = None,
 ) -> User:
     role = session.exec(select(Role).where(Role.name == role_name)).first()
     if not role:
@@ -25,6 +27,8 @@ def seed_user_with_role(
         email=email,
         phone="3001234567",
         password=hash_password(password),
+        full_name=full_name,
+        hotel_name=hotel_name,
         status=1,
     )
     session.add(user)

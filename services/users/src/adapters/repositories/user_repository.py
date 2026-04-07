@@ -1,4 +1,5 @@
 from typing import Optional
+from uuid import UUID
 
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
@@ -17,6 +18,8 @@ def _to_response(model: User) -> UserResponse:
         id=model.id,
         email=model.email,
         phone=model.phone,
+        full_name=model.full_name,
+        hotel_name=model.hotel_name,
         status=model.status,
     )
 
@@ -30,6 +33,8 @@ class SQLModelUserRepository(UserRepository):
             email=str(payload.email),
             phone=payload.phone,
             password=hash_password(payload.password),
+            full_name=payload.full_name,
+            hotel_name=payload.hotel_name,
             status=payload.status,
         )
         self.session.add(user)
@@ -73,3 +78,18 @@ class SQLModelUserRepository(UserRepository):
             status=user.status,
             roles=role_names,
         )
+
+    def assign_role(self, user_id: UUID, role_name: str) -> None:
+        role = self.session.exec(
+            select(Role).where(Role.name == role_name)
+        ).first()
+
+        if not role:
+            role = Role(name=role_name)
+            self.session.add(role)
+            self.session.commit()
+            self.session.refresh(role)
+
+        user_role = UserRole(user_id=user_id, role_id=role.id)
+        self.session.add(user_role)
+        self.session.commit()

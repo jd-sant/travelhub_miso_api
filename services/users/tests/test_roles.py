@@ -40,6 +40,7 @@ def test_user_role_association(session):
         email="test@example.com",
         phone="3001234567",
         password=hash_password("securePassword1"),
+        full_name="Test User",
         status=1,
     )
     session.add(user)
