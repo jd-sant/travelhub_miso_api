@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from assembly import get_create_user_use_case, get_list_users_use_case
+from core.decorators import require_role
 from domain.schemas.user import UserCreateRequest, UserResponse
 from domain.use_cases.create_user import CreateUserUseCase
 from domain.use_cases.list_users import ListUsersUseCase
@@ -10,7 +11,9 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@require_role("admin")
 def create_user(
+    request: Request,
     payload: UserCreateRequest,
     use_case: CreateUserUseCase = Depends(get_create_user_use_case),
 ) -> UserResponse:
@@ -24,7 +27,9 @@ def create_user(
 
 
 @router.get("", response_model=list[UserResponse], status_code=status.HTTP_200_OK)
+@require_role("admin")
 def get_users(
+    request: Request,
     use_case: ListUsersUseCase = Depends(get_list_users_use_case),
 ) -> list[UserResponse]:
     return use_case.execute()
