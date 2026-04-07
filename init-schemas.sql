@@ -81,12 +81,16 @@ CREATE TABLE IF NOT EXISTS search_schema.propiedad_amenidad (
 
 CREATE INDEX IF NOT EXISTS ix_propiedades_ciudad
 	ON search_schema.propiedades (ciudad);
+CREATE INDEX IF NOT EXISTS ix_propiedades_lower_ciudad
+	ON search_schema.propiedades ((lower(ciudad)));
 CREATE INDEX IF NOT EXISTS ix_propiedades_estado_activo
 	ON search_schema.propiedades (estado_activo);
 CREATE INDEX IF NOT EXISTS ix_propiedades_capacidad_maxima
 	ON search_schema.propiedades (capacidad_maxima);
 CREATE INDEX IF NOT EXISTS ix_propiedades_rating
 	ON search_schema.propiedades (rating);
+CREATE INDEX IF NOT EXISTS ix_propiedades_ciudad_estado
+	ON search_schema.propiedades (ciudad, estado_activo);
 
 CREATE INDEX IF NOT EXISTS ix_tipos_habitacion_propiedad_id
 	ON search_schema.tipos_habitacion (propiedad_id);
@@ -94,26 +98,43 @@ CREATE INDEX IF NOT EXISTS ix_tipos_habitacion_capacidad
 	ON search_schema.tipos_habitacion (capacidad);
 CREATE INDEX IF NOT EXISTS ix_tipos_habitacion_estado_activo
 	ON search_schema.tipos_habitacion (estado_activo);
+CREATE INDEX IF NOT EXISTS ix_tipos_habitacion_propiedad_estado_capacidad
+	ON search_schema.tipos_habitacion (propiedad_id, estado_activo, capacidad);
 
 CREATE INDEX IF NOT EXISTS ix_planes_tarifa_tipo_habitacion_id
 	ON search_schema.planes_tarifa (tipo_habitacion_id);
 CREATE INDEX IF NOT EXISTS ix_planes_tarifa_estado_activo
 	ON search_schema.planes_tarifa (estado_activo);
+CREATE INDEX IF NOT EXISTS ix_planes_tarifa_tipo_estado_precio
+	ON search_schema.planes_tarifa (tipo_habitacion_id, estado_activo, precio_base);
 
 CREATE INDEX IF NOT EXISTS ix_calendario_inventario_tipo_habitacion_id
 	ON search_schema.calendario_inventario (tipo_habitacion_id);
 CREATE INDEX IF NOT EXISTS ix_calendario_inventario_fecha
 	ON search_schema.calendario_inventario (fecha);
+CREATE INDEX IF NOT EXISTS ix_calendario_inventario_tipo_fecha_disponibilidad
+	ON search_schema.calendario_inventario (
+		tipo_habitacion_id,
+		fecha,
+		unidades_disponibles,
+		unidades_bloqueadas
+	);
 
 CREATE INDEX IF NOT EXISTS ix_calendario_tarifas_plan_tarifa_id
 	ON search_schema.calendario_tarifas (plan_tarifa_id);
 CREATE INDEX IF NOT EXISTS ix_calendario_tarifas_fecha
 	ON search_schema.calendario_tarifas (fecha);
+CREATE INDEX IF NOT EXISTS ix_calendario_tarifas_plan_fecha_precio
+	ON search_schema.calendario_tarifas (plan_tarifa_id, fecha, precio);
 
 CREATE INDEX IF NOT EXISTS ix_servicios_propiedad_id
 	ON search_schema.servicios (propiedad_id);
+CREATE INDEX IF NOT EXISTS ix_amenidades_lower_nombre
+	ON search_schema.amenidades ((lower(nombre)));
 CREATE INDEX IF NOT EXISTS ix_propiedad_amenidad_amenidad_id
 	ON search_schema.propiedad_amenidad (amenidad_id);
+CREATE INDEX IF NOT EXISTS ix_propiedad_amenidad_amenidad_propiedad
+	ON search_schema.propiedad_amenidad (amenidad_id, propiedad_id);
 
 -- Futuros microservicios:
 -- CREATE SCHEMA IF NOT EXISTS properties_schema;

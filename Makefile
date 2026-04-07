@@ -1,4 +1,4 @@
-.PHONY: help docker-up docker-down docker-build docker-logs clean users-test users-build users-logs security-test security-build security-logs reservations-test reservations-build reservations-logs
+.PHONY: help docker-up docker-down docker-build docker-logs clean users-test users-build users-logs security-test security-build security-logs reservations-test reservations-build reservations-logs search-test search-build search-logs search-perf
 
 help:
 	@echo "=== TravelHub Monorepo ==="
@@ -24,6 +24,12 @@ help:
 	@echo "  make reservations-test  - Run reservations tests"
 	@echo "  make reservations-build - Build reservations image"
 	@echo "  make reservations-logs  - Tail reservations logs"
+	@echo ""
+	@echo "Search service:"
+	@echo "  make search-test   - Run search tests"
+	@echo "  make search-build  - Build search image"
+	@echo "  make search-logs   - Tail search logs"
+	@echo "  make search-perf   - Run local p95 benchmark against search API"
 
 # Global commands
 docker-up:
@@ -71,3 +77,16 @@ reservations-build:
 
 reservations-logs:
 	docker compose logs -f reservations
+
+# Search service
+search-test:
+	PYTHONPATH=services/search/src /home/diego/Documentos/miso/travelhub_miso/.venv/bin/python -m pytest services/search/tests/ -v
+
+search-build:
+	docker compose build search
+
+search-logs:
+	docker compose logs -f search
+
+search-perf:
+	/home/diego/Documentos/miso/travelhub_miso/.venv/bin/python services/search/tests/benchmark_p95.py

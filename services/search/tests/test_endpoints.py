@@ -101,3 +101,69 @@ class TestSearchHealthEndpoints:
 
         assert response.status_code == 400
         assert "precio_min" in response.json()["detail"]
+
+    def test_search_properties_filters_by_amenities(self, client):
+        response = client.get(
+            "/api/v1/search",
+            params={
+                "ciudad": "Bogota",
+                "check_in": "2026-04-10",
+                "check_out": "2026-04-12",
+                "huespedes": 2,
+                "amenidades": ["wifi", "piscina"],
+            },
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["pagination"]["total"] >= 1
+        for item in payload["items"]:
+            assert "wifi" in item["amenidades"]
+            assert "piscina" in item["amenidades"]
+
+    def test_search_properties_filters_by_price_range(self, client):
+        response = client.get(
+            "/api/v1/search",
+            params={
+                "ciudad": "Bogota",
+                "check_in": "2026-04-10",
+                "check_out": "2026-04-12",
+                "huespedes": 2,
+                "precio_min": "90",
+                "precio_max": "200",
+            },
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        for item in payload["items"]:
+            assert float(item["precio_desde"]) >= 90
+            assert float(item["precio_desde"]) <= 200
+
+    def test_search_properties_invalid_page_limit(self, client):
+        response = client.get(
+            "/api/v1/search",
+            params={
+                "ciudad": "Bogota",
+                "check_in": "2026-04-10",
+                "check_out": "2026-04-12",
+                "huespedes": 2,
+                "page": 0,
+            },
+        )
+
+        assert response.status_code == 422
+
+    def test_search_properties_invalid_page_size_limit(self, client):
+        response = client.get(
+            "/api/v1/search",
+            params={
+                "ciudad": "Bogota",
+                "check_in": "2026-04-10",
+                "check_out": "2026-04-12",
+                "huespedes": 2,
+                "page_size": 101,
+            },
+        )
+
+        assert response.status_code == 422

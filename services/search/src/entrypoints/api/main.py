@@ -16,7 +16,11 @@ async def lifespan(_: FastAPI):
 
 
 def create_application() -> FastAPI:
-    app = FastAPI(title="TravelHub - Search Service", lifespan=lifespan)
+    app = FastAPI(
+        title="TravelHub - Search Service",
+        version="1.0.0",
+        lifespan=lifespan,
+    )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],

@@ -16,7 +16,7 @@ from adapters.models import TipoHabitacion
 from core.config import settings
 from db.session import engine
 
-TARGET_PROPERTY_COUNT = 30
+TARGET_PROPERTY_COUNT = 1000
 SEED_DATES = (date(2026, 4, 10), date(2026, 4, 11))
 
 AMENITY_CATALOG = [

@@ -11,7 +11,8 @@ travelhub_miso/
 ├── services/
 │   ├── users/          # Gestión de usuarios y roles
 │   ├── security/       # Autenticación, OTP y JWT
-│   └── reservations/   # Creación y consulta de reservas
+│   ├── reservations/   # Creación y consulta de reservas
+│   └── search/         # Búsqueda de propiedades y disponibilidad
 ├── docker-compose.yml  # Orquestación local
 ├── init-schemas.sql    # Creación de schemas en PostgreSQL
 ├── Makefile            # Comandos de desarrollo
@@ -55,6 +56,7 @@ service/
 | [users](services/users/README.md) | 8000 | `users_schema` | Gestión de usuarios y roles |
 | [security](services/security/README.md) | 8001 | `security_schema` | Autenticación, OTP y tokens JWT |
 | [reservations](services/reservations/) | 8002 | `reservations_schema` | Creación y consulta de reservas |
+| [search](services/search/) | 8003 | `search_schema` | Búsqueda de propiedades, filtros y disponibilidad |
 
 ## Ejecución local
 
@@ -80,6 +82,7 @@ Los servicios quedan disponibles en:
 - Users: http://localhost:8000
 - Security: http://localhost:8001
 - Reservations: http://localhost:8002
+- Search: http://localhost:8003
 
 ### Tests
 
@@ -88,11 +91,13 @@ Los servicios quedan disponibles en:
 make users-test
 make security-test
 make reservations-test
+make search-test
 
 # O directamente con pytest
 PYTHONPATH=services/users/src pytest services/users/tests/ -v
 PYTHONPATH=services/security/src pytest services/security/tests/ -v
 PYTHONPATH=services/reservations/src pytest services/reservations/tests/ -v
+PYTHONPATH=services/search/src pytest services/search/tests/ -v
 ```
 
 ## Comandos disponibles
@@ -106,6 +111,10 @@ make clean            # Limpiar __pycache__
 make users-test       # Tests del servicio de usuarios
 make security-test    # Tests del servicio de seguridad
 make reservations-test # Tests del servicio de reservas
+make search-test      # Tests del servicio de búsqueda
+make search-build     # Build del servicio de búsqueda
+make search-logs      # Logs del servicio de búsqueda
+make search-perf      # Benchmark p95 del servicio de búsqueda
 ```
 
 ## CI / CD
