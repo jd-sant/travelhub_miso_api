@@ -85,5 +85,25 @@ services:
       postgres:
         condition: service_healthy
 
+  search:
+    build:
+      context: ./services/search
+    environment:
+      PYTHONPATH: /app/src
+      ENV: production
+      APP_ENV: production
+      RDS_HOSTNAME: postgres
+      RDS_USERNAME: travelhub_user
+      RDS_PASSWORD: travelhub_pass
+      RDS_DB_NAME: travelhub
+      RDS_PORT: "5432"
+      DB_SCHEMA: search_schema
+      DB_ECHO: "False"
+    ports:
+      - "8003:8003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:
