@@ -9,6 +9,7 @@ def test_create_user_hashes_password_and_returns_public_fields(client, test_engi
         "email": "ana@example.com",
         "phone": "3001234567",
         "password": "miPasswordSegura123",
+        "full_name": "Ana García",
         "status": 1,
     }
 
@@ -18,6 +19,8 @@ def test_create_user_hashes_password_and_returns_public_fields(client, test_engi
     body = response.json()
     assert body["email"] == payload["email"]
     assert body["phone"] == payload["phone"]
+    assert body["full_name"] == payload["full_name"]
+    assert body["hotel_name"] is None
     assert body["status"] == payload["status"]
     assert "id" in body
     assert "password" not in body
@@ -38,12 +41,14 @@ def test_get_users_returns_created_users(client):
         "email": "uno@example.com",
         "phone": "3000000001",
         "password": "passwordSegura1",
+        "full_name": "Usuario Uno",
         "status": 1,
     }
     user_2 = {
         "email": "dos@example.com",
         "phone": "3000000002",
         "password": "passwordSegura2",
+        "full_name": "Usuario Dos",
         "status": 0,
     }
 
@@ -65,6 +70,7 @@ def test_create_user_returns_409_on_duplicate_email(client):
         "email": "dup@example.com",
         "phone": "3001239999",
         "password": "miPasswordSegura123",
+        "full_name": "Usuario Duplicado",
         "status": 1,
     }
 

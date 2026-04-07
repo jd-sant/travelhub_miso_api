@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from core.auth_middleware import AuthMiddleware
 from db.session import create_db_and_tables
@@ -16,10 +17,6 @@ async def lifespan(_: FastAPI):
 
 def create_application() -> FastAPI:
     app = FastAPI(title="TravelHub - Users Service", lifespan=lifespan)
-    
-    # Registra el middleware de autenticación
-    app.add_middleware(AuthMiddleware)
-    
     app.include_router(users_router, prefix="/api/v1")
     app.include_router(internal_router, prefix="/api/v1")
 

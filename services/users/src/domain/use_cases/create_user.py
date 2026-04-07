@@ -13,4 +13,6 @@ class CreateUserUseCase(BaseUseCase[UserCreateRequest, UserResponse]):
         if existing is not None:
             raise UserConflictError("El correo electrónico ya existe")
 
-        return self.repository.add(payload)
+        user = self.repository.add(payload)
+        self.repository.assign_role(user.id, payload.role)
+        return user
