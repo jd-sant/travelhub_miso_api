@@ -12,6 +12,10 @@ class Settings:
         return self.environment in ("development", "dev", "test", "local")
 
     @property
+    def is_test(self) -> bool:
+        return self.environment in ("test", "testing")
+
+    @property
     def rds_hostname(self) -> str:
         return os.getenv("RDS_HOSTNAME", "localhost")
 
@@ -52,6 +56,26 @@ class Settings:
     @property
     def db_echo(self) -> bool:
         return os.getenv("DB_ECHO", "False").lower() == "true"
+
+    @property
+    def cors_allow_origins(self) -> list[str]:
+        raw_origins = os.getenv("CORS_ALLOW_ORIGINS")
+        if raw_origins:
+            return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+
+        if self.is_development:
+            return [
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+            ]
+
+        return []
+
+    @property
+    def cors_allow_credentials(self) -> bool:
+        return os.getenv("CORS_ALLOW_CREDENTIALS", "false").lower() == "true"
 
 
 @lru_cache

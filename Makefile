@@ -80,7 +80,7 @@ reservations-logs:
 
 # Search service
 search-test:
-	PYTHONPATH=services/search/src /home/diego/Documentos/miso/travelhub_miso/.venv/bin/python -m pytest services/search/tests/ -v
+	cd services/search && PYTHONPATH=src pytest tests/ -v
 
 search-build:
 	docker compose build search
@@ -89,4 +89,4 @@ search-logs:
 	docker compose logs -f search
 
 search-perf:
-	/home/diego/Documentos/miso/travelhub_miso/.venv/bin/python services/search/tests/benchmark_p95.py
+	python services/search/tests/benchmark_p95.py

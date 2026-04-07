@@ -6,10 +6,10 @@ from .search import SearchResponse
 from .search import SearchResult
 
 __all__ = [
-	"EmptyStateSuggestion",
-	"PropertySearchItem",
-	"SearchPagination",
-	"SearchQuery",
-	"SearchResponse",
-	"SearchResult",
+    "EmptyStateSuggestion",
+    "PropertySearchItem",
+    "SearchPagination",
+    "SearchQuery",
+    "SearchResponse",
+    "SearchResult",
 ]

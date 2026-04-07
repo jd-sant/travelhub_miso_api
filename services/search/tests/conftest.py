@@ -7,6 +7,8 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 os.environ["DATABASE_URL"] = "sqlite://"
+os.environ["ENV"] = "test"
+os.environ["APP_ENV"] = "test"
 
 SRC_PATH = Path(__file__).resolve().parents[1] / "src"
 if str(SRC_PATH) not in sys.path:
@@ -19,14 +21,14 @@ from db.seed import seed_dummy_data_if_needed
 from db.session import create_db_and_tables, engine
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def client():
     with TestClient(app) as test_client:
         yield test_client
 
 
-@pytest.fixture(autouse=True)
-def seed_dummy_data_for_local_db(client):
+@pytest.fixture(scope="session", autouse=True)
+def seed_dummy_data_for_local_db():
     create_db_and_tables()
     seed_dummy_data_if_needed()
 

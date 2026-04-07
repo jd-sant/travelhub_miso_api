@@ -69,8 +69,8 @@ services:
       context: ./services/reservations
     environment:
       PYTHONPATH: /app/src
-      ENV: ${ENV}
-      APP_ENV: ${APP_ENV}
+      ENV: ${ENV:-development}
+      APP_ENV: ${APP_ENV:-development}
       RDS_HOSTNAME: postgres
       RDS_USERNAME: travelhub_user
       RDS_PASSWORD: travelhub_pass
@@ -90,8 +90,8 @@ services:
       context: ./services/search
     environment:
       PYTHONPATH: /app/src
-      ENV: ${ENV}
-      APP_ENV: ${APP_ENV}
+      ENV: ${ENV:-development}
+      APP_ENV: ${APP_ENV:-development}
       RDS_HOSTNAME: postgres
       RDS_USERNAME: travelhub_user
       RDS_PASSWORD: travelhub_pass
