@@ -1,5 +1,9 @@
 name: PR Validation
 
+permissions:
+  contents: read
+  pull-requests: read
+  
 on:
   pull_request:
     branches:
@@ -30,6 +34,7 @@ jobs:
     outputs:
       users: ${{ steps.filter.outputs.users }}
       security: ${{ steps.filter.outputs.security }}
+      reservations: ${{ steps.filter.outputs.reservations }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -40,6 +45,8 @@ jobs:
               - 'services/users/**'
             security:
               - 'services/security/**'
+            reservations:
+              - 'services/reservations/**'
 
   test-users:
     needs: [validate-pr-description, detect-changes]
@@ -78,3 +85,63 @@ jobs:
 
       - name: Run security tests
         run: PYTHONPATH=services/security/src pytest services/security/tests/ -v
+
+  test-reservations:
+    needs: [validate-pr-description, detect-changes]
+    if: needs.detect-changes.outputs.reservations == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r services/reservations/requirements.txt
+
+      - name: Run reservations tests
+        run: PYTHONPATH=services/reservations/src pytest services/reservations/tests/ -v
+
+  tests:
+    name: tests
+    needs:
+      - validate-pr-description
+      - detect-changes
+      - test-users
+      - test-security
+      - test-reservations
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate aggregate status
+        run: |
+          echo "validate-pr-description: ${{ needs.validate-pr-description.result }}"
+          echo "detect-changes: ${{ needs.detect-changes.result }}"
+          echo "test-users: ${{ needs.test-users.result }}"
+          echo "test-security: ${{ needs.test-security.result }}"
+          echo "test-reservations: ${{ needs.test-reservations.result }}"
+
+          if [[ "${{ needs.validate-pr-description.result }}" != "success" ]]; then
+            echo "La validacion de descripcion de PR no fue exitosa"
+            exit 1
+          fi
+
+          if [[ "${{ needs.test-users.result }}" == "failure" || "${{ needs.test-users.result }}" == "cancelled" ]]; then
+            echo "El job test-users termino en estado ${{ needs.test-users.result }}"
+            exit 1
+          fi
+
+          if [[ "${{ needs.test-security.result }}" == "failure" || "${{ needs.test-security.result }}" == "cancelled" ]]; then
+            echo "El job test-security termino en estado ${{ needs.test-security.result }}"
+            exit 1
+          fi
+
+          if [[ "${{ needs.test-reservations.result }}" == "failure" || "${{ needs.test-reservations.result }}" == "cancelled" ]]; then
+            echo "El job test-reservations termino en estado ${{ needs.test-reservations.result }}"
+            exit 1
+          fi
+
+          echo "Agregador de pruebas en estado exitoso"
