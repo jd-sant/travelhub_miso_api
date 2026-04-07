@@ -51,6 +51,11 @@ services:
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       USERS_SERVICE_URL: http://users:8000
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@travelhub.com}
     ports:
       - "8001:8000"
     depends_on:
@@ -58,6 +63,27 @@ services:
         condition: service_healthy
       users:
         condition: service_started
+
+  reservations:
+    build:
+      context: ./services/reservations
+    environment:
+      PYTHONPATH: /app/src
+      ENV: production
+      APP_ENV: production
+      RDS_HOSTNAME: postgres
+      RDS_USERNAME: travelhub_user
+      RDS_PASSWORD: travelhub_pass
+      RDS_DB_NAME: travelhub
+      RDS_PORT: "5432"
+      DB_SCHEMA: reservations_schema
+      DB_ECHO: "False"
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+    ports:
+      - "8002:8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 volumes:
   postgres_data:

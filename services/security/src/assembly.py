@@ -11,6 +11,7 @@ from adapters.repositories.user_lock_repository import (
 )
 from adapters.services.log_otp_sender import LogOtpSender
 from adapters.services.users_client import UsersServiceClient
+from core.config import settings
 from db.session import get_session
 from domain.ports.audit_repository import AuditRepository
 from domain.ports.auth_repository import AuthRepository
@@ -52,6 +53,10 @@ def get_user_lock_repository(
 
 
 def get_otp_sender() -> OtpSender:
+    if settings.smtp_host:
+        from adapters.services.smtp_otp_sender import SmtpOtpSender
+
+        return SmtpOtpSender()
     return LogOtpSender()
 
 
