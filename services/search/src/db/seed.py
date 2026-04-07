@@ -1,6 +1,8 @@
 from datetime import date
-from uuid import UUID
+from decimal import Decimal
+from uuid import uuid4
 
+from sqlalchemy import func
 from sqlmodel import Session, select
 
 from adapters.models import Amenidad
@@ -13,6 +15,29 @@ from adapters.models import Servicio
 from adapters.models import TipoHabitacion
 from core.config import settings
 from db.session import engine
+
+TARGET_PROPERTY_COUNT = 30
+SEED_DATES = (date(2026, 4, 10), date(2026, 4, 11))
+
+AMENITY_CATALOG = [
+    ("wifi", "conectividad"),
+    ("piscina", "recreacion"),
+    ("gimnasio", "bienestar"),
+    ("parqueadero", "comodidad"),
+    ("pet_friendly", "mascotas"),
+    ("aire_acondicionado", "comodidad"),
+    ("desayuno_incluido", "gastronomia"),
+    ("spa", "bienestar"),
+]
+
+CITIES = [
+    "Bogota",
+    "Cali",
+    "Cartagena",
+    "Barranquilla",
+    "Santa Marta",
+    "Bucaramanga",
+]
 
 
 def _is_seed_enabled() -> bool:
@@ -29,108 +54,125 @@ def seed_dummy_data_if_needed() -> None:
         return
 
     with Session(engine) as session:
-        existing_property = session.exec(select(Propiedad.id).limit(1)).first()
-        if existing_property:
+        current_count = session.exec(select(func.count()).select_from(Propiedad)).one()
+        if current_count >= TARGET_PROPERTY_COUNT:
             return
 
-        propiedad_id = UUID("10000000-0000-0000-0000-000000000001")
-        tipo_habitacion_id = UUID("20000000-0000-0000-0000-000000000001")
-        plan_tarifa_id = UUID("30000000-0000-0000-0000-000000000001")
-        amenidad_id = UUID("40000000-0000-0000-0000-000000000001")
-        servicio_id = UUID("50000000-0000-0000-0000-000000000001")
+        amenity_id_by_name = _ensure_amenity_catalog(session)
 
-        session.add(
-            Propiedad(
-                id=propiedad_id,
-                nombre="Hotel Demo Search",
-                ciudad="Bogota",
-                pais="Colombia",
-                direccion="Calle 123 #45-67",
-                descripcion="Propiedad dummy para pruebas API.",
-                estado_activo=True,
-                capacidad_maxima=4,
-                imagen_principal_url="https://cdn.example.com/demo-hotel.jpg",
-                rating=4.5,
-            )
-        )
+        for idx in range(current_count + 1, TARGET_PROPERTY_COUNT + 1):
+            property_id = uuid4()
+            room_type_id = uuid4()
+            rate_plan_id = uuid4()
 
-        session.add(
-            TipoHabitacion(
-                id=tipo_habitacion_id,
-                propiedad_id=propiedad_id,
-                nombre="Habitacion Estandar",
-                descripcion="Habitacion de prueba",
-                capacidad=2,
-                estado_activo=True,
-            )
-        )
+            city = CITIES[(idx - 1) % len(CITIES)]
+            capacity = 2 + (idx % 5)
+            rating = min(5.0, round(3.4 + ((idx % 16) * 0.1), 1))
+            base_price = Decimal(80 + idx * 3)
 
-        session.add(
-            PlanTarifa(
-                id=plan_tarifa_id,
-                tipo_habitacion_id=tipo_habitacion_id,
-                nombre="Tarifa Flexible",
-                descripcion="Cancelable hasta 24h antes",
-                moneda="USD",
-                precio_base=120,
-                estado_activo=True,
+            session.add(
+                Propiedad(
+                    id=property_id,
+                    nombre=f"Hotel Demo Search {idx:02d}",
+                    ciudad=city,
+                    pais="Colombia",
+                    direccion=f"Carrera {20 + idx} #10-{40 + idx}",
+                    descripcion="Propiedad dummy para pruebas locales en Postman.",
+                    estado_activo=True,
+                    capacidad_maxima=capacity,
+                    imagen_principal_url=f"https://cdn.example.com/hotel-{idx:02d}.jpg",
+                    rating=rating,
+                )
             )
-        )
 
-        session.add(
-            CalendarioInventario(
-                tipo_habitacion_id=tipo_habitacion_id,
-                fecha=date(2026, 4, 10),
-                unidades_disponibles=5,
-                unidades_bloqueadas=0,
+            session.add(
+                TipoHabitacion(
+                    id=room_type_id,
+                    propiedad_id=property_id,
+                    nombre="Habitacion Estandar",
+                    descripcion="Habitacion base del dataset dummy",
+                    capacidad=capacity,
+                    estado_activo=True,
+                )
             )
-        )
-        session.add(
-            CalendarioInventario(
-                tipo_habitacion_id=tipo_habitacion_id,
-                fecha=date(2026, 4, 11),
-                unidades_disponibles=5,
-                unidades_bloqueadas=0,
-            )
-        )
 
-        session.add(
-            CalendarioTarifas(
-                plan_tarifa_id=plan_tarifa_id,
-                fecha=date(2026, 4, 10),
-                precio=125,
+            session.add(
+                PlanTarifa(
+                    id=rate_plan_id,
+                    tipo_habitacion_id=room_type_id,
+                    nombre="Tarifa Flexible",
+                    descripcion="Cancelable hasta 24h antes",
+                    moneda="USD",
+                    precio_base=base_price,
+                    estado_activo=True,
+                )
             )
-        )
-        session.add(
-            CalendarioTarifas(
-                plan_tarifa_id=plan_tarifa_id,
-                fecha=date(2026, 4, 11),
-                precio=130,
-            )
-        )
 
-        session.add(
-            Amenidad(
-                id=amenidad_id,
-                nombre="wifi",
-                categoria="conectividad",
-            )
-        )
-        session.add(
-            PropiedadAmenidad(
-                propiedad_id=propiedad_id,
-                amenidad_id=amenidad_id,
-            )
-        )
+            for day_offset, seed_day in enumerate(SEED_DATES):
+                session.add(
+                    CalendarioInventario(
+                        tipo_habitacion_id=room_type_id,
+                        fecha=seed_day,
+                        unidades_disponibles=5 + (idx % 3),
+                        unidades_bloqueadas=0,
+                    )
+                )
+                session.add(
+                    CalendarioTarifas(
+                        plan_tarifa_id=rate_plan_id,
+                        fecha=seed_day,
+                        precio=base_price + Decimal(5 * day_offset),
+                    )
+                )
 
-        session.add(
-            Servicio(
-                id=servicio_id,
-                propiedad_id=propiedad_id,
-                nombre="desayuno",
-                descripcion="Servicio de desayuno incluido",
-                estado_activo=True,
+            selected_amenities = [
+                AMENITY_CATALOG[(idx - 1) % len(AMENITY_CATALOG)][0],
+                AMENITY_CATALOG[idx % len(AMENITY_CATALOG)][0],
+                AMENITY_CATALOG[(idx + 1) % len(AMENITY_CATALOG)][0],
+            ]
+            for amenity_name in selected_amenities:
+                session.add(
+                    PropiedadAmenidad(
+                        propiedad_id=property_id,
+                        amenidad_id=amenity_id_by_name[amenity_name],
+                    )
+                )
+
+            session.add(
+                Servicio(
+                    id=uuid4(),
+                    propiedad_id=property_id,
+                    nombre="desayuno",
+                    descripcion="Servicio de desayuno incluido",
+                    estado_activo=True,
+                )
             )
-        )
+            session.add(
+                Servicio(
+                    id=uuid4(),
+                    propiedad_id=property_id,
+                    nombre="recepcion_24h",
+                    descripcion="Atencion 24 horas",
+                    estado_activo=True,
+                )
+            )
 
         session.commit()
+
+
+def _ensure_amenity_catalog(session: Session) -> dict[str, object]:
+    amenity_id_by_name: dict[str, object] = {}
+    existing_amenities = session.exec(select(Amenidad)).all()
+    for amenity in existing_amenities:
+        amenity_id_by_name[amenity.nombre] = amenity.id
+
+    for name, category in AMENITY_CATALOG:
+        if name in amenity_id_by_name:
+            continue
+
+        amenity = Amenidad(id=uuid4(), nombre=name, categoria=category)
+        session.add(amenity)
+        session.flush()
+        amenity_id_by_name[name] = amenity.id
+
+    return amenity_id_by_name

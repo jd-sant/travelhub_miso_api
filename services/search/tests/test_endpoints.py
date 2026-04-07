@@ -22,3 +22,82 @@ class TestSearchHealthEndpoints:
         assert payload["counts"]["amenidades"] >= 1
         assert payload["counts"]["servicios"] >= 1
         assert len(payload["propiedades"]) >= 1
+
+    def test_search_properties_success(self, client):
+        response = client.get(
+            "/api/v1/search",
+            params={
+                "ciudad": "Bogota",
+                "check_in": "2026-04-10",
+                "check_out": "2026-04-12",
+                "huespedes": 2,
+                "page": 1,
+                "page_size": 10,
+            },
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["pagination"]["total"] >= 1
+        assert payload["pagination"]["page"] == 1
+        assert payload["pagination"]["page_size"] == 10
+        assert len(payload["items"]) >= 1
+
+    def test_search_properties_empty_state(self, client):
+        response = client.get(
+            "/api/v1/search",
+            params={
+                "ciudad": "Medellin",
+                "check_in": "2026-04-10",
+                "check_out": "2026-04-12",
+                "huespedes": 2,
+            },
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["pagination"]["total"] == 0
+        assert payload["items"] == []
+        assert len(payload["empty_state"]) == 2
+
+    def test_search_properties_missing_required(self, client):
+        response = client.get(
+            "/api/v1/search",
+            params={
+                "check_in": "2026-04-10",
+                "check_out": "2026-04-12",
+                "huespedes": 2,
+            },
+        )
+
+        assert response.status_code == 422
+
+    def test_search_properties_invalid_dates_rule(self, client):
+        response = client.get(
+            "/api/v1/search",
+            params={
+                "ciudad": "Bogota",
+                "check_in": "2026-04-12",
+                "check_out": "2026-04-10",
+                "huespedes": 2,
+            },
+        )
+
+        assert response.status_code == 400
+        assert "check_out" in response.json()["detail"]
+
+    def test_search_properties_invalid_price_range_rule(self, client):
+        response = client.get(
+            "/api/v1/search",
+            params={
+                "ciudad": "Bogota",
+                "check_in": "2026-04-10",
+                "check_out": "2026-04-12",
+                "huespedes": 2,
+                "precio_min": "200",
+                "precio_max": "100",
+            },
+        )
+
+        assert response.status_code == 400
+        assert "precio_min" in response.json()["detail"]
