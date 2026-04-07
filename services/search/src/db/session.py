@@ -1,8 +1,10 @@
 from collections.abc import Generator
 
 from sqlalchemy import event, text
+from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
+from adapters import models  # noqa: F401
 from core.config import settings
 
 _is_postgres = settings.database_url.startswith("postgresql")
@@ -13,11 +15,15 @@ connect_args = (
     else {}
 )
 
-engine = create_engine(
-    settings.database_url,
-    echo=settings.db_echo,
-    connect_args=connect_args,
-)
+engine_kwargs = {
+    "echo": settings.db_echo,
+    "connect_args": connect_args,
+}
+
+if settings.database_url == "sqlite://":
+    engine_kwargs["poolclass"] = StaticPool
+
+engine = create_engine(settings.database_url, **engine_kwargs)
 
 if _is_postgres:
 

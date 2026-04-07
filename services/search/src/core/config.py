@@ -4,6 +4,14 @@ from functools import lru_cache
 
 class Settings:
     @property
+    def environment(self) -> str:
+        return os.getenv("ENV", os.getenv("APP_ENV", "development")).lower()
+
+    @property
+    def is_development(self) -> bool:
+        return self.environment in ("development", "dev", "test", "local")
+
+    @property
     def rds_hostname(self) -> str:
         return os.getenv("RDS_HOSTNAME", "localhost")
 
@@ -33,8 +41,7 @@ class Settings:
         if url:
             return url
 
-        env = os.getenv("ENV", os.getenv("APP_ENV", "development")).lower()
-        if env in ("development", "dev", "test", "local"):
+        if self.is_development:
             return os.getenv("SQLITE_DATABASE_URL", "sqlite:///./search.db")
 
         return (
