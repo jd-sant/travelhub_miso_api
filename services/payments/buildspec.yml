@@ -3,10 +3,14 @@ version: 0.2
 phases:
   pre_build:
     commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
       - echo Setting up Python 3.11...
       - python3.11 --version
       - echo Installing dependencies...
       - pip install -r services/payments/requirements.txt
+      - export IMAGE_REPO=$AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/travelhub-payments
+      - export IMAGE_TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION:=latest}
 
   build:
     commands:
@@ -15,7 +19,18 @@ phases:
       - PYTHONPATH=services/payments/src pytest services/payments/tests/ -v --tb=short
       - echo Building Docker image...
       - docker build -t travelhub-payments services/payments/
+      - docker tag travelhub-payments:latest $IMAGE_REPO:latest
+      - docker tag travelhub-payments:latest $IMAGE_REPO:$IMAGE_TAG
+
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing Docker image...
+      - docker push $IMAGE_REPO:latest
+      - docker push $IMAGE_REPO:$IMAGE_TAG
+      - echo Writing Image metadata...
+      - printf '{"ImageURI":"%s:%s"}' $IMAGE_REPO $IMAGE_TAG > imageDetail.json
 
 artifacts:
   files:
-    - services/payments/buildspec.yml
+    - imageDetail.json

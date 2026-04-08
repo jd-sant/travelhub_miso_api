@@ -20,6 +20,15 @@ Microservicio de pagos de TravelHub para el MVP de procesamiento seguro.
 - Se devuelve `failure_reason` cuando el cargo falla
 - Se rechazan duplicados por `idempotency_key` y por ventana corta de 2 segundos
 - El servicio puede operar en `fake_stripe` o en `stripe_test` con `ConfirmationToken`
+- Se persiste `provider_code` para trazabilidad del proveedor que proceso la transaccion
+- Se registra auditoria tecnica del flujo de checkout, confirmacion y webhook
+
+## Modelo de datos MVP
+
+- `payment`: transaccion materializada del pago con estado, referencia externa, proveedor y recibo
+- `payment_checkout_session`: sesion interna del checkout Stripe hasta su materializacion en pago
+- `payment_event`: eventos de negocio asociados al pago
+- `payment_audit_log`: bitacora tecnica de acciones relevantes del flujo de pagos
 
 ## Endpoints
 
@@ -85,3 +94,4 @@ PYTHONPATH=services/payments/src pytest services/payments/tests/ -v
 - En el MVP actual el gateway por defecto es simulado para permitir pruebas automatizadas sin depender de servicios externos.
 - Si `PAYMENT_PROVIDER=stripe_test` y las llaves estan configuradas, el servicio expone el flujo `create-intent` + `finalize` + `webhook` para Stripe test mode.
 - Los eventos `reservation.confirmation.requested` e `inventory.update.requested` dejan trazabilidad para la futura integracion asincrona.
+- El modelo persiste relaciones referenciales minimas entre `payment`, `payment_checkout_session`, `payment_event` y `payment_audit_log`.

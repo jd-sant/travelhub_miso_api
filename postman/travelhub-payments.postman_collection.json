@@ -402,19 +402,85 @@
           "response": []
         },
         {
-          "name": "Create Charge - Duplicate Replay",
+          "name": "Create Charge - Idempotency Replay",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('HU016: duplicado responde 409', function () {",
+                  "pm.test('HU016: replay de idempotencia responde 409', function () {",
                   "    pm.response.to.have.status(409);",
                   "});",
                   "",
                   "const body = pm.response.json();",
                   "",
-                  "pm.test('HU016: mensaje de duplicado es claro', function () {",
+                  "pm.test('HU016: mensaje de idempotencia es claro', function () {",
+                  "    pm.expect(body.detail.message).to.eql('Se reutilizo una idempotency_key ya registrada.');",
+                  "});",
+                  "",
+                  "pm.test('HU016: backend informa el pago original relacionado', function () {",
+                    "    pm.expect(body.detail.duplicate_payment_id).to.be.a('string');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Forwarded-Proto",
+                "value": "https"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservation_id\": \"{{duplicate_reservation_id}}\",\n  \"traveler_id\": \"{{duplicate_traveler_id}}\",\n  \"payment_method_token\": \"pm_tok_visa_ok\",\n  \"amount_in_cents\": 125000,\n  \"currency\": \"COP\",\n  \"idempotency_key\": \"{{duplicate_idempotency_key}}\"\n}"
+            },
+            "url": {
+              "raw": "{{payments_base_url}}/api/v1/payments/charges",
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "charges"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Charge - Duplicate Window",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const suffix = Date.now();",
+                  "pm.collectionVariables.set('duplicate_window_idempotency_key', `booking-duplicate-window-${suffix}`);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU016: duplicado por ventana responde 409', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('HU016: mensaje de duplicado por ventana es claro', function () {",
                   "    pm.expect(body.detail.message).to.eql('Se detecto una transaccion duplicada en menos de 2 segundos.');",
                   "});",
                   "",
@@ -440,7 +506,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"reservation_id\": \"{{duplicate_reservation_id}}\",\n  \"traveler_id\": \"{{duplicate_traveler_id}}\",\n  \"payment_method_token\": \"pm_tok_visa_ok\",\n  \"amount_in_cents\": 125000,\n  \"currency\": \"COP\",\n  \"idempotency_key\": \"{{duplicate_idempotency_key}}\"\n}"
+              "raw": "{\n  \"reservation_id\": \"{{duplicate_reservation_id}}\",\n  \"traveler_id\": \"{{duplicate_traveler_id}}\",\n  \"payment_method_token\": \"pm_tok_visa_ok\",\n  \"amount_in_cents\": 125000,\n  \"currency\": \"COP\",\n  \"idempotency_key\": \"{{duplicate_window_idempotency_key}}\"\n}"
             },
             "url": {
               "raw": "{{payments_base_url}}/api/v1/payments/charges",
@@ -546,6 +612,10 @@
     },
     {
       "key": "duplicate_idempotency_key",
+      "value": ""
+    },
+    {
+      "key": "duplicate_window_idempotency_key",
       "value": ""
     },
     {

@@ -8,9 +8,11 @@ from core.security import (
     build_request_checksum,
     hash_token,
 )
+from domain.ports.payment_audit_repository import PaymentAuditRepository
 from domain.ports.payment_checkout_repository import PaymentCheckoutRepository
 from domain.ports.payment_repository import PaymentRepository
 from domain.ports.stripe_checkout_gateway import StripeCheckoutGateway
+from domain.schemas.audit import PaymentAuditLogRecord
 from domain.schemas.checkout import (
     PaymentCheckoutSessionRecord,
     PaymentFinalizeRequest,
@@ -31,10 +33,12 @@ class FinalizeStripePaymentUseCase(BaseUseCase[PaymentFinalizeRequest, PaymentFi
         self,
         checkout_repository: PaymentCheckoutRepository,
         payment_repository: PaymentRepository,
+        audit_repository: PaymentAuditRepository,
         gateway: StripeCheckoutGateway,
     ):
         self.checkout_repository = checkout_repository
         self.payment_repository = payment_repository
+        self.audit_repository = audit_repository
         self.gateway = gateway
 
     def execute(self, payload: PaymentFinalizeRequest) -> PaymentFinalizeResponse:
@@ -83,6 +87,11 @@ class FinalizeStripePaymentUseCase(BaseUseCase[PaymentFinalizeRequest, PaymentFi
                 stored_payment.payment_id,
                 self._build_events(stored_payment),
             )
+            self._audit_payment(
+                session=session,
+                payment=stored_payment,
+                action="payment.finalize.failed",
+            )
             session.payment_id = stored_payment.payment_id
             session.status = stored_payment.status.value
             session.error = exc.message or failure_reason
@@ -124,6 +133,11 @@ class FinalizeStripePaymentUseCase(BaseUseCase[PaymentFinalizeRequest, PaymentFi
                 stored_payment.payment_id,
                 self._build_events(stored_payment),
             )
+            self._audit_payment(
+                session=session,
+                payment=stored_payment,
+                action="payment.finalize.confirmed",
+            )
             session.payment_id = stored_payment.payment_id
             session.status = stored_payment.status.value
         elif stripe_status in {"requires_payment_method", "canceled"}:
@@ -141,11 +155,31 @@ class FinalizeStripePaymentUseCase(BaseUseCase[PaymentFinalizeRequest, PaymentFi
                 stored_payment.payment_id,
                 self._build_events(stored_payment),
             )
+            self._audit_payment(
+                session=session,
+                payment=stored_payment,
+                action="payment.finalize.failed",
+            )
             session.payment_id = stored_payment.payment_id
             session.status = stored_payment.status.value
             session.error = failure_reason
         else:
             session.status = stripe_status
+            self.audit_repository.add_log(
+                PaymentAuditLogRecord(
+                    traveler_id=session.traveler_id,
+                    checkout_session_id=session.payment_transaction_id,
+                    entity_type="payment_checkout_session",
+                    entity_id=str(session.payment_transaction_id),
+                    action="payment.finalize.requires_action",
+                    payload={
+                        "provider_code": session.provider_code,
+                        "payment_intent_id": session.payment_intent_id,
+                        "status": stripe_status,
+                    },
+                    created_at=session.updated_at,
+                )
+            )
 
         stored_session = self.checkout_repository.update_session(session)
         return PaymentFinalizeResponse(
@@ -197,6 +231,7 @@ class FinalizeStripePaymentUseCase(BaseUseCase[PaymentFinalizeRequest, PaymentFi
             payment_id=uuid4(),
             reservation_id=session.reservation_id,
             traveler_id=session.traveler_id,
+            provider_code=session.provider_code,
             status=status,
             amount_in_cents=session.amount_in_cents,
             currency=session.currency,
@@ -263,3 +298,29 @@ class FinalizeStripePaymentUseCase(BaseUseCase[PaymentFinalizeRequest, PaymentFi
             if isinstance(error.get("message"), str):
                 return str(error["message"])
         return None
+
+    def _audit_payment(
+        self,
+        *,
+        session: PaymentCheckoutSessionRecord,
+        payment: PaymentChargeResponse,
+        action: str,
+    ) -> None:
+        self.audit_repository.add_log(
+            PaymentAuditLogRecord(
+                traveler_id=payment.traveler_id,
+                payment_id=payment.payment_id,
+                checkout_session_id=session.payment_transaction_id,
+                entity_type="payment",
+                entity_id=str(payment.payment_id),
+                action=action,
+                payload={
+                    "provider_code": payment.provider_code,
+                    "reservation_id": str(payment.reservation_id),
+                    "status": payment.status.value,
+                    "gateway_charge_id": payment.gateway_charge_id,
+                    "failure_reason": payment.failure_reason,
+                },
+                created_at=payment.updated_at,
+            )
+        )

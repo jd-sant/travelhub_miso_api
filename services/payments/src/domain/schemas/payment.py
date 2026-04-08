@@ -40,6 +40,7 @@ class PaymentChargeResponse(BaseModel):
     payment_id: UUID
     reservation_id: UUID
     traveler_id: UUID
+    provider_code: str
     status: PaymentStatus
     amount_in_cents: int
     currency: str
@@ -70,6 +71,7 @@ class PaymentEventResponse(BaseModel):
 class PaymentPublicResponse(BaseModel):
     payment_id: UUID
     reservation_id: UUID
+    provider_code: str
     status: PaymentStatus
     amount_in_cents: int
     currency: str

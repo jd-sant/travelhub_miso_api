@@ -5,7 +5,8 @@ Monorepo del backend de TravelHub, organizado como microservicios independientes
 ## Arquitectura
 
 El proyecto sigue una arquitectura de microservicios donde cada servicio tiene su propia base de codigo, Dockerfile y schema de base de datos. Todos los servicios comparten una instancia de PostgreSQL pero operan en schemas aislados.
-text
+
+```text
 travelhub_miso/
 |-- services/
 |   |-- users/          # Gestion de usuarios y roles
@@ -16,9 +17,11 @@ travelhub_miso/
 |-- init-schemas.sql    # Creacion de schemas en PostgreSQL
 |-- Makefile            # Comandos de desarrollo
 `-- .github/workflows/  # CI/CD con GitHub Actions
+```
 
 Cada microservicio sigue arquitectura hexagonal:
-text
+
+```text
 service/
 |-- src/
 |   |-- adapters/          # Implementaciones concretas
@@ -33,6 +36,7 @@ service/
 |-- tests/
 |-- Dockerfile
 `-- requirements.txt
+```
 
 ## Stack
 
@@ -49,10 +53,10 @@ service/
 
 | Servicio | Puerto | Schema BD | Descripcion |
 |----------|--------|-----------|-------------|
-| users | 8000 | users_schema | Gestion de usuarios y roles |
-| security | 8001 | security_schema | Autenticacion, OTP y tokens JWT |
-| reservations | 8002 | reservations_schema | Creacion y consulta de reservas |
-| payments | 8003 | payments_schema | Procesamiento seguro de pagos con token |
+| `users` | 8000 | `users_schema` | Gestion de usuarios y roles |
+| `security` | 8001 | `security_schema` | Autenticacion, OTP y tokens JWT |
+| `reservations` | 8002 | `reservations_schema` | Creacion y consulta de reservas |
+| `payments` | 8003 | `payments_schema` | Procesamiento seguro de pagos con token |
 
 ## Ejecucion local
 
@@ -62,7 +66,8 @@ service/
 - Python 3.11+ para desarrollo y tests
 
 ### Con Docker Compose
-bash
+
+```bash
 # Copiar variables de entorno
 cp .env.example .env
 
@@ -71,15 +76,18 @@ make docker-up
 
 # Ver logs
 make docker-logs
+```
 
 Los servicios quedan disponibles en:
+
 - Users: http://localhost:8000
 - Security: http://localhost:8001
 - Reservations: http://localhost:8002
 - Payments: http://localhost:8003
 
 ### Tests
-bash
+
+```bash
 make users-test
 make security-test
 make reservations-test
@@ -89,24 +97,27 @@ PYTHONPATH=services/users/src pytest services/users/tests/ -v
 PYTHONPATH=services/security/src pytest services/security/tests/ -v
 PYTHONPATH=services/reservations/src pytest services/reservations/tests/ -v
 PYTHONPATH=services/payments/src pytest services/payments/tests/ -v
+```
 
 ## Comandos disponibles
-bash
-make help             # Ver todos los comandos
-make docker-up        # Levantar servicios
-make docker-down      # Detener servicios
-make docker-build     # Construir imágenes
-make clean            # Limpiar __pycache__
-make users-test       # Tests del servicio de usuarios
-make security-test    # Tests del servicio de seguridad
+
+```bash
+make help              # Ver todos los comandos
+make docker-up         # Levantar servicios
+make docker-down       # Detener servicios
+make docker-build      # Construir imagenes
+make clean             # Limpiar __pycache__
+make users-test        # Tests del servicio de usuarios
+make security-test     # Tests del servicio de seguridad
 make reservations-test # Tests del servicio de reservas
-make payments-test    # Tests del servicio de pagos
+make payments-test     # Tests del servicio de pagos
+```
 
 ## CI / CD
 
 ### CI - GitHub Actions
 
-El workflow pr-test-validation.yml se ejecuta en cada PR hacia develop, release o main:
+El workflow `pr-test-validation.yml` se ejecuta en cada PR hacia `develop`, `release` o `main`:
 
 1. Valida que el PR tenga descripcion.
 2. Detecta que servicios tuvieron cambios.
@@ -114,14 +125,14 @@ El workflow pr-test-validation.yml se ejecuta en cada PR hacia develop, release 
 
 ### CD - AWS CodeBuild
 
-Cada servicio mantiene su propio buildspec.yml para pruebas y build de imagen.
+Cada servicio mantiene su propio `buildspec.yml` para pruebas y build de imagen.
 
 ## Variables de entorno
 
-Ver .env.example para la lista minima. Variables principales:
+Ver `.env.example` para la lista minima. Variables principales:
 
 | Variable | Descripcion |
 |----------|-------------|
-| JWT_SECRET_KEY | Clave secreta para firmar tokens JWT |
-| INTERNAL_API_KEY | Clave para comunicacion entre servicios |
-| PAYMENT_INTEGRITY_SECRET | Secreto para checksum e integridad de requests de pago |
+| `JWT_SECRET_KEY` | Clave secreta para firmar tokens JWT |
+| `INTERNAL_API_KEY` | Clave para comunicacion entre servicios |
+| `PAYMENT_INTEGRITY_SECRET` | Secreto para checksum e integridad de requests de pago |

@@ -27,8 +27,9 @@ Orden sugerido de ejecucion:
 5. `02 - Pago Fallido / Create Charge - Failure`
 6. `02 - Pago Fallido / List Payment Events - Failure`
 7. `03 - Duplicados / Create Charge - Duplicate Seed`
-8. `03 - Duplicados / Create Charge - Duplicate Replay`
-9. `04 - Seguridad Transporte / Create Charge - Missing TLS Header`
+8. `03 - Duplicados / Create Charge - Idempotency Replay`
+9. `03 - Duplicados / Create Charge - Duplicate Window`
+10. `04 - Seguridad Transporte / Create Charge - Missing TLS Header`
 
 Esta coleccion valida:
 
@@ -36,6 +37,7 @@ Esta coleccion valida:
 - Un cargo exitoso retorna `status=confirmed` y genera recibo.
 - Un cargo fallido retorna `status=failed` y un `failure_reason` claro.
 - Un intento duplicado en ventana corta es rechazado con `409`.
+- La reutilizacion de una `idempotency_key` tambien es rechazada con `409` y mensaje especifico.
 - Un request sin el header de transporte seguro es rechazado.
 - Los eventos de pago dejan trazabilidad para confirmacion y recibo.
 

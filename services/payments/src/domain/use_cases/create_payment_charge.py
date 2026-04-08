@@ -11,8 +11,10 @@ from core.security import (
     hash_token,
     verify_checksum,
 )
+from domain.ports.payment_audit_repository import PaymentAuditRepository
 from domain.ports.payment_gateway import PaymentGateway
 from domain.ports.payment_repository import PaymentRepository
+from domain.schemas.audit import PaymentAuditLogRecord
 from domain.schemas.payment import (
     PaymentChargeRequest,
     PaymentChargeResponse,
@@ -28,9 +30,11 @@ class CreatePaymentChargeUseCase(BaseUseCase[PaymentChargeRequest, PaymentPublic
     def __init__(
         self,
         repository: PaymentRepository,
+        audit_repository: PaymentAuditRepository,
         gateway: PaymentGateway,
     ):
         self.repository = repository
+        self.audit_repository = audit_repository
         self.gateway = gateway
 
     def execute(self, payload: PaymentChargeRequest) -> PaymentPublicResponse:
@@ -86,6 +90,7 @@ class CreatePaymentChargeUseCase(BaseUseCase[PaymentChargeRequest, PaymentPublic
             payment_id=uuid4(),
             reservation_id=payload.reservation_id,
             traveler_id=payload.traveler_id,
+            provider_code=settings.payment_provider,
             status=gateway_result.status,
             amount_in_cents=payload.amount_in_cents,
             currency=payload.currency,
@@ -128,6 +133,29 @@ class CreatePaymentChargeUseCase(BaseUseCase[PaymentChargeRequest, PaymentPublic
                 )
             raise
         self.repository.add_events(stored_payment.payment_id, self._build_events(stored_payment))
+        self.audit_repository.add_log(
+            PaymentAuditLogRecord(
+                traveler_id=stored_payment.traveler_id,
+                payment_id=stored_payment.payment_id,
+                entity_type="payment",
+                entity_id=str(stored_payment.payment_id),
+                action=(
+                    "payment.charge.confirmed"
+                    if stored_payment.status == PaymentStatus.confirmed
+                    else "payment.charge.failed"
+                ),
+                payload={
+                    "provider_code": stored_payment.provider_code,
+                    "reservation_id": str(stored_payment.reservation_id),
+                    "status": stored_payment.status.value,
+                    "amount_in_cents": stored_payment.amount_in_cents,
+                    "currency": stored_payment.currency,
+                    "gateway_charge_id": stored_payment.gateway_charge_id,
+                    "failure_reason": stored_payment.failure_reason,
+                },
+                created_at=now,
+            )
+        )
         return self._to_public_response(stored_payment)
 
     def _build_events(self, payment: PaymentChargeResponse) -> list[PaymentEventResponse]:
@@ -185,6 +213,7 @@ class CreatePaymentChargeUseCase(BaseUseCase[PaymentChargeRequest, PaymentPublic
         return PaymentPublicResponse(
             payment_id=payment.payment_id,
             reservation_id=payment.reservation_id,
+            provider_code=payment.provider_code,
             status=payment.status,
             amount_in_cents=payment.amount_in_cents,
             currency=payment.currency,

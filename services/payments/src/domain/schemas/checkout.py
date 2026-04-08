@@ -23,6 +23,7 @@ class PaymentCheckoutSessionRequest(BaseModel):
 
 class PaymentCheckoutSessionResponse(BaseModel):
     payment_transaction_id: UUID
+    provider_code: str
     amount_in_cents: int
     currency: str
     publishable_key: str
@@ -33,6 +34,7 @@ class PaymentCheckoutSessionRecord(BaseModel):
     payment_transaction_id: UUID
     reservation_id: UUID
     traveler_id: UUID
+    provider_code: str
     amount_in_cents: int
     currency: str
     property_name: str | None = None

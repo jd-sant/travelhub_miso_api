@@ -4,8 +4,10 @@ from sqlmodel import Session
 from adapters.gateways.stripe_gateway import FakeStripePaymentGateway
 from adapters.gateways.stripe_checkout_gateway import StripeSdkCheckoutGateway
 from adapters.repositories.payment_checkout_repository import SQLModelPaymentCheckoutRepository
+from adapters.repositories.payment_audit_repository import SQLModelPaymentAuditRepository
 from adapters.repositories.payment_repository import SQLModelPaymentRepository
 from db.session import get_session
+from domain.ports.payment_audit_repository import PaymentAuditRepository
 from domain.ports.payment_checkout_repository import PaymentCheckoutRepository
 from domain.ports.payment_gateway import PaymentGateway
 from domain.ports.payment_repository import PaymentRepository
@@ -31,6 +33,12 @@ def get_payment_checkout_repository(
     return SQLModelPaymentCheckoutRepository(session)
 
 
+def get_payment_audit_repository(
+    session: Session = Depends(get_session),
+) -> PaymentAuditRepository:
+    return SQLModelPaymentAuditRepository(session)
+
+
 def get_payment_gateway() -> PaymentGateway:
     return FakeStripePaymentGateway()
 
@@ -41,9 +49,10 @@ def get_stripe_checkout_gateway() -> StripeCheckoutGateway:
 
 def get_create_payment_charge_use_case(
     repository: PaymentRepository = Depends(get_payment_repository),
+    audit_repository: PaymentAuditRepository = Depends(get_payment_audit_repository),
     gateway: PaymentGateway = Depends(get_payment_gateway),
 ) -> CreatePaymentChargeUseCase:
-    return CreatePaymentChargeUseCase(repository, gateway)
+    return CreatePaymentChargeUseCase(repository, audit_repository, gateway)
 
 
 def get_get_payment_use_case(
@@ -60,16 +69,18 @@ def get_list_payment_events_use_case(
 
 def get_create_payment_checkout_session_use_case(
     repository: PaymentCheckoutRepository = Depends(get_payment_checkout_repository),
+    audit_repository: PaymentAuditRepository = Depends(get_payment_audit_repository),
 ) -> CreatePaymentCheckoutSessionUseCase:
-    return CreatePaymentCheckoutSessionUseCase(repository)
+    return CreatePaymentCheckoutSessionUseCase(repository, audit_repository)
 
 
 def get_finalize_stripe_payment_use_case(
     checkout_repository: PaymentCheckoutRepository = Depends(get_payment_checkout_repository),
     payment_repository: PaymentRepository = Depends(get_payment_repository),
+    audit_repository: PaymentAuditRepository = Depends(get_payment_audit_repository),
     gateway: StripeCheckoutGateway = Depends(get_stripe_checkout_gateway),
 ) -> FinalizeStripePaymentUseCase:
-    return FinalizeStripePaymentUseCase(checkout_repository, payment_repository, gateway)
+    return FinalizeStripePaymentUseCase(checkout_repository, payment_repository, audit_repository, gateway)
 
 
 def get_get_payment_checkout_session_use_case(
@@ -81,6 +92,7 @@ def get_get_payment_checkout_session_use_case(
 def get_handle_stripe_webhook_use_case(
     checkout_repository: PaymentCheckoutRepository = Depends(get_payment_checkout_repository),
     payment_repository: PaymentRepository = Depends(get_payment_repository),
+    audit_repository: PaymentAuditRepository = Depends(get_payment_audit_repository),
     gateway: StripeCheckoutGateway = Depends(get_stripe_checkout_gateway),
 ) -> HandleStripeWebhookUseCase:
-    return HandleStripeWebhookUseCase(checkout_repository, payment_repository, gateway)
+    return HandleStripeWebhookUseCase(checkout_repository, payment_repository, audit_repository, gateway)

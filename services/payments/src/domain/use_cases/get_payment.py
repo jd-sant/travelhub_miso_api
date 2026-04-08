@@ -21,6 +21,7 @@ class GetPaymentUseCase(BaseUseCase[UUID, PaymentPublicResponse]):
             status=payment.status,
             amount_in_cents=payment.amount_in_cents,
             currency=payment.currency,
+            provider_code=payment.provider_code,
             gateway_charge_id=payment.gateway_charge_id,
             receipt_id=payment.receipt_id,
             receipt_number=payment.receipt_number,

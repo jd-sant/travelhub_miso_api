@@ -14,6 +14,7 @@ class Payment(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
     reservation_id: UUID = Field(index=True)
     traveler_id: UUID = Field(index=True)
+    provider_code: str = Field(index=True, max_length=64)
     status: str = Field(index=True)
     amount_in_cents: int
     currency: str = Field(max_length=3)

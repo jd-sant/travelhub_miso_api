@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import event, text
 from sqlmodel import SQLModel, Session, create_engine, select
 
+from adapters.models.payment_audit_log import PaymentAuditLog
 from adapters.models.payment_checkout_session import PaymentCheckoutSession
 from adapters.models.payment import Payment
 from adapters.models.payment_event import PaymentEvent
@@ -126,6 +127,8 @@ def client(test_engine):
     os.environ["SKIP_DB_INIT_ON_STARTUP"] = "true"
 
     with Session(test_engine) as session:
+        for audit_log in session.exec(select(PaymentAuditLog)).all():
+            session.delete(audit_log)
         for checkout_session in session.exec(select(PaymentCheckoutSession)).all():
             session.delete(checkout_session)
         for event in session.exec(select(PaymentEvent)).all():
@@ -176,6 +179,7 @@ def test_create_payment_success_generates_receipt_and_events(client, test_engine
     assert response.status_code == 201
     body = response.json()
     assert body["status"] == "confirmed"
+    assert body["provider_code"] == "fake_stripe"
     assert body["currency"] == "COP"
     assert body["receipt_id"] is not None
     assert body["receipt_number"].startswith("RCPT-")
@@ -185,8 +189,10 @@ def test_create_payment_success_generates_receipt_and_events(client, test_engine
     with Session(test_engine) as session:
         stored_payment = session.exec(select(Payment)).first()
         stored_events = session.exec(select(PaymentEvent)).all()
+        stored_audit_logs = session.exec(select(PaymentAuditLog)).all()
 
     assert stored_payment is not None
+    assert stored_payment.provider_code == "fake_stripe"
     assert stored_payment.payment_method_token_hash == hash_token(payload["payment_method_token"])
     assert stored_payment.payment_method_token_hash != payload["payment_method_token"]
     assert {event.event_type for event in stored_events} == {
@@ -195,6 +201,7 @@ def test_create_payment_success_generates_receipt_and_events(client, test_engine
         "inventory.update.requested",
         "receipt.generated",
     }
+    assert {log.action for log in stored_audit_logs} == {"payment.charge.confirmed"}
 
 
 def test_create_payment_failure_returns_clear_reason(client, test_engine):
@@ -205,6 +212,7 @@ def test_create_payment_failure_returns_clear_reason(client, test_engine):
     assert response.status_code == 201
     body = response.json()
     assert body["status"] == "failed"
+    assert body["provider_code"] == "fake_stripe"
     assert body["failure_reason"] == "insufficient_funds"
     assert body["receipt_id"] is None
 
@@ -393,6 +401,7 @@ def test_create_checkout_session_returns_transaction_metadata(client, monkeypatc
     assert response.status_code == 201
     body = response.json()
     assert body["currency"] == "COP"
+    assert body["provider_code"] == "stripe_test"
     assert body["stripe_enabled"] is True
     assert body["publishable_key"] == "pk_test_example"
 

@@ -8,9 +8,11 @@ from core.security import (
     build_request_checksum,
     hash_token,
 )
+from domain.ports.payment_audit_repository import PaymentAuditRepository
 from domain.ports.payment_checkout_repository import PaymentCheckoutRepository
 from domain.ports.payment_repository import PaymentRepository
 from domain.ports.stripe_checkout_gateway import StripeCheckoutGateway
+from domain.schemas.audit import PaymentAuditLogRecord
 from domain.schemas.checkout import PaymentCheckoutSessionRecord
 from domain.schemas.payment import PaymentChargeResponse, PaymentEventResponse, PaymentStatus
 from domain.use_cases.base import BaseUseCase
@@ -22,10 +24,12 @@ class HandleStripeWebhookUseCase(BaseUseCase[tuple[bytes, str], None]):
         self,
         checkout_repository: PaymentCheckoutRepository,
         payment_repository: PaymentRepository,
+        audit_repository: PaymentAuditRepository,
         gateway: StripeCheckoutGateway,
     ):
         self.checkout_repository = checkout_repository
         self.payment_repository = payment_repository
+        self.audit_repository = audit_repository
         self.gateway = gateway
 
     def execute(self, payload: tuple[bytes, str]) -> None:
@@ -78,6 +82,24 @@ class HandleStripeWebhookUseCase(BaseUseCase[tuple[bytes, str], None]):
 
         stored_payment = self.payment_repository.save_payment_result(payment)
         self.payment_repository.add_events(stored_payment.payment_id, self._build_events(stored_payment))
+        self.audit_repository.add_log(
+            PaymentAuditLogRecord(
+                traveler_id=stored_payment.traveler_id,
+                payment_id=stored_payment.payment_id,
+                checkout_session_id=session.payment_transaction_id,
+                entity_type="payment",
+                entity_id=str(stored_payment.payment_id),
+                action="payment.webhook.processed",
+                payload={
+                    "provider_code": stored_payment.provider_code,
+                    "event_type": event_type,
+                    "gateway_charge_id": stored_payment.gateway_charge_id,
+                    "status": stored_payment.status.value,
+                    "failure_reason": stored_payment.failure_reason,
+                },
+                created_at=stored_payment.updated_at,
+            )
+        )
         session.payment_id = stored_payment.payment_id
         session.status = stored_payment.status.value
         session.error = stored_payment.failure_reason
@@ -123,6 +145,7 @@ class HandleStripeWebhookUseCase(BaseUseCase[tuple[bytes, str], None]):
             payment_id=uuid4(),
             reservation_id=session.reservation_id,
             traveler_id=session.traveler_id,
+            provider_code=session.provider_code,
             status=status,
             amount_in_cents=session.amount_in_cents,
             currency=session.currency,
