@@ -45,7 +45,8 @@ class Settings:
 
     @property
     def payment_provider(self) -> str:
-        return os.getenv("PAYMENT_PROVIDER", "fake_stripe")
+        value = os.getenv("PAYMENT_PROVIDER")
+        return (value or "fake_stripe").strip() or "fake_stripe"
 
     @property
     def stripe_secret_key(self) -> SecretStr:

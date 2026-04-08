@@ -84,7 +84,7 @@ def finalize_stripe_payment(
     except InsecureTransportError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except PaymentCheckoutSessionNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sesion de pago no encontrada.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sesión de pago no encontrada.")
     except StripeConfigurationError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
 
@@ -101,7 +101,7 @@ def get_checkout_session_status(
     try:
         return use_case.execute(payment_transaction_id)
     except PaymentCheckoutSessionNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sesion de pago no encontrada.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sesión de pago no encontrada.")
 
 
 @router.post("/webhook", status_code=status.HTTP_200_OK)
@@ -115,7 +115,7 @@ async def stripe_webhook(
         use_case.execute((payload, stripe_signature or ""))
         return Response(status_code=status.HTTP_200_OK)
     except StripeWebhookVerificationError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Firma de webhook invalida.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Firma de webhook inválida.")
 
 
 @router.post("/charges", response_model=PaymentPublicResponse, status_code=status.HTTP_201_CREATED)
@@ -128,10 +128,14 @@ def create_charge(
         _assert_secure_transport(x_forwarded_proto)
         return use_case.execute(payload)
     except DuplicatePaymentError as exc:
+        duplicate_window_seconds = settings.payment_duplicate_window_seconds
         message = (
-            "Se reutilizo una idempotency_key ya registrada."
+            "Se reutilizó una idempotency_key ya registrada."
             if exc.reason == "idempotency_key_reused"
-            else "Se detecto una transaccion duplicada en menos de 2 segundos."
+            else (
+                "Se detectó una transacción duplicada en menos de "
+                f"{duplicate_window_seconds} segundos."
+            )
         )
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -143,7 +147,7 @@ def create_charge(
     except InvalidChecksumError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Checksum de integridad invalido.",
+            detail="Checksum de integridad inválido.",
         )
     except InsecureTransportError as exc:
         raise HTTPException(

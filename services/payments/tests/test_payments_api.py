@@ -258,7 +258,7 @@ def test_create_payment_rejects_duplicate_within_two_seconds(client):
     assert first_response.status_code == 201
     assert second_response.status_code == 409
     assert second_response.json()["detail"]["message"] == (
-        "Se detecto una transaccion duplicada en menos de 2 segundos."
+        "Se detectó una transacción duplicada en menos de 2 segundos."
     )
 
 
@@ -282,7 +282,7 @@ def test_create_payment_rejects_reused_idempotency_key(client):
 
     assert first_response.status_code == 201
     assert second_response.status_code == 409
-    assert second_response.json()["detail"]["message"] == "Se reutilizo una idempotency_key ya registrada."
+    assert second_response.json()["detail"]["message"] == "Se reutilizó una idempotency_key ya registrada."
 
 
 def test_create_payment_rejects_invalid_checksum(client):
@@ -292,7 +292,7 @@ def test_create_payment_rejects_invalid_checksum(client):
     response = client.post("/api/v1/payments/charges", json=payload, headers=SECURE_HEADERS)
 
     assert response.status_code == 400
-    assert response.json() == {"detail": "Checksum de integridad invalido."}
+    assert response.json() == {"detail": "Checksum de integridad inválido."}
 
 
 def test_create_payment_accepts_valid_checksum(client):
