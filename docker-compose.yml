@@ -111,7 +111,30 @@ services:
       postgres:
         condition: service_healthy
 
+  notifications:
+    build:
+      context: ./services/notifications
+    environment:
+      PYTHONPATH: /app/src
+      RDS_HOSTNAME: postgres
+      RDS_USERNAME: travelhub_user
+      RDS_PASSWORD: travelhub_pass
+      RDS_DB_NAME: travelhub
+      RDS_PORT: "5432"
+      DB_SCHEMA: notifications_schema
+      DB_ECHO: "False"
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@travelhub.com}
+    ports:
+      - "8004:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:
-
 

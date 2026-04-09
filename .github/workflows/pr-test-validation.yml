@@ -40,6 +40,7 @@ jobs:
       security: ${{ steps.filter.outputs.security }}
       reservations: ${{ steps.filter.outputs.reservations }}
       payments: ${{ steps.filter.outputs.payments }}
+      notifications: ${{ steps.filter.outputs.notifications }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -54,6 +55,8 @@ jobs:
               - 'services/reservations/**'
             payments:
               - 'services/payments/**'
+            notifications:
+              - 'services/notifications/**'
 
   test-users:
     needs: [validate-pr-description, detect-changes]
@@ -150,6 +153,25 @@ jobs:
       - name: Run reservations tests
         run: PYTHONPATH=services/reservations/src pytest services/reservations/tests/ -v
 
+  test-notifications:
+    needs: [validate-pr-description, detect-changes]
+    if: needs.detect-changes.outputs.notifications == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r services/notifications/requirements.txt
+
+      - name: Run notifications tests
+        run: PYTHONPATH=services/notifications/src pytest services/notifications/tests/ -v
+
   tests:
     name: tests
     needs:
@@ -159,6 +181,7 @@ jobs:
       - test-security
       - test-payments
       - test-reservations
+      - test-notifications
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -170,6 +193,7 @@ jobs:
           echo "test-security: ${{ needs.test-security.result }}"
           echo "test-payments: ${{ needs.test-payments.result }}"
           echo "test-reservations: ${{ needs.test-reservations.result }}"
+          echo "test-notifications: ${{ needs.test-notifications.result }}"
 
           if [[ "${{ needs.validate-pr-description.result }}" != "success" ]]; then
             echo "La validacion de descripcion de PR no fue exitosa"
@@ -193,6 +217,11 @@ jobs:
 
           if [[ "${{ needs.test-reservations.result }}" == "failure" || "${{ needs.test-reservations.result }}" == "cancelled" ]]; then
             echo "El job test-reservations termino en estado ${{ needs.test-reservations.result }}"
+            exit 1
+          fi
+
+          if [[ "${{ needs.test-notifications.result }}" == "failure" || "${{ needs.test-notifications.result }}" == "cancelled" ]]; then
+            echo "El job test-notifications termino en estado ${{ needs.test-notifications.result }}"
             exit 1
           fi
 
