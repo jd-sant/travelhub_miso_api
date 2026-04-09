@@ -446,6 +446,41 @@ def test_finalize_stripe_payment_materializes_confirmed_payment(client, test_eng
     assert stored_payment.receipt_number is not None
 
 
+def test_get_payment_confirmation_returns_checkout_summary(client, monkeypatch):
+    monkeypatch.setenv("PAYMENT_PROVIDER", "stripe_test")
+    monkeypatch.setenv("STRIPE_SECRET_KEY", "sk_test_example")
+    monkeypatch.setenv("STRIPE_PUBLISHABLE_KEY", "pk_test_example")
+    gateway = FakeStripeCheckoutGateway(finalize_status="succeeded")
+    client.app.dependency_overrides[get_stripe_checkout_gateway] = lambda: gateway
+
+    create_response = client.post(
+        "/api/v1/payments/create-intent",
+        json=_checkout_payload(),
+        headers=SECURE_HEADERS,
+    )
+    transaction_id = create_response.json()["payment_transaction_id"]
+
+    finalize_response = client.post(
+        "/api/v1/payments/finalize",
+        json={
+            "payment_transaction_id": transaction_id,
+            "confirmation_token_id": "ctoken_test_confirmation",
+        },
+        headers=SECURE_HEADERS,
+    )
+
+    payment_id = finalize_response.json()["payment_id"]
+    response = client.get(f"/api/v1/payments/{payment_id}/confirmation")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["payment_id"] == payment_id
+    assert body["property_name"] == "Renaissance Estate"
+    assert body["check_in_date"] == "2026-10-12"
+    assert body["check_out_date"] == "2026-10-17"
+    assert body["receipt_number"] is not None
+
+
 def test_webhook_can_complete_requires_action_checkout(client, test_engine, monkeypatch):
     monkeypatch.setenv("PAYMENT_PROVIDER", "stripe_test")
     monkeypatch.setenv("STRIPE_SECRET_KEY", "sk_test_example")

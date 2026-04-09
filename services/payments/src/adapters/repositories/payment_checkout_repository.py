@@ -72,6 +72,14 @@ class SQLModelPaymentCheckoutRepository(PaymentCheckoutRepository):
         ).first()
         return _to_record(model) if model else None
 
+    def get_session_by_payment_id(self, payment_id: UUID) -> PaymentCheckoutSessionRecord | None:
+        model = self.session.exec(
+            select(PaymentCheckoutSession).where(
+                PaymentCheckoutSession.payment_id == payment_id
+            )
+        ).first()
+        return _to_record(model) if model else None
+
     def update_session(self, session: PaymentCheckoutSessionRecord) -> PaymentCheckoutSessionRecord:
         model = self.session.get(PaymentCheckoutSession, session.payment_transaction_id)
         if model is None:

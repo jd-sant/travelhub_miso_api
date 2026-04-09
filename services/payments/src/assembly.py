@@ -15,6 +15,7 @@ from domain.ports.stripe_checkout_gateway import StripeCheckoutGateway
 from domain.use_cases.create_payment_checkout_session import CreatePaymentCheckoutSessionUseCase
 from domain.use_cases.create_payment_charge import CreatePaymentChargeUseCase
 from domain.use_cases.finalize_stripe_payment import FinalizeStripePaymentUseCase
+from domain.use_cases.get_payment_confirmation_summary import GetPaymentConfirmationSummaryUseCase
 from domain.use_cases.get_payment import GetPaymentUseCase
 from domain.use_cases.get_payment_checkout_session import GetPaymentCheckoutSessionUseCase
 from domain.use_cases.handle_stripe_webhook import HandleStripeWebhookUseCase
@@ -59,6 +60,13 @@ def get_get_payment_use_case(
     repository: PaymentRepository = Depends(get_payment_repository),
 ) -> GetPaymentUseCase:
     return GetPaymentUseCase(repository)
+
+
+def get_get_payment_confirmation_summary_use_case(
+    payment_repository: PaymentRepository = Depends(get_payment_repository),
+    checkout_repository: PaymentCheckoutRepository = Depends(get_payment_checkout_repository),
+) -> GetPaymentConfirmationSummaryUseCase:
+    return GetPaymentConfirmationSummaryUseCase(payment_repository, checkout_repository)
 
 
 def get_list_payment_events_use_case(
