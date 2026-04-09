@@ -1,0 +1,177 @@
+{
+  "info": {
+    "_postman_id": "8b6bdf58-1fcb-4e65-94f1-2e5f4d9e7102",
+    "name": "TravelHub Notifications MVP",
+    "description": "Coleccion para validar el microservicio notifications y la confirmacion de pago de MPF-15.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 - Health",
+      "item": [
+        {
+          "name": "Health - Notifications",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Health responde 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Health reporta healthy', function () {",
+                  "  pm.expect(body.status).to.eql('healthy');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{notifications_base_url}}/health",
+              "host": [
+                "{{notifications_base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 - Confirmacion de Pago",
+      "item": [
+        {
+          "name": "Create Payment Confirmation",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('confirmation_reservation_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('confirmation_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('confirmation_payment_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('confirmation_receipt_id', pm.variables.replaceIn('{{$randomUUID}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Crea confirmacion y responde 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Devuelve notification_id', function () {",
+                  "  pm.expect(body.notification_id).to.be.a('string');",
+                  "});",
+                  "pm.test('La notificacion queda en estado sent', function () {",
+                  "  pm.expect(body.status).to.eql('sent');",
+                  "});",
+                  "pm.collectionVariables.set('notification_id', body.notification_id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Internal-Api-Key",
+                "value": "{{internal_api_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservation_id\": \"{{confirmation_reservation_id}}\",\n  \"traveler_id\": \"{{confirmation_traveler_id}}\",\n  \"payment_id\": \"{{confirmation_payment_id}}\",\n  \"recipient_email\": \"traveler@example.com\",\n  \"recipient_name\": \"Ana Traveler\",\n  \"property_name\": \"Hotel Central\",\n  \"check_in_date\": \"2026-10-12\",\n  \"check_out_date\": \"2026-10-17\",\n  \"amount_in_cents\": 287650,\n  \"currency\": \"COP\",\n  \"receipt_id\": \"{{confirmation_receipt_id}}\",\n  \"receipt_number\": \"RCPT-20261012-101010\",\n  \"source_ip\": \"127.0.0.1\"\n}"
+            },
+            "url": {
+              "raw": "{{notifications_base_url}}/api/v1/internal/payment-confirmations",
+              "host": [
+                "{{notifications_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "internal",
+                "payment-confirmations"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Notification By Id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Consulta notificacion responde 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Devuelve la misma notificacion creada', function () {",
+                  "  pm.expect(body.notification_id).to.eql(pm.collectionVariables.get('notification_id'));",
+                  "});",
+                  "pm.test('El estado se mantiene en sent', function () {",
+                  "  pm.expect(body.status).to.eql('sent');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{notifications_base_url}}/api/v1/notifications/{{notification_id}}",
+              "host": [
+                "{{notifications_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "{{notification_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "notification_id",
+      "value": ""
+    },
+    {
+      "key": "confirmation_reservation_id",
+      "value": ""
+    },
+    {
+      "key": "confirmation_traveler_id",
+      "value": ""
+    },
+    {
+      "key": "confirmation_payment_id",
+      "value": ""
+    },
+    {
+      "key": "confirmation_receipt_id",
+      "value": ""
+    }
+  ]
+}

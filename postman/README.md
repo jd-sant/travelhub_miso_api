@@ -7,6 +7,8 @@ Archivos listos para probar el MVP de `payments` desde Postman y validar los cri
 - `travelhub-payments.postman_collection.json`
 - `travelhub-payments-stripe-evidence.postman_collection.json`
 - `travelhub-local.postman_environment.json`
+- `travelhub-notifications.postman_collection.json`
+- `travelhub-notifications-local.postman_environment.json`
 
 ## Preparacion
 
@@ -79,3 +81,20 @@ La evidencia de esa parte debe tomarse desde el frontend:
 
 - La coleccion MVP genera `idempotency_key` dinamicos para evitar choques entre corridas.
 - El token `pm_fail_insufficient_funds` simula rechazo por fondos insuficientes en el gateway MVP.
+
+## Coleccion notifications
+
+`travelhub-notifications.postman_collection.json`
+
+Orden sugerido:
+
+1. `00 - Health / Health - Notifications`
+2. `01 - Confirmacion de Pago / Create Payment Confirmation`
+3. `01 - Confirmacion de Pago / Get Notification By Id`
+
+Valida:
+
+- Que el microservicio `notifications` esta arriba.
+- Que la confirmacion de pago se registra con `notification_id`.
+- Que el estado inicial del envio queda en `sent`.
+- Que la notificacion puede consultarse posteriormente por id.
