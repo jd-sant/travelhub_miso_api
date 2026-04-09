@@ -1,44 +1,52 @@
-import os
+from collections.abc import Generator
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlmodel import Session, SQLModel
+from sqlalchemy import event, text
+from sqlmodel import Session, SQLModel, create_engine
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://user:password@localhost:5432/travelhub"
+from core.config import settings
+from db.seed import seed_properties_if_empty
+
+_is_postgres = settings.database_url.startswith("postgresql")
+
+connect_args = (
+    {"check_same_thread": False}
+    if settings.database_url.startswith("sqlite")
+    else {}
 )
 
 engine = create_engine(
-    DATABASE_URL,
-    echo=False,
-    future=True,
-    connect_args={"options": "-c search_path=properties_schema"}
+    settings.database_url,
+    echo=settings.db_echo,
+    connect_args=connect_args,
 )
 
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine,
-    class_=Session
-)
+if _is_postgres:
+
+    @event.listens_for(engine, "connect")
+    def _set_search_path(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute(
+            f"SET search_path TO {settings.db_schema}, public"
+        )
+        cursor.close()
+        dbapi_connection.commit()
 
 
-def get_session() -> Session:
-    """Dependency to get database session"""
-    session = SessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
-
-
-def create_db_and_tables():
-    """Create database tables and seed with initial data"""
+def create_db_and_tables() -> None:
+    if _is_postgres:
+        with engine.connect() as conn:
+            conn.execute(
+                text(f"CREATE SCHEMA IF NOT EXISTS {settings.db_schema}")
+            )
+            conn.commit()
     SQLModel.metadata.create_all(engine)
     
     # Seed database if empty
-    from db.seed import seed_properties_if_empty
     with Session(engine) as session:
         seed_properties_if_empty(session)
+
+
+def get_session() -> Generator[Session, None, None]:
+    with Session(engine) as session:
+        yield session
 

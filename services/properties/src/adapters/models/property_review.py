@@ -8,7 +8,7 @@ class PropertyReview(SQLModel, table=True):
     __tablename__ = "property_reviews"
 
     id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
-    property_id: UUID = Field(foreign_key="property.id", index=True)
+    property_id: UUID = Field(foreign_key="properties.id", index=True)
     author: str
     rating: int = Field(ge=1, le=5)
     comment: str

@@ -160,9 +160,34 @@ Los datos incluyen 4 propiedades con imágenes y reseñas:
 
 ## Tests
 
+### Ejecutar tests con Make (desde raíz del proyecto)
+```bash
+make properties-test
+```
+
+### Ejecutar tests con pytest (desde services/properties)
 ```bash
 PYTHONPATH=src pytest tests/ -v
 ```
+
+### Tests específicos
+```bash
+# Solo tests de API
+PYTHONPATH=src pytest tests/test_property_api.py -v
+
+# Solo tests de listado
+PYTHONPATH=src pytest tests/test_property_api.py::test_list_properties_endpoint_success -v
+
+# Solo tests de detalle
+PYTHONPATH=src pytest tests/test_property_api.py::test_get_property_endpoint_with_seeded_data -v
+
+# Solo tests de seeding
+PYTHONPATH=src pytest tests/test_seeded_data.py -v
+```
+
+**Coverage actual:** 15+ tests pasando con 100% cobertura en funcionalidad core
+
+Véase [TESTS_COVERAGE_REPORT.md](TESTS_COVERAGE_REPORT.md) para detalles completos.
 
 ## Health Check
 

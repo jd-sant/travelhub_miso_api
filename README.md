@@ -86,28 +86,31 @@ Los servicios quedan disponibles en:
 ### Tests
 
 ```bash
-# Todos los servicios
+# Con make (recomendado)
 make users-test
 make security-test
 make reservations-test
+make properties-test      # Tests del servicio de propiedades
 
 # O directamente con pytest
 PYTHONPATH=services/users/src pytest services/users/tests/ -v
 PYTHONPATH=services/security/src pytest services/security/tests/ -v
 PYTHONPATH=services/reservations/src pytest services/reservations/tests/ -v
+PYTHONPATH=services/properties/src pytest services/properties/tests/ -v
 ```
 
 ## Comandos disponibles
 
 ```bash
-make help             # Ver todos los comandos
-make docker-up        # Levantar servicios
-make docker-down      # Detener servicios
-make docker-build     # Construir imágenes
-make clean            # Limpiar __pycache__
-make users-test       # Tests del servicio de usuarios
-make security-test    # Tests del servicio de seguridad
+make help              # Ver todos los comandos
+make docker-up         # Levantar servicios
+make docker-down       # Detener servicios
+make docker-build      # Construir imágenes
+make clean             # Limpiar __pycache__
+make users-test        # Tests del servicio de usuarios
+make security-test     # Tests del servicio de seguridad
 make reservations-test # Tests del servicio de reservas
+make properties-test   # Tests del servicio de propiedades
 ```
 
 ## CI / CD

@@ -9,6 +9,6 @@ COPY src ./src
 
 ENV PYTHONPATH=/app/src
 
-EXPOSE 8003
+EXPOSE 8000
 
-CMD ["uvicorn", "entrypoints.api.main:app", "--host", "0.0.0.0", "--port", "8003"]
+CMD ["uvicorn", "entrypoints.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

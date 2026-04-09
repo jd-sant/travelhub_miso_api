@@ -1,15 +1,47 @@
 import os
+from functools import lru_cache
 
 
 class Settings:
-    """Application settings"""
-    DATABASE_URL: str = os.getenv(
-        "DATABASE_URL",
-        "postgresql://user:password@localhost:5432/travelhub"
-    )
-    SERVICE_NAME: str = "properties"
-    SERVICE_PORT: int = int(os.getenv("SERVICE_PORT", 8003))
-    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+    @property
+    def rds_hostname(self) -> str:
+        return os.getenv("RDS_HOSTNAME", "localhost")
+
+    @property
+    def rds_port(self) -> str:
+        return os.getenv("RDS_PORT", "5432")
+
+    @property
+    def rds_username(self) -> str:
+        return os.getenv("RDS_USERNAME", "travelhub_user")
+
+    @property
+    def rds_password(self) -> str:
+        return os.getenv("RDS_PASSWORD", "travelhub_pass")
+
+    @property
+    def rds_db_name(self) -> str:
+        return os.getenv("RDS_DB_NAME", "travelhub")
+
+    @property
+    def db_schema(self) -> str:
+        return os.getenv("DB_SCHEMA", "properties_schema")
+
+    @property
+    def db_echo(self) -> bool:
+        return os.getenv("DB_ECHO", "False").lower() == "true"
+
+    @property
+    def database_url(self) -> str:
+        return f"postgresql://{self.rds_username}:{self.rds_password}@{self.rds_hostname}:{self.rds_port}/{self.rds_db_name}"
+
+    def load(self):
+        pass
 
 
-settings = Settings()
+@lru_cache()
+def get_settings() -> Settings:
+    return Settings()
+
+
+settings = get_settings()

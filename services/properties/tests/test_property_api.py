@@ -46,8 +46,8 @@ def test_get_property_endpoint_with_seeded_data(client: TestClient):
     data = response.json()
     
     assert data["id"] == str(RENAISSANCE_ESTATE_ID)
-    assert data["name"] == "Renaissance Estate & Private Vineyard"
-    assert data["location"] == "Fiesole, Florence"
+    assert data["name"] == "Mansión Renacentista & Viñedo Privado"
+    assert data["location"] == "Fiesole, Florencia"
     assert data["price_per_night"] == 1240.0
     assert data["rating"] == 4.98
     assert data["bedrooms"] == 4
