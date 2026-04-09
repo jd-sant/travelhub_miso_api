@@ -37,7 +37,11 @@ class CreatePaymentChargeUseCase(BaseUseCase[PaymentChargeRequest, PaymentPublic
         self.audit_repository = audit_repository
         self.gateway = gateway
 
-    def execute(self, payload: PaymentChargeRequest) -> PaymentPublicResponse:
+    def execute(
+        self,
+        payload: PaymentChargeRequest,
+        source_ip: str | None = None,
+    ) -> PaymentPublicResponse:
         now = datetime.now(timezone.utc)
         canonical_payload = self._canonical_payload(payload)
         if payload.request_checksum and not verify_checksum(
@@ -144,6 +148,7 @@ class CreatePaymentChargeUseCase(BaseUseCase[PaymentChargeRequest, PaymentPublic
                     if stored_payment.status == PaymentStatus.confirmed
                     else "payment.charge.failed"
                 ),
+                ip_address=source_ip,
                 payload={
                     "provider_code": stored_payment.provider_code,
                     "reservation_id": str(stored_payment.reservation_id),

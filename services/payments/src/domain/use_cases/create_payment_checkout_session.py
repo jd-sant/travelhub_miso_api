@@ -24,7 +24,11 @@ class CreatePaymentCheckoutSessionUseCase(
         self.repository = repository
         self.audit_repository = audit_repository
 
-    def execute(self, payload: PaymentCheckoutSessionRequest) -> PaymentCheckoutSessionResponse:
+    def execute(
+        self,
+        payload: PaymentCheckoutSessionRequest,
+        source_ip: str | None = None,
+    ) -> PaymentCheckoutSessionResponse:
         now = datetime.now(timezone.utc)
         session = PaymentCheckoutSessionRecord(
             payment_transaction_id=uuid4(),
@@ -49,6 +53,7 @@ class CreatePaymentCheckoutSessionUseCase(
                 entity_type="payment_checkout_session",
                 entity_id=str(stored.payment_transaction_id),
                 action="payment.checkout_session.created",
+                ip_address=source_ip,
                 payload={
                     "provider_code": stored.provider_code,
                     "reservation_id": str(stored.reservation_id),

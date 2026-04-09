@@ -39,6 +39,7 @@ Microservicio de pagos de TravelHub para el MVP de procesamiento seguro.
 | POST | `/api/v1/payments/create-intent` | Crear sesion de checkout para Stripe test |
 | POST | `/api/v1/payments/finalize` | Crear y confirmar PaymentIntent con ConfirmationToken |
 | GET | `/api/v1/payments/checkout/{payment_transaction_id}` | Consultar estado del checkout Stripe |
+| GET | `/api/v1/payments/{payment_id}/confirmation` | Obtener resumen de confirmacion para pantalla de exito |
 | POST | `/api/v1/payments/webhook` | Consumir webhooks firmados de Stripe |
 | POST | `/api/v1/payments/charges` | Crear cargo con token de pago |
 | GET | `/api/v1/payments/{payment_id}` | Consultar un pago |
@@ -93,5 +94,5 @@ PYTHONPATH=services/payments/src pytest services/payments/tests/ -v
 - Este repo backend deja listo el contrato token-only para integrarse luego con Stripe Elements desde el frontend.
 - En el MVP actual el gateway por defecto es simulado para permitir pruebas automatizadas sin depender de servicios externos.
 - Si `PAYMENT_PROVIDER=stripe_test` y las llaves estan configuradas, el servicio expone el flujo `create-intent` + `finalize` + `webhook` para Stripe test mode.
-- Los eventos `reservation.confirmation.requested` e `inventory.update.requested` dejan trazabilidad para la futura integracion asincrona.
+- Los eventos `reservation.confirmation.requested`, `notification.payment_confirmation.requested` e `inventory.update.requested` dejan trazabilidad para la futura integracion asincrona.
 - El modelo persiste relaciones referenciales minimas entre `payment`, `payment_checkout_session`, `payment_event` y `payment_audit_log`.
