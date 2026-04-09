@@ -1,0 +1,28 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+    commands:
+      - pip install --upgrade pip
+      - pip install -r requirements.txt
+
+  pre_build:
+    commands:
+      - echo "Running tests..."
+      - PYTHONPATH=src pytest tests/ -v
+
+  build:
+    commands:
+      - echo "Building Docker image..."
+      - docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .
+
+  post_build:
+    commands:
+      - echo "Pushing Docker image..."
+      - docker push $IMAGE_REPO_NAME:$IMAGE_TAG
+
+artifacts:
+  files:
+    - '**/*'

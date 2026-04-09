@@ -11,6 +11,7 @@ travelhub_miso/
 ├── services/
 │   ├── users/          # Gestión de usuarios y roles
 │   ├── security/       # Autenticación, OTP y JWT
+│   ├── properties/     # Detalles de propiedades
 │   └── reservations/   # Creación y consulta de reservas
 ├── docker-compose.yml  # Orquestación local
 ├── init-schemas.sql    # Creación de schemas en PostgreSQL
@@ -54,7 +55,8 @@ service/
 |----------|--------|-----------|-------------|
 | [users](services/users/README.md) | 8000 | `users_schema` | Gestión de usuarios y roles |
 | [security](services/security/README.md) | 8001 | `security_schema` | Autenticación, OTP y tokens JWT |
-| [reservations](services/reservations/) | 8002 | `reservations_schema` | Creación y consulta de reservas |
+| [properties](services/properties/README.md) | 8003 | `properties_schema` | Detalles de propiedades y hospedajes |
+| [reservations](services/reservations/README.md) | 8002 | `reservations_schema` | Creación y consulta de reservas |
 
 ## Ejecución local
 
