@@ -337,6 +337,13 @@ def test_list_events_returns_created_events(client):
     assert len(response.json()) == 4
 
 
+def test_list_events_returns_404_for_unknown_payment(client):
+    response = client.get(f"/api/v1/payments/{uuid4()}/events")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Pago no encontrado."}
+
+
 def test_tls_header_can_be_enforced(client, monkeypatch):
     monkeypatch.setattr(
         payments_router,
@@ -404,6 +411,15 @@ def test_create_checkout_session_returns_transaction_metadata(client, monkeypatc
     assert body["provider_code"] == "stripe_test"
     assert body["stripe_enabled"] is True
     assert body["publishable_key"] == "pk_test_example"
+
+
+def test_create_charge_is_disabled_when_provider_is_not_fake_stripe(client, monkeypatch):
+    monkeypatch.setenv("PAYMENT_PROVIDER", "stripe_test")
+
+    response = client.post("/api/v1/payments/charges", json=_payload(), headers=SECURE_HEADERS)
+
+    assert response.status_code == 400
+    assert "PAYMENT_PROVIDER=fake_stripe" in response.json()["detail"]
 
 
 def test_finalize_stripe_payment_materializes_confirmed_payment(client, test_engine, monkeypatch):

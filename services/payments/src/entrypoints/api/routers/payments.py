@@ -39,6 +39,7 @@ from errors import (
     PaymentNotFoundError,
     StripeConfigurationError,
     StripeWebhookVerificationError,
+    UnsupportedPaymentOperationError,
 )
 
 router = APIRouter(prefix="/payments", tags=["payments"])
@@ -175,6 +176,11 @@ def create_charge(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),
         )
+    except UnsupportedPaymentOperationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        )
 
 
 @router.get("/{payment_id}", response_model=PaymentPublicResponse, status_code=status.HTTP_200_OK)
@@ -216,4 +222,10 @@ def list_payment_events(
     payment_id: UUID,
     use_case: ListPaymentEventsUseCase = Depends(get_list_payment_events_use_case),
 ) -> list[PaymentEventResponse]:
-    return use_case.execute(payment_id)
+    try:
+        return use_case.execute(payment_id)
+    except PaymentNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Pago no encontrado.",
+        )
