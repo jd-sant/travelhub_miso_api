@@ -1,11 +1,12 @@
 from fastapi import Depends
 from sqlmodel import Session
 
-from adapters.gateways.stripe_gateway import FakeStripePaymentGateway
+from adapters.gateways.stripe_gateway import FakeStripePaymentGateway, UnsupportedDirectChargeGateway
 from adapters.gateways.stripe_checkout_gateway import StripeSdkCheckoutGateway
 from adapters.repositories.payment_checkout_repository import SQLModelPaymentCheckoutRepository
 from adapters.repositories.payment_audit_repository import SQLModelPaymentAuditRepository
 from adapters.repositories.payment_repository import SQLModelPaymentRepository
+from core.config import settings
 from db.session import get_session
 from domain.ports.payment_audit_repository import PaymentAuditRepository
 from domain.ports.payment_checkout_repository import PaymentCheckoutRepository
@@ -40,7 +41,9 @@ def get_payment_audit_repository(
 
 
 def get_payment_gateway() -> PaymentGateway:
-    return FakeStripePaymentGateway()
+    if settings.payment_provider == "fake_stripe":
+        return FakeStripePaymentGateway()
+    return UnsupportedDirectChargeGateway(settings.payment_provider)
 
 
 def get_stripe_checkout_gateway() -> StripeCheckoutGateway:

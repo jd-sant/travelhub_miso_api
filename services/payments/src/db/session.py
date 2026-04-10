@@ -1,4 +1,5 @@
 from collections.abc import Generator
+import re
 
 from sqlalchemy import event, text
 from sqlmodel import SQLModel, Session, create_engine
@@ -21,11 +22,22 @@ engine = create_engine(
 
 if _is_postgres:
 
+    _SCHEMA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+    def _validated_schema_name() -> str:
+        schema_name = settings.db_schema.strip()
+        if not _SCHEMA_IDENTIFIER_RE.fullmatch(schema_name):
+            raise RuntimeError(
+                "DB_SCHEMA debe ser un identificador SQL valido para el schema de payments."
+            )
+        return schema_name
+
     @event.listens_for(engine, "connect")
     def _set_search_path(dbapi_connection, connection_record):
+        schema_name = _validated_schema_name()
         cursor = dbapi_connection.cursor()
         cursor.execute(
-            f"SET search_path TO {settings.db_schema}, public"
+            f'SET search_path TO "{schema_name}", public'
         )
         cursor.close()
         dbapi_connection.commit()
@@ -33,9 +45,10 @@ if _is_postgres:
 
 def create_db_and_tables() -> None:
     if _is_postgres:
+        schema_name = _validated_schema_name()
         with engine.connect() as conn:
             conn.execute(
-                text(f"CREATE SCHEMA IF NOT EXISTS {settings.db_schema}")
+                text(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}"')
             )
             conn.commit()
     SQLModel.metadata.create_all(engine)

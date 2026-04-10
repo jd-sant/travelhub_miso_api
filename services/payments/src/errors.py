@@ -20,6 +20,10 @@ class InsecureTransportError(Exception):
     pass
 
 
+class UnsupportedPaymentOperationError(Exception):
+    pass
+
+
 class PaymentCheckoutSessionNotFoundError(Exception):
     pass
 
