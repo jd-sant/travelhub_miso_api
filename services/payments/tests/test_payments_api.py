@@ -500,6 +500,11 @@ def test_finalize_stripe_payment_materializes_confirmed_payment(client, test_eng
 
     assert stored_session is not None
     assert stored_session.status == "confirmed"
+    assert stored_session.confirmation_token_id is not None
+    assert stored_session.confirmation_token_id.startswith("enc:v1:")
+    assert stored_session.confirmation_token_id != "ctoken_test_123"
+    assert stored_session.client_secret is not None
+    assert stored_session.client_secret.startswith("enc:v1:")
     assert stored_payment is not None
     assert stored_payment.gateway_charge_id == "pi_test_123"
     assert stored_payment.receipt_number is not None

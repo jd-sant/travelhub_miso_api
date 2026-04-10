@@ -1,6 +1,7 @@
 from sqlmodel import Session
 
 from adapters.models.payment_audit_log import PaymentAuditLog
+from core.security import sanitize_sensitive_data
 from domain.ports.payment_audit_repository import PaymentAuditRepository
 from domain.schemas.audit import PaymentAuditLogRecord
 
@@ -18,7 +19,7 @@ class SQLModelPaymentAuditRepository(PaymentAuditRepository):
             entity_id=log.entity_id,
             action=log.action,
             ip_address=log.ip_address,
-            payload=log.payload,
+            payload=sanitize_sensitive_data(log.payload),
             created_at=log.created_at,
         )
         self.session.add(model)
