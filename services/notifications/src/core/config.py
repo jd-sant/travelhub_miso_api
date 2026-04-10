@@ -4,6 +4,10 @@ from functools import lru_cache
 
 class Settings:
     @property
+    def app_env(self) -> str:
+        return os.getenv("ENV", os.getenv("APP_ENV", "development")).lower()
+
+    @property
     def rds_hostname(self) -> str:
         return os.getenv("RDS_HOSTNAME", "localhost")
 
@@ -63,7 +67,22 @@ class Settings:
 
     @property
     def internal_api_key(self) -> str:
-        return os.getenv("INTERNAL_API_KEY", "travelhub-internal-secret-key")
+        value = os.getenv("INTERNAL_API_KEY")
+        if value:
+            return value
+        if self.app_env not in ("development", "dev", "test"):
+            raise RuntimeError(
+                "INTERNAL_API_KEY debe estar configurado en entornos de produccion."
+            )
+        return "dev-internal-key-change-me"
+
+    @property
+    def payments_service_url(self) -> str:
+        return os.getenv("PAYMENTS_SERVICE_URL", "http://payments:8000").rstrip("/")
+
+    @property
+    def users_service_url(self) -> str:
+        return os.getenv("USERS_SERVICE_URL", "http://users:8000").rstrip("/")
 
     @property
     def skip_db_init_on_startup(self) -> bool:

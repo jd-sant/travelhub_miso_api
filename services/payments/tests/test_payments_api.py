@@ -13,7 +13,7 @@ from adapters.models.payment_audit_log import PaymentAuditLog
 from adapters.models.payment_checkout_session import PaymentCheckoutSession
 from adapters.models.payment import Payment
 from adapters.models.payment_event import PaymentEvent
-from assembly import get_stripe_checkout_gateway
+from assembly import get_notification_dispatcher, get_stripe_checkout_gateway
 from core.config import settings
 from core.security import build_request_checksum, hash_token
 from db.session import get_session
@@ -68,6 +68,17 @@ class FakeStripeCheckoutGateway:
                 }
             },
         }
+
+
+class FakeNotificationDispatcher:
+    def __init__(self, should_fail: bool = False):
+        self.should_fail = should_fail
+        self.calls = []
+
+    def dispatch_payment_confirmation(self, *, payment_id, source_ip=None):
+        self.calls.append({"payment_id": payment_id, "source_ip": source_ip})
+        if self.should_fail:
+            raise RuntimeError("notifications unavailable")
 
 
 def _build_app(test_engine):
@@ -201,7 +212,10 @@ def test_create_payment_success_generates_receipt_and_events(client, test_engine
         "inventory.update.requested",
         "receipt.generated",
     }
-    assert {log.action for log in stored_audit_logs} == {"payment.charge.confirmed"}
+    assert {log.action for log in stored_audit_logs} == {
+        "payment.charge.confirmed",
+        "notification.payment_confirmation.requested",
+    }
 
 
 def test_create_payment_failure_returns_clear_reason(client, test_engine):
@@ -220,6 +234,33 @@ def test_create_payment_failure_returns_clear_reason(client, test_engine):
         stored_events = session.exec(select(PaymentEvent)).all()
 
     assert [event.event_type for event in stored_events] == ["payment.failed"]
+
+
+def test_create_payment_success_dispatches_notification_request(client):
+    dispatcher = FakeNotificationDispatcher()
+    client.app.dependency_overrides[get_notification_dispatcher] = lambda: dispatcher
+
+    response = client.post("/api/v1/payments/charges", json=_payload(), headers=SECURE_HEADERS)
+
+    assert response.status_code == 201
+    assert len(dispatcher.calls) == 1
+    assert str(dispatcher.calls[0]["payment_id"]) == response.json()["payment_id"]
+
+
+def test_create_payment_success_does_not_fail_when_notification_dispatch_fails(client, test_engine):
+    dispatcher = FakeNotificationDispatcher(should_fail=True)
+    client.app.dependency_overrides[get_notification_dispatcher] = lambda: dispatcher
+
+    response = client.post("/api/v1/payments/charges", json=_payload(), headers=SECURE_HEADERS)
+
+    assert response.status_code == 201
+
+    with Session(test_engine) as session:
+        stored_audit_logs = session.exec(select(PaymentAuditLog)).all()
+
+    assert "notification.payment_confirmation.dispatch_failed" in {
+        log.action for log in stored_audit_logs
+    }
 
 
 def test_create_payment_card_declined_returns_clear_reason(client):
@@ -427,7 +468,9 @@ def test_finalize_stripe_payment_materializes_confirmed_payment(client, test_eng
     monkeypatch.setenv("STRIPE_SECRET_KEY", "sk_test_example")
     monkeypatch.setenv("STRIPE_PUBLISHABLE_KEY", "pk_test_example")
     gateway = FakeStripeCheckoutGateway(finalize_status="succeeded")
+    dispatcher = FakeNotificationDispatcher()
     client.app.dependency_overrides[get_stripe_checkout_gateway] = lambda: gateway
+    client.app.dependency_overrides[get_notification_dispatcher] = lambda: dispatcher
 
     create_response = client.post(
         "/api/v1/payments/create-intent",
@@ -460,6 +503,8 @@ def test_finalize_stripe_payment_materializes_confirmed_payment(client, test_eng
     assert stored_payment is not None
     assert stored_payment.gateway_charge_id == "pi_test_123"
     assert stored_payment.receipt_number is not None
+    assert len(dispatcher.calls) == 1
+    assert str(dispatcher.calls[0]["payment_id"]) == body["payment_id"]
 
 
 def test_get_payment_confirmation_returns_checkout_summary(client, monkeypatch):

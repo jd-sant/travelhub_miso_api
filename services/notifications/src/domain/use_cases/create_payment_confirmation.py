@@ -5,16 +5,20 @@ from domain.ports.delivery_attempt_repository import DeliveryAttemptRepository
 from domain.ports.email_sender import EmailSender
 from domain.ports.notification_audit_repository import NotificationAuditRepository
 from domain.ports.notification_repository import NotificationRepository
+from domain.ports.payment_confirmation_source import PaymentConfirmationSource
+from domain.ports.traveler_profile_source import TravelerProfileSource
 from domain.schemas.notification import (
     DeliveryAttemptStatus,
     NotificationAuditLogRecord,
     NotificationDeliveryAttemptRecord,
     NotificationRecord,
+    PaymentConfirmationSourceRecord,
     NotificationResponse,
     NotificationStatus,
     PaymentConfirmationRequest,
 )
 from domain.use_cases.base import BaseUseCase
+from errors import InvalidPaymentConfirmationError
 
 
 class CreatePaymentConfirmationUseCase(
@@ -25,29 +29,44 @@ class CreatePaymentConfirmationUseCase(
         notification_repository: NotificationRepository,
         delivery_attempt_repository: DeliveryAttemptRepository,
         audit_repository: NotificationAuditRepository,
+        payment_confirmation_source: PaymentConfirmationSource,
+        traveler_profile_source: TravelerProfileSource,
         email_sender: EmailSender,
     ):
         self.notification_repository = notification_repository
         self.delivery_attempt_repository = delivery_attempt_repository
         self.audit_repository = audit_repository
+        self.payment_confirmation_source = payment_confirmation_source
+        self.traveler_profile_source = traveler_profile_source
         self.email_sender = email_sender
 
     def execute(self, payload: PaymentConfirmationRequest) -> NotificationResponse:
+        existing = self.notification_repository.get_by_payment_id(payload.payment_id)
+        if existing is not None:
+            return self._to_response(existing)
+
         now = datetime.now(timezone.utc)
-        subject = f"Confirmacion de pago de la reserva {payload.reservation_id}"
-        body = self._build_body(payload)
+        confirmation = self.payment_confirmation_source.get_confirmation(payload.payment_id)
+        self._assert_confirmed_payment(confirmation)
+        traveler = self.traveler_profile_source.get_traveler(confirmation.traveler_id)
+
+        subject = f"Confirmacion de pago de la reserva {confirmation.reservation_id}"
+        body = self._build_body(confirmation, traveler.full_name)
         notification = NotificationRecord(
             notification_id=uuid4(),
-            traveler_id=payload.traveler_id,
-            reservation_id=payload.reservation_id,
-            payment_id=payload.payment_id,
+            traveler_id=confirmation.traveler_id,
+            reservation_id=confirmation.reservation_id,
+            payment_id=confirmation.payment_id,
             channel="email",
             template_code="payment_confirmation_v1",
             status=NotificationStatus.pending,
             subject=subject,
-            recipient_email=payload.recipient_email,
-            recipient_name=payload.recipient_name,
-            payload=payload.model_dump(mode="json"),
+            recipient_email=traveler.email,
+            recipient_name=traveler.full_name,
+            payload={
+                "payment_confirmation": confirmation.model_dump(mode="json"),
+                "traveler": traveler.model_dump(mode="json"),
+            },
             created_at=now,
             updated_at=now,
         )
@@ -124,9 +143,19 @@ class CreatePaymentConfirmationUseCase(
             updated_at=stored.updated_at,
         )
 
-    def _build_body(self, payload: PaymentConfirmationRequest) -> str:
+    def _assert_confirmed_payment(self, confirmation: PaymentConfirmationSourceRecord) -> None:
+        if confirmation.status != "confirmed":
+            raise InvalidPaymentConfirmationError(
+                "Solo se pueden notificar pagos que ya esten confirmados."
+            )
+        if confirmation.receipt_number is None:
+            raise InvalidPaymentConfirmationError(
+                "El pago confirmado no tiene recibo disponible para notificacion."
+            )
+
+    def _build_body(self, payload: PaymentConfirmationSourceRecord, recipient_name: str) -> str:
         lines = [
-            f"Hola {payload.recipient_name},",
+            f"Hola {recipient_name},",
             "",
             "Tu pago fue confirmado exitosamente.",
             f"Reserva: {payload.reservation_id}",
@@ -142,3 +171,15 @@ class CreatePaymentConfirmationUseCase(
         if payload.receipt_number:
             lines.append(f"Recibo: {payload.receipt_number}")
         return "\n".join(lines)
+
+    def _to_response(self, notification: NotificationRecord) -> NotificationResponse:
+        return NotificationResponse(
+            notification_id=notification.notification_id,
+            status=notification.status,
+            recipient_email=notification.recipient_email,
+            subject=notification.subject,
+            payment_id=notification.payment_id,
+            reservation_id=notification.reservation_id,
+            created_at=notification.created_at,
+            updated_at=notification.updated_at,
+        )

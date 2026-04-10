@@ -65,3 +65,9 @@ class SQLModelNotificationRepository(NotificationRepository):
             select(Notification).where(Notification.id == notification_id)
         ).first()
         return _to_record(model) if model else None
+
+    def get_by_payment_id(self, payment_id: UUID) -> NotificationRecord | None:
+        model = self.session.exec(
+            select(Notification).where(Notification.payment_id == payment_id)
+        ).first()
+        return _to_record(model) if model else None

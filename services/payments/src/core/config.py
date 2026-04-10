@@ -100,6 +100,22 @@ class Settings:
         )
         return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
+    @property
+    def notifications_service_url(self) -> str:
+        return os.getenv("NOTIFICATIONS_SERVICE_URL", "").rstrip("/")
+
+    @property
+    def internal_api_key(self) -> str:
+        value = os.getenv("INTERNAL_API_KEY")
+        if value:
+            return value
+        env = os.getenv("ENV", os.getenv("APP_ENV", "development")).lower()
+        if env not in ("development", "dev", "test"):
+            raise RuntimeError(
+                "INTERNAL_API_KEY debe estar configurado en entornos de produccion."
+            )
+        return "dev-internal-key-change-me"
+
 
 @lru_cache
 def get_settings() -> Settings:

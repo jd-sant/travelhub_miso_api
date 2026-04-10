@@ -19,18 +19,7 @@ class DeliveryAttemptStatus(str, Enum):
 class PaymentConfirmationRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    reservation_id: UUID
-    traveler_id: UUID
     payment_id: UUID
-    recipient_email: str = Field(min_length=5, max_length=255)
-    recipient_name: str = Field(min_length=2, max_length=100)
-    property_name: str | None = Field(default=None, min_length=2, max_length=255)
-    check_in_date: date | None = None
-    check_out_date: date | None = None
-    amount_in_cents: int = Field(gt=0)
-    currency: str = Field(min_length=3, max_length=3)
-    receipt_id: UUID | None = None
-    receipt_number: str | None = None
     source_ip: str | None = Field(default=None, max_length=64)
 
 
@@ -48,6 +37,26 @@ class NotificationRecord(BaseModel):
     payload: dict
     created_at: datetime
     updated_at: datetime
+
+
+class PaymentConfirmationSourceRecord(BaseModel):
+    payment_id: UUID
+    reservation_id: UUID
+    traveler_id: UUID
+    status: str
+    amount_in_cents: int = Field(gt=0)
+    currency: str = Field(min_length=3, max_length=3)
+    receipt_id: UUID | None = None
+    receipt_number: str | None = None
+    property_name: str | None = None
+    check_in_date: date | None = None
+    check_out_date: date | None = None
+
+
+class TravelerProfileRecord(BaseModel):
+    traveler_id: UUID
+    email: str = Field(min_length=5, max_length=255)
+    full_name: str = Field(min_length=2, max_length=100)
 
 
 class NotificationDeliveryAttemptRecord(BaseModel):

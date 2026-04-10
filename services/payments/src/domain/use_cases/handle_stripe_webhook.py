@@ -10,6 +10,7 @@ from core.security import (
 )
 from domain.ports.payment_audit_repository import PaymentAuditRepository
 from domain.ports.payment_checkout_repository import PaymentCheckoutRepository
+from domain.ports.notification_dispatcher import NotificationDispatcher
 from domain.ports.payment_repository import PaymentRepository
 from domain.ports.stripe_checkout_gateway import StripeCheckoutGateway
 from domain.schemas.audit import PaymentAuditLogRecord
@@ -26,11 +27,13 @@ class HandleStripeWebhookUseCase(BaseUseCase[tuple[bytes, str], None]):
         payment_repository: PaymentRepository,
         audit_repository: PaymentAuditRepository,
         gateway: StripeCheckoutGateway,
+        notification_dispatcher: NotificationDispatcher,
     ):
         self.checkout_repository = checkout_repository
         self.payment_repository = payment_repository
         self.audit_repository = audit_repository
         self.gateway = gateway
+        self.notification_dispatcher = notification_dispatcher
 
     def execute(
         self,
@@ -108,6 +111,8 @@ class HandleStripeWebhookUseCase(BaseUseCase[tuple[bytes, str], None]):
                 created_at=stored_payment.updated_at,
             )
         )
+        if stored_payment.status == PaymentStatus.confirmed:
+            self._dispatch_notification_request(stored_payment.payment_id, source_ip)
         session.payment_id = stored_payment.payment_id
         session.status = stored_payment.status.value
         session.error = stored_payment.failure_reason
@@ -217,3 +222,37 @@ class HandleStripeWebhookUseCase(BaseUseCase[tuple[bytes, str], None]):
             )
             for event_type in event_types
         ]
+
+    def _dispatch_notification_request(
+        self,
+        payment_id,
+        source_ip: str | None,
+    ) -> None:
+        try:
+            self.notification_dispatcher.dispatch_payment_confirmation(
+                payment_id=payment_id,
+                source_ip=source_ip,
+            )
+            self.audit_repository.add_log(
+                PaymentAuditLogRecord(
+                    payment_id=payment_id,
+                    entity_type="payment",
+                    entity_id=str(payment_id),
+                    action="notification.payment_confirmation.requested",
+                    ip_address=source_ip,
+                    payload={"dispatch_status": "requested"},
+                    created_at=datetime.now(timezone.utc),
+                )
+            )
+        except Exception as exc:  # noqa: BLE001
+            self.audit_repository.add_log(
+                PaymentAuditLogRecord(
+                    payment_id=payment_id,
+                    entity_type="payment",
+                    entity_id=str(payment_id),
+                    action="notification.payment_confirmation.dispatch_failed",
+                    ip_address=source_ip,
+                    payload={"error": str(exc)},
+                    created_at=datetime.now(timezone.utc),
+                )
+            )

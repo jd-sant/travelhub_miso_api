@@ -16,3 +16,7 @@ class NotificationRepository(ABC):
     @abstractmethod
     def get_by_id(self, notification_id: UUID) -> NotificationRecord | None:
         raise NotImplementedError
+
+    @abstractmethod
+    def get_by_payment_id(self, payment_id: UUID) -> NotificationRecord | None:
+        raise NotImplementedError
