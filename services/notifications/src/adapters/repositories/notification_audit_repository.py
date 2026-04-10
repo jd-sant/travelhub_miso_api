@@ -1,6 +1,7 @@
 from sqlmodel import Session
 
 from adapters.models.notification_audit_log import NotificationAuditLog
+from core.privacy import sanitize_sensitive_data
 from domain.ports.notification_audit_repository import NotificationAuditRepository
 from domain.schemas.notification import NotificationAuditLogRecord
 
@@ -17,7 +18,7 @@ class SQLModelNotificationAuditRepository(NotificationAuditRepository):
             entity_id=log.entity_id,
             action=log.action,
             ip_address=log.ip_address,
-            payload=log.payload,
+            payload=sanitize_sensitive_data(log.payload),
             created_at=log.created_at,
         )
         self.session.add(model)

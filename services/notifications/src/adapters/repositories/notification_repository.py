@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlmodel import Session, select
 
 from adapters.models.notification import Notification
+from core.privacy import sanitize_sensitive_data
 from domain.ports.notification_repository import NotificationRepository
 from domain.schemas.notification import NotificationRecord, NotificationStatus
 
@@ -41,7 +42,7 @@ class SQLModelNotificationRepository(NotificationRepository):
             subject=notification.subject,
             recipient_email=notification.recipient_email,
             recipient_name=notification.recipient_name,
-            payload=notification.payload,
+            payload=sanitize_sensitive_data(notification.payload),
             created_at=notification.created_at,
             updated_at=notification.updated_at,
         )

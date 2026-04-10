@@ -7,6 +7,7 @@ from domain.ports.notification_audit_repository import NotificationAuditReposito
 from domain.ports.notification_repository import NotificationRepository
 from domain.ports.payment_confirmation_source import PaymentConfirmationSource
 from domain.ports.traveler_profile_source import TravelerProfileSource
+from core.privacy import mask_email
 from domain.schemas.notification import (
     DeliveryAttemptStatus,
     NotificationAuditLogRecord,
@@ -63,10 +64,7 @@ class CreatePaymentConfirmationUseCase(
             subject=subject,
             recipient_email=traveler.email,
             recipient_name=traveler.full_name,
-            payload={
-                "payment_confirmation": confirmation.model_dump(mode="json"),
-                "traveler": traveler.model_dump(mode="json"),
-            },
+            payload=self._build_notification_payload(confirmation, traveler.email),
             created_at=now,
             updated_at=now,
         )
@@ -171,6 +169,38 @@ class CreatePaymentConfirmationUseCase(
         if payload.receipt_number:
             lines.append(f"Recibo: {payload.receipt_number}")
         return "\n".join(lines)
+
+    def _build_notification_payload(
+        self,
+        confirmation: PaymentConfirmationSourceRecord,
+        recipient_email: str,
+    ) -> dict:
+        return {
+            "payment_summary": {
+                "payment_id": str(confirmation.payment_id),
+                "reservation_id": str(confirmation.reservation_id),
+                "traveler_id": str(confirmation.traveler_id),
+                "status": confirmation.status,
+                "amount_in_cents": confirmation.amount_in_cents,
+                "currency": confirmation.currency,
+                "receipt_id": str(confirmation.receipt_id) if confirmation.receipt_id else None,
+                "receipt_number": confirmation.receipt_number,
+                "property_name": confirmation.property_name,
+                "check_in_date": (
+                    confirmation.check_in_date.isoformat()
+                    if confirmation.check_in_date
+                    else None
+                ),
+                "check_out_date": (
+                    confirmation.check_out_date.isoformat()
+                    if confirmation.check_out_date
+                    else None
+                ),
+            },
+            "recipient": {
+                "email_masked": mask_email(recipient_email),
+            },
+        }
 
     def _to_response(self, notification: NotificationRecord) -> NotificationResponse:
         return NotificationResponse(
