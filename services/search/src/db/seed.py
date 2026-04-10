@@ -44,7 +44,7 @@ def _is_seed_enabled() -> bool:
     db_url = str(engine.url)
     if db_url.startswith("sqlite"):
         return True
-    if db_url.startswith("postgresql") and settings.is_development:
+    if db_url.startswith("postgresql") and settings.is_local_dev:
         return True
     return False
 

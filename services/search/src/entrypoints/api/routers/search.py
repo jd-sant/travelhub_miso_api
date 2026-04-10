@@ -134,7 +134,7 @@ def _calculate_total_pages(total: int, page_size: int) -> int:
     return (total + page_size - 1) // page_size
 
 
-if settings.is_development:
+if settings.is_local_dev:
 
     @router.get("/test-dataset")
     def list_test_dataset(

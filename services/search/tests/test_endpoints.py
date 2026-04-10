@@ -14,14 +14,7 @@ class TestSearchHealthEndpoints:
     def test_list_test_dataset(self, client):
         response = client.get("/api/v1/search/test-dataset")
 
-        assert response.status_code == 200
-        payload = response.json()
-        assert payload["counts"]["properties"] >= 1
-        assert payload["counts"]["room_types"] >= 1
-        assert payload["counts"]["rate_plans"] >= 1
-        assert payload["counts"]["amenities"] >= 1
-        assert payload["counts"]["services"] >= 1
-        assert len(payload["properties"]) >= 1
+        assert response.status_code == 404
 
     def test_search_properties_success(self, client):
         response = client.get(

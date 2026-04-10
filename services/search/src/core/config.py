@@ -9,7 +9,11 @@ class Settings:
 
     @property
     def is_development(self) -> bool:
-        return self.environment in ("development", "dev", "test", "local")
+        return self.environment in ("development", "dev")
+
+    @property
+    def is_local_dev(self) -> bool:
+        return self.environment in ("development", "dev", "local")
 
     @property
     def is_test(self) -> bool:
@@ -45,7 +49,7 @@ class Settings:
         if url:
             return url
 
-        if self.is_development:
+        if self.is_local_dev:
             return os.getenv("SQLITE_DATABASE_URL", "sqlite:///./search.db")
 
         return (
@@ -63,7 +67,7 @@ class Settings:
         if raw_origins:
             return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
 
-        if self.is_development:
+        if self.is_local_dev:
             return [
                 "http://localhost:3000",
                 "http://127.0.0.1:3000",
