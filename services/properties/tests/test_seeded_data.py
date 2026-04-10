@@ -39,7 +39,7 @@ def test_get_renaissance_estate(client: TestClient):
     
     assert data["id"] == str(RENAISSANCE_ESTATE_ID)
     assert data["name"] == "Mansión Renacentista & Viñedo Privado"
-    assert data["location"] == "Fiesole, Florence"
+    assert data["location"] == "Fiesole, Florencia"
     assert data["bedrooms"] == 4
     assert data["bathrooms"] == 4.5
     assert data["max_guests"] == 12
@@ -68,7 +68,7 @@ def test_get_beachfront_penthouse(client: TestClient):
     
     assert data["id"] == str(BEACHFRONT_PENTHOUSE_ID)
     assert data["name"] == "Penthouse Moderno Frente a la Playa"
-    assert data["location"] == "Miami Beach, Florida"
+    assert data["location"] == "Playa Miami, Florida"
     assert data["bedrooms"] == 3
     assert data["bathrooms"] == 3.0
     assert data["max_guests"] == 8
@@ -88,7 +88,7 @@ def test_get_alpine_lodge(client: TestClient):
     
     assert data["id"] == str(ALPINE_LODGE_ID)
     assert data["name"] == "Refugio Alpino de Montaña"
-    assert data["location"] == "Chamonix, French Alps"
+    assert data["location"] == "Chamonix, Alpes Franceses"
     assert data["bedrooms"] == 5
     assert data["bathrooms"] == 4.0
     assert data["max_guests"] == 14
@@ -108,7 +108,7 @@ def test_get_tropical_villa(client: TestClient):
     
     assert data["id"] == str(TROPICAL_VILLA_ID)
     assert data["name"] == "Villa Paraíso Tropical"
-    assert data["location"] == "Bora Bora, French Polynesia"
+    assert data["location"] == "Bora Bora, Polinesia Francesa"
     assert data["bedrooms"] == 4
     assert data["bathrooms"] == 4.0
     assert data["max_guests"] == 10
