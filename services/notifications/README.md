@@ -22,3 +22,5 @@ Microservicio responsable de resolver la informacion de confirmacion del pago, p
 - Los endpoints operativos requieren `X-Internal-Api-Key`.
 - El servicio nace listo para desacoplarse hacia cola/eventos en una fase posterior.
 - En desarrollo usa `LogEmailSender`; si hay configuracion SMTP, usa sender SMTP.
+- El payload persistido de la notificacion conserva solo un snapshot minimo del comprobante y email enmascarado.
+- Los logs y payloads de auditoria se saneian para evitar exponer referencias financieras sensibles.

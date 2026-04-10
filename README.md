@@ -133,6 +133,13 @@ El workflow `pr-test-validation.yml` se ejecuta en cada PR hacia `develop`, `rel
 
 Cada servicio mantiene su propio `buildspec.yml` para pruebas y build de imagen.
 
+## Seguridad financiera
+
+- `payments` soporta flujo token-only con Stripe (`stripe_test`) y endurecimiento opcional por `PAYMENTS_COMPLIANCE_MODE`.
+- El backend rechaza campos de tarjeta fuera del contrato HTTP y no persiste PAN, CVV ni fecha de expiracion.
+- Las referencias sensibles de checkout se cifran en reposo a nivel de aplicacion.
+- Las suites de `payments` y `notifications` incluyen pruebas de postura de seguridad ejecutadas por CI.
+
 ## Variables de entorno
 
 Ver `.env.example` para la lista minima. Variables principales:
