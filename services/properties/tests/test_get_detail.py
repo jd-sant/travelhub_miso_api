@@ -28,10 +28,10 @@ def test_list_properties_success(session: Session):
     # Should have 4 seeded properties
     assert len(result) == 4
     names = {prop.name for prop in result}
-    assert "Renaissance Estate & Private Vineyard" in names
-    assert "Modern Beachfront Penthouse" in names
-    assert "Alpine Mountain Lodge" in names
-    assert "Tropical Paradise Villa" in names
+    assert "Mansión Renacentista & Viñedo Privado" in names
+    assert "Penthouse Moderno Frente a la Playa" in names
+    assert "Refugio Alpino de Montaña" in names
+    assert "Villa Paraíso Tropical" in names
 
 
 def test_get_property_detail_with_images_and_reviews(session: Session):

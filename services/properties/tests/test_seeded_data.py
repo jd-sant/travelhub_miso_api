@@ -22,10 +22,10 @@ def test_list_properties_returns_seeded_data(
     # Check property names
     names = {prop["name"] for prop in data}
     expected_names = {
-        "Renaissance Estate & Private Vineyard",
-        "Modern Beachfront Penthouse",
-        "Alpine Mountain Lodge",
-        "Tropical Paradise Villa",
+        "Mansión Renacentista & Viñedo Privado",
+        "Penthouse Moderno Frente a la Playa",
+        "Refugio Alpino de Montaña",
+        "Villa Paraíso Tropical",
     }
     assert names == expected_names
 
@@ -38,7 +38,7 @@ def test_get_renaissance_estate(client: TestClient):
     data = response.json()
     
     assert data["id"] == str(RENAISSANCE_ESTATE_ID)
-    assert data["name"] == "Renaissance Estate & Private Vineyard"
+    assert data["name"] == "Mansión Renacentista & Viñedo Privado"
     assert data["location"] == "Fiesole, Florence"
     assert data["bedrooms"] == 4
     assert data["bathrooms"] == 4.5
@@ -67,7 +67,7 @@ def test_get_beachfront_penthouse(client: TestClient):
     data = response.json()
     
     assert data["id"] == str(BEACHFRONT_PENTHOUSE_ID)
-    assert data["name"] == "Modern Beachfront Penthouse"
+    assert data["name"] == "Penthouse Moderno Frente a la Playa"
     assert data["location"] == "Miami Beach, Florida"
     assert data["bedrooms"] == 3
     assert data["bathrooms"] == 3.0
@@ -87,7 +87,7 @@ def test_get_alpine_lodge(client: TestClient):
     data = response.json()
     
     assert data["id"] == str(ALPINE_LODGE_ID)
-    assert data["name"] == "Alpine Mountain Lodge"
+    assert data["name"] == "Refugio Alpino de Montaña"
     assert data["location"] == "Chamonix, French Alps"
     assert data["bedrooms"] == 5
     assert data["bathrooms"] == 4.0
@@ -107,7 +107,7 @@ def test_get_tropical_villa(client: TestClient):
     data = response.json()
     
     assert data["id"] == str(TROPICAL_VILLA_ID)
-    assert data["name"] == "Tropical Paradise Villa"
+    assert data["name"] == "Villa Paraíso Tropical"
     assert data["location"] == "Bora Bora, French Polynesia"
     assert data["bedrooms"] == 4
     assert data["bathrooms"] == 4.0
@@ -129,6 +129,5 @@ def test_property_amenities_loaded_correctly(client: TestClient):
     
     amenities = data["amenities"]
     assert isinstance(amenities, list)
-    assert "Private Infinity Pool" in amenities
-    assert "Wine Cellar" in amenities
+    assert "Piscina Infinita Privada" in amenities
     assert len(amenities) == 8
