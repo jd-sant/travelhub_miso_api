@@ -55,7 +55,7 @@ def test_get_renaissance_estate(client: TestClient):
     
     # Check reviews (should have 2)
     assert len(data["reviews"]) == 2
-    assert data["reviews"][0]["author"] == "Sarah Holkins"
+    assert data["reviews"][0]["author"] == "María González"
     assert data["reviews"][0]["rating"] == 5
 
 
