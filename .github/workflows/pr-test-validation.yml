@@ -114,6 +114,7 @@ jobs:
       ENV: test
       APP_ENV: test
       PAYMENT_INTEGRITY_SECRET: test-payments-secret
+      PAYMENTS_DATA_ENCRYPTION_KEY: test-payments-encryption-key
       PAYMENTS_TEST_DATABASE_URL: postgresql://travelhub_user:travelhub_pass@localhost:5432/travelhub
     steps:
       - name: Checkout repository
@@ -129,6 +130,9 @@ jobs:
 
       - name: Run payments tests
         run: PYTHONPATH=services/payments/src pytest services/payments/tests/ -v
+
+      - name: Run payments security posture scan
+        run: PYTHONPATH=services/payments/src pytest services/payments/tests/test_payments_security_posture.py -v
 
   test-reservations:
     needs: [validate-pr-description, detect-changes]
@@ -167,6 +171,9 @@ jobs:
 
       - name: Run notifications tests
         run: PYTHONPATH=services/notifications/src pytest services/notifications/tests/ -v
+
+      - name: Run notifications security posture scan
+        run: PYTHONPATH=services/notifications/src pytest services/notifications/tests/test_notifications_security_posture.py -v
 
   tests:
     name: tests
