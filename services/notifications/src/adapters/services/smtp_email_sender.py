@@ -1,4 +1,5 @@
 import smtplib
+import ssl
 from email.message import EmailMessage
 
 from core.config import settings
@@ -14,7 +15,7 @@ class SmtpEmailSender(EmailSender):
         message.set_content(body)
 
         with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as smtp:
-            smtp.starttls()
+            smtp.starttls(context=ssl.create_default_context())
             if settings.smtp_user:
                 smtp.login(settings.smtp_user, settings.smtp_password)
             smtp.send_message(message)

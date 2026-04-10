@@ -1,5 +1,6 @@
 import os
 from functools import lru_cache
+from urllib.parse import urlparse
 
 
 class Settings:
@@ -78,15 +79,28 @@ class Settings:
 
     @property
     def payments_service_url(self) -> str:
-        return os.getenv("PAYMENTS_SERVICE_URL", "http://payments:8000").rstrip("/")
+        value = os.getenv("PAYMENTS_SERVICE_URL", "http://payments:8000").rstrip("/")
+        self._assert_internal_service_url(value, "PAYMENTS_SERVICE_URL")
+        return value
 
     @property
     def users_service_url(self) -> str:
-        return os.getenv("USERS_SERVICE_URL", "http://users:8000").rstrip("/")
+        value = os.getenv("USERS_SERVICE_URL", "http://users:8000").rstrip("/")
+        self._assert_internal_service_url(value, "USERS_SERVICE_URL")
+        return value
 
     @property
     def skip_db_init_on_startup(self) -> bool:
         return os.getenv("SKIP_DB_INIT_ON_STARTUP", "False").lower() == "true"
+
+    def _assert_internal_service_url(self, value: str, variable_name: str) -> None:
+        parsed = urlparse(value)
+        if not parsed.scheme or not parsed.netloc:
+            raise RuntimeError(f"{variable_name} debe ser una URL absoluta valida.")
+        if self.app_env not in ("development", "dev", "test") and parsed.scheme != "https":
+            raise RuntimeError(
+                f"{variable_name} debe usar https en entornos no-dev."
+            )
 
 
 @lru_cache

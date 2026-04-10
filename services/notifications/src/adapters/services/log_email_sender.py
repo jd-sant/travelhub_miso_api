@@ -1,6 +1,7 @@
 import logging
 from uuid import uuid4
 
+from core.privacy import mask_email
 from domain.ports.email_sender import EmailSender
 
 logger = logging.getLogger(__name__)
@@ -13,9 +14,8 @@ class LogEmailSender(EmailSender):
             "Notification email sent",
             extra={
                 "message_id": message_id,
-                "recipient_email": recipient_email,
+                "recipient_email": mask_email(recipient_email),
                 "subject": subject,
-                "body": body,
             },
         )
         return message_id
