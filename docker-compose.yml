@@ -92,11 +92,7 @@ services:
       PYTHONPATH: /app/src
       ENV: ${ENV:-development}
       APP_ENV: ${APP_ENV:-development}
-      RDS_HOSTNAME: postgres
-      RDS_USERNAME: travelhub_user
-      RDS_PASSWORD: travelhub_pass
-      RDS_DB_NAME: travelhub
-      RDS_PORT: "5432"
+      DATABASE_URL: postgresql://travelhub_user:travelhub_pass@postgres:5432/travelhub
       DB_SCHEMA: search_schema
       DB_ECHO: "False"
     ports:

@@ -87,11 +87,6 @@ class SQLModelSearchRepository(SearchRepository):
             )
         )
 
-        if query.min_price is not None:
-            base_stmt = base_stmt.where(effective_price_expr >= query.min_price)
-        if query.max_price is not None:
-            base_stmt = base_stmt.where(effective_price_expr <= query.max_price)
-
         if amenities:
             amenity_match_subq = (
                 select(PropertyAmenity.property_id)
@@ -111,6 +106,11 @@ class SQLModelSearchRepository(SearchRepository):
             Property.imagen_principal_url,
             Property.rating,
         )
+
+        if query.min_price is not None:
+            grouped_stmt = grouped_stmt.having(min_price_expr >= query.min_price)
+        if query.max_price is not None:
+            grouped_stmt = grouped_stmt.having(min_price_expr <= query.max_price)
 
         total_stmt = select(func.count()).select_from(grouped_stmt.subquery())
         total = self.session.exec(total_stmt).one()
