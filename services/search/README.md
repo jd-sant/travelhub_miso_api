@@ -1,6 +1,6 @@
 # Search Service
 
-Microservicio de busqueda de propiedades de TravelHub.
+Microservicio de búsqueda de propiedades de TravelHub.
 
 ## API versionada
 
@@ -32,7 +32,7 @@ Microservicio de busqueda de propiedades de TravelHub.
 }
 ```
 
-### Busqueda de propiedades
+### Búsqueda de propiedades
 
 - `GET /api/v1/search`
 - Query params obligatorios:
