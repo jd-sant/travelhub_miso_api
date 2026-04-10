@@ -1,3 +1,4 @@
+import inspect
 from functools import wraps
 from typing import Callable
 
@@ -108,7 +109,7 @@ def require_role(required_role: str) -> Callable:
             return func(*args, **kwargs)
         
         # Retorna el wrapper apropiado (async o sync)
-        if hasattr(func, "__code__") and func.__code__.co_flags & 0x100:
+        if inspect.iscoroutinefunction(func):
             return async_wrapper
         else:
             return sync_wrapper

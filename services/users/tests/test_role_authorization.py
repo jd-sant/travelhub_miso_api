@@ -13,28 +13,27 @@ import jwt
 from adapters.models.role import Role
 
 
-def test_traveler_cannot_create_user_403(client, traveler_token, session):
+def test_anyone_can_register_without_token(client, session):
     """
-    Un usuario con rol "viajero" que intenta crear usuarios
-    recibe un 403 Forbidden.
+    El registro de usuario es público: cualquier persona puede crear
+    su propia cuenta sin necesidad de token.
     """
-    # Crear rol traveler en BD
     traveler_role = Role(name="traveler")
     session.add(traveler_role)
     session.commit()
-    
+
     response = client.post(
         "/api/v1/users",
-        headers={"Authorization": f"Bearer {traveler_token}"},
         json={
             "email": "newuser@example.com",
             "phone": "1234567890",
-            "password": "pass123",
+            "password": "pass1234",
+            "full_name": "New User",
         },
     )
-    
-    assert response.status_code == 403
-    assert "Se requiere rol 'admin'" in response.json()["detail"]
+
+    assert response.status_code == 201
+    assert response.json()["email"] == "newuser@example.com"
 
 
 def test_traveler_cannot_list_users_403(client, traveler_token, session):
@@ -73,10 +72,11 @@ def test_admin_can_create_user_201(client, admin_token, session):
         json={
             "email": "newuser@example.com",
             "phone": "1234567890",
-            "password": "pass123",
+            "password": "pass1234",
+            "full_name": "New User",
         },
     )
-    
+
     assert response.status_code == 201
     data = response.json()
     assert data["email"] == "newuser@example.com"
@@ -165,23 +165,11 @@ def test_hotel_role_receives_403_on_admin_endpoints(client, hotel_token, session
     assert "Se requiere rol 'admin'" in response.json()["detail"]
 
 
-def test_no_token_on_protected_endpoint_401(client, session):
+def test_no_token_on_protected_endpoint_401(client):
     """
-    Un endpoint protegido sin token de autenticación retorna 401.
+    GET /users está protegido: sin token retorna 401.
     """
-    # Crear rol traveler para que se asigne al nuevo usuario
-    traveler_role = Role(name="traveler")
-    session.add(traveler_role)
-    session.commit()
-    
-    response = client.post(
-        "/api/v1/users",
-        json={
-            "email": "test@example.com",
-            "phone": "1234567890",
-            "password": "pass123",
-        },
-    )
-    
+    response = client.get("/api/v1/users")
+
     assert response.status_code == 401
     assert "No autorizado" in response.json()["detail"]

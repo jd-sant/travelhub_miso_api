@@ -7,7 +7,6 @@ from sqlmodel import Session, select
 from adapters.models.role import Role
 from adapters.models.user import User
 from adapters.models.user_role import UserRole
-from core.roles import UserRole as UserRoleEnum
 from core.security import hash_password
 from domain.ports.user_repository import UserRepository
 from domain.schemas.user import UserCreateRequest, UserCredentialsData, UserResponse
@@ -45,17 +44,6 @@ class SQLModelUserRepository(UserRepository):
             self.session.rollback()
             raise UserConflictError("Conflict while creating user") from exc
         self.session.refresh(user)
-        
-        # Asignar rol por defecto (traveler)
-        traveler_role = self.session.exec(
-            select(Role).where(Role.name == UserRoleEnum.TRAVELER)
-        ).first()
-        
-        if traveler_role:
-            user_role = UserRole(user_id=user.id, role_id=traveler_role.id)
-            self.session.add(user_role)
-            self.session.commit()
-        
         return _to_response(user)
 
     def get_by_email(self, email: str) -> Optional[UserResponse]:
