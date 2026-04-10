@@ -3,13 +3,13 @@ from decimal import Decimal
 from sqlalchemy import and_, asc, desc, func
 from sqlmodel import Session, select
 
-from adapters.models import Amenidad
-from adapters.models import CalendarioInventario
-from adapters.models import CalendarioTarifas
-from adapters.models import PlanTarifa
-from adapters.models import Propiedad
-from adapters.models import PropiedadAmenidad
-from adapters.models import TipoHabitacion
+from adapters.models import Amenity
+from adapters.models import InventoryCalendar
+from adapters.models import Property
+from adapters.models import PropertyAmenity
+from adapters.models import RateCalendar
+from adapters.models import RatePlan
+from adapters.models import RoomType
 from domain.ports.search_repository import SearchRepository
 from domain.schemas.search import PropertySearchItem, SearchQuery, SearchResult
 
@@ -28,88 +28,88 @@ class SQLModelSearchRepository(SearchRepository):
                 page_size=query.page_size,
             )
 
-        amenidades = [a.strip().lower() for a in query.amenidades if a.strip()]
-        ciudad = query.ciudad.strip().lower()
+        amenities = [a.strip().lower() for a in query.amenities if a.strip()]
+        city = query.city.strip().lower()
 
         available_room_type_subq = (
-            select(CalendarioInventario.tipo_habitacion_id)
+            select(InventoryCalendar.room_type_id)
             .where(
                 and_(
-                    CalendarioInventario.fecha >= query.check_in,
-                    CalendarioInventario.fecha < query.check_out,
-                    CalendarioInventario.unidades_disponibles
-                    > CalendarioInventario.unidades_bloqueadas,
+                    InventoryCalendar.fecha >= query.check_in,
+                    InventoryCalendar.fecha < query.check_out,
+                    InventoryCalendar.unidades_disponibles
+                    > InventoryCalendar.unidades_bloqueadas,
                 )
             )
-            .group_by(CalendarioInventario.tipo_habitacion_id)
-            .having(func.count(func.distinct(CalendarioInventario.fecha)) == nights)
+            .group_by(InventoryCalendar.room_type_id)
+            .having(func.count(func.distinct(InventoryCalendar.fecha)) == nights)
         )
 
         avg_calendar_price_subq = (
-            select(func.avg(CalendarioTarifas.precio))
+            select(func.avg(RateCalendar.precio))
             .where(
                 and_(
-                    CalendarioTarifas.plan_tarifa_id == PlanTarifa.id,
-                    CalendarioTarifas.fecha >= query.check_in,
-                    CalendarioTarifas.fecha < query.check_out,
+                    RateCalendar.rate_plan_id == RatePlan.id,
+                    RateCalendar.fecha >= query.check_in,
+                    RateCalendar.fecha < query.check_out,
                 )
             )
-            .correlate(PlanTarifa)
+            .correlate(RatePlan)
             .scalar_subquery()
         )
 
-        effective_price_expr = func.coalesce(avg_calendar_price_subq, PlanTarifa.precio_base)
+        effective_price_expr = func.coalesce(avg_calendar_price_subq, RatePlan.precio_base)
         min_price_expr = func.min(effective_price_expr)
 
         base_stmt = (
             select(
-                Propiedad.id,
-                Propiedad.nombre,
-                Propiedad.ciudad,
-                Propiedad.pais,
-                Propiedad.capacidad_maxima,
-                Propiedad.imagen_principal_url,
-                Propiedad.rating,
+                Property.id,
+                Property.nombre,
+                Property.ciudad,
+                Property.pais,
+                Property.capacidad_maxima,
+                Property.imagen_principal_url,
+                Property.rating,
                 min_price_expr.label("precio_desde"),
-                func.min(PlanTarifa.moneda).label("moneda"),
+                func.min(RatePlan.moneda).label("moneda"),
             )
-            .join(TipoHabitacion, TipoHabitacion.propiedad_id == Propiedad.id)
-            .join(PlanTarifa, PlanTarifa.tipo_habitacion_id == TipoHabitacion.id)
+            .join(RoomType, RoomType.property_id == Property.id)
+            .join(RatePlan, RatePlan.room_type_id == RoomType.id)
             .where(
                 and_(
-                    func.lower(Propiedad.ciudad) == ciudad,
-                    Propiedad.estado_activo.is_(True),
-                    TipoHabitacion.estado_activo.is_(True),
-                    PlanTarifa.estado_activo.is_(True),
-                    TipoHabitacion.capacidad >= query.huespedes,
-                    TipoHabitacion.id.in_(available_room_type_subq),
+                    func.lower(Property.ciudad) == city,
+                    Property.estado_activo.is_(True),
+                    RoomType.estado_activo.is_(True),
+                    RatePlan.estado_activo.is_(True),
+                    RoomType.capacidad >= query.guests,
+                    RoomType.id.in_(available_room_type_subq),
                 )
             )
         )
 
-        if query.precio_min is not None:
-            base_stmt = base_stmt.where(effective_price_expr >= query.precio_min)
-        if query.precio_max is not None:
-            base_stmt = base_stmt.where(effective_price_expr <= query.precio_max)
+        if query.min_price is not None:
+            base_stmt = base_stmt.where(effective_price_expr >= query.min_price)
+        if query.max_price is not None:
+            base_stmt = base_stmt.where(effective_price_expr <= query.max_price)
 
-        if amenidades:
+        if amenities:
             amenity_match_subq = (
-                select(PropiedadAmenidad.propiedad_id)
-                .join(Amenidad, Amenidad.id == PropiedadAmenidad.amenidad_id)
-                .where(func.lower(Amenidad.nombre).in_(amenidades))
-                .group_by(PropiedadAmenidad.propiedad_id)
-                .having(func.count(func.distinct(func.lower(Amenidad.nombre))) == len(set(amenidades)))
+                select(PropertyAmenity.property_id)
+                .join(Amenity, Amenity.id == PropertyAmenity.amenity_id)
+                .where(func.lower(Amenity.nombre).in_(amenities))
+                .group_by(PropertyAmenity.property_id)
+                .having(func.count(func.distinct(func.lower(Amenity.nombre))) == len(set(amenities)))
             )
-            base_stmt = base_stmt.where(Propiedad.id.in_(amenity_match_subq))
+            base_stmt = base_stmt.where(Property.id.in_(amenity_match_subq))
 
         grouped_stmt = base_stmt.group_by(
-            Propiedad.id,
-            Propiedad.nombre,
-            Propiedad.ciudad,
-            Propiedad.pais,
-            Propiedad.capacidad_maxima,
-            Propiedad.imagen_principal_url,
-            Propiedad.rating,
+            Property.id,
+            Property.nombre,
+            Property.ciudad,
+            Property.pais,
+            Property.capacidad_maxima,
+            Property.imagen_principal_url,
+            Property.rating,
         )
 
         total_stmt = select(func.count()).select_from(grouped_stmt.subquery())
@@ -117,8 +117,8 @@ class SQLModelSearchRepository(SearchRepository):
 
         sort_map = {
             "price": min_price_expr,
-            "rating": func.coalesce(Propiedad.rating, 0),
-            "name": Propiedad.nombre,
+            "rating": func.coalesce(Property.rating, 0),
+            "name": Property.nombre,
         }
         sort_expr = sort_map.get(query.order_by.lower(), min_price_expr)
         sort_fn = desc if query.order_dir.lower() == "desc" else asc
@@ -135,10 +135,10 @@ class SQLModelSearchRepository(SearchRepository):
         amenities_by_property: dict = {}
         if property_ids:
             amenity_rows = self.session.exec(
-                select(PropiedadAmenidad.propiedad_id, Amenidad.nombre)
-                .join(Amenidad, Amenidad.id == PropiedadAmenidad.amenidad_id)
-                .where(PropiedadAmenidad.propiedad_id.in_(property_ids))
-                .order_by(Amenidad.nombre)
+                select(PropertyAmenity.property_id, Amenity.nombre)
+                .join(Amenity, Amenity.id == PropertyAmenity.amenity_id)
+                .where(PropertyAmenity.property_id.in_(property_ids))
+                .order_by(Amenity.nombre)
             ).all()
             for property_id, amenity_name in amenity_rows:
                 amenities_by_property.setdefault(property_id, []).append(amenity_name)
@@ -146,15 +146,15 @@ class SQLModelSearchRepository(SearchRepository):
         items = [
             PropertySearchItem(
                 id=row.id,
-                nombre=row.nombre,
-                ciudad=row.ciudad,
-                pais=row.pais,
-                capacidad_maxima=row.capacidad_maxima,
-                imagen_principal_url=row.imagen_principal_url,
+                name=row.nombre,
+                city=row.ciudad,
+                country=row.pais,
+                max_capacity=row.capacidad_maxima,
+                main_image_url=row.imagen_principal_url,
                 rating=row.rating,
-                precio_desde=Decimal(str(row.precio_desde)),
-                moneda=row.moneda,
-                amenidades=amenities_by_property.get(row.id, []),
+                price_from=Decimal(str(row.precio_desde)),
+                currency=row.moneda,
+                amenities=amenities_by_property.get(row.id, []),
             )
             for row in rows
         ]

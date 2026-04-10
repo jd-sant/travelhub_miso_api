@@ -1,112 +1,71 @@
-# Search Service Performance Evidence
+# Search Service Performance Evidence (Newman)
 
-Fecha: 2026-04-07
-Objetivo: p95 < 800 ms para el endpoint de busqueda.
+Fecha: 2026-04-10
+Objetivo SLO local: p95 < 800 ms para `GET /api/v1/search`.
 
-## 1) Indices implementados
+## 1) Alcance de la medicion
 
-Se agregaron indices orientados a los filtros y joins de la consulta principal:
+- Metodo: benchmark con Newman (Postman collection).
+- Entorno: Docker Compose local, `APP_ENV=development`.
+- Dataset: seed activo en development.
+- Endpoint bajo prueba:
+  - `GET /api/v1/search?ciudad=Bogota&check_in=2026-04-10&check_out=2026-04-12&huespedes=2&page=1&page_size=10`
 
-- `search_schema.propiedades`
-  - `ix_propiedades_ciudad`
-  - `ix_propiedades_lower_ciudad`
-  - `ix_propiedades_estado_activo`
-  - `ix_propiedades_capacidad_maxima`
-  - `ix_propiedades_rating`
-  - `ix_propiedades_ciudad_estado`
-- `search_schema.tipos_habitacion`
-  - `ix_tipos_habitacion_propiedad_id`
-  - `ix_tipos_habitacion_capacidad`
-  - `ix_tipos_habitacion_estado_activo`
-  - `ix_tipos_habitacion_propiedad_estado_capacidad`
-- `search_schema.planes_tarifa`
-  - `ix_planes_tarifa_tipo_habitacion_id`
-  - `ix_planes_tarifa_estado_activo`
-  - `ix_planes_tarifa_tipo_estado_precio`
-- `search_schema.calendario_inventario`
-  - `ix_calendario_inventario_tipo_habitacion_id`
-  - `ix_calendario_inventario_fecha`
-  - `ix_calendario_inventario_tipo_fecha_disponibilidad`
-- `search_schema.calendario_tarifas`
-  - `ix_calendario_tarifas_plan_tarifa_id`
-  - `ix_calendario_tarifas_fecha`
-  - `ix_calendario_tarifas_plan_fecha_precio`
-- `search_schema.amenidades`
-  - `ix_amenidades_lower_nombre`
-- `search_schema.propiedad_amenidad`
-  - `ix_propiedad_amenidad_amenidad_id`
-  - `ix_propiedad_amenidad_amenidad_propiedad`
-
-## 2) Medicion local reproducible
-
-Script: `services/search/tests/benchmark_p95.py`
+## 2) Verificacion del volumen de datos
 
 Comando ejecutado:
+
+```bash
+curl -s http://localhost:8003/api/v1/search/test-dataset | jq '{count_properties:(.properties|length), first:(.properties[0].name), last:(.properties[-1].name)}'
+```
+
+Resultado:
+
+- `count_properties`: 1000
+- `first`: `Hotel Demo Search 01`
+- `last`: `Hotel Demo Search 1000`
+
+## 3) Ejecucion reproducible
+
+Comando del proyecto:
 
 ```bash
 make search-perf
 ```
 
-Resultado obtenido (baseline inicial):
+Comando interno que ejecuta el target:
+
+```bash
+npx --yes newman run services/search/perf/search_p95.postman_collection.json --env-var base_url=http://localhost:8003 --iteration-count 130 --reporters cli
+```
+
+Notas de la corrida:
+
+- Iteraciones totales: 130
+- Ventana efectiva para metricas custom: 120 requests (descarta warmup inicial)
+- Assertions: 131 ejecutadas, 0 fallidas
+
+## 4) Resultados Newman (corrida actual)
+
+Metricas custom reportadas por la coleccion:
 
 - requests: 120
-- avg: 2.61 ms
-- p50: 2.50 ms
-- p95: 3.16 ms
-- p99: 3.93 ms
-- estado: PASS (`p95 < 800 ms`)
+- avg_ms: 17.05
+- p50_ms: 17.00
+- p95_ms: 21.00
+- p99_ms: 23.00
+- regla de aceptacion: PASS (`p95 < 800 ms`)
 
-Resultado obtenido (dataset ampliado a 1000 propiedades):
+Resumen global del CLI de Newman:
 
-- requests: 120
-- avg: 7.52 ms
-- p50: 7.33 ms
-- p95: 8.91 ms
-- p99: 9.72 ms
-- estado: PASS (`p95 < 800 ms`)
+- average response time: 10 ms
+- min: 8 ms
+- max: 52 ms
+- standard deviation: 3 ms
+- failed requests: 0
 
-Tabla comparativa (baseline vs 1000 propiedades):
+## 5) Conclusiones
 
-| Escenario | requests | avg (ms) | p50 (ms) | p95 (ms) | p99 (ms) | Objetivo p95 < 800 ms |
-|-----------|----------|----------|----------|----------|----------|-------------------------|
-| Baseline inicial | 120 | 2.61 | 2.50 | 3.16 | 3.93 | PASS |
-| Seed 1000 propiedades | 120 | 7.52 | 7.33 | 8.91 | 9.72 | PASS |
-
-## 3) Supuestos de la medicion
-
-- Entorno local Docker Compose.
-- Entorno `development` con seeding activo.
-- Dataset dummy local generado por seeding (>= 1000 propiedades).
-- Verificacion de volumen mediante endpoint de diagnostico:
-  - `GET /api/v1/search/test-dataset`
-- Query de referencia:
-  - ciudad=Bogota
-  - check_in=2026-04-10
-  - check_out=2026-04-12
-  - huespedes=2
-  - page=1
-  - page_size=10
-
-## 4) Interpretacion de resultados
-
-- Aun con 1000 propiedades, el p95 medido localmente permanece muy por debajo del umbral objetivo de 800 ms.
-- El aumento de latencia respecto al baseline es esperado por mayor volumen de datos y sigue dentro de margen saludable.
-- La prueba usa una carga secuencial controlada (no concurrencia alta), util para regression check rapido.
-
-## 5) Plan de monitoreo recomendado
-
-1. Instrumentar metricas por endpoint:
-   - latencia (`p50/p95/p99`) por ruta y status code.
-   - throughput (RPS).
-   - tasa de error (`4xx/5xx`).
-2. Dashboard minimo (por ambiente):
-   - `search /api/v1/search` p95 y p99 en ventanas de 5m y 1h.
-   - uso de CPU/memoria del contenedor.
-   - conexiones activas a PostgreSQL.
-3. Alertas:
-   - alerta warning: p95 > 500 ms por 10 min.
-   - alerta critical: p95 > 800 ms por 5 min.
-   - alerta error-rate: 5xx > 1% por 5 min.
-4. Rutina de verificacion:
-   - ejecutar `make search-perf` antes de merge en cambios de consulta o indices.
-   - revisar plan de ejecucion (`EXPLAIN ANALYZE`) cuando p95 suba.
+- El objetivo de performance se cumple ampliamente: `p95=21 ms` << `800 ms`.
+- Con dataset de 1000 propiedades, el endpoint mantiene latencia baja y estable en esta carga secuencial local.
+- Esta evidencia queda como baseline actual para detectar regresiones en cambios futuros de filtros, joins o indices.

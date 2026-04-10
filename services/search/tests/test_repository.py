@@ -7,20 +7,20 @@ class TestSearchRepository:
     def test_search_success_with_pagination(self, search_repository):
         page_1 = search_repository.search(
             SearchQuery(
-                ciudad="Bogota",
+                city="Bogota",
                 check_in=date(2026, 4, 10),
                 check_out=date(2026, 4, 12),
-                huespedes=2,
+                guests=2,
                 page=1,
                 page_size=5,
             )
         )
         page_2 = search_repository.search(
             SearchQuery(
-                ciudad="Bogota",
+                city="Bogota",
                 check_in=date(2026, 4, 10),
                 check_out=date(2026, 4, 12),
-                huespedes=2,
+                guests=2,
                 page=2,
                 page_size=5,
             )
@@ -35,11 +35,11 @@ class TestSearchRepository:
     def test_search_filters_by_amenities(self, search_repository):
         result = search_repository.search(
             SearchQuery(
-                ciudad="Bogota",
+                city="Bogota",
                 check_in=date(2026, 4, 10),
                 check_out=date(2026, 4, 12),
-                huespedes=2,
-                amenidades=["wifi", "piscina"],
+                guests=2,
+                amenities=["wifi", "piscina"],
                 page=1,
                 page_size=10,
             )
@@ -47,34 +47,34 @@ class TestSearchRepository:
 
         assert result.total >= 1
         for item in result.items:
-            assert "wifi" in item.amenidades
-            assert "piscina" in item.amenidades
+            assert "wifi" in item.amenities
+            assert "piscina" in item.amenities
 
     def test_search_filters_by_price(self, search_repository):
         result = search_repository.search(
             SearchQuery(
-                ciudad="Bogota",
+                city="Bogota",
                 check_in=date(2026, 4, 10),
                 check_out=date(2026, 4, 12),
-                huespedes=2,
-                precio_min=90,
-                precio_max=200,
+                guests=2,
+                min_price=90,
+                max_price=200,
                 page=1,
                 page_size=20,
             )
         )
 
         for item in result.items:
-            assert item.precio_desde >= 90
-            assert item.precio_desde <= 200
+            assert item.price_from >= 90
+            assert item.price_from <= 200
 
     def test_search_returns_empty_for_unknown_city(self, search_repository):
         result = search_repository.search(
             SearchQuery(
-                ciudad="CiudadInexistente",
+                city="CiudadInexistente",
                 check_in=date(2026, 4, 10),
                 check_out=date(2026, 4, 12),
-                huespedes=2,
+                guests=2,
                 page=1,
                 page_size=10,
             )
@@ -86,10 +86,10 @@ class TestSearchRepository:
     def test_search_returns_empty_for_invalid_date_range(self, search_repository):
         result = search_repository.search(
             SearchQuery(
-                ciudad="Bogota",
+                city="Bogota",
                 check_in=date(2026, 4, 12),
                 check_out=date(2026, 4, 12),
-                huespedes=2,
+                guests=2,
                 page=1,
                 page_size=10,
             )

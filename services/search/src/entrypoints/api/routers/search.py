@@ -5,14 +5,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session, select
 
 from assembly import get_search_properties_use_case
-from adapters.models import Amenidad
-from adapters.models import CalendarioInventario
-from adapters.models import CalendarioTarifas
-from adapters.models import PlanTarifa
-from adapters.models import Propiedad
-from adapters.models import PropiedadAmenidad
-from adapters.models import Servicio
-from adapters.models import TipoHabitacion
+from adapters.models import Amenity
+from adapters.models import InventoryCalendar
+from adapters.models import Property
+from adapters.models import PropertyAmenity
+from adapters.models import RateCalendar
+from adapters.models import RatePlan
+from adapters.models import RoomType
+from adapters.models import Service
 from core.config import settings
 from db.session import get_session
 from db.session import engine
@@ -57,13 +57,13 @@ def search_properties(
 
     try:
         query = SearchQuery(
-            ciudad=ciudad,
+            city=ciudad,
             check_in=check_in,
             check_out=check_out,
-            huespedes=huespedes,
-            amenidades=amenidades,
-            precio_min=precio_min,
-            precio_max=precio_max,
+            guests=huespedes,
+            amenities=amenidades,
+            min_price=precio_min,
+            max_price=precio_max,
             order_by=order_by,
             order_dir=order_dir,
             page=page,
@@ -107,9 +107,9 @@ def _validate_search_rules(query: SearchQuery) -> None:
         )
 
     if (
-        query.precio_min is not None
-        and query.precio_max is not None
-        and query.precio_min > query.precio_max
+        query.min_price is not None
+        and query.max_price is not None
+        and query.min_price > query.max_price
     ):
         raise InvalidSearchRuleError(
             "precio_min cannot be greater than precio_max"
@@ -148,36 +148,36 @@ if settings.is_development:
                 detail="Endpoint available only for local development test data",
             )
 
-        propiedades = session.exec(select(Propiedad)).all()
-        tipos_habitacion = session.exec(select(TipoHabitacion)).all()
-        planes_tarifa = session.exec(select(PlanTarifa)).all()
-        inventario = session.exec(select(CalendarioInventario)).all()
-        tarifas = session.exec(select(CalendarioTarifas)).all()
-        amenidades = session.exec(select(Amenidad)).all()
-        servicios = session.exec(select(Servicio)).all()
-        propiedad_amenidad = session.exec(select(PropiedadAmenidad)).all()
+        properties = session.exec(select(Property)).all()
+        room_types = session.exec(select(RoomType)).all()
+        rate_plans = session.exec(select(RatePlan)).all()
+        inventory_calendar = session.exec(select(InventoryCalendar)).all()
+        rate_calendar = session.exec(select(RateCalendar)).all()
+        amenities = session.exec(select(Amenity)).all()
+        services = session.exec(select(Service)).all()
+        property_amenity = session.exec(select(PropertyAmenity)).all()
 
         return {
             "counts": {
-                "propiedades": len(propiedades),
-                "tipos_habitacion": len(tipos_habitacion),
-                "planes_tarifa": len(planes_tarifa),
-                "calendario_inventario": len(inventario),
-                "calendario_tarifas": len(tarifas),
-                "amenidades": len(amenidades),
-                "servicios": len(servicios),
-                "propiedad_amenidad": len(propiedad_amenidad),
+                "properties": len(properties),
+                "room_types": len(room_types),
+                "rate_plans": len(rate_plans),
+                "inventory_calendar": len(inventory_calendar),
+                "rate_calendar": len(rate_calendar),
+                "amenities": len(amenities),
+                "services": len(services),
+                "property_amenity": len(property_amenity),
             },
-            "propiedades": [
+            "properties": [
                 {
                     "id": str(p.id),
-                    "nombre": p.nombre,
-                    "ciudad": p.ciudad,
-                    "pais": p.pais,
-                    "capacidad_maxima": p.capacidad_maxima,
-                    "imagen_principal_url": p.imagen_principal_url,
+                    "name": p.nombre,
+                    "city": p.ciudad,
+                    "country": p.pais,
+                    "max_capacity": p.capacidad_maxima,
+                    "main_image_url": p.imagen_principal_url,
                     "rating": p.rating,
                 }
-                for p in propiedades
+                for p in properties
             ],
         }

@@ -29,7 +29,7 @@ help:
 	@echo "  make search-test   - Run search tests"
 	@echo "  make search-build  - Build search image"
 	@echo "  make search-logs   - Tail search logs"
-	@echo "  make search-perf   - Run local p95 benchmark against search API"
+	@echo "  make search-perf   - Run local p95 benchmark with Newman against search API"
 
 # Global commands
 docker-up:
@@ -89,4 +89,4 @@ search-logs:
 	docker compose logs -f search
 
 search-perf:
-	python services/search/tests/benchmark_p95.py
+	npx --yes newman run services/search/perf/search_p95.postman_collection.json --env-var base_url=http://localhost:8003 --iteration-count 130 --reporters cli
