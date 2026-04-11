@@ -1,4 +1,4 @@
-.PHONY: help docker-up docker-down docker-build docker-logs clean users-test users-build users-logs security-test security-build security-logs reservations-test reservations-build reservations-logs reservations-perf search-test search-build search-logs search-perf
+.PHONY: help docker-up docker-down docker-build docker-logs clean users-test users-build users-logs security-test security-build security-logs reservations-test reservations-build reservations-logs properties-test properties-build properties-logs reservations-perf search-test search-build search-logs search-perf
 
 help:
 	@echo "=== TravelHub Monorepo ==="
@@ -24,6 +24,11 @@ help:
 	@echo "  make reservations-test  - Run reservations tests"
 	@echo "  make reservations-build - Build reservations image"
 	@echo "  make reservations-logs  - Tail reservations logs"
+	@echo ""
+	@echo "Properties service:"
+	@echo "  make properties-test  - Run properties tests"
+	@echo "  make properties-build - Build properties image"
+	@echo "  make properties-logs  - Tail properties logs"
 	@echo "  make reservations-perf  - Run Newman E2E collection for checkstatus flow"
 	@echo ""
 	@echo "Search service:"
@@ -78,6 +83,16 @@ reservations-build:
 
 reservations-logs:
 	docker compose logs -f reservations
+
+# Properties service
+properties-test:
+	cd services/properties && PYTHONPATH=src pytest tests/ -v
+
+properties-build:
+	docker compose build properties
+
+properties-logs:
+	docker compose logs -f properties
 
 reservations-perf:
 	@set -a; [ -f .env ] && . ./.env; set +a; \

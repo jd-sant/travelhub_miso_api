@@ -11,6 +11,7 @@ travelhub_miso/
 ├── services/
 │   ├── users/          # Gestión de usuarios y roles
 │   ├── security/       # Autenticación, OTP y JWT
+│   ├── properties/     # Detalles de propiedades
 │   ├── reservations/   # Creación y consulta de reservas
 │   └── search/         # Búsqueda de propiedades y disponibilidad
 ├── docker-compose.yml  # Orquestación local
@@ -55,7 +56,8 @@ service/
 |----------|--------|-----------|-------------|
 | [users](services/users/README.md) | 8000 | `users_schema` | Gestión de usuarios y roles |
 | [security](services/security/README.md) | 8001 | `security_schema` | Autenticación, OTP y tokens JWT |
-| [reservations](services/reservations/) | 8002 | `reservations_schema` | Creación y consulta de reservas |
+| [properties](services/properties/README.md) | 8003 | `properties_schema` | Detalles de propiedades y hospedajes |
+| [reservations](services/reservations/README.md) | 8002 | `reservations_schema` | Creación y consulta de reservas |
 | [search](services/search/) | 8003 | `search_schema` | Búsqueda de propiedades, filtros y disponibilidad |
 
 ## Ejecución local
@@ -87,30 +89,33 @@ Los servicios quedan disponibles en:
 ### Tests
 
 ```bash
-# Todos los servicios
+# Con make (recomendado)
 make users-test
 make security-test
 make reservations-test
+make properties-test      # Tests del servicio de propiedades
 make search-test
 
 # O directamente con pytest
 PYTHONPATH=services/users/src pytest services/users/tests/ -v
 PYTHONPATH=services/security/src pytest services/security/tests/ -v
 PYTHONPATH=services/reservations/src pytest services/reservations/tests/ -v
+PYTHONPATH=services/properties/src pytest services/properties/tests/ -v
 PYTHONPATH=services/search/src pytest services/search/tests/ -v
 ```
 
 ## Comandos disponibles
 
 ```bash
-make help             # Ver todos los comandos
-make docker-up        # Levantar servicios
-make docker-down      # Detener servicios
-make docker-build     # Construir imágenes
-make clean            # Limpiar __pycache__
-make users-test       # Tests del servicio de usuarios
-make security-test    # Tests del servicio de seguridad
+make help              # Ver todos los comandos
+make docker-up         # Levantar servicios
+make docker-down       # Detener servicios
+make docker-build      # Construir imágenes
+make clean             # Limpiar __pycache__
+make users-test        # Tests del servicio de usuarios
+make security-test     # Tests del servicio de seguridad
 make reservations-test # Tests del servicio de reservas
+make properties-test   # Tests del servicio de propiedades
 make search-test      # Tests del servicio de búsqueda
 make search-build     # Build del servicio de búsqueda
 make search-logs      # Logs del servicio de búsqueda
