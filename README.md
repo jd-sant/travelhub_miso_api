@@ -14,7 +14,8 @@ travelhub_miso/
 |   |-- properties/     # Detalles de propiedades
 |   |-- reservations/   # Creacion y consulta de reservas
 |   |-- payments/       # Pagos tokenizados y recibos
-|   `-- notifications/  # Confirmaciones y notificaciones de pago
+|   |-- notifications/  # Confirmaciones y notificaciones de pago
+|   `-- search/         # Busqueda de propiedades y disponibilidad
 |-- docker-compose.yml  # Orquestacion local
 |-- init-schemas.sql    # Creacion de schemas en PostgreSQL
 |-- Makefile            # Comandos de desarrollo
@@ -61,7 +62,7 @@ service/
 | `payments` | 8003 | `payments_schema` | Procesamiento seguro de pagos con token |
 | `notifications` | 8004 | `notifications_schema` | Confirmaciones y notificaciones de pago |
 | `properties` | 8005 | `properties_schema` | Detalles de propiedades y hospedajes |
-| [search](services/search/) | 8003 | `search_schema` | Búsqueda de propiedades, filtros y disponibilidad |
+| [search](services/search/) | 8006 | `search_schema` | Búsqueda de propiedades, filtros y disponibilidad |
 
 ## Ejecucion local
 
@@ -91,7 +92,7 @@ Los servicios quedan disponibles en:
 - Payments: http://localhost:8003
 - Notifications: http://localhost:8004
 - Properties: http://localhost:8005
-- Search: http://localhost:8003
+- Search: http://localhost:8006
 
 ### Tests
 

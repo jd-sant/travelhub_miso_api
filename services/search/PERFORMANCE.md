@@ -16,7 +16,7 @@ Objetivo SLO local: p95 < 800 ms para `GET /api/v1/search`.
 Comando ejecutado:
 
 ```bash
-curl -s http://localhost:8003/api/v1/search/test-dataset | jq '{count_properties:(.properties|length), first:(.properties[0].name), last:(.properties[-1].name)}'
+curl -s http://localhost:8006/api/v1/search/test-dataset | jq '{count_properties:(.properties|length), first:(.properties[0].name), last:(.properties[-1].name)}'
 ```
 
 Resultado:
@@ -36,7 +36,7 @@ make search-perf
 Comando interno que ejecuta el target:
 
 ```bash
-npx --yes newman run services/search/perf/search_p95.postman_collection.json --env-var base_url=http://localhost:8003 --iteration-count 130 --reporters cli
+npx --yes newman run services/search/perf/search_p95.postman_collection.json --env-var base_url=http://localhost:8006 --iteration-count 130 --reporters cli
 ```
 
 Notas de la corrida:

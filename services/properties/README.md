@@ -136,10 +136,10 @@ Obtiene el detalle completo de una propiedad específica incluyendo reseñas.
 ```bash
 # Con Docker
 docker build -t properties .
-docker run -p 8003:8003 properties
+docker run -p 8005:8000 properties
 
 # O con uvicorn
-PYTHONPATH=src uvicorn entrypoints.api.main:app --reload --port 8003
+PYTHONPATH=src uvicorn entrypoints.api.main:app --reload --port 8005
 ```
 
 ### Seeding de datos

@@ -147,4 +147,4 @@ search-logs:
 	docker compose logs -f search
 
 search-perf:
-	npx --yes newman run services/search/perf/search_p95.postman_collection.json --env-var base_url=http://localhost:8003 --iteration-count 130 --reporters cli
+	npx --yes newman run services/search/perf/search_p95.postman_collection.json --env-var base_url=http://localhost:8006 --iteration-count 130 --reporters cli
