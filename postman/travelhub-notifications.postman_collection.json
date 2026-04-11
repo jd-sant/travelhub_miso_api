@@ -182,8 +182,8 @@
                   "pm.test('Devuelve notification_id', function () {",
                   "  pm.expect(body.notification_id).to.be.a('string');",
                   "});",
-                  "pm.test('La notificacion queda en estado sent', function () {",
-                  "  pm.expect(body.status).to.eql('sent');",
+                  "pm.test('La notificacion queda en estado pending', function () {",
+                  "  pm.expect(body.status).to.eql('pending');",
                   "});",
                   "pm.collectionVariables.set('notification_id', body.notification_id);"
                 ]

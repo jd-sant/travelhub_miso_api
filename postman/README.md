@@ -99,7 +99,7 @@ Valida:
 - Que el microservicio `notifications` esta arriba.
 - Que la confirmacion de pago se resuelve desde `payments` y `users`.
 - Que la confirmacion de pago se registra con `notification_id`.
-- Que el estado inicial del envio queda en `sent`.
+- Que el estado inicial del recurso queda en `pending` y luego se materializa como `sent`.
 - Que la notificacion puede consultarse posteriormente por id.
 
 Nota:

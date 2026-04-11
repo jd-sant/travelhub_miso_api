@@ -7,7 +7,7 @@ Microservicio responsable de resolver la informacion de confirmacion del pago, p
 | Metodo | Ruta | Descripcion |
 |--------|------|-------------|
 | GET | `/health` | Health check |
-| POST | `/api/v1/internal/payment-confirmations` | Crear y despachar confirmacion de pago a partir de `payment_id` |
+| POST | `/api/v1/internal/payment-confirmations` | Crear confirmacion de pago a partir de `payment_id` y programar su envio |
 | GET | `/api/v1/notifications/{notification_id}` | Consultar estado de una notificacion |
 
 ## Modelo de datos MVP
@@ -20,6 +20,7 @@ Microservicio responsable de resolver la informacion de confirmacion del pago, p
 
 - El servicio resuelve el resumen del pago desde `payments` y el destinatario desde `users`.
 - Los endpoints operativos requieren `X-Internal-Api-Key`.
+- El envio del correo se programa en segundo plano para no bloquear el request interno que crea la notificacion.
 - El servicio nace listo para desacoplarse hacia cola/eventos en una fase posterior.
 - En desarrollo usa `LogEmailSender`; si hay configuracion SMTP, usa sender SMTP.
 - El payload persistido de la notificacion conserva solo un snapshot minimo del comprobante y email enmascarado.
