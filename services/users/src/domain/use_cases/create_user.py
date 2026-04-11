@@ -1,3 +1,4 @@
+from core.roles import UserRole
 from domain.ports.user_repository import UserRepository
 from domain.schemas.user import UserCreateRequest, UserResponse
 from domain.use_cases.base import BaseUseCase
@@ -14,5 +15,5 @@ class CreateUserUseCase(BaseUseCase[UserCreateRequest, UserResponse]):
             raise UserConflictError("El correo electrónico ya existe")
 
         user = self.repository.add(payload)
-        self.repository.assign_role(user.id, payload.role)
+        self.repository.assign_role(user.id, UserRole.TRAVELER)
         return user

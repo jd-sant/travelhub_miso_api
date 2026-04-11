@@ -36,7 +36,16 @@ def test_create_user_hashes_password_and_returns_public_fields(client, test_engi
     assert verify_password(payload["password"], stored_user.password)
 
 
-def test_get_users_returns_created_users(client):
+def test_get_users_returns_created_users(client, admin_token, session):
+    from adapters.models.role import Role
+    
+    # Crear rol admin en BD para autenticación
+    admin_role = Role(name="admin")
+    traveler_role = Role(name="traveler")
+    session.add(admin_role)
+    session.add(traveler_role)
+    session.commit()
+    
     user_1 = {
         "email": "uno@example.com",
         "phone": "3000000001",
@@ -55,7 +64,10 @@ def test_get_users_returns_created_users(client):
     assert client.post("/api/v1/users", json=user_1).status_code == 201
     assert client.post("/api/v1/users", json=user_2).status_code == 201
 
-    response = client.get("/api/v1/users")
+    response = client.get(
+        "/api/v1/users",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
 
     assert response.status_code == 200
     users = response.json()

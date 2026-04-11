@@ -1,6 +1,9 @@
 import os
 import sys
+from datetime import datetime, timedelta, timezone
+from uuid import uuid4
 
+import jwt
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -11,6 +14,8 @@ from sqlmodel import SQLModel, Session, create_engine
 from adapters.models.role import Role
 from adapters.models.user import User
 from adapters.models.user_role import UserRole
+from core.auth_middleware import AuthMiddleware
+from core.roles import UserRole as UserRoleEnum
 from db.session import get_session
 from entrypoints.api.routers.internal import router as internal_router
 from entrypoints.api.routers.users import router as users_router
@@ -50,8 +55,13 @@ def session(test_engine):
 @pytest.fixture
 def client(test_engine):
     os.environ["INTERNAL_API_KEY"] = INTERNAL_API_KEY
+    os.environ["JWT_SECRET_KEY"] = "test-secret-key"
 
     app = FastAPI()
+    
+    # Registra el middleware de autenticación
+    app.add_middleware(AuthMiddleware)
+    
     app.include_router(users_router, prefix="/api/v1")
     app.include_router(internal_router, prefix="/api/v1")
 
@@ -65,3 +75,35 @@ def client(test_engine):
         yield test_client
 
     app.dependency_overrides.clear()
+
+
+def _create_jwt_token(user_id: str, email: str, role: str) -> str:
+    """Helper para crear JWT tokens de prueba"""
+    now = datetime.now(timezone.utc)
+    payload = {
+        "sub": user_id,
+        "email": email,
+        "role": role,
+        "iat": now,
+        "exp": now + timedelta(minutes=30),
+        "jti": str(uuid4()),
+    }
+    return jwt.encode(payload, "test-secret-key", algorithm="HS256")
+
+
+@pytest.fixture
+def admin_token():
+    """Token JWT para usuario admin"""
+    return _create_jwt_token(str(uuid4()), "admin@example.com", "admin")
+
+
+@pytest.fixture
+def traveler_token():
+    """Token JWT para usuario viajero"""
+    return _create_jwt_token(str(uuid4()), "traveler@example.com", "traveler")
+
+
+@pytest.fixture
+def hotel_token():
+    """Token JWT para usuario hotel"""
+    return _create_jwt_token(str(uuid4()), "hotel@example.com", "hotel")
