@@ -3,10 +3,10 @@ from uuid import UUID
 from domain.ports.reservation_repository import ReservationRepository
 from domain.schemas.reservation import (
     ReservationCheckStatusResponse,
-    ReservationResponse,
+    ReservationStatus,
 )
 from domain.use_cases.base import BaseUseCase
-from errors import ReservationNotFoundError
+from errors import InvalidReservationStatusError, ReservationNotFoundError
 
 
 class UpdateReservationStatusUseCase(BaseUseCase[UUID, ReservationCheckStatusResponse]):
@@ -14,12 +14,17 @@ class UpdateReservationStatusUseCase(BaseUseCase[UUID, ReservationCheckStatusRes
         self.repository = repository
 
     def execute(self, reservation_id: UUID, status: str) -> ReservationCheckStatusResponse:
+        try:
+            normalized_status = ReservationStatus(status).value
+        except ValueError as exc:
+            raise InvalidReservationStatusError("Invalid reservation status") from exc
+
         reservation = self.repository.get_by_id(reservation_id)
         if not reservation:
             raise ReservationNotFoundError("Reservation not found")
 
         status_before = reservation.status
-        updated_reservation = self.repository.update_status(reservation_id, status)
+        updated_reservation = self.repository.update_status(reservation_id, normalized_status)
         if not updated_reservation:
             raise ReservationNotFoundError("Reservation not found")
 
@@ -27,5 +32,5 @@ class UpdateReservationStatusUseCase(BaseUseCase[UUID, ReservationCheckStatusRes
             reservation=updated_reservation,
             status_before=status_before,
             status_after=updated_reservation.status,
-            action_applied=status,
+            action_applied=normalized_status,
         )

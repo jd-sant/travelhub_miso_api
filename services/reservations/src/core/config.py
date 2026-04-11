@@ -82,6 +82,24 @@ class Settings:
             )
         return "dev-internal-key-change-me"
 
+    def validate_scheduler_config(self) -> None:
+        """Validate scheduler configuration if enabled. Raises RuntimeError if validation fails."""
+        if not self.reservation_scheduler_enabled:
+            return
+
+        missing_values = []
+        if not self.lambda_arn:
+            missing_values.append("LAMBDA_ARN")
+        if not self.scheduler_role_arn:
+            missing_values.append("SCHEDULER_ROLE_ARN")
+        if not self.api_base_url:
+            missing_values.append("API_BASE_URL")
+
+        if missing_values:
+            raise RuntimeError(
+                f"Scheduler enabled but missing configuration: {', '.join(missing_values)}"
+            )
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -3,12 +3,14 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from db.session import create_db_and_tables
+from core.config import settings
 from entrypoints.api.routers.internal import router as internal_router
 from entrypoints.api.routers.reservations import router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
+    settings.validate_scheduler_config()
     yield
 
 

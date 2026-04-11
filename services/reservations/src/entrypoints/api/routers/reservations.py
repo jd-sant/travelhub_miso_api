@@ -36,26 +36,19 @@ def get_reservation_scheduler() -> ReservationScheduler:
     if not settings.reservation_scheduler_enabled:
         return NoOpReservationScheduler()
 
-    missing_values = []
-    if not settings.lambda_arn:
-        missing_values.append("LAMBDA_ARN")
-    if not settings.scheduler_role_arn:
-        missing_values.append("SCHEDULER_ROLE_ARN")
-    if not settings.api_base_url:
-        missing_values.append("API_BASE_URL")
-
-    if missing_values:
-        raise RuntimeError(
-            "Missing scheduler configuration: " + ", ".join(missing_values)
+    try:
+        return EventBridgeReservationScheduler(
+            aws_region=settings.aws_region,
+            lambda_arn=settings.lambda_arn,
+            scheduler_role_arn=settings.scheduler_role_arn,
+            api_base_url=settings.api_base_url,
+            delay_minutes=settings.reservation_scheduler_delay_minutes,
         )
-
-    return EventBridgeReservationScheduler(
-        aws_region=settings.aws_region,
-        lambda_arn=settings.lambda_arn,
-        scheduler_role_arn=settings.scheduler_role_arn,
-        api_base_url=settings.api_base_url,
-        delay_minutes=settings.reservation_scheduler_delay_minutes,
-    )
+    except (ValueError, RuntimeError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Scheduler configuration error",
+        ) from exc
 
 
 def get_create_reservation_use_case(

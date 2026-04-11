@@ -1,8 +1,15 @@
 from datetime import datetime
 from decimal import Decimal
+from enum import Enum
 from uuid import UUID
 
 from pydantic import BaseModel, Field
+
+
+class ReservationStatus(str, Enum):
+    pending_payment = "pending_payment"
+    confirmed = "confirmed"
+    cancelled = "cancelled"
 
 
 class ReservationCreateRequest(BaseModel):
@@ -16,7 +23,7 @@ class ReservationCreateRequest(BaseModel):
 
 
 class ReservationStatusUpdateRequest(BaseModel):
-    status: str = Field(min_length=1)
+    status: ReservationStatus
 
 
 class ReservationResponse(BaseModel):

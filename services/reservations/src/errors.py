@@ -16,3 +16,7 @@ class InvalidReservationDateError(Exception):
 
 class ReservationSchedulingError(Exception):
     pass
+
+
+class InvalidReservationStatusError(Exception):
+    pass

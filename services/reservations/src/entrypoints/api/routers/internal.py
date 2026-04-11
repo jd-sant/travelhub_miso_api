@@ -8,7 +8,7 @@ from domain.schemas.reservation import (
     ReservationStatusUpdateRequest,
 )
 from domain.use_cases.update_reservation import UpdateReservationStatusUseCase
-from errors import ReservationNotFoundError
+from errors import InvalidReservationStatusError, ReservationNotFoundError
 from adapters.repositories.reservation_repository import SQLModelReservationRepository
 
 router = APIRouter(prefix="/internal", tags=["internal"])
@@ -57,6 +57,11 @@ def update_reservation_status(
 
     try:
         return use_case.execute(reservation_uuid, payload.status)
+    except InvalidReservationStatusError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
     except ReservationNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

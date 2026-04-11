@@ -273,6 +273,33 @@ class TestReservationEndpoints:
         assert response.status_code == 403
         assert response.json()["detail"] == "Forbidden"
 
+    def test_internal_patch_status_returns_422_for_invalid_status(self, client):
+        traveler_id = str(uuid4())
+        property_id = str(uuid4())
+        room_id = str(uuid4())
+        check_in = (datetime.now(UTC) + timedelta(days=5)).isoformat()
+        check_out = (datetime.now(UTC) + timedelta(days=8)).isoformat()
+
+        payload = {
+            "id_traveler": traveler_id,
+            "id_property": property_id,
+            "id_room": room_id,
+            "check_in_date": check_in,
+            "check_out_date": check_out,
+            "number_of_guests": 2,
+            "currency": "COP",
+        }
+        create_response = client.post("/api/v1/reservations", json=payload)
+        reservation_id = create_response.json()["id"]
+
+        response = client.patch(
+            f"/api/v1/internal/reservations/{reservation_id}/status",
+            json={"status": "unknown_status"},
+            headers={"X-Internal-Api-Key": settings.internal_api_key},
+        )
+
+        assert response.status_code == 422
+
     def test_health_check_endpoint(self, client):
         """Test health check endpoint."""
         response = client.get("/health")
