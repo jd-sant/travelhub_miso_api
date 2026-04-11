@@ -10,6 +10,7 @@ from core.security import (
 )
 from domain.ports.payment_audit_repository import PaymentAuditRepository
 from domain.ports.payment_checkout_repository import PaymentCheckoutRepository
+from domain.ports.notification_dispatcher import NotificationDispatcher
 from domain.ports.payment_repository import PaymentRepository
 from domain.ports.stripe_checkout_gateway import StripeCheckoutGateway
 from domain.schemas.audit import PaymentAuditLogRecord
@@ -35,13 +36,19 @@ class FinalizeStripePaymentUseCase(BaseUseCase[PaymentFinalizeRequest, PaymentFi
         payment_repository: PaymentRepository,
         audit_repository: PaymentAuditRepository,
         gateway: StripeCheckoutGateway,
+        notification_dispatcher: NotificationDispatcher,
     ):
         self.checkout_repository = checkout_repository
         self.payment_repository = payment_repository
         self.audit_repository = audit_repository
         self.gateway = gateway
+        self.notification_dispatcher = notification_dispatcher
 
-    def execute(self, payload: PaymentFinalizeRequest) -> PaymentFinalizeResponse:
+    def execute(
+        self,
+        payload: PaymentFinalizeRequest,
+        source_ip: str | None = None,
+    ) -> PaymentFinalizeResponse:
         if not settings.stripe_enabled:
             raise StripeConfigurationError("Stripe test mode is not configured.")
 
@@ -85,12 +92,13 @@ class FinalizeStripePaymentUseCase(BaseUseCase[PaymentFinalizeRequest, PaymentFi
             stored_payment = self.payment_repository.save_payment_result(payment)
             self.payment_repository.add_events(
                 stored_payment.payment_id,
-                self._build_events(stored_payment),
+                self._build_events(stored_payment, session),
             )
             self._audit_payment(
                 session=session,
                 payment=stored_payment,
                 action="payment.finalize.failed",
+                source_ip=source_ip,
             )
             session.payment_id = stored_payment.payment_id
             session.status = stored_payment.status.value
@@ -131,13 +139,15 @@ class FinalizeStripePaymentUseCase(BaseUseCase[PaymentFinalizeRequest, PaymentFi
             stored_payment = self.payment_repository.save_payment_result(payment)
             self.payment_repository.add_events(
                 stored_payment.payment_id,
-                self._build_events(stored_payment),
+                self._build_events(stored_payment, session),
             )
             self._audit_payment(
                 session=session,
                 payment=stored_payment,
                 action="payment.finalize.confirmed",
+                source_ip=source_ip,
             )
+            self._dispatch_notification_request(stored_payment.payment_id, source_ip)
             session.payment_id = stored_payment.payment_id
             session.status = stored_payment.status.value
         elif stripe_status in {"requires_payment_method", "canceled"}:
@@ -153,12 +163,13 @@ class FinalizeStripePaymentUseCase(BaseUseCase[PaymentFinalizeRequest, PaymentFi
             stored_payment = self.payment_repository.save_payment_result(payment)
             self.payment_repository.add_events(
                 stored_payment.payment_id,
-                self._build_events(stored_payment),
+                self._build_events(stored_payment, session),
             )
             self._audit_payment(
                 session=session,
                 payment=stored_payment,
                 action="payment.finalize.failed",
+                source_ip=source_ip,
             )
             session.payment_id = stored_payment.payment_id
             session.status = stored_payment.status.value
@@ -172,10 +183,13 @@ class FinalizeStripePaymentUseCase(BaseUseCase[PaymentFinalizeRequest, PaymentFi
                     entity_type="payment_checkout_session",
                     entity_id=str(session.payment_transaction_id),
                     action="payment.finalize.requires_action",
+                    ip_address=source_ip,
                     payload={
                         "provider_code": session.provider_code,
                         "payment_intent_id": session.payment_intent_id,
                         "status": stripe_status,
+                        "amount_in_cents": session.amount_in_cents,
+                        "currency": session.currency,
                     },
                     created_at=session.updated_at,
                 )
@@ -253,7 +267,7 @@ class FinalizeStripePaymentUseCase(BaseUseCase[PaymentFinalizeRequest, PaymentFi
             payment.receipt_number = now.strftime("RCPT-%Y%m%d-%H%M%S")
         return payment
 
-    def _build_events(self, payment: PaymentChargeResponse) -> list[PaymentEventResponse]:
+    def _build_events(self, payment: PaymentChargeResponse, session: PaymentCheckoutSessionRecord | None = None) -> list[PaymentEventResponse]:
         now = datetime.now(timezone.utc)
         base_payload = {
             "payment_id": str(payment.payment_id),
@@ -266,11 +280,15 @@ class FinalizeStripePaymentUseCase(BaseUseCase[PaymentFinalizeRequest, PaymentFi
             "receipt_number": payment.receipt_number,
             "status": payment.status.value,
             "failure_reason": payment.failure_reason,
+            "property_name": session.property_name if session else None,
+            "check_in_date": session.check_in_date.isoformat() if session and session.check_in_date else None,
+            "check_out_date": session.check_out_date.isoformat() if session and session.check_out_date else None,
         }
         event_types = (
             [
                 "payment.succeeded",
                 "reservation.confirmation.requested",
+                "notification.payment_confirmation.requested",
                 "inventory.update.requested",
                 "receipt.generated",
             ]
@@ -305,6 +323,7 @@ class FinalizeStripePaymentUseCase(BaseUseCase[PaymentFinalizeRequest, PaymentFi
         session: PaymentCheckoutSessionRecord,
         payment: PaymentChargeResponse,
         action: str,
+        source_ip: str | None = None,
     ) -> None:
         self.audit_repository.add_log(
             PaymentAuditLogRecord(
@@ -314,13 +333,50 @@ class FinalizeStripePaymentUseCase(BaseUseCase[PaymentFinalizeRequest, PaymentFi
                 entity_type="payment",
                 entity_id=str(payment.payment_id),
                 action=action,
+                ip_address=source_ip,
                 payload={
                     "provider_code": payment.provider_code,
                     "reservation_id": str(payment.reservation_id),
                     "status": payment.status.value,
+                    "amount_in_cents": payment.amount_in_cents,
+                    "currency": payment.currency,
                     "gateway_charge_id": payment.gateway_charge_id,
                     "failure_reason": payment.failure_reason,
                 },
                 created_at=payment.updated_at,
             )
         )
+
+    def _dispatch_notification_request(
+        self,
+        payment_id,
+        source_ip: str | None,
+    ) -> None:
+        try:
+            self.notification_dispatcher.dispatch_payment_confirmation(
+                payment_id=payment_id,
+                source_ip=source_ip,
+            )
+            self.audit_repository.add_log(
+                PaymentAuditLogRecord(
+                    payment_id=payment_id,
+                    entity_type="payment",
+                    entity_id=str(payment_id),
+                    action="notification.payment_confirmation.requested",
+                    ip_address=source_ip,
+                    payload={"dispatch_status": "requested"},
+                    created_at=datetime.now(timezone.utc),
+                )
+            )
+        except Exception as exc:  # noqa: BLE001
+            self.audit_repository.add_log(
+                PaymentAuditLogRecord(
+                    payment_id=payment_id,
+                    entity_type="payment",
+                    entity_id=str(payment_id),
+                    action="notification.payment_confirmation.dispatch_failed",
+                    ip_address=source_ip,
+                    payload={"error": str(exc)},
+                    created_at=datetime.now(timezone.utc),
+                )
+            )

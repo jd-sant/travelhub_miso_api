@@ -7,6 +7,8 @@ Archivos listos para probar el MVP de `payments` desde Postman y validar los cri
 - `travelhub-payments.postman_collection.json`
 - `travelhub-payments-stripe-evidence.postman_collection.json`
 - `travelhub-local.postman_environment.json`
+- `travelhub-notifications.postman_collection.json`
+- `travelhub-notifications-local.postman_environment.json`
 
 ## Preparacion
 
@@ -79,3 +81,28 @@ La evidencia de esa parte debe tomarse desde el frontend:
 
 - La coleccion MVP genera `idempotency_key` dinamicos para evitar choques entre corridas.
 - El token `pm_fail_insufficient_funds` simula rechazo por fondos insuficientes en el gateway MVP.
+
+## Coleccion notifications
+
+`travelhub-notifications.postman_collection.json`
+
+Orden sugerido:
+
+1. `00 - Health / Health - Notifications`
+2. `01 - Preparacion / Create Traveler`
+3. `02 - Pago Base / Create Charge - Success`
+4. `03 - Confirmacion de Pago / Create Payment Confirmation`
+5. `03 - Confirmacion de Pago / Get Notification By Id`
+
+Valida:
+
+- Que el microservicio `notifications` esta arriba.
+- Que la confirmacion de pago se resuelve desde `payments` y `users`.
+- Que la confirmacion de pago se registra con `notification_id`.
+- Que el estado inicial del recurso queda en `pending` y luego se materializa como `sent`.
+- Que la notificacion puede consultarse posteriormente por id.
+
+Nota:
+
+- Esta coleccion es autoejecutable cuando `payments` esta corriendo con `PAYMENT_PROVIDER=fake_stripe`, porque genera un pago confirmado via `POST /payments/charges`.
+- Si `payments` esta en `stripe_test`, la coleccion de `notifications` requiere usar un `payment_id` confirmado previamente desde el frontend o desde una evidencia real de Stripe.

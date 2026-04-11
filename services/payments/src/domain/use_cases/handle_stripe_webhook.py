@@ -10,6 +10,7 @@ from core.security import (
 )
 from domain.ports.payment_audit_repository import PaymentAuditRepository
 from domain.ports.payment_checkout_repository import PaymentCheckoutRepository
+from domain.ports.notification_dispatcher import NotificationDispatcher
 from domain.ports.payment_repository import PaymentRepository
 from domain.ports.stripe_checkout_gateway import StripeCheckoutGateway
 from domain.schemas.audit import PaymentAuditLogRecord
@@ -26,13 +27,19 @@ class HandleStripeWebhookUseCase(BaseUseCase[tuple[bytes, str], None]):
         payment_repository: PaymentRepository,
         audit_repository: PaymentAuditRepository,
         gateway: StripeCheckoutGateway,
+        notification_dispatcher: NotificationDispatcher,
     ):
         self.checkout_repository = checkout_repository
         self.payment_repository = payment_repository
         self.audit_repository = audit_repository
         self.gateway = gateway
+        self.notification_dispatcher = notification_dispatcher
 
-    def execute(self, payload: tuple[bytes, str]) -> None:
+    def execute(
+        self,
+        payload: tuple[bytes, str],
+        source_ip: str | None = None,
+    ) -> None:
         try:
             event = self.gateway.construct_event(payload=payload[0], signature=payload[1])
         except Exception as exc:  # noqa: BLE001
@@ -81,7 +88,10 @@ class HandleStripeWebhookUseCase(BaseUseCase[tuple[bytes, str], None]):
             return
 
         stored_payment = self.payment_repository.save_payment_result(payment)
-        self.payment_repository.add_events(stored_payment.payment_id, self._build_events(stored_payment))
+        self.payment_repository.add_events(
+            stored_payment.payment_id,
+            self._build_events(stored_payment, session),
+        )
         self.audit_repository.add_log(
             PaymentAuditLogRecord(
                 traveler_id=stored_payment.traveler_id,
@@ -90,9 +100,12 @@ class HandleStripeWebhookUseCase(BaseUseCase[tuple[bytes, str], None]):
                 entity_type="payment",
                 entity_id=str(stored_payment.payment_id),
                 action="payment.webhook.processed",
+                ip_address=source_ip,
                 payload={
                     "provider_code": stored_payment.provider_code,
                     "event_type": event_type,
+                    "amount_in_cents": stored_payment.amount_in_cents,
+                    "currency": stored_payment.currency,
                     "gateway_charge_id": stored_payment.gateway_charge_id,
                     "status": stored_payment.status.value,
                     "failure_reason": stored_payment.failure_reason,
@@ -100,6 +113,8 @@ class HandleStripeWebhookUseCase(BaseUseCase[tuple[bytes, str], None]):
                 created_at=stored_payment.updated_at,
             )
         )
+        if stored_payment.status == PaymentStatus.confirmed:
+            self._dispatch_notification_request(stored_payment.payment_id, source_ip)
         session.payment_id = stored_payment.payment_id
         session.status = stored_payment.status.value
         session.error = stored_payment.failure_reason
@@ -167,7 +182,11 @@ class HandleStripeWebhookUseCase(BaseUseCase[tuple[bytes, str], None]):
             payment.receipt_number = now.strftime("RCPT-%Y%m%d-%H%M%S")
         return payment
 
-    def _build_events(self, payment: PaymentChargeResponse) -> list[PaymentEventResponse]:
+    def _build_events(
+        self,
+        payment: PaymentChargeResponse,
+        session: PaymentCheckoutSessionRecord | None = None,
+    ) -> list[PaymentEventResponse]:
         now = datetime.now(timezone.utc)
         payload = {
             "payment_id": str(payment.payment_id),
@@ -180,11 +199,15 @@ class HandleStripeWebhookUseCase(BaseUseCase[tuple[bytes, str], None]):
             "receipt_number": payment.receipt_number,
             "status": payment.status.value,
             "failure_reason": payment.failure_reason,
+            "property_name": session.property_name if session else None,
+            "check_in_date": session.check_in_date.isoformat() if session and session.check_in_date else None,
+            "check_out_date": session.check_out_date.isoformat() if session and session.check_out_date else None,
         }
         event_types = (
             [
                 "payment.succeeded",
                 "reservation.confirmation.requested",
+                "notification.payment_confirmation.requested",
                 "inventory.update.requested",
                 "receipt.generated",
             ]
@@ -201,3 +224,37 @@ class HandleStripeWebhookUseCase(BaseUseCase[tuple[bytes, str], None]):
             )
             for event_type in event_types
         ]
+
+    def _dispatch_notification_request(
+        self,
+        payment_id,
+        source_ip: str | None,
+    ) -> None:
+        try:
+            self.notification_dispatcher.dispatch_payment_confirmation(
+                payment_id=payment_id,
+                source_ip=source_ip,
+            )
+            self.audit_repository.add_log(
+                PaymentAuditLogRecord(
+                    payment_id=payment_id,
+                    entity_type="payment",
+                    entity_id=str(payment_id),
+                    action="notification.payment_confirmation.requested",
+                    ip_address=source_ip,
+                    payload={"dispatch_status": "requested"},
+                    created_at=datetime.now(timezone.utc),
+                )
+            )
+        except Exception as exc:  # noqa: BLE001
+            self.audit_repository.add_log(
+                PaymentAuditLogRecord(
+                    payment_id=payment_id,
+                    entity_type="payment",
+                    entity_id=str(payment_id),
+                    action="notification.payment_confirmation.dispatch_failed",
+                    ip_address=source_ip,
+                    payload={"error": str(exc)},
+                    created_at=datetime.now(timezone.utc),
+                )
+            )

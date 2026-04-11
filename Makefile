@@ -1,4 +1,4 @@
-.PHONY: help docker-up docker-down docker-build docker-logs clean users-test users-build users-logs security-test security-build security-logs reservations-test reservations-build reservations-logs properties-test properties-build properties-logs
+.PHONY: help docker-up docker-down docker-build docker-logs clean users-test users-build users-logs security-test security-build security-logs reservations-test reservations-build reservations-logs payments-test payments-security-scan payments-build payments-logs notifications-test notifications-security-scan notifications-build notifications-logs properties-test properties-build properties-logs
 
 help:
 	@echo "=== TravelHub Monorepo ==="
@@ -27,9 +27,16 @@ help:
 	@echo ""
 	@echo "Payments service:"
 	@echo "  make payments-test  - Run payments tests"
+	@echo "  make payments-security-scan - Run payments security posture tests"
 	@echo "  make payments-build - Build payments image"
 	@echo "  make payments-logs  - Tail payments logs"
-  @echo ""
+	@echo ""
+	@echo "Notifications service:"
+	@echo "  make notifications-test  - Run notifications tests"
+	@echo "  make notifications-security-scan - Run notifications security posture tests"
+	@echo "  make notifications-build - Build notifications image"
+	@echo "  make notifications-logs  - Tail notifications logs"
+	@echo ""
 	@echo "Properties service:"
 	@echo "  make properties-test  - Run properties tests"
 	@echo "  make properties-build - Build properties image"
@@ -86,12 +93,28 @@ reservations-logs:
 payments-test:
 	cd services/payments && PYTHONPATH=src pytest tests/ -v
 
+payments-security-scan:
+	cd services/payments && PYTHONPATH=src pytest tests/test_payments_security_posture.py -v
+
 payments-build:
 	docker compose build payments
 
 payments-logs:
 	docker compose logs -f payments
-  
+
+# Notifications service
+notifications-test:
+	cd services/notifications && PYTHONPATH=src pytest tests/ -v
+
+notifications-security-scan:
+	cd services/notifications && PYTHONPATH=src pytest tests/test_notifications_security_posture.py -v
+
+notifications-build:
+	docker compose build notifications
+
+notifications-logs:
+	docker compose logs -f notifications
+
 # Properties service
 properties-test:
 	cd services/properties && PYTHONPATH=src pytest tests/ -v

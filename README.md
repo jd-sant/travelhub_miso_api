@@ -8,16 +8,17 @@ El proyecto sigue una arquitectura de microservicios donde cada servicio tiene s
 
 ```text
 travelhub_miso/
-├── services/
-│   ├── users/          # Gestión de usuarios y roles
-│   ├── security/       # Autenticación, OTP y JWT
-│   ├── properties/     # Detalles de propiedades
-│   ├── reservations/   # Creación y consulta de reservas
-|   └── payments/       # Pagos tokenizados y recibos
-├── docker-compose.yml  # Orquestación local
-├── init-schemas.sql    # Creación de schemas en PostgreSQL
-├── Makefile            # Comandos de desarrollo
-└── .github/workflows/  # CI/CD con GitHub Actions
+|-- services/
+|   |-- users/          # Gestion de usuarios y roles
+|   |-- security/       # Autenticacion, OTP y JWT
+|   |-- properties/     # Detalles de propiedades
+|   |-- reservations/   # Creacion y consulta de reservas
+|   |-- payments/       # Pagos tokenizados y recibos
+|   `-- notifications/  # Confirmaciones y notificaciones de pago
+|-- docker-compose.yml  # Orquestacion local
+|-- init-schemas.sql    # Creacion de schemas en PostgreSQL
+|-- Makefile            # Comandos de desarrollo
+`-- .github/workflows/  # CI/CD con GitHub Actions
 ```
 
 Cada microservicio sigue arquitectura hexagonal:
@@ -54,11 +55,12 @@ service/
 
 | Servicio | Puerto | Schema BD | Descripcion |
 |----------|--------|-----------|-------------|
-| [users](services/users/README.md) | 8000 | `users_schema` | Gestión de usuarios y roles |
-| [security](services/security/README.md) | 8001 | `security_schema` | Autenticación, OTP y tokens JWT |
-| [reservations](services/reservations/README.md) | 8002 | `reservations_schema` | Creación y consulta de reservas |
-| [payments](services/payments/README.md) | 8003 | `payments_schema` | Procesamiento seguro de pagos con token |
-| [properties](services/properties/README.md) | 8004 | `properties_schema` | Detalles de propiedades y hospedajes |
+| `users` | 8000 | `users_schema` | Gestion de usuarios y roles |
+| `security` | 8001 | `security_schema` | Autenticacion, OTP y tokens JWT |
+| `reservations` | 8002 | `reservations_schema` | Creacion y consulta de reservas |
+| `payments` | 8003 | `payments_schema` | Procesamiento seguro de pagos con token |
+| `notifications` | 8004 | `notifications_schema` | Confirmaciones y notificaciones de pago |
+| `properties` | 8005 | `properties_schema` | Detalles de propiedades y hospedajes |
 
 ## Ejecucion local
 
@@ -86,6 +88,8 @@ Los servicios quedan disponibles en:
 - Security: http://localhost:8001
 - Reservations: http://localhost:8002
 - Payments: http://localhost:8003
+- Notifications: http://localhost:8004
+- Properties: http://localhost:8005
 
 ### Tests
 
@@ -95,12 +99,14 @@ make users-test
 make security-test
 make reservations-test
 make payments-test
-make properties-test      # Tests del servicio de propiedades
+make notifications-test
+make properties-test
 
 PYTHONPATH=services/users/src pytest services/users/tests/ -v
 PYTHONPATH=services/security/src pytest services/security/tests/ -v
 PYTHONPATH=services/reservations/src pytest services/reservations/tests/ -v
 PYTHONPATH=services/payments/src pytest services/payments/tests/ -v
+PYTHONPATH=services/notifications/src pytest services/notifications/tests/ -v
 PYTHONPATH=services/properties/src pytest services/properties/tests/ -v
 ```
 
@@ -116,6 +122,7 @@ make users-test        # Tests del servicio de usuarios
 make security-test     # Tests del servicio de seguridad
 make reservations-test # Tests del servicio de reservas
 make payments-test     # Tests del servicio de pagos
+make notifications-test # Tests del servicio de notificaciones
 make properties-test   # Tests del servicio de propiedades
 ```
 
@@ -132,6 +139,13 @@ El workflow `pr-test-validation.yml` se ejecuta en cada PR hacia `develop`, `rel
 ### CD - AWS CodeBuild
 
 Cada servicio mantiene su propio `buildspec.yml` para pruebas y build de imagen.
+
+## Seguridad financiera
+
+- `payments` soporta flujo token-only con Stripe (`stripe_test`) y endurecimiento opcional por `PAYMENTS_COMPLIANCE_MODE`.
+- El backend rechaza campos de tarjeta fuera del contrato HTTP y no persiste PAN, CVV ni fecha de expiracion.
+- Las referencias sensibles de checkout se cifran en reposo a nivel de aplicacion.
+- Las suites de `payments` y `notifications` incluyen pruebas de postura de seguridad ejecutadas por CI.
 
 ## Variables de entorno
 

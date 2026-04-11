@@ -6,6 +6,7 @@ from assembly import (
     get_create_payment_checkout_session_use_case,
     get_create_payment_charge_use_case,
     get_finalize_stripe_payment_use_case,
+    get_get_payment_confirmation_summary_use_case,
     get_get_payment_use_case,
     get_get_payment_checkout_session_use_case,
     get_handle_stripe_webhook_use_case,
@@ -16,6 +17,7 @@ from domain.schemas.checkout import (
     PaymentCheckoutSessionRequest,
     PaymentCheckoutSessionResponse,
     PaymentCheckoutStatusResponse,
+    PaymentConfirmationSummaryResponse,
     PaymentFinalizeRequest,
     PaymentFinalizeResponse,
     PaymentsConfigResponse,
@@ -24,6 +26,7 @@ from domain.schemas.payment import PaymentChargeRequest, PaymentEventResponse, P
 from domain.use_cases.create_payment_checkout_session import CreatePaymentCheckoutSessionUseCase
 from domain.use_cases.create_payment_charge import CreatePaymentChargeUseCase
 from domain.use_cases.finalize_stripe_payment import FinalizeStripePaymentUseCase
+from domain.use_cases.get_payment_confirmation_summary import GetPaymentConfirmationSummaryUseCase
 from domain.use_cases.get_payment import GetPaymentUseCase
 from domain.use_cases.get_payment_checkout_session import GetPaymentCheckoutSessionUseCase
 from domain.use_cases.handle_stripe_webhook import HandleStripeWebhookUseCase
@@ -47,6 +50,17 @@ def _assert_secure_transport(x_forwarded_proto: str | None) -> None:
         raise InsecureTransportError("TLS 1.2+ is required for payment requests")
 
 
+def _resolve_source_ip(
+    request: Request | None,
+    x_forwarded_for: str | None,
+) -> str | None:
+    if x_forwarded_for:
+        return x_forwarded_for.split(",")[0].strip()
+    if request and request.client:
+        return request.client.host
+    return None
+
+
 @router.get("/config", response_model=PaymentsConfigResponse, status_code=status.HTTP_200_OK)
 def get_payments_config() -> PaymentsConfigResponse:
     return PaymentsConfigResponse(
@@ -62,26 +76,30 @@ def get_payments_config() -> PaymentsConfigResponse:
     status_code=status.HTTP_201_CREATED,
 )
 def create_checkout_session(
+    request: Request,
     payload: PaymentCheckoutSessionRequest,
     x_forwarded_proto: str | None = Header(default=None),
+    x_forwarded_for: str | None = Header(default=None),
     use_case: CreatePaymentCheckoutSessionUseCase = Depends(get_create_payment_checkout_session_use_case),
 ) -> PaymentCheckoutSessionResponse:
     try:
         _assert_secure_transport(x_forwarded_proto)
-        return use_case.execute(payload)
+        return use_case.execute(payload, source_ip=_resolve_source_ip(request, x_forwarded_for))
     except InsecureTransportError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
 
 @router.post("/finalize", response_model=PaymentFinalizeResponse, status_code=status.HTTP_200_OK)
 def finalize_stripe_payment(
+    request: Request,
     payload: PaymentFinalizeRequest,
     x_forwarded_proto: str | None = Header(default=None),
+    x_forwarded_for: str | None = Header(default=None),
     use_case: FinalizeStripePaymentUseCase = Depends(get_finalize_stripe_payment_use_case),
 ) -> PaymentFinalizeResponse:
     try:
         _assert_secure_transport(x_forwarded_proto)
-        return use_case.execute(payload)
+        return use_case.execute(payload, source_ip=_resolve_source_ip(request, x_forwarded_for))
     except InsecureTransportError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except PaymentCheckoutSessionNotFoundError:
@@ -109,11 +127,12 @@ def get_checkout_session_status(
 async def stripe_webhook(
     request: Request,
     stripe_signature: str | None = Header(default=None, alias="Stripe-Signature"),
+    x_forwarded_for: str | None = Header(default=None),
     use_case: HandleStripeWebhookUseCase = Depends(get_handle_stripe_webhook_use_case),
 ) -> Response:
     try:
         payload = await request.body()
-        use_case.execute((payload, stripe_signature or ""))
+        use_case.execute((payload, stripe_signature or ""), source_ip=_resolve_source_ip(request, x_forwarded_for))
         return Response(status_code=status.HTTP_200_OK)
     except StripeWebhookVerificationError:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Firma de webhook inválida.")
@@ -121,13 +140,15 @@ async def stripe_webhook(
 
 @router.post("/charges", response_model=PaymentPublicResponse, status_code=status.HTTP_201_CREATED)
 def create_charge(
+    request: Request,
     payload: PaymentChargeRequest,
     x_forwarded_proto: str | None = Header(default=None),
+    x_forwarded_for: str | None = Header(default=None),
     use_case: CreatePaymentChargeUseCase = Depends(get_create_payment_charge_use_case),
 ) -> PaymentPublicResponse:
     try:
         _assert_secure_transport(x_forwarded_proto)
-        return use_case.execute(payload)
+        return use_case.execute(payload, source_ip=_resolve_source_ip(request, x_forwarded_for))
     except DuplicatePaymentError as exc:
         duplicate_window_seconds = settings.payment_duplicate_window_seconds
         message = (
@@ -167,6 +188,26 @@ def get_payment(
     payment_id: UUID,
     use_case: GetPaymentUseCase = Depends(get_get_payment_use_case),
 ) -> PaymentPublicResponse:
+    try:
+        return use_case.execute(payment_id)
+    except PaymentNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Pago no encontrado.",
+        )
+
+
+@router.get(
+    "/{payment_id}/confirmation",
+    response_model=PaymentConfirmationSummaryResponse,
+    status_code=status.HTTP_200_OK,
+)
+def get_payment_confirmation(
+    payment_id: UUID,
+    use_case: GetPaymentConfirmationSummaryUseCase = Depends(
+        get_get_payment_confirmation_summary_use_case
+    ),
+) -> PaymentConfirmationSummaryResponse:
     try:
         return use_case.execute(payment_id)
     except PaymentNotFoundError:

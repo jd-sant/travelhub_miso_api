@@ -13,6 +13,7 @@ from core.security import (
 )
 from domain.ports.payment_audit_repository import PaymentAuditRepository
 from domain.ports.payment_gateway import PaymentGateway
+from domain.ports.notification_dispatcher import NotificationDispatcher
 from domain.ports.payment_repository import PaymentRepository
 from domain.schemas.audit import PaymentAuditLogRecord
 from domain.schemas.payment import (
@@ -32,12 +33,18 @@ class CreatePaymentChargeUseCase(BaseUseCase[PaymentChargeRequest, PaymentPublic
         repository: PaymentRepository,
         audit_repository: PaymentAuditRepository,
         gateway: PaymentGateway,
+        notification_dispatcher: NotificationDispatcher,
     ):
         self.repository = repository
         self.audit_repository = audit_repository
         self.gateway = gateway
+        self.notification_dispatcher = notification_dispatcher
 
-    def execute(self, payload: PaymentChargeRequest) -> PaymentPublicResponse:
+    def execute(
+        self,
+        payload: PaymentChargeRequest,
+        source_ip: str | None = None,
+    ) -> PaymentPublicResponse:
         now = datetime.now(timezone.utc)
         canonical_payload = self._canonical_payload(payload)
         if payload.request_checksum and not verify_checksum(
@@ -144,6 +151,7 @@ class CreatePaymentChargeUseCase(BaseUseCase[PaymentChargeRequest, PaymentPublic
                     if stored_payment.status == PaymentStatus.confirmed
                     else "payment.charge.failed"
                 ),
+                ip_address=source_ip,
                 payload={
                     "provider_code": stored_payment.provider_code,
                     "reservation_id": str(stored_payment.reservation_id),
@@ -156,6 +164,8 @@ class CreatePaymentChargeUseCase(BaseUseCase[PaymentChargeRequest, PaymentPublic
                 created_at=now,
             )
         )
+        if stored_payment.status == PaymentStatus.confirmed:
+            self._dispatch_notification_request(stored_payment.payment_id, source_ip)
         return self._to_public_response(stored_payment)
 
     def _build_events(self, payment: PaymentChargeResponse) -> list[PaymentEventResponse]:
@@ -222,3 +232,37 @@ class CreatePaymentChargeUseCase(BaseUseCase[PaymentChargeRequest, PaymentPublic
             receipt_number=payment.receipt_number,
             failure_reason=payment.failure_reason,
         )
+
+    def _dispatch_notification_request(
+        self,
+        payment_id,
+        source_ip: str | None,
+    ) -> None:
+        try:
+            self.notification_dispatcher.dispatch_payment_confirmation(
+                payment_id=payment_id,
+                source_ip=source_ip,
+            )
+            self.audit_repository.add_log(
+                PaymentAuditLogRecord(
+                    payment_id=payment_id,
+                    entity_type="payment",
+                    entity_id=str(payment_id),
+                    action="notification.payment_confirmation.requested",
+                    ip_address=source_ip,
+                    payload={"dispatch_status": "requested"},
+                    created_at=datetime.now(timezone.utc),
+                )
+            )
+        except Exception as exc:  # noqa: BLE001
+            self.audit_repository.add_log(
+                PaymentAuditLogRecord(
+                    payment_id=payment_id,
+                    entity_type="payment",
+                    entity_id=str(payment_id),
+                    action="notification.payment_confirmation.dispatch_failed",
+                    ip_address=source_ip,
+                    payload={"error": str(exc)},
+                    created_at=datetime.now(timezone.utc),
+                )
+            )

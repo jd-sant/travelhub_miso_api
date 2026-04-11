@@ -79,3 +79,17 @@ class PaymentsConfigResponse(BaseModel):
     provider: str
     stripe_enabled: bool
     publishable_key: str
+
+
+class PaymentConfirmationSummaryResponse(BaseModel):
+    payment_id: UUID
+    reservation_id: UUID
+    traveler_id: UUID
+    status: str
+    amount_in_cents: int
+    currency: str
+    receipt_id: UUID | None = None
+    receipt_number: str | None = None
+    property_name: str | None = None
+    check_in_date: date | None = None
+    check_out_date: date | None = None

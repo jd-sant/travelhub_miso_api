@@ -18,5 +18,9 @@ class PaymentCheckoutRepository(ABC):
         pass
 
     @abstractmethod
+    def get_session_by_payment_id(self, payment_id: UUID) -> PaymentCheckoutSessionRecord | None:
+        pass
+
+    @abstractmethod
     def update_session(self, session: PaymentCheckoutSessionRecord) -> PaymentCheckoutSessionRecord:
         pass
