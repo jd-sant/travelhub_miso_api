@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from sqlmodel import Session
 
 from adapters.repositories.reservation_repository import SQLModelReservationRepository
+from domain.ports.reservation_scheduler import ReservationScheduler
 from db.session import get_session
 from domain.use_cases.check_reservation_status import CheckReservationStatusUseCase
 from domain.use_cases.create_reservation import CreateReservationUseCase
@@ -32,8 +33,9 @@ class ReservationAssembly:
     @staticmethod
     def get_create_reservation_use_case(
         repository: SQLModelReservationRepository,
+        scheduler: ReservationScheduler | None = None,
     ) -> CreateReservationUseCase:
-        return CreateReservationUseCase(repository)
+        return CreateReservationUseCase(repository, scheduler)
 
     @staticmethod
     def get_update_reservation_status_use_case(

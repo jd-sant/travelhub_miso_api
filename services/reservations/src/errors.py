@@ -12,3 +12,7 @@ class RoomNotAvailableError(Exception):
 
 class InvalidReservationDateError(Exception):
     pass
+
+
+class ReservationSchedulingError(Exception):
+    pass

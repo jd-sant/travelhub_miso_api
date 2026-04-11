@@ -4,6 +4,30 @@ from functools import lru_cache
 
 class Settings:
     @property
+    def reservation_scheduler_enabled(self) -> bool:
+        return os.getenv("RESERVATION_SCHEDULER_ENABLED", "false").lower() == "true"
+
+    @property
+    def reservation_scheduler_delay_minutes(self) -> int:
+        return int(os.getenv("RESERVATION_SCHEDULER_DELAY_MINUTES", "15"))
+
+    @property
+    def aws_region(self) -> str:
+        return os.getenv("AWS_REGION", "us-east-1")
+
+    @property
+    def lambda_arn(self) -> str:
+        return os.getenv("LAMBDA_ARN", "")
+
+    @property
+    def scheduler_role_arn(self) -> str:
+        return os.getenv("SCHEDULER_ROLE_ARN", "")
+
+    @property
+    def api_base_url(self) -> str:
+        return os.getenv("API_BASE_URL", "")
+
+    @property
     def rds_hostname(self) -> str:
         return os.getenv("RDS_HOSTNAME", "localhost")
 
