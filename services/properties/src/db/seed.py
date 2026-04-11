@@ -42,11 +42,11 @@ PROPERTIES_DATA = [
             "Bodega de Vinos"
         ],
         "images": [
-            ("1", "/mock/property-1.svg", "Vista Principal Mansión Renacentista", 0),
-            ("2", "/mock/property-2.svg", "Dormitorio", 1),
-            ("3", "/mock/property-3.svg", "Baño", 2),
-            ("4", "/mock/property-4.svg", "Comedor", 3),
-            ("5", "/mock/property-5.svg", "Sala de Estar", 4),
+            ("1", "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80", "Vista Principal Mansión Renacentista", 0),
+            ("2", "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&q=80", "Dormitorio", 1),
+            ("3", "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80", "Baño", 2),
+            ("4", "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=80", "Comedor", 3),
+            ("5", "https://images.unsplash.com/photo-1493857671505-72967e2e2760?w=800&q=80", "Sala de Estar", 4),
         ],
         "reviews": [
             ("María González", 5, "Septiembre 2024", "¡Fue lo mejor de mis vacaciones! Propiedad increíble con atención excepcional a los detalles. ¡Altamente recomendado!"),
@@ -78,11 +78,11 @@ PROPERTIES_DATA = [
             "Terraza en Azotea"
         ],
         "images": [
-            ("1", "/mock/property-2.svg", "Vista Frente a la Playa", 0),
-            ("2", "/mock/property-1.svg", "Dormitorio Principal", 1),
-            ("3", "/mock/property-4.svg", "Baño Moderno", 2),
-            ("4", "/mock/property-3.svg", "Sala de Estar", 3),
-            ("5", "/mock/property-5.svg", "Vista Terraza", 4),
+            ("1", "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=800&q=80", "Vista Frente a la Playa", 0),
+            ("2", "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80", "Dormitorio Principal", 1),
+            ("3", "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80", "Baño Moderno", 2),
+            ("4", "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=80", "Sala de Estar", 3),
+            ("5", "https://images.unsplash.com/photo-1512453694671-cf5310a1d7f8?w=800&q=80", "Vista Terraza", 4),
         ],
         "reviews": [
             ("Ana Martínez", 5, "Septiembre 2024", "¡Lo mejor de mis vacaciones! Propiedad asombrosa con atención increíble. ¡Altamente recomendado!"),
@@ -114,11 +114,11 @@ PROPERTIES_DATA = [
             "Biblioteca"
         ],
         "images": [
-            ("1", "/mock/property-5.svg", "Exterior Refugio Montaña", 0),
-            ("2", "/mock/property-3.svg", "Sala de Estar Acogedora", 1),
-            ("3", "/mock/property-2.svg", "Baño de Lujo", 2),
-            ("4", "/mock/property-4.svg", "Área de Comedor", 3),
-            ("5", "/mock/property-1.svg", "Vista a la Montaña", 4),
+            ("1", "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80", "Exterior Refugio Montaña", 0),
+            ("2", "https://images.unsplash.com/photo-1571508601155-8a95d1df991c?w=800&q=80", "Sala de Estar Acogedora", 1),
+            ("3", "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80", "Baño de Lujo", 2),
+            ("4", "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80", "Área de Comedor", 3),
+            ("5", "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&q=80", "Vista a la Montaña", 4),
         ],
         "reviews": [
             ("Elena Gómez", 5, "Julio 2024", "¡Retiro montañoso perfecto! Las vistas de la chimenea son absolutamente impresionantes. Perfecto para escapada invernal."),
@@ -150,11 +150,11 @@ PROPERTIES_DATA = [
             "Acceso Esnórquel"
         ],
         "images": [
-            ("1", "/mock/property-4.svg", "Playa Tropical", 0),
-            ("2", "/mock/property-2.svg", "Bungaló Dormitorio", 1),
-            ("3", "/mock/property-1.svg", "Baño Exterior", 2),
-            ("4", "/mock/property-5.svg", "Piscina Infinita", 3),
-            ("5", "/mock/property-3.svg", "Vista Atardecer", 4),
+            ("1", "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80", "Playa Tropical", 0),
+            ("2", "https://images.unsplash.com/photo-1615529162887-a4521ea3dffb?w=800&q=80", "Bungaló Dormitorio", 1),
+            ("3", "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80", "Baño Exterior", 2),
+            ("4", "https://images.unsplash.com/photo-1576610616656-d3aa5d1f4534?w=800&q=80", "Piscina Infinita", 3),
+            ("5", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80", "Vista Atardecer", 4),
         ],
         "reviews": [
             ("Sofía Rodríguez", 5, "Septiembre 2024", "¡Paraíso encontrado! Esta villa superó todas mis expectativas. ¡El acceso a la playa es increíble!"),
