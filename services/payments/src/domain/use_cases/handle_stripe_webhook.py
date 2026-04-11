@@ -104,6 +104,8 @@ class HandleStripeWebhookUseCase(BaseUseCase[tuple[bytes, str], None]):
                 payload={
                     "provider_code": stored_payment.provider_code,
                     "event_type": event_type,
+                    "amount_in_cents": stored_payment.amount_in_cents,
+                    "currency": stored_payment.currency,
                     "gateway_charge_id": stored_payment.gateway_charge_id,
                     "status": stored_payment.status.value,
                     "failure_reason": stored_payment.failure_reason,

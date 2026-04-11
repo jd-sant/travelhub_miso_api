@@ -188,6 +188,8 @@ class FinalizeStripePaymentUseCase(BaseUseCase[PaymentFinalizeRequest, PaymentFi
                         "provider_code": session.provider_code,
                         "payment_intent_id": session.payment_intent_id,
                         "status": stripe_status,
+                        "amount_in_cents": session.amount_in_cents,
+                        "currency": session.currency,
                     },
                     created_at=session.updated_at,
                 )
@@ -336,6 +338,8 @@ class FinalizeStripePaymentUseCase(BaseUseCase[PaymentFinalizeRequest, PaymentFi
                     "provider_code": payment.provider_code,
                     "reservation_id": str(payment.reservation_id),
                     "status": payment.status.value,
+                    "amount_in_cents": payment.amount_in_cents,
+                    "currency": payment.currency,
                     "gateway_charge_id": payment.gateway_charge_id,
                     "failure_reason": payment.failure_reason,
                 },

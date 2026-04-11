@@ -497,6 +497,7 @@ def test_finalize_stripe_payment_materializes_confirmed_payment(client, test_eng
     with Session(test_engine) as session:
         stored_session = session.exec(select(PaymentCheckoutSession)).first()
         stored_payment = session.exec(select(Payment)).first()
+        stored_audit_logs = session.exec(select(PaymentAuditLog)).all()
 
     assert stored_session is not None
     assert stored_session.status == "confirmed"
@@ -510,6 +511,11 @@ def test_finalize_stripe_payment_materializes_confirmed_payment(client, test_eng
     assert stored_payment.receipt_number is not None
     assert len(dispatcher.calls) == 1
     assert str(dispatcher.calls[0]["payment_id"]) == body["payment_id"]
+    confirmed_audit = next(
+        log for log in stored_audit_logs if log.action == "payment.finalize.confirmed"
+    )
+    assert confirmed_audit.payload["amount_in_cents"] == 287650
+    assert confirmed_audit.payload["currency"] == "COP"
 
 
 def test_get_payment_confirmation_returns_checkout_summary(client, monkeypatch):
@@ -588,9 +594,13 @@ def test_webhook_can_complete_requires_action_checkout(client, test_engine, monk
 
     with Session(test_engine) as session:
         stored_payment = session.exec(select(Payment)).first()
+        stored_audit_logs = session.exec(select(PaymentAuditLog)).all()
 
     assert stored_payment is not None
     assert stored_payment.status == "confirmed"
+    webhook_audit = next(log for log in stored_audit_logs if log.action == "payment.webhook.processed")
+    assert webhook_audit.payload["amount_in_cents"] == 287650
+    assert webhook_audit.payload["currency"] == "COP"
 
 
 def test_finalize_stripe_payment_returns_failed_response_for_card_error(client, test_engine, monkeypatch):

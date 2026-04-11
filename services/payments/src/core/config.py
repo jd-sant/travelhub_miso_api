@@ -139,6 +139,10 @@ class Settings:
     @property
     def notifications_service_url(self) -> str:
         value = os.getenv("NOTIFICATIONS_SERVICE_URL", "").rstrip("/")
+        if self.compliance_mode and not value:
+            raise RuntimeError(
+                "NOTIFICATIONS_SERVICE_URL debe estar configurado cuando PAYMENTS_COMPLIANCE_MODE esta activo."
+            )
         self._assert_internal_service_url(value, "NOTIFICATIONS_SERVICE_URL")
         return value
 

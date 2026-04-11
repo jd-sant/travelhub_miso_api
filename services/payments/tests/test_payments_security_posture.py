@@ -107,6 +107,21 @@ def test_settings_require_encryption_key_in_compliance_mode(monkeypatch: pytest.
         Settings().payments_data_encryption_key
 
 
+def test_settings_require_notifications_service_url_in_compliance_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.setenv("PAYMENTS_COMPLIANCE_MODE", "true")
+    monkeypatch.setenv("PAYMENT_PROVIDER", "stripe_test")
+    monkeypatch.setenv("STRIPE_SECRET_KEY", "sk_test_example")
+    monkeypatch.setenv("STRIPE_PUBLISHABLE_KEY", "pk_test_example")
+    monkeypatch.setenv("PAYMENTS_DATA_ENCRYPTION_KEY", "test-encryption-key")
+    monkeypatch.delenv("NOTIFICATIONS_SERVICE_URL", raising=False)
+
+    with pytest.raises(RuntimeError, match="NOTIFICATIONS_SERVICE_URL"):
+        Settings().notifications_service_url
+
+
 def test_backend_source_has_no_hardcoded_pan_literals() -> None:
     service_root = Path(__file__).resolve().parents[1]
     repo_root = Path(__file__).resolve().parents[3]
