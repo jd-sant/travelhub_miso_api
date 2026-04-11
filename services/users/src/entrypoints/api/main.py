@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from core.auth_middleware import AuthMiddleware
 from db.session import create_db_and_tables
 from entrypoints.api.routers.internal import router as internal_router
 from entrypoints.api.routers.users import router as users_router
@@ -16,12 +17,13 @@ async def lifespan(_: FastAPI):
 
 def create_application() -> FastAPI:
     app = FastAPI(title="TravelHub - Users Service", lifespan=lifespan)
+    app.add_middleware(AuthMiddleware)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=["http://localhost:3000"],
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE"],
+        allow_headers=["Authorization", "Content-Type"],
     )
     app.include_router(users_router, prefix="/api/v1")
     app.include_router(internal_router, prefix="/api/v1")

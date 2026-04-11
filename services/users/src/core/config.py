@@ -42,6 +42,14 @@ class Settings:
         return os.getenv("DB_ECHO", "False").lower() == "true"
 
     @property
+    def jwt_secret_key(self) -> str:
+        return os.getenv("JWT_SECRET_KEY", "dev-secret-key-change-me")
+
+    @property
+    def jwt_algorithm(self) -> str:
+        return os.getenv("JWT_ALGORITHM", "HS256")
+
+    @property
     def internal_api_key(self) -> str:
         value = os.getenv("INTERNAL_API_KEY")
         if value:
