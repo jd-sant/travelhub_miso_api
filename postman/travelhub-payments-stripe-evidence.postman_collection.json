@@ -1,0 +1,200 @@
+{
+  "info": {
+    "_postman_id": "a8e9ef20-8d58-4bd2-9717-65d4f7ef5001",
+    "name": "TravelHub Payments Stripe Base Evidence",
+    "description": "Coleccion ejecutable para validar la evidencia tecnica base de HU016 con Stripe test mode. Solo incluye requests repetibles desde Postman/Newman sin depender de un confirmation_token_id de un solo uso.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 - Config",
+      "item": [
+        {
+          "name": "Get Payments Config",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Config responde 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Provider es stripe_test', function () {",
+                  "  pm.expect(body.provider).to.eql('stripe_test');",
+                  "});",
+                  "pm.test('Stripe esta habilitado', function () {",
+                  "  pm.expect(body.stripe_enabled).to.eql(true);",
+                  "});",
+                  "pm.test('Publishable key de prueba esta presente', function () {",
+                  "  pm.expect(body.publishable_key).to.match(/^pk_test_/);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{payments_base_url}}/api/v1/payments/config",
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "config"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Create Intent",
+      "item": [
+        {
+          "name": "Create Intent",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('checkout_reservation_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('checkout_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Create intent responde 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Devuelve payment_transaction_id', function () {",
+                  "  pm.expect(body.payment_transaction_id).to.be.a('string');",
+                  "});",
+                  "pm.test('Devuelve publishable key de prueba', function () {",
+                  "  pm.expect(body.publishable_key).to.match(/^pk_test_/);",
+                  "});",
+                  "pm.collectionVariables.set('payment_transaction_id', body.payment_transaction_id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Forwarded-Proto",
+                "value": "https"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservation_id\": \"{{checkout_reservation_id}}\",\n  \"traveler_id\": \"{{checkout_traveler_id}}\",\n  \"amount_in_cents\": 287650,\n  \"currency\": \"COP\",\n  \"property_name\": \"Renaissance Estate & Private Vineyard\",\n  \"check_in_date\": \"2026-10-12\",\n  \"check_out_date\": \"2026-10-17\"\n}"
+            },
+            "url": {
+              "raw": "{{payments_base_url}}/api/v1/payments/create-intent",
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "create-intent"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Manual Evidence Guide",
+      "item": [
+        {
+          "name": "Read Manual Stripe Evidence Note",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('La nota de alcance es visible', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{payments_base_url}}/api/v1/payments/config",
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "config"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Manual Stripe evidence",
+              "originalRequest": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{payments_base_url}}/api/v1/payments/config",
+                  "host": [
+                    "{{payments_base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "payments",
+                    "config"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"note\": \"El flujo finalize con Stripe requiere un confirmation_token_id de un solo uso generado por Stripe Elements en el navegador.\",\n  \"manual_evidence\": [\n    \"Completar el pago desde /checkout en el frontend.\",\n    \"Tomar evidencia del POST /api/v1/payments/finalize en DevTools.\",\n    \"Validar GET /api/v1/payments/{payment_id} y /events con el payment_id devuelto por el frontend.\",\n    \"Usar Postman/Newman solo para config y create-intent, que son repetibles.\"\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "payment_transaction_id",
+      "value": ""
+    },
+    {
+      "key": "checkout_reservation_id",
+      "value": ""
+    },
+    {
+      "key": "checkout_traveler_id",
+      "value": ""
+    }
+  ]
+}
