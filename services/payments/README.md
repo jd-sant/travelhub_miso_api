@@ -70,6 +70,9 @@ PYTHONPATH=src uvicorn entrypoints.api.main:app --reload --port 8003
 make payments-test
 # o
 PYTHONPATH=services/payments/src pytest services/payments/tests/ -v
+
+# postura de seguridad
+make payments-security-scan
 ```
 
 ## Configuracion
@@ -98,6 +101,7 @@ PYTHONPATH=services/payments/src pytest services/payments/tests/ -v
 - Este repo backend deja listo el contrato token-only para integrarse luego con Stripe Elements desde el frontend.
 - En el MVP actual el gateway por defecto es simulado para permitir pruebas automatizadas sin depender de servicios externos.
 - Para HU-ARQ-05, el modo defendible es `PAYMENTS_COMPLIANCE_MODE=true` con `PAYMENT_PROVIDER=stripe_test`.
+- En ese modo, el backend queda restringido al flujo token-only y exige configuracion valida de Stripe, cifrado de referencias sensibles y URL HTTPS para notificaciones internas.
 - La suite incluye pruebas de postura de seguridad para verificar ausencia de PAN hardcodeado en backend y redaccion de payloads sensibles.
 - Si `PAYMENT_PROVIDER=stripe_test` y las llaves estan configuradas, el servicio expone el flujo `create-intent` + `finalize` + `webhook` para Stripe test mode.
 - Los eventos `reservation.confirmation.requested`, `notification.payment_confirmation.requested` e `inventory.update.requested` dejan trazabilidad para la futura integracion asincrona.

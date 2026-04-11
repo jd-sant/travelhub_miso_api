@@ -146,6 +146,8 @@ Cada servicio mantiene su propio `buildspec.yml` para pruebas y build de imagen.
 - El backend rechaza campos de tarjeta fuera del contrato HTTP y no persiste PAN, CVV ni fecha de expiracion.
 - Las referencias sensibles de checkout se cifran en reposo a nivel de aplicacion.
 - Las suites de `payments` y `notifications` incluyen pruebas de postura de seguridad ejecutadas por CI.
+- Para validar HU-ARQ-05 de punta a punta, el frontend debe operar con `NUXT_PUBLIC_PAYMENTS_COMPLIANCE_MODE=true` y el backend con `PAYMENTS_COMPLIANCE_MODE=true` + `PAYMENT_PROVIDER=stripe_test`.
+- El repo frontend incorpora un `security:scan` repo-wide para detectar PAN hardcodeado, logs inseguros y patrones que contradigan el flujo token-only.
 
 ## Variables de entorno
 
