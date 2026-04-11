@@ -1,0 +1,638 @@
+{
+  "info": {
+    "_postman_id": "4aef55a2-4dd0-4d8a-a3d2-5e1f6f0a0a01",
+    "name": "TravelHub Payments MVP",
+    "description": "Coleccion para validar el MVP backend de HU016 desde Postman.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 - Health",
+      "item": [
+        {
+          "name": "Health - Payments",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Health responde 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.test('Health reporta healthy', function () {",
+                  "    pm.expect(body.status).to.eql('healthy');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{payments_base_url}}/health",
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "01 - Pago Exitoso",
+      "item": [
+        {
+          "name": "Create Charge - Success",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const suffix = Date.now();",
+                  "pm.collectionVariables.set('success_idempotency_key', `booking-success-${suffix}`);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU016: pago exitoso responde 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('HU016: backend confirma el pago', function () {",
+                  "    pm.expect(body.status).to.eql('confirmed');",
+                  "});",
+                  "",
+                  "pm.test('HU016: se genera recibo', function () {",
+                  "    pm.expect(body.receipt_id).to.be.a('string');",
+                  "    pm.expect(body.receipt_number).to.match(/^RCPT-/);",
+                  "});",
+                  "",
+                  "pm.test('HU016: no se expone token de pago en la respuesta', function () {",
+                  "    pm.expect(body.payment_method_token).to.eql(undefined);",
+                  "});",
+                  "",
+                  "pm.test('HU016: no se expone PAN/CVV en la respuesta', function () {",
+                  "    pm.expect(body.card_number).to.eql(undefined);",
+                  "    pm.expect(body.cvv).to.eql(undefined);",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('payment_id', body.payment_id);",
+                  "pm.collectionVariables.set('confirmed_payment_id', body.payment_id);",
+                  "pm.collectionVariables.set('confirmed_idempotency_key', pm.collectionVariables.get('success_idempotency_key'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Forwarded-Proto",
+                "value": "https"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservation_id\": \"{{reservation_id}}\",\n  \"traveler_id\": \"{{traveler_id}}\",\n  \"payment_method_token\": \"pm_tok_visa_ok\",\n  \"amount_in_cents\": 125000,\n  \"currency\": \"COP\",\n  \"idempotency_key\": \"{{success_idempotency_key}}\"\n}"
+            },
+            "url": {
+              "raw": "{{payments_base_url}}/api/v1/payments/charges",
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "charges"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Payment By Id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Consulta de pago responde 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('HU016: pago consultado sigue confirmado', function () {",
+                  "    pm.expect(body.status).to.eql('confirmed');",
+                  "});",
+                  "",
+                  "pm.test('HU016: recibo queda disponible al consultar el pago', function () {",
+                  "    pm.expect(body.receipt_id).to.be.a('string');",
+                  "    pm.expect(body.receipt_number).to.match(/^RCPT-/);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{payments_base_url}}/api/v1/payments/{{confirmed_payment_id}}",
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "{{confirmed_payment_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Payment Events - Success",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Consulta de eventos responde 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "const eventTypes = body.map(item => item.event_type);",
+                  "",
+                  "pm.test('HU016: existen eventos de confirmacion y recibo', function () {",
+                  "    pm.expect(eventTypes).to.include('payment.succeeded');",
+                  "    pm.expect(eventTypes).to.include('reservation.confirmation.requested');",
+                  "    pm.expect(eventTypes).to.include('receipt.generated');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{payments_base_url}}/api/v1/payments/{{confirmed_payment_id}}/events",
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "{{confirmed_payment_id}}",
+                "events"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 - Pago Fallido",
+      "item": [
+        {
+          "name": "Create Charge - Failure",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const suffix = Date.now();",
+                  "pm.collectionVariables.set('failure_idempotency_key', `booking-failure-${suffix}`);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU016: pago fallido tambien responde 201 en el recurso de pago', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('HU016: backend marca el pago como failed', function () {",
+                  "    pm.expect(body.status).to.eql('failed');",
+                  "});",
+                  "",
+                  "pm.test('HU016: backend devuelve motivo claro de rechazo', function () {",
+                  "    pm.expect(body.failure_reason).to.eql('insufficient_funds');",
+                  "});",
+                  "",
+                  "pm.test('HU016: no se genera recibo en pago fallido', function () {",
+                  "    pm.expect(body.receipt_id).to.eql(null);",
+                  "    pm.expect(body.receipt_number).to.eql(null);",
+                  "});",
+                  "",
+                  "pm.collectionVariables.set('failed_payment_id', body.payment_id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Forwarded-Proto",
+                "value": "https"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservation_id\": \"{{reservation_id}}\",\n  \"traveler_id\": \"{{traveler_id}}\",\n  \"payment_method_token\": \"pm_fail_insufficient_funds\",\n  \"amount_in_cents\": 125000,\n  \"currency\": \"COP\",\n  \"idempotency_key\": \"{{failure_idempotency_key}}\"\n}"
+            },
+            "url": {
+              "raw": "{{payments_base_url}}/api/v1/payments/charges",
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "charges"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Payment Events - Failure",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Consulta de eventos de fallo responde 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "const eventTypes = body.map(item => item.event_type);",
+                  "",
+                  "pm.test('HU016: pago fallido registra evento payment.failed', function () {",
+                  "    pm.expect(eventTypes).to.include('payment.failed');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{payments_base_url}}/api/v1/payments/{{failed_payment_id}}/events",
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "{{failed_payment_id}}",
+                "events"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 - Duplicados",
+      "item": [
+        {
+          "name": "Create Charge - Duplicate Seed",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const suffix = Date.now();",
+                  "pm.collectionVariables.set('duplicate_idempotency_key', `booking-duplicate-${suffix}`);",
+                  "pm.collectionVariables.set('duplicate_reservation_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('duplicate_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Seed para duplicado responde 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('duplicate_seed_payment_id', body.payment_id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Forwarded-Proto",
+                "value": "https"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservation_id\": \"{{duplicate_reservation_id}}\",\n  \"traveler_id\": \"{{duplicate_traveler_id}}\",\n  \"payment_method_token\": \"pm_tok_visa_ok\",\n  \"amount_in_cents\": 125000,\n  \"currency\": \"COP\",\n  \"idempotency_key\": \"{{duplicate_idempotency_key}}\"\n}"
+            },
+            "url": {
+              "raw": "{{payments_base_url}}/api/v1/payments/charges",
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "charges"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Charge - Idempotency Replay",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU016: replay de idempotencia responde 409', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('HU016: mensaje de idempotencia es claro', function () {",
+                  "    pm.expect(body.detail.message).to.eql('Se reutilizó una idempotency_key ya registrada.');",
+                  "});",
+                  "",
+                  "pm.test('HU016: backend informa el pago original relacionado', function () {",
+                    "    pm.expect(body.detail.duplicate_payment_id).to.be.a('string');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Forwarded-Proto",
+                "value": "https"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservation_id\": \"{{duplicate_reservation_id}}\",\n  \"traveler_id\": \"{{duplicate_traveler_id}}\",\n  \"payment_method_token\": \"pm_tok_visa_ok\",\n  \"amount_in_cents\": 125000,\n  \"currency\": \"COP\",\n  \"idempotency_key\": \"{{duplicate_idempotency_key}}\"\n}"
+            },
+            "url": {
+              "raw": "{{payments_base_url}}/api/v1/payments/charges",
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "charges"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Charge - Duplicate Window",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const suffix = Date.now();",
+                  "pm.collectionVariables.set('duplicate_window_idempotency_key', `booking-duplicate-window-${suffix}`);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU016: duplicado por ventana responde 409', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('HU016: mensaje de duplicado por ventana es claro', function () {",
+                  "    pm.expect(body.detail.message).to.eql('Se detectó una transacción duplicada en menos de 2 segundos.');",
+                  "});",
+                  "",
+                  "pm.test('HU016: backend informa el pago original relacionado', function () {",
+                  "    pm.expect(body.detail.duplicate_payment_id).to.be.a('string');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Forwarded-Proto",
+                "value": "https"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservation_id\": \"{{duplicate_reservation_id}}\",\n  \"traveler_id\": \"{{duplicate_traveler_id}}\",\n  \"payment_method_token\": \"pm_tok_visa_ok\",\n  \"amount_in_cents\": 125000,\n  \"currency\": \"COP\",\n  \"idempotency_key\": \"{{duplicate_window_idempotency_key}}\"\n}"
+            },
+            "url": {
+              "raw": "{{payments_base_url}}/api/v1/payments/charges",
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "charges"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 - Seguridad Transporte",
+      "item": [
+        {
+          "name": "Create Charge - Missing TLS Header",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const suffix = Date.now();",
+                  "pm.collectionVariables.set('tls_failure_idempotency_key', `booking-tls-${suffix}`);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('HU016: request sin header TLS es rechazado', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('HU016: mensaje indica requerimiento de TLS', function () {",
+                  "    pm.expect(body.detail).to.eql('TLS 1.2+ is required for payment requests');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservation_id\": \"{{reservation_id}}\",\n  \"traveler_id\": \"{{traveler_id}}\",\n  \"payment_method_token\": \"pm_tok_visa_ok\",\n  \"amount_in_cents\": 125000,\n  \"currency\": \"COP\",\n  \"idempotency_key\": \"{{tls_failure_idempotency_key}}\"\n}"
+            },
+            "url": {
+              "raw": "{{payments_base_url}}/api/v1/payments/charges",
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "charges"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "payment_id",
+      "value": ""
+    },
+    {
+      "key": "confirmed_payment_id",
+      "value": ""
+    },
+    {
+      "key": "failed_payment_id",
+      "value": ""
+    },
+    {
+      "key": "success_idempotency_key",
+      "value": ""
+    },
+    {
+      "key": "failure_idempotency_key",
+      "value": ""
+    },
+    {
+      "key": "duplicate_idempotency_key",
+      "value": ""
+    },
+    {
+      "key": "duplicate_window_idempotency_key",
+      "value": ""
+    },
+    {
+      "key": "tls_failure_idempotency_key",
+      "value": ""
+    },
+    {
+      "key": "duplicate_reservation_id",
+      "value": ""
+    },
+    {
+      "key": "duplicate_traveler_id",
+      "value": ""
+    },
+    {
+      "key": "confirmed_idempotency_key",
+      "value": ""
+    }
+  ]
+}
