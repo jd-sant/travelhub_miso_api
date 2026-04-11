@@ -5,6 +5,7 @@ from sqlmodel import Session
 
 from adapters.repositories.reservation_repository import SQLModelReservationRepository
 from db.session import get_session
+from domain.use_cases.check_reservation_status import CheckReservationStatusUseCase
 from domain.use_cases.create_reservation import CreateReservationUseCase
 
 
@@ -32,3 +33,9 @@ class ReservationAssembly:
         repository: SQLModelReservationRepository,
     ) -> CreateReservationUseCase:
         return CreateReservationUseCase(repository)
+
+    @staticmethod
+    def get_check_reservation_status_use_case(
+        repository: SQLModelReservationRepository,
+    ) -> CheckReservationStatusUseCase:
+        return CheckReservationStatusUseCase(repository)

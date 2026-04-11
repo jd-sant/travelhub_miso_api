@@ -39,3 +39,10 @@ class ReservationSummary(BaseModel):
     check_out_date: datetime
     created_at: datetime
 
+
+class ReservationCheckStatusResponse(BaseModel):
+    reservation: ReservationResponse
+    status_before: str
+    status_after: str
+    action_applied: str
+

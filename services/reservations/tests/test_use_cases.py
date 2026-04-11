@@ -3,6 +3,7 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from uuid import uuid4
 
+from domain.use_cases.check_reservation_status import CheckReservationStatusUseCase
 from domain.use_cases.create_reservation import CreateReservationUseCase
 from domain.schemas.reservation import ReservationCreateRequest
 from errors import InvalidReservationDateError, RoomNotAvailableError
@@ -168,3 +169,31 @@ class TestCreateReservationUseCase:
 
         with pytest.raises(RoomNotAvailableError):
             create_reservation_use_case.execute(overlapping_request)
+
+
+class TestCheckReservationStatusUseCase:
+    def test_execute_cancels_pending_payment_reservation(
+        self, reservation_repository, valid_create_request
+    ):
+        created = reservation_repository.add(valid_create_request, Decimal("357.00"))
+        use_case = CheckReservationStatusUseCase(reservation_repository)
+
+        result = use_case.execute(created.id)
+
+        assert result.status_before == "pending_payment"
+        assert result.status_after == "cancelled"
+        assert result.action_applied == "cancelled"
+        assert result.reservation.status == "cancelled"
+
+    def test_execute_keeps_non_pending_payment_reservation(
+        self, reservation_repository, valid_create_request
+    ):
+        created = reservation_repository.add(valid_create_request, Decimal("357.00"))
+        reservation_repository.update_status(created.id, "confirmed")
+        use_case = CheckReservationStatusUseCase(reservation_repository)
+
+        result = use_case.execute(created.id)
+
+        assert result.status_before == "confirmed"
+        assert result.status_after == "confirmed"
+        assert result.action_applied == "none"
