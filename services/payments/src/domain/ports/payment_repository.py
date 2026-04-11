@@ -2,7 +2,11 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from uuid import UUID
 
-from domain.schemas.payment import PaymentChargeResponse, PaymentEventResponse
+from domain.schemas.payment import (
+    PaymentChargeResponse,
+    PaymentEventResponse,
+    ReservationConfirmationOutboxRecord,
+)
 
 
 class PaymentRepository(ABC):
@@ -37,4 +41,50 @@ class PaymentRepository(ABC):
 
     @abstractmethod
     def list_events(self, payment_id: UUID) -> list[PaymentEventResponse]:
+        pass
+
+    @abstractmethod
+    def upsert_reservation_confirmation_outbox_failure(
+        self,
+        *,
+        payment_id: UUID,
+        reservation_id: UUID,
+        error_message: str,
+        next_retry_at: datetime,
+        max_attempts: int,
+    ) -> None:
+        pass
+
+    @abstractmethod
+    def list_due_reservation_confirmation_outbox(
+        self,
+        *,
+        now: datetime,
+        limit: int,
+    ) -> list[ReservationConfirmationOutboxRecord]:
+        pass
+
+    @abstractmethod
+    def mark_reservation_confirmation_outbox_succeeded(
+        self,
+        *,
+        outbox_id: UUID,
+        processed_at: datetime,
+    ) -> None:
+        pass
+
+    @abstractmethod
+    def mark_reservation_confirmation_outbox_retry(
+        self,
+        *,
+        outbox_id: UUID,
+        next_retry_at: datetime,
+        error_message: str,
+        attempt_count: int,
+        mark_as_failed: bool,
+    ) -> None:
+        pass
+
+    @abstractmethod
+    def count_reservation_confirmation_outbox_pending(self, *, now: datetime) -> int:
         pass

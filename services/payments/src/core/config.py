@@ -147,6 +147,44 @@ class Settings:
         return value
 
     @property
+    def reservations_service_url(self) -> str:
+        value = os.getenv("RESERVATIONS_SERVICE_URL", "").rstrip("/")
+        if self.compliance_mode and not value:
+            raise RuntimeError(
+                "RESERVATIONS_SERVICE_URL debe estar configurado cuando PAYMENTS_COMPLIANCE_MODE esta activo."
+            )
+        self._assert_internal_service_url(value, "RESERVATIONS_SERVICE_URL")
+        return value
+
+    @property
+    def reservation_confirmation_retry_base_seconds(self) -> int:
+        value = int(os.getenv("RESERVATION_CONFIRMATION_RETRY_BASE_SECONDS", "30"))
+        if value <= 0:
+            raise RuntimeError("RESERVATION_CONFIRMATION_RETRY_BASE_SECONDS debe ser mayor a 0.")
+        return value
+
+    @property
+    def reservation_confirmation_retry_max_backoff_seconds(self) -> int:
+        value = int(os.getenv("RESERVATION_CONFIRMATION_RETRY_MAX_BACKOFF_SECONDS", "600"))
+        if value <= 0:
+            raise RuntimeError("RESERVATION_CONFIRMATION_RETRY_MAX_BACKOFF_SECONDS debe ser mayor a 0.")
+        return value
+
+    @property
+    def reservation_confirmation_retry_max_attempts(self) -> int:
+        value = int(os.getenv("RESERVATION_CONFIRMATION_RETRY_MAX_ATTEMPTS", "5"))
+        if value <= 0:
+            raise RuntimeError("RESERVATION_CONFIRMATION_RETRY_MAX_ATTEMPTS debe ser mayor a 0.")
+        return value
+
+    @property
+    def reservation_confirmation_retry_batch_size(self) -> int:
+        value = int(os.getenv("RESERVATION_CONFIRMATION_RETRY_BATCH_SIZE", "50"))
+        if value <= 0:
+            raise RuntimeError("RESERVATION_CONFIRMATION_RETRY_BATCH_SIZE debe ser mayor a 0.")
+        return value
+
+    @property
     def internal_api_key(self) -> str:
         value = os.getenv("INTERNAL_API_KEY")
         if value:

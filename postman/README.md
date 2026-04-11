@@ -6,7 +6,9 @@ Archivos listos para probar el MVP de `payments` desde Postman y validar los cri
 
 - `travelhub-payments.postman_collection.json`
 - `travelhub-payments-stripe-evidence.postman_collection.json`
+- `travelhub-payments-reservations-e2e.postman_collection.json`
 - `travelhub-local.postman_environment.json`
+- `travelhub-payments-reservations-local.postman_environment.json`
 - `travelhub-notifications.postman_collection.json`
 - `travelhub-notifications-local.postman_environment.json`
 
@@ -58,6 +60,28 @@ Valida:
 - Que Stripe esta habilitado.
 - Que el backend devuelve `publishable_key` de prueba.
 - Que `create-intent` crea una sesion de checkout interna con `payment_transaction_id`.
+
+## Coleccion E2E Payments + Reservations (Newman)
+
+`travelhub-payments-reservations-e2e.postman_collection.json`
+
+Valida dos escenarios:
+
+1. Happy path cross-service: reserva `pending_payment` -> pago `confirmed` -> reserva `confirmed`.
+2. Error path: pago `confirmed` pero falla la actualizacion de reserva, con reproceso por endpoint interno de retry.
+
+Ejecucion sugerida con Newman:
+
+```bash
+newman run postman/travelhub-payments-reservations-e2e.postman_collection.json \
+  -e postman/travelhub-payments-reservations-local.postman_environment.json
+```
+
+Prerequisitos:
+
+- Reservations activo en `http://localhost:8002`.
+- Payments activo en `http://localhost:8003`.
+- `INTERNAL_API_KEY` alineada entre servicios y environment de Postman.
 
 ## Flujo Stripe que queda fuera de Postman/Newman
 

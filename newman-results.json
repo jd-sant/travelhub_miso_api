@@ -1,0 +1,4329 @@
+{
+  "collection": {
+    "_": {
+      "postman_id": "6a9f86a1-2bb3-4c68-a5c2-8f2f7d33e201"
+    },
+    "item": [
+      {
+        "id": "9f843f74-03ca-4bf9-bc28-f9362df07f11",
+        "name": "00 - Health",
+        "item": [
+          {
+            "id": "08283dd9-9ef5-401c-aa9b-c05ea1788017",
+            "name": "Health - Reservations",
+            "request": {
+              "url": {
+                "path": [
+                  "health"
+                ],
+                "host": [
+                  "{{reservations_base_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "fdab0261-a565-4f5a-b32e-d058300efbfc",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Reservations health responde 200', function () {",
+                    "  pm.response.to.have.status(200);",
+                    "});"
+                  ],
+                  "_lastExecutionId": "0345fcb5-5e07-45e7-9bb8-506de788def9"
+                }
+              }
+            ]
+          },
+          {
+            "id": "716fc901-8702-4b11-a7ce-d390c71916c8",
+            "name": "Health - Payments",
+            "request": {
+              "url": {
+                "path": [
+                  "health"
+                ],
+                "host": [
+                  "{{payments_base_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "9affcf9d-7cf6-46e8-8f21-93ab207c4a94",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Payments health responde 200', function () {",
+                    "  pm.response.to.have.status(200);",
+                    "});"
+                  ],
+                  "_lastExecutionId": "00fd938d-df61-4d2b-a632-280be896b21d"
+                }
+              }
+            ]
+          }
+        ],
+        "event": []
+      },
+      {
+        "id": "a995e73a-e328-442f-ac02-fd13a487605b",
+        "name": "01 - Happy Path",
+        "item": [
+          {
+            "id": "0048a4bb-930a-44b7-86ae-e3e1ef081ec3",
+            "name": "Create Reservation - Pending",
+            "request": {
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "reservations"
+                ],
+                "host": [
+                  "{{reservations_base_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"id_traveler\": \"{{happy_traveler_id}}\",\n  \"id_property\": \"{{happy_property_id}}\",\n  \"id_room\": \"{{happy_room_id}}\",\n  \"check_in_date\": \"{{happy_check_in_date}}\",\n  \"check_out_date\": \"{{happy_check_out_date}}\",\n  \"number_of_guests\": 2,\n  \"currency\": \"COP\"\n}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "prerequest",
+                "script": {
+                  "id": "2c8292a5-b763-4a7b-ae9b-db5d3db28b4c",
+                  "type": "text/javascript",
+                  "exec": [
+                    "const now = new Date();",
+                    "const checkIn = new Date(now.getTime() + (5 * 24 * 60 * 60 * 1000));",
+                    "const checkOut = new Date(now.getTime() + (8 * 24 * 60 * 60 * 1000));",
+                    "pm.collectionVariables.set('happy_reservation_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                    "pm.collectionVariables.set('happy_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                    "pm.collectionVariables.set('happy_property_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                    "pm.collectionVariables.set('happy_room_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                    "pm.collectionVariables.set('happy_check_in_date', checkIn.toISOString());",
+                    "pm.collectionVariables.set('happy_check_out_date', checkOut.toISOString());",
+                    "pm.collectionVariables.set('happy_idempotency_key', `e2e-happy-${Date.now()}`);"
+                  ],
+                  "_lastExecutionId": "448a0c61-c58b-46ed-a5ee-5b47556e2212"
+                }
+              },
+              {
+                "listen": "test",
+                "script": {
+                  "id": "59b47197-11e2-45e8-8d4f-f1a178dba493",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Creacion de reserva responde 201', function () {",
+                    "  pm.response.to.have.status(201);",
+                    "});",
+                    "const body = pm.response.json();",
+                    "pm.test('Reserva inicia en pending_payment', function () {",
+                    "  pm.expect(body.status).to.eql('pending_payment');",
+                    "});",
+                    "pm.collectionVariables.set('happy_reservation_id', body.id);"
+                  ],
+                  "_lastExecutionId": "3a249559-4adf-40b8-8932-58b3c0463df6"
+                }
+              }
+            ]
+          },
+          {
+            "id": "d14b1e94-9151-4588-8e11-d22431341b1a",
+            "name": "Create Payment - Confirmed",
+            "request": {
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "payments",
+                  "charges"
+                ],
+                "host": [
+                  "{{payments_base_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Forwarded-Proto",
+                  "value": "https"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"reservation_id\": \"{{happy_reservation_id}}\",\n  \"traveler_id\": \"{{happy_traveler_id}}\",\n  \"payment_method_token\": \"pm_tok_visa_ok\",\n  \"amount_in_cents\": 125000,\n  \"currency\": \"COP\",\n  \"idempotency_key\": \"{{happy_idempotency_key}}\"\n}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "46af6c6e-e435-48e0-b51b-bb66e0ef1f04",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Pago responde 201', function () {",
+                    "  pm.response.to.have.status(201);",
+                    "});",
+                    "const body = pm.response.json();",
+                    "pm.test('Pago queda confirmado', function () {",
+                    "  pm.expect(body.status).to.eql('confirmed');",
+                    "});",
+                    "pm.collectionVariables.set('happy_payment_id', body.payment_id);"
+                  ],
+                  "_lastExecutionId": "343e5ef3-8a70-4cd0-ab5c-230df8d51921"
+                }
+              }
+            ]
+          },
+          {
+            "id": "da39cb2d-389a-42f9-9ced-5292229776c1",
+            "name": "Get Reservation - Confirmed",
+            "request": {
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "reservations",
+                  "{{happy_reservation_id}}"
+                ],
+                "host": [
+                  "{{reservations_base_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "c8a3d145-fb06-4223-94c6-fffb74f968c5",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Consulta reserva responde 200', function () {",
+                    "  pm.response.to.have.status(200);",
+                    "});",
+                    "const body = pm.response.json();",
+                    "pm.test('Reserva queda confirmed', function () {",
+                    "  pm.expect(body.status).to.eql('confirmed');",
+                    "});"
+                  ],
+                  "_lastExecutionId": "1273d8a3-e62c-4e12-84df-7f419c9ed0db"
+                }
+              }
+            ]
+          }
+        ],
+        "event": []
+      },
+      {
+        "id": "b87b7a8e-6b0c-49a2-8f38-7160550aa7a4",
+        "name": "02 - Error Path (Payment confirmed, reservation update failed)",
+        "item": [
+          {
+            "id": "84ac05c8-ebfe-46de-b7bc-020df4df566b",
+            "name": "Create Control Reservation - Pending",
+            "request": {
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "reservations"
+                ],
+                "host": [
+                  "{{reservations_base_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"id_traveler\": \"{{error_traveler_id}}\",\n  \"id_property\": \"{{error_property_id}}\",\n  \"id_room\": \"{{error_room_id}}\",\n  \"check_in_date\": \"{{error_check_in_date}}\",\n  \"check_out_date\": \"{{error_check_out_date}}\",\n  \"number_of_guests\": 2,\n  \"currency\": \"COP\"\n}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "prerequest",
+                "script": {
+                  "id": "342962e3-290c-4ae0-b750-4e126dabe53f",
+                  "type": "text/javascript",
+                  "exec": [
+                    "const now = new Date();",
+                    "const checkIn = new Date(now.getTime() + (10 * 24 * 60 * 60 * 1000));",
+                    "const checkOut = new Date(now.getTime() + (12 * 24 * 60 * 60 * 1000));",
+                    "pm.collectionVariables.set('error_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                    "pm.collectionVariables.set('error_property_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                    "pm.collectionVariables.set('error_room_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                    "pm.collectionVariables.set('error_check_in_date', checkIn.toISOString());",
+                    "pm.collectionVariables.set('error_check_out_date', checkOut.toISOString());",
+                    "pm.collectionVariables.set('error_idempotency_key', `e2e-error-${Date.now()}`);",
+                    "pm.collectionVariables.set('error_missing_reservation_id', pm.variables.replaceIn('{{$randomUUID}}'));"
+                  ],
+                  "_lastExecutionId": "0c33a819-d787-4a77-908c-7997c4c7861c"
+                }
+              },
+              {
+                "listen": "test",
+                "script": {
+                  "id": "1d6ac579-f447-42ca-8529-dba1a87f5d59",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Reserva de control responde 201', function () {",
+                    "  pm.response.to.have.status(201);",
+                    "});",
+                    "const body = pm.response.json();",
+                    "pm.test('Reserva de control inicia pending_payment', function () {",
+                    "  pm.expect(body.status).to.eql('pending_payment');",
+                    "});",
+                    "pm.collectionVariables.set('error_control_reservation_id', body.id);"
+                  ],
+                  "_lastExecutionId": "1aa0d11d-9415-472d-bd4e-432c6f6d567e"
+                }
+              }
+            ]
+          },
+          {
+            "id": "11f20792-7972-4813-af58-bd7944a5170d",
+            "name": "Create Payment for Missing Reservation - Still Confirmed",
+            "request": {
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "payments",
+                  "charges"
+                ],
+                "host": [
+                  "{{payments_base_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Forwarded-Proto",
+                  "value": "https"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"reservation_id\": \"{{error_missing_reservation_id}}\",\n  \"traveler_id\": \"{{error_traveler_id}}\",\n  \"payment_method_token\": \"pm_tok_visa_ok\",\n  \"amount_in_cents\": 125000,\n  \"currency\": \"COP\",\n  \"idempotency_key\": \"{{error_idempotency_key}}\"\n}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "607ab014-2222-49f5-96df-c3f068cd2b89",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Pago responde 201', function () {",
+                    "  pm.response.to.have.status(201);",
+                    "});",
+                    "const body = pm.response.json();",
+                    "pm.test('Pago se confirma aunque falla update de reserva', function () {",
+                    "  pm.expect(body.status).to.eql('confirmed');",
+                    "});",
+                    "pm.collectionVariables.set('error_payment_id', body.payment_id);"
+                  ],
+                  "_lastExecutionId": "4cf0c79d-436f-4d1b-9a1c-1723fee0a776"
+                }
+              }
+            ]
+          },
+          {
+            "id": "6521ac72-b6cb-4c5c-9ddd-879632780732",
+            "name": "Retry Reservation Confirmations - Expect Failed",
+            "request": {
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "internal",
+                  "reservation-confirmations",
+                  "retry"
+                ],
+                "host": [
+                  "{{payments_base_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "X-Internal-Api-Key",
+                  "value": "{{internal_api_key}}"
+                }
+              ],
+              "method": "POST"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "0a4e7b32-8e03-431e-8fa5-0ffc44b98085",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Retry endpoint responde 200', function () {",
+                    "  pm.response.to.have.status(200);",
+                    "});",
+                    "const body = pm.response.json();",
+                    "pm.test('Existe al menos un item procesado en retry', function () {",
+                    "  pm.expect(body.processed_count).to.be.greaterThan(0);",
+                    "});",
+                    "pm.test('Existe al menos un fallo en retry por reserva inexistente', function () {",
+                    "  pm.expect(body.failed_count).to.be.greaterThan(0);",
+                    "});"
+                  ],
+                  "_lastExecutionId": "57e56522-351d-4e55-9c3d-5705a639960a"
+                }
+              }
+            ]
+          },
+          {
+            "id": "9fa4cd4b-595b-4030-ac2a-8404b50699bc",
+            "name": "Control Reservation Remains Pending",
+            "request": {
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "reservations",
+                  "{{error_control_reservation_id}}"
+                ],
+                "host": [
+                  "{{reservations_base_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "221dc6b1-1d43-4c62-bc6a-e94d1a30cf1f",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Consulta reserva control responde 200', function () {",
+                    "  pm.response.to.have.status(200);",
+                    "});",
+                    "const body = pm.response.json();",
+                    "pm.test('Reserva control sigue pending_payment', function () {",
+                    "  pm.expect(body.status).to.eql('pending_payment');",
+                    "});"
+                  ],
+                  "_lastExecutionId": "30fd4846-55af-43ef-91a6-cbd0243034f8"
+                }
+              }
+            ]
+          }
+        ],
+        "event": []
+      }
+    ],
+    "event": [],
+    "variable": [
+      {
+        "type": "any",
+        "value": "http://localhost:8002",
+        "key": "reservations_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8003",
+        "key": "payments_base_url"
+      },
+      {
+        "type": "any",
+        "value": "dev-internal-key-change-me",
+        "key": "internal_api_key"
+      }
+    ],
+    "info": {
+      "_postman_id": "6a9f86a1-2bb3-4c68-a5c2-8f2f7d33e201",
+      "name": "TravelHub Payments-Reservations E2E",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+      "description": {
+        "content": "Flujo E2E cross-service con escenario exitoso y escenario de error (pago confirmado sin actualizacion de reserva).",
+        "type": "text/plain"
+      }
+    }
+  },
+  "environment": {
+    "_": {
+      "postman_variable_scope": "environment",
+      "postman_exported_at": "2026-04-11T00:00:00.000Z",
+      "postman_exported_using": "Codex"
+    },
+    "id": "5d5957fd-15f1-4d53-a6c7-2b218d431ad1",
+    "name": "TravelHub Payments-Reservations Local",
+    "values": [
+      {
+        "type": "any",
+        "value": "http://localhost:8002",
+        "key": "reservations_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8003",
+        "key": "payments_base_url"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-internal-secret-key",
+        "key": "internal_api_key"
+      }
+    ]
+  },
+  "globals": {
+    "id": "47540407-f287-4f60-b1df-0bc0e8e1837a",
+    "values": []
+  },
+  "run": {
+    "stats": {
+      "iterations": {
+        "total": 1,
+        "pending": 0,
+        "failed": 0
+      },
+      "items": {
+        "total": 9,
+        "pending": 0,
+        "failed": 0
+      },
+      "scripts": {
+        "total": 11,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequests": {
+        "total": 9,
+        "pending": 0,
+        "failed": 0
+      },
+      "requests": {
+        "total": 9,
+        "pending": 0,
+        "failed": 0
+      },
+      "tests": {
+        "total": 9,
+        "pending": 0,
+        "failed": 0
+      },
+      "assertions": {
+        "total": 17,
+        "pending": 0,
+        "failed": 0
+      },
+      "testScripts": {
+        "total": 9,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequestScripts": {
+        "total": 2,
+        "pending": 0,
+        "failed": 0
+      }
+    },
+    "timings": {
+      "responseAverage": 52.44444444444444,
+      "responseMin": 8,
+      "responseMax": 185,
+      "responseSd": 59.419620985198925,
+      "dnsAverage": 0,
+      "dnsMin": 0,
+      "dnsMax": 0,
+      "dnsSd": 0,
+      "firstByteAverage": 0,
+      "firstByteMin": 0,
+      "firstByteMax": 0,
+      "firstByteSd": 0,
+      "started": 1775936151861,
+      "completed": 1775936152543
+    },
+    "executions": [
+      {
+        "cursor": {
+          "position": 0,
+          "iteration": 0,
+          "length": 9,
+          "cycles": 1,
+          "empty": false,
+          "eof": false,
+          "bof": true,
+          "cr": false,
+          "ref": "73563911-b8c2-4f9a-8c3a-b15bc90a536c",
+          "httpRequestId": "7f93e5e2-ad20-42b3-823d-630c6f13043d"
+        },
+        "item": {
+          "id": "08283dd9-9ef5-401c-aa9b-c05ea1788017",
+          "name": "Health - Reservations",
+          "request": {
+            "url": {
+              "path": [
+                "health"
+              ],
+              "host": [
+                "{{reservations_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "fdab0261-a565-4f5a-b32e-d058300efbfc",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Reservations health responde 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "_lastExecutionId": "0345fcb5-5e07-45e7-9bb8-506de788def9"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8002",
+            "path": [
+              "health"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "71548b1a-54d1-4945-83b6-711c537f7467",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8002",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "a8e85acd-f651-4e98-8181-ae37db24abfe",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sat, 11 Apr 2026 19:35:51 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "15"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              111,
+              107,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 24,
+          "responseSize": 15
+        },
+        "id": "08283dd9-9ef5-401c-aa9b-c05ea1788017",
+        "assertions": [
+          {
+            "assertion": "Reservations health responde 200",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "dd5fa00f-6636-4c5e-8750-82045521cf39",
+          "length": 9,
+          "cycles": 1,
+          "position": 1,
+          "iteration": 0,
+          "httpRequestId": "0bba4a67-cdd7-4bea-a7b6-bb13ebba5ef4"
+        },
+        "item": {
+          "id": "716fc901-8702-4b11-a7ce-d390c71916c8",
+          "name": "Health - Payments",
+          "request": {
+            "url": {
+              "path": [
+                "health"
+              ],
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "9affcf9d-7cf6-46e8-8f21-93ab207c4a94",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Payments health responde 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "_lastExecutionId": "00fd938d-df61-4d2b-a632-280be896b21d"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8003",
+            "path": [
+              "health"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "da14bf60-877f-48d0-882b-aba6a4a40abf",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8003",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "9d9f0674-1894-457b-ac93-b61de87f32e3",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sat, 11 Apr 2026 19:35:51 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "20"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              104,
+              101,
+              97,
+              108,
+              116,
+              104,
+              121,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 18,
+          "responseSize": 20
+        },
+        "id": "716fc901-8702-4b11-a7ce-d390c71916c8",
+        "assertions": [
+          {
+            "assertion": "Payments health responde 200",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "27d2480c-db2f-4ac5-80ad-1cfebe30d1ed",
+          "length": 9,
+          "cycles": 1,
+          "position": 2,
+          "iteration": 0,
+          "httpRequestId": "dba4fc5d-0a2d-452e-b521-c84b3f7b826d"
+        },
+        "item": {
+          "id": "0048a4bb-930a-44b7-86ae-e3e1ef081ec3",
+          "name": "Create Reservation - Pending",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "reservations"
+              ],
+              "host": [
+                "{{reservations_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_traveler\": \"{{happy_traveler_id}}\",\n  \"id_property\": \"{{happy_property_id}}\",\n  \"id_room\": \"{{happy_room_id}}\",\n  \"check_in_date\": \"{{happy_check_in_date}}\",\n  \"check_out_date\": \"{{happy_check_out_date}}\",\n  \"number_of_guests\": 2,\n  \"currency\": \"COP\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "2c8292a5-b763-4a7b-ae9b-db5d3db28b4c",
+                "type": "text/javascript",
+                "exec": [
+                  "const now = new Date();",
+                  "const checkIn = new Date(now.getTime() + (5 * 24 * 60 * 60 * 1000));",
+                  "const checkOut = new Date(now.getTime() + (8 * 24 * 60 * 60 * 1000));",
+                  "pm.collectionVariables.set('happy_reservation_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('happy_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('happy_property_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('happy_room_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('happy_check_in_date', checkIn.toISOString());",
+                  "pm.collectionVariables.set('happy_check_out_date', checkOut.toISOString());",
+                  "pm.collectionVariables.set('happy_idempotency_key', `e2e-happy-${Date.now()}`);"
+                ],
+                "_lastExecutionId": "448a0c61-c58b-46ed-a5ee-5b47556e2212"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "59b47197-11e2-45e8-8d4f-f1a178dba493",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Creacion de reserva responde 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Reserva inicia en pending_payment', function () {",
+                  "  pm.expect(body.status).to.eql('pending_payment');",
+                  "});",
+                  "pm.collectionVariables.set('happy_reservation_id', body.id);"
+                ],
+                "_lastExecutionId": "3a249559-4adf-40b8-8932-58b3c0463df6"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8002",
+            "path": [
+              "api",
+              "v1",
+              "reservations"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "c0d008ee-46c1-41fb-aa1c-6804ecf7e569",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8002",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "310",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"id_traveler\": \"5a6a6032-de80-4463-baef-43e915dc1ca4\",\n  \"id_property\": \"62133262-bd29-4422-af48-d1c0bf9ce7b1\",\n  \"id_room\": \"d486213d-fdc3-450e-ac67-1f1bfcece704\",\n  \"check_in_date\": \"2026-04-16T19:35:51.966Z\",\n  \"check_out_date\": \"2026-04-19T19:35:51.966Z\",\n  \"number_of_guests\": 2,\n  \"currency\": \"COP\"\n}"
+          }
+        },
+        "response": {
+          "id": "7bc7e625-bbaf-4141-a589-b45f88bf5cc4",
+          "status": "Created",
+          "code": 201,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sat, 11 Apr 2026 19:35:51 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "245"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              105,
+              100,
+              34,
+              58,
+              34,
+              100,
+              51,
+              51,
+              100,
+              101,
+              98,
+              50,
+              48,
+              45,
+              98,
+              97,
+              53,
+              56,
+              45,
+              52,
+              54,
+              53,
+              99,
+              45,
+              97,
+              48,
+              99,
+              56,
+              45,
+              97,
+              102,
+              57,
+              99,
+              56,
+              48,
+              54,
+              53,
+              99,
+              56,
+              50,
+              51,
+              34,
+              44,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              112,
+              101,
+              110,
+              100,
+              105,
+              110,
+              103,
+              95,
+              112,
+              97,
+              121,
+              109,
+              101,
+              110,
+              116,
+              34,
+              44,
+              34,
+              116,
+              111,
+              116,
+              97,
+              108,
+              95,
+              112,
+              114,
+              105,
+              99,
+              101,
+              34,
+              58,
+              34,
+              51,
+              53,
+              55,
+              46,
+              48,
+              48,
+              34,
+              44,
+              34,
+              99,
+              117,
+              114,
+              114,
+              101,
+              110,
+              99,
+              121,
+              34,
+              58,
+              34,
+              67,
+              79,
+              80,
+              34,
+              44,
+              34,
+              99,
+              104,
+              101,
+              99,
+              107,
+              95,
+              105,
+              110,
+              95,
+              100,
+              97,
+              116,
+              101,
+              34,
+              58,
+              34,
+              50,
+              48,
+              50,
+              54,
+              45,
+              48,
+              52,
+              45,
+              49,
+              54,
+              84,
+              49,
+              57,
+              58,
+              51,
+              53,
+              58,
+              53,
+              49,
+              46,
+              57,
+              54,
+              54,
+              48,
+              48,
+              48,
+              34,
+              44,
+              34,
+              99,
+              104,
+              101,
+              99,
+              107,
+              95,
+              111,
+              117,
+              116,
+              95,
+              100,
+              97,
+              116,
+              101,
+              34,
+              58,
+              34,
+              50,
+              48,
+              50,
+              54,
+              45,
+              48,
+              52,
+              45,
+              49,
+              57,
+              84,
+              49,
+              57,
+              58,
+              51,
+              53,
+              58,
+              53,
+              49,
+              46,
+              57,
+              54,
+              54,
+              48,
+              48,
+              48,
+              34,
+              44,
+              34,
+              99,
+              114,
+              101,
+              97,
+              116,
+              101,
+              100,
+              95,
+              97,
+              116,
+              34,
+              58,
+              34,
+              50,
+              48,
+              50,
+              54,
+              45,
+              48,
+              52,
+              45,
+              49,
+              49,
+              84,
+              49,
+              57,
+              58,
+              51,
+              53,
+              58,
+              53,
+              49,
+              46,
+              57,
+              56,
+              52,
+              48,
+              50,
+              57,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 23,
+          "responseSize": 245
+        },
+        "id": "0048a4bb-930a-44b7-86ae-e3e1ef081ec3",
+        "assertions": [
+          {
+            "assertion": "Creacion de reserva responde 201",
+            "skipped": false
+          },
+          {
+            "assertion": "Reserva inicia en pending_payment",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "7e2513ba-392f-4976-a85b-58eea4009607",
+          "length": 9,
+          "cycles": 1,
+          "position": 3,
+          "iteration": 0,
+          "httpRequestId": "9685b63d-581c-4240-b989-ede27479a0a3"
+        },
+        "item": {
+          "id": "d14b1e94-9151-4588-8e11-d22431341b1a",
+          "name": "Create Payment - Confirmed",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "charges"
+              ],
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Forwarded-Proto",
+                "value": "https"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservation_id\": \"{{happy_reservation_id}}\",\n  \"traveler_id\": \"{{happy_traveler_id}}\",\n  \"payment_method_token\": \"pm_tok_visa_ok\",\n  \"amount_in_cents\": 125000,\n  \"currency\": \"COP\",\n  \"idempotency_key\": \"{{happy_idempotency_key}}\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "46af6c6e-e435-48e0-b51b-bb66e0ef1f04",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Pago responde 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Pago queda confirmado', function () {",
+                  "  pm.expect(body.status).to.eql('confirmed');",
+                  "});",
+                  "pm.collectionVariables.set('happy_payment_id', body.payment_id);"
+                ],
+                "_lastExecutionId": "343e5ef3-8a70-4cd0-ab5c-230df8d51921"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8003",
+            "path": [
+              "api",
+              "v1",
+              "payments",
+              "charges"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "X-Forwarded-Proto",
+              "value": "https"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "2097d19c-fed0-4328-8594-f20ebac8afbd",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8003",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "261",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"reservation_id\": \"d33deb20-ba58-465c-a0c8-af9c8065c823\",\n  \"traveler_id\": \"5a6a6032-de80-4463-baef-43e915dc1ca4\",\n  \"payment_method_token\": \"pm_tok_visa_ok\",\n  \"amount_in_cents\": 125000,\n  \"currency\": \"COP\",\n  \"idempotency_key\": \"e2e-happy-1775936151968\"\n}"
+          }
+        },
+        "response": {
+          "id": "aac2c175-cccc-454f-a1d2-0ecd2a8bc6b7",
+          "status": "Created",
+          "code": 201,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sat, 11 Apr 2026 19:35:51 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "366"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              112,
+              97,
+              121,
+              109,
+              101,
+              110,
+              116,
+              95,
+              105,
+              100,
+              34,
+              58,
+              34,
+              98,
+              51,
+              101,
+              102,
+              97,
+              50,
+              99,
+              100,
+              45,
+              57,
+              101,
+              99,
+              97,
+              45,
+              52,
+              99,
+              53,
+              51,
+              45,
+              98,
+              57,
+              102,
+              57,
+              45,
+              97,
+              51,
+              48,
+              100,
+              98,
+              52,
+              56,
+              101,
+              48,
+              53,
+              53,
+              51,
+              34,
+              44,
+              34,
+              114,
+              101,
+              115,
+              101,
+              114,
+              118,
+              97,
+              116,
+              105,
+              111,
+              110,
+              95,
+              105,
+              100,
+              34,
+              58,
+              34,
+              100,
+              51,
+              51,
+              100,
+              101,
+              98,
+              50,
+              48,
+              45,
+              98,
+              97,
+              53,
+              56,
+              45,
+              52,
+              54,
+              53,
+              99,
+              45,
+              97,
+              48,
+              99,
+              56,
+              45,
+              97,
+              102,
+              57,
+              99,
+              56,
+              48,
+              54,
+              53,
+              99,
+              56,
+              50,
+              51,
+              34,
+              44,
+              34,
+              112,
+              114,
+              111,
+              118,
+              105,
+              100,
+              101,
+              114,
+              95,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              102,
+              97,
+              107,
+              101,
+              95,
+              115,
+              116,
+              114,
+              105,
+              112,
+              101,
+              34,
+              44,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              99,
+              111,
+              110,
+              102,
+              105,
+              114,
+              109,
+              101,
+              100,
+              34,
+              44,
+              34,
+              97,
+              109,
+              111,
+              117,
+              110,
+              116,
+              95,
+              105,
+              110,
+              95,
+              99,
+              101,
+              110,
+              116,
+              115,
+              34,
+              58,
+              49,
+              50,
+              53,
+              48,
+              48,
+              48,
+              44,
+              34,
+              99,
+              117,
+              114,
+              114,
+              101,
+              110,
+              99,
+              121,
+              34,
+              58,
+              34,
+              67,
+              79,
+              80,
+              34,
+              44,
+              34,
+              103,
+              97,
+              116,
+              101,
+              119,
+              97,
+              121,
+              95,
+              99,
+              104,
+              97,
+              114,
+              103,
+              101,
+              95,
+              105,
+              100,
+              34,
+              58,
+              34,
+              99,
+              104,
+              95,
+              99,
+              100,
+              52,
+              56,
+              54,
+              102,
+              55,
+              48,
+              97,
+              101,
+              54,
+              52,
+              52,
+              99,
+              100,
+              98,
+              97,
+              56,
+              56,
+              98,
+              53,
+              97,
+              50,
+              99,
+              34,
+              44,
+              34,
+              114,
+              101,
+              99,
+              101,
+              105,
+              112,
+              116,
+              95,
+              105,
+              100,
+              34,
+              58,
+              34,
+              51,
+              56,
+              57,
+              49,
+              56,
+              99,
+              56,
+              54,
+              45,
+              54,
+              97,
+              56,
+              97,
+              45,
+              52,
+              57,
+              97,
+              55,
+              45,
+              98,
+              100,
+              101,
+              57,
+              45,
+              101,
+              99,
+              53,
+              101,
+              52,
+              53,
+              53,
+              101,
+              53,
+              102,
+              57,
+              54,
+              34,
+              44,
+              34,
+              114,
+              101,
+              99,
+              101,
+              105,
+              112,
+              116,
+              95,
+              110,
+              117,
+              109,
+              98,
+              101,
+              114,
+              34,
+              58,
+              34,
+              82,
+              67,
+              80,
+              84,
+              45,
+              50,
+              48,
+              50,
+              54,
+              48,
+              52,
+              49,
+              49,
+              45,
+              49,
+              57,
+              51,
+              53,
+              53,
+              50,
+              34,
+              44,
+              34,
+              102,
+              97,
+              105,
+              108,
+              117,
+              114,
+              101,
+              95,
+              114,
+              101,
+              97,
+              115,
+              111,
+              110,
+              34,
+              58,
+              110,
+              117,
+              108,
+              108,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 185,
+          "responseSize": 366
+        },
+        "id": "d14b1e94-9151-4588-8e11-d22431341b1a",
+        "assertions": [
+          {
+            "assertion": "Pago responde 201",
+            "skipped": false
+          },
+          {
+            "assertion": "Pago queda confirmado",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "59d16c1a-9d35-4737-8f1a-8214888b2494",
+          "length": 9,
+          "cycles": 1,
+          "position": 4,
+          "iteration": 0,
+          "httpRequestId": "184e6f5e-2778-4daa-9493-fec665029c7a"
+        },
+        "item": {
+          "id": "da39cb2d-389a-42f9-9ced-5292229776c1",
+          "name": "Get Reservation - Confirmed",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "reservations",
+                "{{happy_reservation_id}}"
+              ],
+              "host": [
+                "{{reservations_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "c8a3d145-fb06-4223-94c6-fffb74f968c5",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Consulta reserva responde 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Reserva queda confirmed', function () {",
+                  "  pm.expect(body.status).to.eql('confirmed');",
+                  "});"
+                ],
+                "_lastExecutionId": "1273d8a3-e62c-4e12-84df-7f419c9ed0db"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8002",
+            "path": [
+              "api",
+              "v1",
+              "reservations",
+              "d33deb20-ba58-465c-a0c8-af9c8065c823"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "a85ddfff-3a85-4f8d-a487-2de3605ff576",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8002",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "acef327c-6e18-477e-a876-1a0412075093",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sat, 11 Apr 2026 19:35:52 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "457"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              105,
+              100,
+              34,
+              58,
+              34,
+              100,
+              51,
+              51,
+              100,
+              101,
+              98,
+              50,
+              48,
+              45,
+              98,
+              97,
+              53,
+              56,
+              45,
+              52,
+              54,
+              53,
+              99,
+              45,
+              97,
+              48,
+              99,
+              56,
+              45,
+              97,
+              102,
+              57,
+              99,
+              56,
+              48,
+              54,
+              53,
+              99,
+              56,
+              50,
+              51,
+              34,
+              44,
+              34,
+              105,
+              100,
+              95,
+              116,
+              114,
+              97,
+              118,
+              101,
+              108,
+              101,
+              114,
+              34,
+              58,
+              34,
+              53,
+              97,
+              54,
+              97,
+              54,
+              48,
+              51,
+              50,
+              45,
+              100,
+              101,
+              56,
+              48,
+              45,
+              52,
+              52,
+              54,
+              51,
+              45,
+              98,
+              97,
+              101,
+              102,
+              45,
+              52,
+              51,
+              101,
+              57,
+              49,
+              53,
+              100,
+              99,
+              49,
+              99,
+              97,
+              52,
+              34,
+              44,
+              34,
+              105,
+              100,
+              95,
+              112,
+              114,
+              111,
+              112,
+              101,
+              114,
+              116,
+              121,
+              34,
+              58,
+              34,
+              54,
+              50,
+              49,
+              51,
+              51,
+              50,
+              54,
+              50,
+              45,
+              98,
+              100,
+              50,
+              57,
+              45,
+              52,
+              52,
+              50,
+              50,
+              45,
+              97,
+              102,
+              52,
+              56,
+              45,
+              100,
+              49,
+              99,
+              48,
+              98,
+              102,
+              57,
+              99,
+              101,
+              55,
+              98,
+              49,
+              34,
+              44,
+              34,
+              105,
+              100,
+              95,
+              114,
+              111,
+              111,
+              109,
+              34,
+              58,
+              34,
+              100,
+              52,
+              56,
+              54,
+              50,
+              49,
+              51,
+              100,
+              45,
+              102,
+              100,
+              99,
+              51,
+              45,
+              52,
+              53,
+              48,
+              101,
+              45,
+              97,
+              99,
+              54,
+              55,
+              45,
+              49,
+              102,
+              49,
+              98,
+              102,
+              99,
+              101,
+              99,
+              101,
+              55,
+              48,
+              52,
+              34,
+              44,
+              34,
+              99,
+              104,
+              101,
+              99,
+              107,
+              95,
+              105,
+              110,
+              95,
+              100,
+              97,
+              116,
+              101,
+              34,
+              58,
+              34,
+              50,
+              48,
+              50,
+              54,
+              45,
+              48,
+              52,
+              45,
+              49,
+              54,
+              84,
+              49,
+              57,
+              58,
+              51,
+              53,
+              58,
+              53,
+              49,
+              46,
+              57,
+              54,
+              54,
+              48,
+              48,
+              48,
+              34,
+              44,
+              34,
+              99,
+              104,
+              101,
+              99,
+              107,
+              95,
+              111,
+              117,
+              116,
+              95,
+              100,
+              97,
+              116,
+              101,
+              34,
+              58,
+              34,
+              50,
+              48,
+              50,
+              54,
+              45,
+              48,
+              52,
+              45,
+              49,
+              57,
+              84,
+              49,
+              57,
+              58,
+              51,
+              53,
+              58,
+              53,
+              49,
+              46,
+              57,
+              54,
+              54,
+              48,
+              48,
+              48,
+              34,
+              44,
+              34,
+              110,
+              117,
+              109,
+              98,
+              101,
+              114,
+              95,
+              111,
+              102,
+              95,
+              103,
+              117,
+              101,
+              115,
+              116,
+              115,
+              34,
+              58,
+              50,
+              44,
+              34,
+              116,
+              111,
+              116,
+              97,
+              108,
+              95,
+              112,
+              114,
+              105,
+              99,
+              101,
+              34,
+              58,
+              34,
+              51,
+              53,
+              55,
+              46,
+              48,
+              48,
+              34,
+              44,
+              34,
+              99,
+              117,
+              114,
+              114,
+              101,
+              110,
+              99,
+              121,
+              34,
+              58,
+              34,
+              67,
+              79,
+              80,
+              34,
+              44,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              99,
+              111,
+              110,
+              102,
+              105,
+              114,
+              109,
+              101,
+              100,
+              34,
+              44,
+              34,
+              99,
+              114,
+              101,
+              97,
+              116,
+              101,
+              100,
+              95,
+              97,
+              116,
+              34,
+              58,
+              34,
+              50,
+              48,
+              50,
+              54,
+              45,
+              48,
+              52,
+              45,
+              49,
+              49,
+              84,
+              49,
+              57,
+              58,
+              51,
+              53,
+              58,
+              53,
+              49,
+              46,
+              57,
+              56,
+              52,
+              48,
+              50,
+              57,
+              34,
+              44,
+              34,
+              117,
+              112,
+              100,
+              97,
+              116,
+              101,
+              100,
+              95,
+              97,
+              116,
+              34,
+              58,
+              34,
+              50,
+              48,
+              50,
+              54,
+              45,
+              48,
+              52,
+              45,
+              49,
+              49,
+              84,
+              49,
+              57,
+              58,
+              51,
+              53,
+              58,
+              53,
+              50,
+              46,
+              49,
+              49,
+              54,
+              54,
+              52,
+              48,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 8,
+          "responseSize": 457
+        },
+        "id": "da39cb2d-389a-42f9-9ced-5292229776c1",
+        "assertions": [
+          {
+            "assertion": "Consulta reserva responde 200",
+            "skipped": false
+          },
+          {
+            "assertion": "Reserva queda confirmed",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "4fd4cff9-2609-40d9-83b1-144338a879bc",
+          "length": 9,
+          "cycles": 1,
+          "position": 5,
+          "iteration": 0,
+          "httpRequestId": "d531c7aa-9c1e-4716-84ab-dfc5ab0ba01f"
+        },
+        "item": {
+          "id": "84ac05c8-ebfe-46de-b7bc-020df4df566b",
+          "name": "Create Control Reservation - Pending",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "reservations"
+              ],
+              "host": [
+                "{{reservations_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_traveler\": \"{{error_traveler_id}}\",\n  \"id_property\": \"{{error_property_id}}\",\n  \"id_room\": \"{{error_room_id}}\",\n  \"check_in_date\": \"{{error_check_in_date}}\",\n  \"check_out_date\": \"{{error_check_out_date}}\",\n  \"number_of_guests\": 2,\n  \"currency\": \"COP\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "342962e3-290c-4ae0-b750-4e126dabe53f",
+                "type": "text/javascript",
+                "exec": [
+                  "const now = new Date();",
+                  "const checkIn = new Date(now.getTime() + (10 * 24 * 60 * 60 * 1000));",
+                  "const checkOut = new Date(now.getTime() + (12 * 24 * 60 * 60 * 1000));",
+                  "pm.collectionVariables.set('error_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('error_property_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('error_room_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('error_check_in_date', checkIn.toISOString());",
+                  "pm.collectionVariables.set('error_check_out_date', checkOut.toISOString());",
+                  "pm.collectionVariables.set('error_idempotency_key', `e2e-error-${Date.now()}`);",
+                  "pm.collectionVariables.set('error_missing_reservation_id', pm.variables.replaceIn('{{$randomUUID}}'));"
+                ],
+                "_lastExecutionId": "0c33a819-d787-4a77-908c-7997c4c7861c"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "1d6ac579-f447-42ca-8529-dba1a87f5d59",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Reserva de control responde 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Reserva de control inicia pending_payment', function () {",
+                  "  pm.expect(body.status).to.eql('pending_payment');",
+                  "});",
+                  "pm.collectionVariables.set('error_control_reservation_id', body.id);"
+                ],
+                "_lastExecutionId": "1aa0d11d-9415-472d-bd4e-432c6f6d567e"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8002",
+            "path": [
+              "api",
+              "v1",
+              "reservations"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "a75d5034-b2da-4a34-ad6b-3c84444e3c0f",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8002",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "310",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"id_traveler\": \"56922112-aedb-4f6e-837a-9bded370a1dc\",\n  \"id_property\": \"89cadbbb-d490-4cab-8d23-2587a6479c6e\",\n  \"id_room\": \"7bafa8f3-c380-4f98-934e-ed140fcb9407\",\n  \"check_in_date\": \"2026-04-21T19:35:52.250Z\",\n  \"check_out_date\": \"2026-04-23T19:35:52.250Z\",\n  \"number_of_guests\": 2,\n  \"currency\": \"COP\"\n}"
+          }
+        },
+        "response": {
+          "id": "cbaaf41c-2e3a-40f9-8ebd-bc88d2b3cade",
+          "status": "Created",
+          "code": 201,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sat, 11 Apr 2026 19:35:52 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "245"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              105,
+              100,
+              34,
+              58,
+              34,
+              56,
+              54,
+              51,
+              49,
+              54,
+              54,
+              52,
+              50,
+              45,
+              53,
+              102,
+              48,
+              53,
+              45,
+              52,
+              51,
+              102,
+              48,
+              45,
+              56,
+              54,
+              51,
+              102,
+              45,
+              56,
+              50,
+              48,
+              48,
+              50,
+              53,
+              53,
+              99,
+              55,
+              50,
+              54,
+              49,
+              34,
+              44,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              112,
+              101,
+              110,
+              100,
+              105,
+              110,
+              103,
+              95,
+              112,
+              97,
+              121,
+              109,
+              101,
+              110,
+              116,
+              34,
+              44,
+              34,
+              116,
+              111,
+              116,
+              97,
+              108,
+              95,
+              112,
+              114,
+              105,
+              99,
+              101,
+              34,
+              58,
+              34,
+              50,
+              51,
+              56,
+              46,
+              48,
+              48,
+              34,
+              44,
+              34,
+              99,
+              117,
+              114,
+              114,
+              101,
+              110,
+              99,
+              121,
+              34,
+              58,
+              34,
+              67,
+              79,
+              80,
+              34,
+              44,
+              34,
+              99,
+              104,
+              101,
+              99,
+              107,
+              95,
+              105,
+              110,
+              95,
+              100,
+              97,
+              116,
+              101,
+              34,
+              58,
+              34,
+              50,
+              48,
+              50,
+              54,
+              45,
+              48,
+              52,
+              45,
+              50,
+              49,
+              84,
+              49,
+              57,
+              58,
+              51,
+              53,
+              58,
+              53,
+              50,
+              46,
+              50,
+              53,
+              48,
+              48,
+              48,
+              48,
+              34,
+              44,
+              34,
+              99,
+              104,
+              101,
+              99,
+              107,
+              95,
+              111,
+              117,
+              116,
+              95,
+              100,
+              97,
+              116,
+              101,
+              34,
+              58,
+              34,
+              50,
+              48,
+              50,
+              54,
+              45,
+              48,
+              52,
+              45,
+              50,
+              51,
+              84,
+              49,
+              57,
+              58,
+              51,
+              53,
+              58,
+              53,
+              50,
+              46,
+              50,
+              53,
+              48,
+              48,
+              48,
+              48,
+              34,
+              44,
+              34,
+              99,
+              114,
+              101,
+              97,
+              116,
+              101,
+              100,
+              95,
+              97,
+              116,
+              34,
+              58,
+              34,
+              50,
+              48,
+              50,
+              54,
+              45,
+              48,
+              52,
+              45,
+              49,
+              49,
+              84,
+              49,
+              57,
+              58,
+              51,
+              53,
+              58,
+              53,
+              50,
+              46,
+              50,
+              54,
+              54,
+              49,
+              52,
+              49,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 21,
+          "responseSize": 245
+        },
+        "id": "84ac05c8-ebfe-46de-b7bc-020df4df566b",
+        "assertions": [
+          {
+            "assertion": "Reserva de control responde 201",
+            "skipped": false
+          },
+          {
+            "assertion": "Reserva de control inicia pending_payment",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "496b2e72-3dd6-4140-9d6c-eeec87c2fb4e",
+          "length": 9,
+          "cycles": 1,
+          "position": 6,
+          "iteration": 0,
+          "httpRequestId": "9362369b-1108-4f73-97d4-2560497ab7e1"
+        },
+        "item": {
+          "id": "11f20792-7972-4813-af58-bd7944a5170d",
+          "name": "Create Payment for Missing Reservation - Still Confirmed",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "charges"
+              ],
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Forwarded-Proto",
+                "value": "https"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservation_id\": \"{{error_missing_reservation_id}}\",\n  \"traveler_id\": \"{{error_traveler_id}}\",\n  \"payment_method_token\": \"pm_tok_visa_ok\",\n  \"amount_in_cents\": 125000,\n  \"currency\": \"COP\",\n  \"idempotency_key\": \"{{error_idempotency_key}}\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "607ab014-2222-49f5-96df-c3f068cd2b89",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Pago responde 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Pago se confirma aunque falla update de reserva', function () {",
+                  "  pm.expect(body.status).to.eql('confirmed');",
+                  "});",
+                  "pm.collectionVariables.set('error_payment_id', body.payment_id);"
+                ],
+                "_lastExecutionId": "4cf0c79d-436f-4d1b-9a1c-1723fee0a776"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8003",
+            "path": [
+              "api",
+              "v1",
+              "payments",
+              "charges"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "X-Forwarded-Proto",
+              "value": "https"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "a813b856-250f-4131-8cc8-98f381f96ca8",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8003",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "261",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"reservation_id\": \"75da05ad-6605-4e9a-88cc-add19c49e35a\",\n  \"traveler_id\": \"56922112-aedb-4f6e-837a-9bded370a1dc\",\n  \"payment_method_token\": \"pm_tok_visa_ok\",\n  \"amount_in_cents\": 125000,\n  \"currency\": \"COP\",\n  \"idempotency_key\": \"e2e-error-1775936152251\"\n}"
+          }
+        },
+        "response": {
+          "id": "db746f9e-92c8-42dd-9ddf-5b9c6ea8f400",
+          "status": "Created",
+          "code": 201,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sat, 11 Apr 2026 19:35:51 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "366"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              112,
+              97,
+              121,
+              109,
+              101,
+              110,
+              116,
+              95,
+              105,
+              100,
+              34,
+              58,
+              34,
+              53,
+              49,
+              54,
+              54,
+              100,
+              57,
+              97,
+              56,
+              45,
+              55,
+              51,
+              53,
+              97,
+              45,
+              52,
+              98,
+              52,
+              98,
+              45,
+              98,
+              54,
+              53,
+              97,
+              45,
+              97,
+              97,
+              57,
+              56,
+              54,
+              48,
+              56,
+              51,
+              98,
+              50,
+              51,
+              54,
+              34,
+              44,
+              34,
+              114,
+              101,
+              115,
+              101,
+              114,
+              118,
+              97,
+              116,
+              105,
+              111,
+              110,
+              95,
+              105,
+              100,
+              34,
+              58,
+              34,
+              55,
+              53,
+              100,
+              97,
+              48,
+              53,
+              97,
+              100,
+              45,
+              54,
+              54,
+              48,
+              53,
+              45,
+              52,
+              101,
+              57,
+              97,
+              45,
+              56,
+              56,
+              99,
+              99,
+              45,
+              97,
+              100,
+              100,
+              49,
+              57,
+              99,
+              52,
+              57,
+              101,
+              51,
+              53,
+              97,
+              34,
+              44,
+              34,
+              112,
+              114,
+              111,
+              118,
+              105,
+              100,
+              101,
+              114,
+              95,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              102,
+              97,
+              107,
+              101,
+              95,
+              115,
+              116,
+              114,
+              105,
+              112,
+              101,
+              34,
+              44,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              99,
+              111,
+              110,
+              102,
+              105,
+              114,
+              109,
+              101,
+              100,
+              34,
+              44,
+              34,
+              97,
+              109,
+              111,
+              117,
+              110,
+              116,
+              95,
+              105,
+              110,
+              95,
+              99,
+              101,
+              110,
+              116,
+              115,
+              34,
+              58,
+              49,
+              50,
+              53,
+              48,
+              48,
+              48,
+              44,
+              34,
+              99,
+              117,
+              114,
+              114,
+              101,
+              110,
+              99,
+              121,
+              34,
+              58,
+              34,
+              67,
+              79,
+              80,
+              34,
+              44,
+              34,
+              103,
+              97,
+              116,
+              101,
+              119,
+              97,
+              121,
+              95,
+              99,
+              104,
+              97,
+              114,
+              103,
+              101,
+              95,
+              105,
+              100,
+              34,
+              58,
+              34,
+              99,
+              104,
+              95,
+              50,
+              51,
+              98,
+              100,
+              100,
+              52,
+              52,
+              51,
+              49,
+              100,
+              57,
+              99,
+              52,
+              100,
+              55,
+              57,
+              98,
+              52,
+              50,
+              49,
+              101,
+              50,
+              48,
+              54,
+              34,
+              44,
+              34,
+              114,
+              101,
+              99,
+              101,
+              105,
+              112,
+              116,
+              95,
+              105,
+              100,
+              34,
+              58,
+              34,
+              102,
+              56,
+              100,
+              98,
+              51,
+              57,
+              52,
+              50,
+              45,
+              50,
+              51,
+              101,
+              101,
+              45,
+              52,
+              48,
+              56,
+              99,
+              45,
+              57,
+              49,
+              52,
+              52,
+              45,
+              99,
+              52,
+              56,
+              49,
+              55,
+              49,
+              56,
+              100,
+              99,
+              56,
+              50,
+              100,
+              34,
+              44,
+              34,
+              114,
+              101,
+              99,
+              101,
+              105,
+              112,
+              116,
+              95,
+              110,
+              117,
+              109,
+              98,
+              101,
+              114,
+              34,
+              58,
+              34,
+              82,
+              67,
+              80,
+              84,
+              45,
+              50,
+              48,
+              50,
+              54,
+              48,
+              52,
+              49,
+              49,
+              45,
+              49,
+              57,
+              51,
+              53,
+              53,
+              50,
+              34,
+              44,
+              34,
+              102,
+              97,
+              105,
+              108,
+              117,
+              114,
+              101,
+              95,
+              114,
+              101,
+              97,
+              115,
+              111,
+              110,
+              34,
+              58,
+              110,
+              117,
+              108,
+              108,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 133,
+          "responseSize": 366
+        },
+        "id": "11f20792-7972-4813-af58-bd7944a5170d",
+        "assertions": [
+          {
+            "assertion": "Pago responde 201",
+            "skipped": false
+          },
+          {
+            "assertion": "Pago se confirma aunque falla update de reserva",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "be2e7917-706b-46f3-9875-658fe92cf416",
+          "length": 9,
+          "cycles": 1,
+          "position": 7,
+          "iteration": 0,
+          "httpRequestId": "efbddfa5-c32d-4738-9c22-76f6f0b6df42"
+        },
+        "item": {
+          "id": "6521ac72-b6cb-4c5c-9ddd-879632780732",
+          "name": "Retry Reservation Confirmations - Expect Failed",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "internal",
+                "reservation-confirmations",
+                "retry"
+              ],
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "X-Internal-Api-Key",
+                "value": "{{internal_api_key}}"
+              }
+            ],
+            "method": "POST"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "0a4e7b32-8e03-431e-8fa5-0ffc44b98085",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Retry endpoint responde 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Existe al menos un item procesado en retry', function () {",
+                  "  pm.expect(body.processed_count).to.be.greaterThan(0);",
+                  "});",
+                  "pm.test('Existe al menos un fallo en retry por reserva inexistente', function () {",
+                  "  pm.expect(body.failed_count).to.be.greaterThan(0);",
+                  "});"
+                ],
+                "_lastExecutionId": "57e56522-351d-4e55-9c3d-5705a639960a"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8003",
+            "path": [
+              "api",
+              "v1",
+              "internal",
+              "reservation-confirmations",
+              "retry"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "X-Internal-Api-Key",
+              "value": "travelhub-internal-secret-key"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "0800a946-18ec-4138-a4b3-5bc05788dbe1",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8003",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "0",
+              "system": true
+            }
+          ],
+          "method": "POST"
+        },
+        "response": {
+          "id": "837b1974-8743-4aef-9f33-b24883f37303",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sat, 11 Apr 2026 19:35:51 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "76"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              112,
+              114,
+              111,
+              99,
+              101,
+              115,
+              115,
+              101,
+              100,
+              95,
+              99,
+              111,
+              117,
+              110,
+              116,
+              34,
+              58,
+              49,
+              44,
+              34,
+              115,
+              117,
+              99,
+              99,
+              101,
+              101,
+              100,
+              101,
+              100,
+              95,
+              99,
+              111,
+              117,
+              110,
+              116,
+              34,
+              58,
+              48,
+              44,
+              34,
+              102,
+              97,
+              105,
+              108,
+              101,
+              100,
+              95,
+              99,
+              111,
+              117,
+              110,
+              116,
+              34,
+              58,
+              49,
+              44,
+              34,
+              112,
+              101,
+              110,
+              100,
+              105,
+              110,
+              103,
+              95,
+              99,
+              111,
+              117,
+              110,
+              116,
+              34,
+              58,
+              48,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 51,
+          "responseSize": 76
+        },
+        "id": "6521ac72-b6cb-4c5c-9ddd-879632780732",
+        "assertions": [
+          {
+            "assertion": "Retry endpoint responde 200",
+            "skipped": false
+          },
+          {
+            "assertion": "Existe al menos un item procesado en retry",
+            "skipped": false
+          },
+          {
+            "assertion": "Existe al menos un fallo en retry por reserva inexistente",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "3af50d7d-3549-4448-b928-f10a5fa262e7",
+          "length": 9,
+          "cycles": 1,
+          "position": 8,
+          "iteration": 0,
+          "httpRequestId": "0b017c03-1e47-474f-9cc3-785e80e6b4b8"
+        },
+        "item": {
+          "id": "9fa4cd4b-595b-4030-ac2a-8404b50699bc",
+          "name": "Control Reservation Remains Pending",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "reservations",
+                "{{error_control_reservation_id}}"
+              ],
+              "host": [
+                "{{reservations_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "221dc6b1-1d43-4c62-bc6a-e94d1a30cf1f",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Consulta reserva control responde 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Reserva control sigue pending_payment', function () {",
+                  "  pm.expect(body.status).to.eql('pending_payment');",
+                  "});"
+                ],
+                "_lastExecutionId": "30fd4846-55af-43ef-91a6-cbd0243034f8"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8002",
+            "path": [
+              "api",
+              "v1",
+              "reservations",
+              "86316642-5f05-43f0-863f-8200255c7261"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "a12d33f8-182b-4723-8412-8a370fcdc155",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8002",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "d94094f4-5d78-4f61-98c7-95667106dfaa",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sat, 11 Apr 2026 19:35:52 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "463"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              105,
+              100,
+              34,
+              58,
+              34,
+              56,
+              54,
+              51,
+              49,
+              54,
+              54,
+              52,
+              50,
+              45,
+              53,
+              102,
+              48,
+              53,
+              45,
+              52,
+              51,
+              102,
+              48,
+              45,
+              56,
+              54,
+              51,
+              102,
+              45,
+              56,
+              50,
+              48,
+              48,
+              50,
+              53,
+              53,
+              99,
+              55,
+              50,
+              54,
+              49,
+              34,
+              44,
+              34,
+              105,
+              100,
+              95,
+              116,
+              114,
+              97,
+              118,
+              101,
+              108,
+              101,
+              114,
+              34,
+              58,
+              34,
+              53,
+              54,
+              57,
+              50,
+              50,
+              49,
+              49,
+              50,
+              45,
+              97,
+              101,
+              100,
+              98,
+              45,
+              52,
+              102,
+              54,
+              101,
+              45,
+              56,
+              51,
+              55,
+              97,
+              45,
+              57,
+              98,
+              100,
+              101,
+              100,
+              51,
+              55,
+              48,
+              97,
+              49,
+              100,
+              99,
+              34,
+              44,
+              34,
+              105,
+              100,
+              95,
+              112,
+              114,
+              111,
+              112,
+              101,
+              114,
+              116,
+              121,
+              34,
+              58,
+              34,
+              56,
+              57,
+              99,
+              97,
+              100,
+              98,
+              98,
+              98,
+              45,
+              100,
+              52,
+              57,
+              48,
+              45,
+              52,
+              99,
+              97,
+              98,
+              45,
+              56,
+              100,
+              50,
+              51,
+              45,
+              50,
+              53,
+              56,
+              55,
+              97,
+              54,
+              52,
+              55,
+              57,
+              99,
+              54,
+              101,
+              34,
+              44,
+              34,
+              105,
+              100,
+              95,
+              114,
+              111,
+              111,
+              109,
+              34,
+              58,
+              34,
+              55,
+              98,
+              97,
+              102,
+              97,
+              56,
+              102,
+              51,
+              45,
+              99,
+              51,
+              56,
+              48,
+              45,
+              52,
+              102,
+              57,
+              56,
+              45,
+              57,
+              51,
+              52,
+              101,
+              45,
+              101,
+              100,
+              49,
+              52,
+              48,
+              102,
+              99,
+              98,
+              57,
+              52,
+              48,
+              55,
+              34,
+              44,
+              34,
+              99,
+              104,
+              101,
+              99,
+              107,
+              95,
+              105,
+              110,
+              95,
+              100,
+              97,
+              116,
+              101,
+              34,
+              58,
+              34,
+              50,
+              48,
+              50,
+              54,
+              45,
+              48,
+              52,
+              45,
+              50,
+              49,
+              84,
+              49,
+              57,
+              58,
+              51,
+              53,
+              58,
+              53,
+              50,
+              46,
+              50,
+              53,
+              48,
+              48,
+              48,
+              48,
+              34,
+              44,
+              34,
+              99,
+              104,
+              101,
+              99,
+              107,
+              95,
+              111,
+              117,
+              116,
+              95,
+              100,
+              97,
+              116,
+              101,
+              34,
+              58,
+              34,
+              50,
+              48,
+              50,
+              54,
+              45,
+              48,
+              52,
+              45,
+              50,
+              51,
+              84,
+              49,
+              57,
+              58,
+              51,
+              53,
+              58,
+              53,
+              50,
+              46,
+              50,
+              53,
+              48,
+              48,
+              48,
+              48,
+              34,
+              44,
+              34,
+              110,
+              117,
+              109,
+              98,
+              101,
+              114,
+              95,
+              111,
+              102,
+              95,
+              103,
+              117,
+              101,
+              115,
+              116,
+              115,
+              34,
+              58,
+              50,
+              44,
+              34,
+              116,
+              111,
+              116,
+              97,
+              108,
+              95,
+              112,
+              114,
+              105,
+              99,
+              101,
+              34,
+              58,
+              34,
+              50,
+              51,
+              56,
+              46,
+              48,
+              48,
+              34,
+              44,
+              34,
+              99,
+              117,
+              114,
+              114,
+              101,
+              110,
+              99,
+              121,
+              34,
+              58,
+              34,
+              67,
+              79,
+              80,
+              34,
+              44,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              112,
+              101,
+              110,
+              100,
+              105,
+              110,
+              103,
+              95,
+              112,
+              97,
+              121,
+              109,
+              101,
+              110,
+              116,
+              34,
+              44,
+              34,
+              99,
+              114,
+              101,
+              97,
+              116,
+              101,
+              100,
+              95,
+              97,
+              116,
+              34,
+              58,
+              34,
+              50,
+              48,
+              50,
+              54,
+              45,
+              48,
+              52,
+              45,
+              49,
+              49,
+              84,
+              49,
+              57,
+              58,
+              51,
+              53,
+              58,
+              53,
+              50,
+              46,
+              50,
+              54,
+              54,
+              49,
+              52,
+              49,
+              34,
+              44,
+              34,
+              117,
+              112,
+              100,
+              97,
+              116,
+              101,
+              100,
+              95,
+              97,
+              116,
+              34,
+              58,
+              34,
+              50,
+              48,
+              50,
+              54,
+              45,
+              48,
+              52,
+              45,
+              49,
+              49,
+              84,
+              49,
+              57,
+              58,
+              51,
+              53,
+              58,
+              53,
+              50,
+              46,
+              50,
+              54,
+              54,
+              49,
+              55,
+              49,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 9,
+          "responseSize": 463
+        },
+        "id": "9fa4cd4b-595b-4030-ac2a-8404b50699bc",
+        "assertions": [
+          {
+            "assertion": "Consulta reserva control responde 200",
+            "skipped": false
+          },
+          {
+            "assertion": "Reserva control sigue pending_payment",
+            "skipped": false
+          }
+        ]
+      }
+    ],
+    "transfers": {
+      "responseTotal": 2253
+    },
+    "failures": [],
+    "error": null
+  }
+}

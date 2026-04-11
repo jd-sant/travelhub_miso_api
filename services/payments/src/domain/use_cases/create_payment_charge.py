@@ -13,7 +13,7 @@ from core.security import (
 )
 from domain.ports.payment_audit_repository import PaymentAuditRepository
 from domain.ports.payment_gateway import PaymentGateway
-from domain.ports.notification_dispatcher import NotificationDispatcher
+from domain.ports.notification_dispatcher import NotificationDispatcher, ReservationUpdater
 from domain.ports.payment_repository import PaymentRepository
 from domain.schemas.audit import PaymentAuditLogRecord
 from domain.schemas.payment import (
@@ -34,11 +34,13 @@ class CreatePaymentChargeUseCase(BaseUseCase[PaymentChargeRequest, PaymentPublic
         audit_repository: PaymentAuditRepository,
         gateway: PaymentGateway,
         notification_dispatcher: NotificationDispatcher,
+        reservation_updater: ReservationUpdater,
     ):
         self.repository = repository
         self.audit_repository = audit_repository
         self.gateway = gateway
         self.notification_dispatcher = notification_dispatcher
+        self.reservation_updater = reservation_updater
 
     def execute(
         self,
@@ -165,6 +167,11 @@ class CreatePaymentChargeUseCase(BaseUseCase[PaymentChargeRequest, PaymentPublic
             )
         )
         if stored_payment.status == PaymentStatus.confirmed:
+            self._dispatch_reservation_confirmation_request(
+                reservation_id=stored_payment.reservation_id,
+                payment_id=stored_payment.payment_id,
+                source_ip=source_ip,
+            )
             self._dispatch_notification_request(stored_payment.payment_id, source_ip)
         return self._to_public_response(stored_payment)
 
@@ -264,5 +271,55 @@ class CreatePaymentChargeUseCase(BaseUseCase[PaymentChargeRequest, PaymentPublic
                     ip_address=source_ip,
                     payload={"error": str(exc)},
                     created_at=datetime.now(timezone.utc),
+                )
+            )
+
+    def _dispatch_reservation_confirmation_request(
+        self,
+        reservation_id,
+        payment_id,
+        source_ip: str | None,
+    ) -> None:
+        try:
+            self.reservation_updater.confirm_reservation(
+                reservation_id=reservation_id,
+                source_ip=source_ip,
+            )
+            self.audit_repository.add_log(
+                PaymentAuditLogRecord(
+                    payment_id=payment_id,
+                    entity_type="payment",
+                    entity_id=str(payment_id),
+                    action="reservation.confirmation.requested",
+                    ip_address=source_ip,
+                    payload={
+                        "reservation_id": str(reservation_id),
+                        "dispatch_status": "requested",
+                    },
+                    created_at=datetime.now(timezone.utc),
+                )
+            )
+        except Exception as exc:  # noqa: BLE001
+            now = datetime.now(timezone.utc)
+            self.repository.upsert_reservation_confirmation_outbox_failure(
+                payment_id=payment_id,
+                reservation_id=reservation_id,
+                error_message=str(exc),
+                next_retry_at=now,
+                max_attempts=settings.reservation_confirmation_retry_max_attempts,
+            )
+            self.audit_repository.add_log(
+                PaymentAuditLogRecord(
+                    payment_id=payment_id,
+                    entity_type="payment",
+                    entity_id=str(payment_id),
+                    action="reservation.confirmation.dispatch_failed",
+                    ip_address=source_ip,
+                    payload={
+                        "reservation_id": str(reservation_id),
+                        "error": str(exc),
+                        "queued_for_retry": True,
+                    },
+                    created_at=now,
                 )
             )
