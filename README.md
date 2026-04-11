@@ -11,6 +11,7 @@ travelhub_miso/
 |-- services/
 |   |-- users/          # Gestion de usuarios y roles
 |   |-- security/       # Autenticacion, OTP y JWT
+|   |-- properties/     # Detalles de propiedades
 |   |-- reservations/   # Creacion y consulta de reservas
 |   |-- payments/       # Pagos tokenizados y recibos
 |   `-- notifications/  # Confirmaciones y notificaciones de pago
@@ -59,6 +60,7 @@ service/
 | `reservations` | 8002 | `reservations_schema` | Creacion y consulta de reservas |
 | `payments` | 8003 | `payments_schema` | Procesamiento seguro de pagos con token |
 | `notifications` | 8004 | `notifications_schema` | Confirmaciones y notificaciones de pago |
+| `properties` | 8005 | `properties_schema` | Detalles de propiedades y hospedajes |
 
 ## Ejecucion local
 
@@ -87,21 +89,25 @@ Los servicios quedan disponibles en:
 - Reservations: http://localhost:8002
 - Payments: http://localhost:8003
 - Notifications: http://localhost:8004
+- Properties: http://localhost:8005
 
 ### Tests
 
 ```bash
+# Con make (recomendado)
 make users-test
 make security-test
 make reservations-test
 make payments-test
 make notifications-test
+make properties-test
 
 PYTHONPATH=services/users/src pytest services/users/tests/ -v
 PYTHONPATH=services/security/src pytest services/security/tests/ -v
 PYTHONPATH=services/reservations/src pytest services/reservations/tests/ -v
 PYTHONPATH=services/payments/src pytest services/payments/tests/ -v
 PYTHONPATH=services/notifications/src pytest services/notifications/tests/ -v
+PYTHONPATH=services/properties/src pytest services/properties/tests/ -v
 ```
 
 ## Comandos disponibles
@@ -110,13 +116,14 @@ PYTHONPATH=services/notifications/src pytest services/notifications/tests/ -v
 make help              # Ver todos los comandos
 make docker-up         # Levantar servicios
 make docker-down       # Detener servicios
-make docker-build      # Construir imagenes
+make docker-build      # Construir imágenes
 make clean             # Limpiar __pycache__
 make users-test        # Tests del servicio de usuarios
 make security-test     # Tests del servicio de seguridad
 make reservations-test # Tests del servicio de reservas
 make payments-test     # Tests del servicio de pagos
 make notifications-test # Tests del servicio de notificaciones
+make properties-test   # Tests del servicio de propiedades
 ```
 
 ## CI / CD

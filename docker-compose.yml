@@ -1,5 +1,4 @@
 services:
-
   postgres:
     image: postgres:15
     environment:
@@ -7,12 +6,13 @@ services:
       POSTGRES_USER: travelhub_user
       POSTGRES_PASSWORD: travelhub_pass
     ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-schemas.sql:/docker-entrypoint-initdb.d/init-schemas.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U travelhub_user -d travelhub"]
+
+        properties:
+          build:
+            context: ./services/properties
       interval: 5s
       timeout: 5s
       retries: 5
@@ -20,7 +20,6 @@ services:
   users:
     build:
       context: ./services/users
-    environment:
       PYTHONPATH: /app/src
       RDS_HOSTNAME: postgres
       RDS_USERNAME: travelhub_user
@@ -31,22 +30,32 @@ services:
       DB_ECHO: "False"
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
     ports:
-      - "8000:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
 
   security:
     build:
       context: ./services/security
     environment:
+
+        properties:
+          build:
+            context: ./services/properties
+          environment:
+            PYTHONPATH: /app/src
+            RDS_HOSTNAME: postgres
+            RDS_USERNAME: travelhub_user
+            RDS_PASSWORD: travelhub_pass
+            RDS_DB_NAME: travelhub
+            RDS_PORT: "5432"
+            DB_SCHEMA: properties_schema
+            DB_ECHO: "False"
+          ports:
+            - "8005:8000"
+          depends_on:
+            postgres:
+              condition: service_healthy
       PYTHONPATH: /app/src
       RDS_HOSTNAME: postgres
       RDS_USERNAME: travelhub_user
-      RDS_PASSWORD: travelhub_pass
-      RDS_DB_NAME: travelhub
-      RDS_PORT: "5432"
-      DB_SCHEMA: security_schema
       DB_ECHO: "False"
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       USERS_SERVICE_URL: http://users:8000
@@ -141,6 +150,23 @@ services:
       postgres:
         condition: service_healthy
 
+  properties:
+    build:
+      context: ./services/properties
+    environment:
+      PYTHONPATH: /app/src
+      RDS_HOSTNAME: postgres
+      RDS_USERNAME: travelhub_user
+      RDS_PASSWORD: travelhub_pass
+      RDS_DB_NAME: travelhub
+      RDS_PORT: "5432"
+      DB_SCHEMA: properties_schema
+      DB_ECHO: "False"
+    ports:
+      - "8005:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:
-

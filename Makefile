@@ -1,4 +1,4 @@
-.PHONY: help docker-up docker-down docker-build docker-logs clean users-test users-build users-logs security-test security-build security-logs reservations-test reservations-build reservations-logs payments-test payments-security-scan payments-build payments-logs notifications-test notifications-security-scan notifications-build notifications-logs
+.PHONY: help docker-up docker-down docker-build docker-logs clean users-test users-build users-logs security-test security-build security-logs reservations-test reservations-build reservations-logs payments-test payments-security-scan payments-build payments-logs notifications-test notifications-security-scan notifications-build notifications-logs properties-test properties-build properties-logs
 
 help:
 	@echo "=== TravelHub Monorepo ==="
@@ -36,6 +36,11 @@ help:
 	@echo "  make notifications-security-scan - Run notifications security posture tests"
 	@echo "  make notifications-build - Build notifications image"
 	@echo "  make notifications-logs  - Tail notifications logs"
+	@echo ""
+	@echo "Properties service:"
+	@echo "  make properties-test  - Run properties tests"
+	@echo "  make properties-build - Build properties image"
+	@echo "  make properties-logs  - Tail properties logs"
 
 # Global commands
 docker-up:
@@ -109,3 +114,13 @@ notifications-build:
 
 notifications-logs:
 	docker compose logs -f notifications
+
+# Properties service
+properties-test:
+	cd services/properties && PYTHONPATH=src pytest tests/ -v
+
+properties-build:
+	docker compose build properties
+
+properties-logs:
+	docker compose logs -f properties
