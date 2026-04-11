@@ -5,7 +5,9 @@ import pytest
 from sqlalchemy.pool import StaticPool
 from sqlmodel import SQLModel, Session, create_engine, select
 
+from adapters.models.payment import Payment  # noqa: F401
 from adapters.models.payment_audit_log import PaymentAuditLog
+from adapters.models.payment_checkout_session import PaymentCheckoutSession  # noqa: F401
 from adapters.repositories.payment_audit_repository import SQLModelPaymentAuditRepository
 from core.config import Settings
 from core.security import (
