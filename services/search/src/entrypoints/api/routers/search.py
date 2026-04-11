@@ -78,11 +78,11 @@ def search_properties(
             empty_state = [
                 EmptyStateSuggestion(
                     code="TRY_OTHER_CITY",
-                    message="No results found in this city. Try a nearby city.",
+                    message="No encontramos resultados en esa ciudad. Intenta otra ciudad cercana.",
                 ),
                 EmptyStateSuggestion(
                     code="TRY_OTHER_DATES",
-                    message="Try different dates to find better availability.",
+                    message="Prueba con fechas diferentes para encontrar mayor disponibilidad.",
                 ),
             ]
 
