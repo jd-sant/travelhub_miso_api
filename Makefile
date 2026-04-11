@@ -25,6 +25,11 @@ help:
 	@echo "  make reservations-build - Build reservations image"
 	@echo "  make reservations-logs  - Tail reservations logs"
 	@echo ""
+	@echo "Payments service:"
+	@echo "  make payments-test  - Run payments tests"
+	@echo "  make payments-build - Build payments image"
+	@echo "  make payments-logs  - Tail payments logs"
+  @echo ""
 	@echo "Properties service:"
 	@echo "  make properties-test  - Run properties tests"
 	@echo "  make properties-build - Build properties image"
@@ -77,6 +82,16 @@ reservations-build:
 reservations-logs:
 	docker compose logs -f reservations
 
+# Payments service
+payments-test:
+	cd services/payments && PYTHONPATH=src pytest tests/ -v
+
+payments-build:
+	docker compose build payments
+
+payments-logs:
+	docker compose logs -f payments
+  
 # Properties service
 properties-test:
 	cd services/properties && PYTHONPATH=src pytest tests/ -v

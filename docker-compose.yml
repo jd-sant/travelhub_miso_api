@@ -1,5 +1,4 @@
 services:
-
   postgres:
     image: postgres:15
     environment:
@@ -81,6 +80,32 @@ services:
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
     ports:
       - "8002:8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  payments:
+    build:
+      context: ./services/payments
+    environment:
+      PYTHONPATH: /app/src
+      RDS_HOSTNAME: postgres
+      RDS_USERNAME: travelhub_user
+      RDS_PASSWORD: travelhub_pass
+      RDS_DB_NAME: travelhub
+      RDS_PORT: "5432"
+      DB_SCHEMA: payments_schema
+      DB_ECHO: "False"
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-fake_stripe}
+      PAYMENT_DUPLICATE_WINDOW_SECONDS: "2"
+      ENFORCE_TLS_HEADER: "True"
+      PAYMENT_INTEGRITY_SECRET: ${PAYMENT_INTEGRITY_SECRET}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      ALLOWED_CORS_ORIGINS: ${ALLOWED_CORS_ORIGINS}
+    ports:
+      - "8003:8000"
     depends_on:
       postgres:
         condition: service_healthy
