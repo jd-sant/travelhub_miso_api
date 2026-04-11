@@ -11,6 +11,7 @@ from domain.schemas.reservation import (
 )
 from domain.use_cases.check_reservation_status import CheckReservationStatusUseCase
 from domain.use_cases.create_reservation import CreateReservationUseCase
+from domain.use_cases.update_reservation import UpdateReservationStatusUseCase
 from errors import (
     InvalidReservationDateError,
     ReservationNotFoundError,
@@ -30,10 +31,16 @@ def get_create_reservation_use_case(
     return CreateReservationUseCase(repository)
 
 
-def get_check_reservation_status_use_case(
+def get_update_reservation_status_use_case(
     repository=Depends(get_reservation_repository),
 ):
-    return CheckReservationStatusUseCase(repository)
+    return UpdateReservationStatusUseCase(repository)
+
+
+def get_check_reservation_status_use_case(
+    updater=Depends(get_update_reservation_status_use_case),
+):
+    return CheckReservationStatusUseCase(updater)
 
 
 @router.post(

@@ -5,6 +5,7 @@ from uuid import uuid4
 
 from domain.use_cases.check_reservation_status import CheckReservationStatusUseCase
 from domain.use_cases.create_reservation import CreateReservationUseCase
+from domain.use_cases.update_reservation import UpdateReservationStatusUseCase
 from domain.schemas.reservation import ReservationCreateRequest
 from errors import InvalidReservationDateError, RoomNotAvailableError
 
@@ -176,7 +177,8 @@ class TestCheckReservationStatusUseCase:
         self, reservation_repository, valid_create_request
     ):
         created = reservation_repository.add(valid_create_request, Decimal("357.00"))
-        use_case = CheckReservationStatusUseCase(reservation_repository)
+        updater = UpdateReservationStatusUseCase(reservation_repository)
+        use_case = CheckReservationStatusUseCase(updater)
 
         result = use_case.execute(created.id)
 
@@ -190,10 +192,26 @@ class TestCheckReservationStatusUseCase:
     ):
         created = reservation_repository.add(valid_create_request, Decimal("357.00"))
         reservation_repository.update_status(created.id, "confirmed")
-        use_case = CheckReservationStatusUseCase(reservation_repository)
+        updater = UpdateReservationStatusUseCase(reservation_repository)
+        use_case = CheckReservationStatusUseCase(updater)
 
         result = use_case.execute(created.id)
 
         assert result.status_before == "confirmed"
         assert result.status_after == "confirmed"
         assert result.action_applied == "none"
+
+
+class TestUpdateReservationStatusUseCase:
+    def test_execute_updates_status_and_returns_transition(
+        self, reservation_repository, valid_create_request
+    ):
+        created = reservation_repository.add(valid_create_request, Decimal("357.00"))
+        use_case = UpdateReservationStatusUseCase(reservation_repository)
+
+        result = use_case.execute(created.id, "cancelled")
+
+        assert result.status_before == "pending_payment"
+        assert result.status_after == "cancelled"
+        assert result.action_applied == "cancelled"
+        assert result.reservation.status == "cancelled"

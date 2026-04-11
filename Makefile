@@ -1,4 +1,4 @@
-.PHONY: help docker-up docker-down docker-build docker-logs clean users-test users-build users-logs security-test security-build security-logs reservations-test reservations-build reservations-logs search-test search-build search-logs search-perf
+.PHONY: help docker-up docker-down docker-build docker-logs clean users-test users-build users-logs security-test security-build security-logs reservations-test reservations-build reservations-logs reservations-perf search-test search-build search-logs search-perf
 
 help:
 	@echo "=== TravelHub Monorepo ==="
@@ -24,6 +24,7 @@ help:
 	@echo "  make reservations-test  - Run reservations tests"
 	@echo "  make reservations-build - Build reservations image"
 	@echo "  make reservations-logs  - Tail reservations logs"
+	@echo "  make reservations-perf  - Run Newman E2E collection for checkstatus flow"
 	@echo ""
 	@echo "Search service:"
 	@echo "  make search-test   - Run search tests"
@@ -77,6 +78,10 @@ reservations-build:
 
 reservations-logs:
 	docker compose logs -f reservations
+
+reservations-perf:
+	@set -a; [ -f .env ] && . ./.env; set +a; \
+	npx --yes newman run services/reservations/perf/reservations_checkstatus.postman_collection.json --env-var base_url=http://localhost:8002 --env-var INTERNAL_API_KEY=$${INTERNAL_API_KEY:-dev-internal-key-change-me} --reporters cli
 
 # Search service
 search-test:

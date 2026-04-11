@@ -1,6 +1,8 @@
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
+from core.config import settings
+
 
 class TestReservationEndpoints:
     """Tests for reservation API endpoints."""
@@ -210,6 +212,66 @@ class TestReservationEndpoints:
 
         assert response.status_code == 400
         assert "Invalid reservation ID format" in response.json()["detail"]
+
+    def test_internal_patch_status_updates_reservation(self, client):
+        traveler_id = str(uuid4())
+        property_id = str(uuid4())
+        room_id = str(uuid4())
+        check_in = (datetime.now(UTC) + timedelta(days=5)).isoformat()
+        check_out = (datetime.now(UTC) + timedelta(days=8)).isoformat()
+
+        payload = {
+            "id_traveler": traveler_id,
+            "id_property": property_id,
+            "id_room": room_id,
+            "check_in_date": check_in,
+            "check_out_date": check_out,
+            "number_of_guests": 2,
+            "currency": "COP",
+        }
+        create_response = client.post("/api/v1/reservations", json=payload)
+        reservation_id = create_response.json()["id"]
+
+        response = client.patch(
+            f"/api/v1/internal/reservations/{reservation_id}/status",
+            json={"status": "cancelled"},
+            headers={"X-Internal-Api-Key": settings.internal_api_key},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status_before"] == "pending_payment"
+        assert data["status_after"] == "cancelled"
+        assert data["action_applied"] == "cancelled"
+        assert data["reservation"]["status"] == "cancelled"
+
+    def test_internal_patch_status_returns_403_with_invalid_key(self, client):
+        traveler_id = str(uuid4())
+        property_id = str(uuid4())
+        room_id = str(uuid4())
+        check_in = (datetime.now(UTC) + timedelta(days=5)).isoformat()
+        check_out = (datetime.now(UTC) + timedelta(days=8)).isoformat()
+
+        payload = {
+            "id_traveler": traveler_id,
+            "id_property": property_id,
+            "id_room": room_id,
+            "check_in_date": check_in,
+            "check_out_date": check_out,
+            "number_of_guests": 2,
+            "currency": "COP",
+        }
+        create_response = client.post("/api/v1/reservations", json=payload)
+        reservation_id = create_response.json()["id"]
+
+        response = client.patch(
+            f"/api/v1/internal/reservations/{reservation_id}/status",
+            json={"status": "cancelled"},
+            headers={"X-Internal-Api-Key": "wrong-key"},
+        )
+
+        assert response.status_code == 403
+        assert response.json()["detail"] == "Forbidden"
 
     def test_health_check_endpoint(self, client):
         """Test health check endpoint."""

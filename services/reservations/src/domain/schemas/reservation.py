@@ -15,6 +15,10 @@ class ReservationCreateRequest(BaseModel):
     currency: str = Field(max_length=3)
 
 
+class ReservationStatusUpdateRequest(BaseModel):
+    status: str = Field(min_length=1)
+
+
 class ReservationResponse(BaseModel):
     id: UUID
     id_traveler: UUID
