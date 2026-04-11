@@ -9,9 +9,14 @@ from adapters.models.notification import Notification
 from adapters.models.notification_audit_log import NotificationAuditLog
 from adapters.models.notification_delivery_attempt import NotificationDeliveryAttempt
 from assembly import (
+    get_notification_delivery_runner,
     get_payment_confirmation_source,
     get_traveler_profile_source,
 )
+from adapters.services.in_process_notification_delivery_runner import (
+    InProcessNotificationDeliveryRunner,
+)
+from adapters.services.log_email_sender import LogEmailSender
 from core.config import settings
 from db.session import get_session
 from domain.schemas.notification import PaymentConfirmationSourceRecord, TravelerProfileRecord
@@ -71,6 +76,12 @@ def client(test_engine, monkeypatch):
     app.dependency_overrides[get_session] = override_get_session
     app.dependency_overrides[get_payment_confirmation_source] = lambda: payment_source
     app.dependency_overrides[get_traveler_profile_source] = lambda: FakeTravelerProfileSource()
+    app.dependency_overrides[get_notification_delivery_runner] = lambda: (
+        InProcessNotificationDeliveryRunner(
+            session_factory=lambda: Session(test_engine),
+            email_sender=LogEmailSender(),
+        )
+    )
     with TestClient(app) as test_client:
         yield test_client
 
@@ -91,7 +102,8 @@ def test_create_payment_confirmation_persists_notification_and_audit(client, tes
 
     assert response.status_code == 201
     body = response.json()
-    assert body["status"] == "sent"
+    assert body["status"] == "pending"
+    assert body["recipient_email"] == "t***r@example.com"
 
     with Session(test_engine) as session:
         notifications = session.exec(select(Notification)).all()
@@ -138,6 +150,8 @@ def test_get_notification_returns_created_notification(client):
 
     assert response.status_code == 200
     assert response.json()["notification_id"] == notification_id
+    assert response.json()["status"] == "sent"
+    assert response.json()["recipient_email"] == "t***r@example.com"
 
 
 def test_get_notification_requires_internal_api_key(client):

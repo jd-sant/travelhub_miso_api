@@ -1,8 +1,16 @@
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, status
 
-from assembly import get_create_payment_confirmation_use_case
+from assembly import (
+    get_create_payment_confirmation_use_case,
+    get_notification_delivery_runner,
+)
 from core.config import settings
-from domain.schemas.notification import NotificationResponse, PaymentConfirmationRequest
+from domain.ports.notification_delivery_runner import NotificationDeliveryRunner
+from domain.schemas.notification import (
+    NotificationResponse,
+    NotificationStatus,
+    PaymentConfirmationRequest,
+)
 from domain.use_cases.create_payment_confirmation import CreatePaymentConfirmationUseCase
 from errors import (
     InvalidPaymentConfirmationError,
@@ -20,13 +28,22 @@ router = APIRouter(prefix="/internal", tags=["internal"])
 )
 def create_payment_confirmation(
     payload: PaymentConfirmationRequest,
+    background_tasks: BackgroundTasks,
     x_internal_api_key: str | None = Header(default=None),
     use_case: CreatePaymentConfirmationUseCase = Depends(get_create_payment_confirmation_use_case),
+    delivery_runner: NotificationDeliveryRunner = Depends(get_notification_delivery_runner),
 ) -> NotificationResponse:
     if x_internal_api_key != settings.internal_api_key:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
     try:
-        return use_case.execute(payload)
+        notification = use_case.execute(payload)
+        if notification.status != NotificationStatus.sent:
+            background_tasks.add_task(
+                delivery_runner.run_delivery,
+                notification_id=notification.notification_id,
+                source_ip=payload.source_ip,
+            )
+        return notification
     except InvalidPaymentConfirmationError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
     except TravelerProfileNotFoundError as exc:

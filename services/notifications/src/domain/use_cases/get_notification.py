@@ -1,5 +1,6 @@
 from uuid import UUID
 
+from core.privacy import mask_email
 from domain.ports.notification_repository import NotificationRepository
 from domain.schemas.notification import NotificationResponse
 from domain.use_cases.base import BaseUseCase
@@ -17,7 +18,7 @@ class GetNotificationUseCase(BaseUseCase[UUID, NotificationResponse]):
         return NotificationResponse(
             notification_id=notification.notification_id,
             status=notification.status,
-            recipient_email=notification.recipient_email,
+            recipient_email=mask_email(notification.recipient_email),
             subject=notification.subject,
             payment_id=notification.payment_id,
             reservation_id=notification.reservation_id,
