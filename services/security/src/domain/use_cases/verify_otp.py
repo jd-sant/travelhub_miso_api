@@ -4,6 +4,7 @@ from hmac import compare_digest
 from core.config import settings
 from core.jwt_handler import create_token
 from core.otp import hash_otp
+from core.roles import UserRole
 from domain.ports.audit_repository import AuditRepository
 from domain.ports.login_attempt_repository import LoginAttemptRepository
 from domain.ports.otp_repository import OtpRepository
@@ -77,7 +78,7 @@ class VerifyOtpUseCase(BaseUseCase[OtpVerifyRequest, TokenResponse]):
         self.otp_repo.mark_used(otp.id)
 
         roles = [r for r in otp.roles.split(",") if r]
-        role = roles[0] if roles else "traveler"
+        role = roles[0] if roles else UserRole.get_default()
 
         token = create_token(
             user_id=otp.user_id, email=email, role=role

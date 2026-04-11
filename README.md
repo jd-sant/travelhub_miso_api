@@ -4,39 +4,40 @@ Monorepo del backend de TravelHub, organizado como microservicios independientes
 
 ## Arquitectura
 
-El proyecto sigue una arquitectura de microservicios donde cada servicio tiene su propia base de código, Dockerfile y schema de base de datos. Todos los servicios comparten una instancia de PostgreSQL pero operan en schemas aislados.
+El proyecto sigue una arquitectura de microservicios donde cada servicio tiene su propia base de codigo, Dockerfile y schema de base de datos. Todos los servicios comparten una instancia de PostgreSQL pero operan en schemas aislados.
 
 ```text
 travelhub_miso/
-├── services/
-│   ├── users/          # Gestión de usuarios y roles
-│   ├── security/       # Autenticación, OTP y JWT
-│   ├── properties/     # Detalles de propiedades
-│   ├── reservations/   # Creación y consulta de reservas
-│   └── search/         # Búsqueda de propiedades y disponibilidad
-├── docker-compose.yml  # Orquestación local
-├── init-schemas.sql    # Creación de schemas en PostgreSQL
-├── Makefile            # Comandos de desarrollo
-└── .github/workflows/  # CI/CD con GitHub Actions
+|-- services/
+|   |-- users/          # Gestion de usuarios y roles
+|   |-- security/       # Autenticacion, OTP y JWT
+|   |-- properties/     # Detalles de propiedades
+|   |-- reservations/   # Creacion y consulta de reservas
+|   |-- payments/       # Pagos tokenizados y recibos
+|   `-- notifications/  # Confirmaciones y notificaciones de pago
+|-- docker-compose.yml  # Orquestacion local
+|-- init-schemas.sql    # Creacion de schemas en PostgreSQL
+|-- Makefile            # Comandos de desarrollo
+`-- .github/workflows/  # CI/CD con GitHub Actions
 ```
 
 Cada microservicio sigue arquitectura hexagonal:
 
 ```text
 service/
-├── src/
-│   ├── adapters/          # Implementaciones concretas (repos, clientes HTTP)
-│   ├── core/              # Configuración y utilidades
-│   ├── db/                # Sesión y conexión a BD
-│   ├── domain/
-│   │   ├── ports/         # Interfaces abstractas
-│   │   ├── schemas/       # DTOs de entrada y salida
-│   │   └── use_cases/     # Lógica de negocio
-│   └── entrypoints/
-│       └── api/routers/   # Endpoints HTTP
-├── tests/
-├── Dockerfile
-└── requirements.txt
+|-- src/
+|   |-- adapters/          # Implementaciones concretas
+|   |-- core/              # Configuracion y utilidades
+|   |-- db/                # Sesion y conexion a BD
+|   |-- domain/
+|   |   |-- ports/         # Interfaces abstractas
+|   |   |-- schemas/       # DTOs de entrada y salida
+|   |   `-- use_cases/     # Logica de negocio
+|   `-- entrypoints/
+|       `-- api/routers/   # Endpoints HTTP
+|-- tests/
+|-- Dockerfile
+`-- requirements.txt
 ```
 
 ## Stack
@@ -52,20 +53,22 @@ service/
 
 ## Servicios
 
-| Servicio | Puerto | Schema BD | Descripción |
+| Servicio | Puerto | Schema BD | Descripcion |
 |----------|--------|-----------|-------------|
-| [users](services/users/README.md) | 8000 | `users_schema` | Gestión de usuarios y roles |
-| [security](services/security/README.md) | 8001 | `security_schema` | Autenticación, OTP y tokens JWT |
-| [properties](services/properties/README.md) | 8003 | `properties_schema` | Detalles de propiedades y hospedajes |
-| [reservations](services/reservations/README.md) | 8002 | `reservations_schema` | Creación y consulta de reservas |
+| `users` | 8000 | `users_schema` | Gestion de usuarios y roles |
+| `security` | 8001 | `security_schema` | Autenticacion, OTP y tokens JWT |
+| `reservations` | 8002 | `reservations_schema` | Creacion y consulta de reservas |
+| `payments` | 8003 | `payments_schema` | Procesamiento seguro de pagos con token |
+| `notifications` | 8004 | `notifications_schema` | Confirmaciones y notificaciones de pago |
+| `properties` | 8005 | `properties_schema` | Detalles de propiedades y hospedajes |
 | [search](services/search/) | 8003 | `search_schema` | Búsqueda de propiedades, filtros y disponibilidad |
 
-## Ejecución local
+## Ejecucion local
 
 ### Requisitos previos
 
 - Docker y Docker Compose
-- Python 3.11+ (para desarrollo y tests)
+- Python 3.11+ para desarrollo y tests
 
 ### Con Docker Compose
 
@@ -81,9 +84,13 @@ make docker-logs
 ```
 
 Los servicios quedan disponibles en:
+
 - Users: http://localhost:8000
 - Security: http://localhost:8001
 - Reservations: http://localhost:8002
+- Payments: http://localhost:8003
+- Notifications: http://localhost:8004
+- Properties: http://localhost:8005
 - Search: http://localhost:8003
 
 ### Tests
@@ -93,13 +100,16 @@ Los servicios quedan disponibles en:
 make users-test
 make security-test
 make reservations-test
-make properties-test      # Tests del servicio de propiedades
+make payments-test
+make notifications-test
+make properties-test
 make search-test
 
-# O directamente con pytest
 PYTHONPATH=services/users/src pytest services/users/tests/ -v
 PYTHONPATH=services/security/src pytest services/security/tests/ -v
 PYTHONPATH=services/reservations/src pytest services/reservations/tests/ -v
+PYTHONPATH=services/payments/src pytest services/payments/tests/ -v
+PYTHONPATH=services/notifications/src pytest services/notifications/tests/ -v
 PYTHONPATH=services/properties/src pytest services/properties/tests/ -v
 PYTHONPATH=services/search/src pytest services/search/tests/ -v
 ```
@@ -115,6 +125,8 @@ make clean             # Limpiar __pycache__
 make users-test        # Tests del servicio de usuarios
 make security-test     # Tests del servicio de seguridad
 make reservations-test # Tests del servicio de reservas
+make payments-test     # Tests del servicio de pagos
+make notifications-test # Tests del servicio de notificaciones
 make properties-test   # Tests del servicio de propiedades
 make search-test      # Tests del servicio de búsqueda
 make search-build     # Build del servicio de búsqueda
@@ -128,19 +140,27 @@ make search-perf      # Benchmark p95 del servicio de búsqueda
 
 El workflow `pr-test-validation.yml` se ejecuta en cada PR hacia `develop`, `release` o `main`:
 
-1. Valida que el PR tenga descripción
-2. Detecta qué servicios tienen cambios
-3. Ejecuta los tests solo de los servicios afectados
+1. Valida que el PR tenga descripcion.
+2. Detecta que servicios tuvieron cambios.
+3. Ejecuta los tests solo de los servicios afectados.
 
-### CD - AWS CodePipeline
+### CD - AWS CodeBuild
 
-El despliegue continuo se gestiona con AWS CodePipeline. Cada servicio tiene su propio `buildspec.yml` que define los pasos de build, test y push de la imagen Docker.
+Cada servicio mantiene su propio `buildspec.yml` para pruebas y build de imagen.
+
+## Seguridad financiera
+
+- `payments` soporta flujo token-only con Stripe (`stripe_test`) y endurecimiento opcional por `PAYMENTS_COMPLIANCE_MODE`.
+- El backend rechaza campos de tarjeta fuera del contrato HTTP y no persiste PAN, CVV ni fecha de expiracion.
+- Las referencias sensibles de checkout se cifran en reposo a nivel de aplicacion.
+- Las suites de `payments` y `notifications` incluyen pruebas de postura de seguridad ejecutadas por CI.
 
 ## Variables de entorno
 
-Ver `.env.example` para la lista completa. Las principales:
+Ver `.env.example` para la lista minima. Variables principales:
 
-| Variable | Descripción |
+| Variable | Descripcion |
 |----------|-------------|
 | `JWT_SECRET_KEY` | Clave secreta para firmar tokens JWT |
-| `INTERNAL_API_KEY` | Clave para comunicación entre servicios |
+| `INTERNAL_API_KEY` | Clave para comunicacion entre servicios |
+| `PAYMENT_INTEGRITY_SECRET` | Secreto para checksum e integridad de requests de pago |
