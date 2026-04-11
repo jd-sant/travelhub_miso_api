@@ -112,7 +112,7 @@ def sanitize_sensitive_data(value: Any) -> Any:
     if isinstance(value, list):
         return [sanitize_sensitive_data(item) for item in value]
     if isinstance(value, tuple):
-        return [sanitize_sensitive_data(item) for item in value]
+        return tuple(sanitize_sensitive_data(item) for item in value)
     if isinstance(value, str) and _looks_like_pan(value):
         return "[REDACTED]"
     return value

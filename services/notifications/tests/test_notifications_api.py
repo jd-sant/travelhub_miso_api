@@ -60,7 +60,11 @@ def test_engine():
         poolclass=StaticPool,
     )
     SQLModel.metadata.create_all(engine)
-    return engine
+    try:
+        yield engine
+    finally:
+        SQLModel.metadata.drop_all(engine)
+        engine.dispose()
 
 
 @pytest.fixture

@@ -4,6 +4,7 @@ from sqlmodel import Session, select
 
 from adapters.models.notification import Notification
 from core.privacy import sanitize_sensitive_data
+from errors import NotificationNotFoundError
 from domain.ports.notification_repository import NotificationRepository
 from domain.schemas.notification import NotificationRecord, NotificationStatus
 
@@ -53,7 +54,10 @@ class SQLModelNotificationRepository(NotificationRepository):
 
     def update(self, notification: NotificationRecord) -> NotificationRecord:
         model = self.session.get(Notification, notification.notification_id)
-        assert model is not None
+        if model is None:
+            raise NotificationNotFoundError(
+                f"Notification not found: {notification.notification_id}"
+            )
         model.status = notification.status.value
         model.updated_at = notification.updated_at
         self.session.add(model)
