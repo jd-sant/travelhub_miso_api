@@ -1,0 +1,290 @@
+{
+  "info": {
+    "_postman_id": "8c8c7c10-7df5-4eb0-b681-7dc7bb70f02a",
+    "name": "TravelHub Reservation Payment Failed -> CheckStatus E2E",
+    "description": "Flujo E2E: 1) crea reserva, 2) pago falla, 3) checkstatus, 4) reserva cancelada.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 - Health",
+      "item": [
+        {
+          "name": "Health - Reservations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Reservations health responde 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reservations_base_url}}/health",
+              "host": [
+                "{{reservations_base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Health - Payments",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Payments health responde 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{payments_base_url}}/health",
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "01 - Create Reservation",
+      "item": [
+        {
+          "name": "Create Reservation - Pending",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const now = new Date();",
+                  "const checkIn = new Date(now.getTime() + (5 * 24 * 60 * 60 * 1000));",
+                  "const checkOut = new Date(now.getTime() + (8 * 24 * 60 * 60 * 1000));",
+                  "pm.collectionVariables.set('flow_reservation_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('flow_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('flow_property_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('flow_room_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('flow_check_in_date', checkIn.toISOString());",
+                  "pm.collectionVariables.set('flow_check_out_date', checkOut.toISOString());",
+                  "pm.collectionVariables.set('flow_idempotency_key', `e2e-fail-checkstatus-${Date.now()}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Creacion de reserva responde 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Reserva inicia en pending_payment', function () {",
+                  "  pm.expect(body.status).to.eql('pending_payment');",
+                  "});",
+                  "pm.collectionVariables.set('flow_reservation_id', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_traveler\": \"{{flow_traveler_id}}\",\n  \"id_property\": \"{{flow_property_id}}\",\n  \"id_room\": \"{{flow_room_id}}\",\n  \"check_in_date\": \"{{flow_check_in_date}}\",\n  \"check_out_date\": \"{{flow_check_out_date}}\",\n  \"number_of_guests\": 2,\n  \"currency\": \"COP\"\n}"
+            },
+            "url": {
+              "raw": "{{reservations_base_url}}/api/v1/reservations",
+              "host": [
+                "{{reservations_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservations"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 - Payment Fails",
+      "item": [
+        {
+          "name": "Create Payment - Failed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Pago responde 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Pago queda failed', function () {",
+                  "  pm.expect(body.status).to.eql('failed');",
+                  "});",
+                  "pm.test('failure_reason presente', function () {",
+                  "  pm.expect(body.failure_reason).to.be.oneOf(['card_declined', 'insufficient_funds']);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Forwarded-Proto",
+                "value": "https"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservation_id\": \"{{flow_reservation_id}}\",\n  \"traveler_id\": \"{{flow_traveler_id}}\",\n  \"amount_in_cents\": 150000,\n  \"currency\": \"COP\",\n  \"payment_method_token\": \"pm_fail_card_declined\",\n  \"idempotency_key\": \"{{flow_idempotency_key}}\"\n}"
+            },
+            "url": {
+              "raw": "{{payments_base_url}}/api/v1/payments/charges",
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "charges"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 - Execute Reservation CheckStatus",
+      "item": [
+        {
+          "name": "CheckStatus - Cancels Pending Reservation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Checkstatus responde 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Action aplicada es cancelled', function () {",
+                  "  pm.expect(body.action_applied).to.eql('cancelled');",
+                  "});",
+                  "pm.test('Estado final en checkstatus es cancelled', function () {",
+                  "  pm.expect(body.status_after).to.eql('cancelled');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reservations_base_url}}/api/v1/reservations/{{flow_reservation_id}}/checkstatus",
+              "host": [
+                "{{reservations_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservations",
+                "{{flow_reservation_id}}",
+                "checkstatus"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 - Reservation Is Cancelled",
+      "item": [
+        {
+          "name": "Get Reservation - Cancelled",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Consulta reserva responde 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Reserva queda cancelled', function () {",
+                  "  pm.expect(body.status).to.eql('cancelled');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reservations_base_url}}/api/v1/reservations/{{flow_reservation_id}}",
+              "host": [
+                "{{reservations_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservations",
+                "{{flow_reservation_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
