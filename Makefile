@@ -134,7 +134,7 @@ properties-logs:
 
 reservations-perf:
 	@set -a; [ -f .env ] && . ./.env; set +a; \
-	npx --yes newman run services/reservations/perf/reservations_checkstatus.postman_collection.json --env-var base_url=http://localhost:8002 --env-var INTERNAL_API_KEY=$${INTERNAL_API_KEY:-dev-internal-key-change-me} --reporters cli
+	npx --yes newman run postman/e2e/reservations-checkstatus/reservations_checkstatus.postman_collection.json --env-var base_url=http://localhost:8002 --env-var INTERNAL_API_KEY=$${INTERNAL_API_KEY:-dev-internal-key-change-me} --reporters cli
 
 # Search service
 search-test:
@@ -147,4 +147,4 @@ search-logs:
 	docker compose logs -f search
 
 search-perf:
-	npx --yes newman run services/search/perf/search_p95.postman_collection.json --env-var base_url=http://localhost:8006 --iteration-count 130 --reporters cli
+	npx --yes newman run postman/e2e/search-p95/search_p95.postman_collection.json --env-var base_url=http://localhost:8006 --iteration-count 130 --reporters cli

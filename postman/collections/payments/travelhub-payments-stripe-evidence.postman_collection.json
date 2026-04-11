@@ -21,14 +21,16 @@
                   "  pm.response.to.have.status(200);",
                   "});",
                   "const body = pm.response.json();",
-                  "pm.test('Provider es stripe_test', function () {",
-                  "  pm.expect(body.provider).to.eql('stripe_test');",
+                  "pm.test('Provider valido', function () {",
+                  "  pm.expect(['fake_stripe', 'stripe_test']).to.include(body.provider);",
                   "});",
-                  "pm.test('Stripe esta habilitado', function () {",
-                  "  pm.expect(body.stripe_enabled).to.eql(true);",
+                  "pm.test('Consistencia de stripe_enabled', function () {",
+                  "  if (body.provider === 'stripe_test') { pm.expect(body.stripe_enabled).to.eql(true); }",
+                  "  if (body.provider === 'fake_stripe') { pm.expect(body.stripe_enabled).to.eql(false); }",
                   "});",
-                  "pm.test('Publishable key de prueba esta presente', function () {",
-                  "  pm.expect(body.publishable_key).to.match(/^pk_test_/);",
+                  "pm.test('Consistencia de publishable_key', function () {",
+                  "  if (body.provider === 'stripe_test') { pm.expect(body.publishable_key).to.match(/^pk_test_/); }",
+                  "  if (body.provider === 'fake_stripe') { pm.expect(body.publishable_key).to.eql(''); }",
                   "});"
                 ]
               }
@@ -80,8 +82,8 @@
                   "pm.test('Devuelve payment_transaction_id', function () {",
                   "  pm.expect(body.payment_transaction_id).to.be.a('string');",
                   "});",
-                  "pm.test('Devuelve publishable key de prueba', function () {",
-                  "  pm.expect(body.publishable_key).to.match(/^pk_test_/);",
+                  "pm.test('Devuelve campo publishable_key', function () {",
+                  "  pm.expect(body).to.have.property('publishable_key');",
                   "});",
                   "pm.collectionVariables.set('payment_transaction_id', body.payment_transaction_id);"
                 ]

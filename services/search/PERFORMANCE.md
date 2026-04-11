@@ -36,7 +36,7 @@ make search-perf
 Comando interno que ejecuta el target:
 
 ```bash
-npx --yes newman run services/search/perf/search_p95.postman_collection.json --env-var base_url=http://localhost:8006 --iteration-count 130 --reporters cli
+npx --yes newman run postman/e2e/search-p95/search_p95.postman_collection.json --env-var base_url=http://localhost:8006 --iteration-count 130 --reporters cli
 ```
 
 Notas de la corrida:

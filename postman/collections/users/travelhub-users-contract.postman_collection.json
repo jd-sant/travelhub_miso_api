@@ -1,0 +1,25 @@
+{
+  "info": {
+    "_postman_id": "92b91a02-6de5-4f77-b20f-8d4e7ee3046c",
+    "name": "TravelHub Users Contract",
+    "description": "Validaciones contract/smoke para Users service.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health - Users",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('health 200', function () { pm.response.to.have.status(200); });"]}}],
+      "request": {"method": "GET", "header": [], "url": {"raw": "{{users_base_url}}/health", "host": ["{{users_base_url}}"], "path": ["health"]}}
+    },
+    {
+      "name": "Internal Verify Credentials - Wrong API Key",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('verify credentials forbidden 403', function () { pm.response.to.have.status(403); });"]}}],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Internal-Api-Key", "value": "invalid-key"}],
+        "body": {"mode": "raw", "raw": "{\n  \"email\": \"no-user@example.com\",\n  \"password\": \"bad-pass\"\n}"},
+        "url": {"raw": "{{users_base_url}}/api/v1/internal/verify-credentials", "host": ["{{users_base_url}}"], "path": ["api", "v1", "internal", "verify-credentials"]}
+      }
+    }
+  ]
+}

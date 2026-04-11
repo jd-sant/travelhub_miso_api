@@ -5,11 +5,11 @@
     },
     "item": [
       {
-        "id": "b97e9907-2a53-4c98-b3c2-3c2a2a32a1d0",
+        "id": "137ea488-c098-4884-9748-d082ea9e952d",
         "name": "00 - Health",
         "item": [
           {
-            "id": "d1af9481-237e-4261-8b69-47f7bdb53188",
+            "id": "544b8576-c879-4f45-8918-ea770bbf1c8f",
             "name": "Health - Reservations",
             "request": {
               "url": {
@@ -29,20 +29,20 @@
               {
                 "listen": "test",
                 "script": {
-                  "id": "f1a060cb-1ebf-4741-8172-ce8af8b57a28",
+                  "id": "806bb4b4-8631-4926-acfc-525279cd3fe4",
                   "type": "text/javascript",
                   "exec": [
                     "pm.test('Reservations health responde 200', function () {",
                     "  pm.response.to.have.status(200);",
                     "});"
                   ],
-                  "_lastExecutionId": "fcce8176-b736-4773-8585-3940a0e419bf"
+                  "_lastExecutionId": "3ab036d1-c311-422d-8ed3-6944f749562e"
                 }
               }
             ]
           },
           {
-            "id": "d110b6c7-1c7e-4d56-bb78-bb0a4dfde536",
+            "id": "dda1705f-d602-49c2-ae6b-3ea0d4242302",
             "name": "Health - Payments",
             "request": {
               "url": {
@@ -62,14 +62,14 @@
               {
                 "listen": "test",
                 "script": {
-                  "id": "5edce229-8f46-47c5-b99a-27cca0b00720",
+                  "id": "6382d151-b47e-4a67-9a20-189b9db30376",
                   "type": "text/javascript",
                   "exec": [
                     "pm.test('Payments health responde 200', function () {",
                     "  pm.response.to.have.status(200);",
                     "});"
                   ],
-                  "_lastExecutionId": "05727ec2-792a-4ca5-b945-cad06a28aa29"
+                  "_lastExecutionId": "8ec186ae-739b-4428-b4ab-4a52a32e413a"
                 }
               }
             ]
@@ -78,11 +78,11 @@
         "event": []
       },
       {
-        "id": "ee4ef15e-89d7-464d-9d6f-d5a0e2b8fedc",
+        "id": "60fd6699-8a80-4517-ae78-b00e7f5523fa",
         "name": "01 - Create Reservation",
         "item": [
           {
-            "id": "e2a3ff3d-75d4-490f-92b0-7bdebf5ee526",
+            "id": "a1235c9e-6a1b-4696-a0d2-06a2a9c55017",
             "name": "Create Reservation - Pending",
             "request": {
               "url": {
@@ -114,7 +114,7 @@
               {
                 "listen": "prerequest",
                 "script": {
-                  "id": "6ffae7b4-5f29-45a6-8ad0-80ef240d3ccd",
+                  "id": "2007d98e-df46-450f-9bd9-c145f7d34fdb",
                   "type": "text/javascript",
                   "exec": [
                     "const now = new Date();",
@@ -128,13 +128,13 @@
                     "pm.collectionVariables.set('flow_check_out_date', checkOut.toISOString());",
                     "pm.collectionVariables.set('flow_idempotency_key', `e2e-fail-checkstatus-${Date.now()}`);"
                   ],
-                  "_lastExecutionId": "4c15d517-f55d-454e-8841-7017b96d0846"
+                  "_lastExecutionId": "8f1311c9-e9dc-4d26-a20e-b52c496c615b"
                 }
               },
               {
                 "listen": "test",
                 "script": {
-                  "id": "49d64d73-c048-4334-a410-da0ce03c5c40",
+                  "id": "c41c4c7f-027a-47b0-8364-f1d6fc2a7bdd",
                   "type": "text/javascript",
                   "exec": [
                     "pm.test('Creacion de reserva responde 201', function () {",
@@ -146,7 +146,7 @@
                     "});",
                     "pm.collectionVariables.set('flow_reservation_id', body.id);"
                   ],
-                  "_lastExecutionId": "2c36dc1e-de07-40b7-af34-6231da3f8e2b"
+                  "_lastExecutionId": "f82c7288-837f-4b8c-af52-99f0a872b1d3"
                 }
               }
             ]
@@ -155,11 +155,11 @@
         "event": []
       },
       {
-        "id": "7dfce5fe-f148-4775-bd28-d1456f4dba89",
+        "id": "99b789a1-47c0-4228-971b-c68308681fcf",
         "name": "02 - Payment Fails",
         "item": [
           {
-            "id": "01b2bc1d-690c-43ce-99e1-d73e29785b1b",
+            "id": "95afe999-e9b6-43a3-80df-28f5ca8f7db2",
             "name": "Create Payment - Failed",
             "request": {
               "url": {
@@ -196,7 +196,7 @@
               {
                 "listen": "test",
                 "script": {
-                  "id": "31702725-3386-43ac-b2ce-ecd692ad2052",
+                  "id": "2a9e0c0a-fed0-419e-af72-86b61d53df8c",
                   "type": "text/javascript",
                   "exec": [
                     "pm.test('Pago responde 201', function () {",
@@ -210,7 +210,7 @@
                     "  pm.expect(body.failure_reason).to.be.oneOf(['card_declined', 'insufficient_funds']);",
                     "});"
                   ],
-                  "_lastExecutionId": "9f5143f7-c9b9-467a-b99f-3322a8c658e6"
+                  "_lastExecutionId": "b848799d-10e7-4609-84ea-dbd40d04ae83"
                 }
               }
             ]
@@ -219,11 +219,11 @@
         "event": []
       },
       {
-        "id": "af872825-33cb-4c3a-8d8d-aa3457f161d1",
+        "id": "bc14368f-9a55-4cc9-8a11-517d9ddb1634",
         "name": "03 - Execute Reservation CheckStatus",
         "item": [
           {
-            "id": "86b0e294-a879-4a50-a962-8b935ac3401b",
+            "id": "b39ca662-c0ea-48fb-aa36-ed3504738d05",
             "name": "CheckStatus - Cancels Pending Reservation",
             "request": {
               "url": {
@@ -247,7 +247,7 @@
               {
                 "listen": "test",
                 "script": {
-                  "id": "60c7fd12-3ff9-41a6-a5b8-e2ac431abe65",
+                  "id": "561d697c-3de7-4aa5-bfe3-1cbad30cde1e",
                   "type": "text/javascript",
                   "exec": [
                     "pm.test('Checkstatus responde 200', function () {",
@@ -261,7 +261,7 @@
                     "  pm.expect(body.status_after).to.eql('cancelled');",
                     "});"
                   ],
-                  "_lastExecutionId": "d503820b-2c6b-4b21-8fd8-7077cbdef421"
+                  "_lastExecutionId": "94965b1a-ff86-40ca-a834-b996ac875691"
                 }
               }
             ]
@@ -270,11 +270,11 @@
         "event": []
       },
       {
-        "id": "dad80406-e4cc-4ef6-a8bd-b09b0a1d13fd",
+        "id": "1d048e81-83f2-4083-adbc-ecf8c065293e",
         "name": "04 - Reservation Is Cancelled",
         "item": [
           {
-            "id": "2ce0dc23-8613-4fcd-871e-e0269fa2ef37",
+            "id": "57fd1bf6-4953-4b9d-9bb3-ae47f23f4a92",
             "name": "Get Reservation - Cancelled",
             "request": {
               "url": {
@@ -297,7 +297,7 @@
               {
                 "listen": "test",
                 "script": {
-                  "id": "053804b9-6484-4626-b1bf-cec41042f98d",
+                  "id": "629c9527-5562-42c5-9d16-27432d86bbb7",
                   "type": "text/javascript",
                   "exec": [
                     "pm.test('Consulta reserva responde 200', function () {",
@@ -308,7 +308,7 @@
                     "  pm.expect(body.status).to.eql('cancelled');",
                     "});"
                   ],
-                  "_lastExecutionId": "d097ad96-443d-4ff1-b623-05a3f27ede66"
+                  "_lastExecutionId": "93c4d39d-d9c2-4b95-b214-170fc7b6779e"
                 }
               }
             ]
@@ -356,7 +356,7 @@
     ]
   },
   "globals": {
-    "id": "05dc4f63-9f44-4099-a063-c7ebe86b21a7",
+    "id": "c4a1b72a-684e-421f-9a72-00f796a2c5c5",
     "values": []
   },
   "run": {
@@ -408,10 +408,10 @@
       }
     },
     "timings": {
-      "responseAverage": 18.166666666666668,
-      "responseMin": 6,
+      "responseAverage": 18.333333333333332,
+      "responseMin": 7,
       "responseMax": 31,
-      "responseSd": 9.388231403671774,
+      "responseSd": 8.863157200205553,
       "dnsAverage": 0,
       "dnsMin": 0,
       "dnsMax": 0,
@@ -420,8 +420,8 @@
       "firstByteMin": 0,
       "firstByteMax": 0,
       "firstByteSd": 0,
-      "started": 1775936733890,
-      "completed": 1775936734139
+      "started": 1775938950801,
+      "completed": 1775938951048
     },
     "executions": [
       {
@@ -434,11 +434,11 @@
           "eof": false,
           "bof": true,
           "cr": false,
-          "ref": "834263b7-b85e-45dd-9088-560db03f1bd0",
-          "httpRequestId": "53f551e2-4877-4840-a5f4-88e38ff43421"
+          "ref": "4c8311ec-0141-4517-ac2e-170b51cf52df",
+          "httpRequestId": "55252143-628d-455b-afc0-ad0af388e0b4"
         },
         "item": {
-          "id": "d1af9481-237e-4261-8b69-47f7bdb53188",
+          "id": "544b8576-c879-4f45-8918-ea770bbf1c8f",
           "name": "Health - Reservations",
           "request": {
             "url": {
@@ -458,14 +458,14 @@
             {
               "listen": "test",
               "script": {
-                "id": "f1a060cb-1ebf-4741-8172-ce8af8b57a28",
+                "id": "806bb4b4-8631-4926-acfc-525279cd3fe4",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Reservations health responde 200', function () {",
                   "  pm.response.to.have.status(200);",
                   "});"
                 ],
-                "_lastExecutionId": "fcce8176-b736-4773-8585-3940a0e419bf"
+                "_lastExecutionId": "3ab036d1-c311-422d-8ed3-6944f749562e"
               }
             }
           ]
@@ -501,7 +501,7 @@
             },
             {
               "key": "Postman-Token",
-              "value": "6bfdacac-3c28-4574-8a43-9531296a9228",
+              "value": "db6e08bf-9615-4fa8-b29c-a9a099f0ddac",
               "system": true
             },
             {
@@ -523,13 +523,13 @@
           "method": "GET"
         },
         "response": {
-          "id": "eb0b40de-8a2d-4332-a2fd-13c9db845ba4",
+          "id": "4b5cc0f8-b808-40be-a51e-66bdc1252964",
           "status": "OK",
           "code": 200,
           "header": [
             {
               "key": "date",
-              "value": "Sat, 11 Apr 2026 19:45:33 GMT"
+              "value": "Sat, 11 Apr 2026 20:22:30 GMT"
             },
             {
               "key": "server",
@@ -568,7 +568,7 @@
           "responseTime": 31,
           "responseSize": 15
         },
-        "id": "d1af9481-237e-4261-8b69-47f7bdb53188",
+        "id": "544b8576-c879-4f45-8918-ea770bbf1c8f",
         "assertions": [
           {
             "assertion": "Reservations health responde 200",
@@ -578,15 +578,15 @@
       },
       {
         "cursor": {
-          "ref": "8920ca97-5e25-484b-a86b-32ab5ca456df",
+          "ref": "cb73081e-773a-486d-baaa-18a8cface2f1",
           "length": 6,
           "cycles": 1,
           "position": 1,
           "iteration": 0,
-          "httpRequestId": "6d2d158f-31f8-488e-8b94-3ff77d65618a"
+          "httpRequestId": "76bdc010-47b4-4a1e-b4e3-785c1a096bb5"
         },
         "item": {
-          "id": "d110b6c7-1c7e-4d56-bb78-bb0a4dfde536",
+          "id": "dda1705f-d602-49c2-ae6b-3ea0d4242302",
           "name": "Health - Payments",
           "request": {
             "url": {
@@ -606,14 +606,14 @@
             {
               "listen": "test",
               "script": {
-                "id": "5edce229-8f46-47c5-b99a-27cca0b00720",
+                "id": "6382d151-b47e-4a67-9a20-189b9db30376",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Payments health responde 200', function () {",
                   "  pm.response.to.have.status(200);",
                   "});"
                 ],
-                "_lastExecutionId": "05727ec2-792a-4ca5-b945-cad06a28aa29"
+                "_lastExecutionId": "8ec186ae-739b-4428-b4ab-4a52a32e413a"
               }
             }
           ]
@@ -649,7 +649,7 @@
             },
             {
               "key": "Postman-Token",
-              "value": "f37584ce-3e83-41ba-ae44-2eedb479345e",
+              "value": "51200285-86fd-4515-b2c2-3fb6ea34ea86",
               "system": true
             },
             {
@@ -671,13 +671,13 @@
           "method": "GET"
         },
         "response": {
-          "id": "7aa2d11a-c690-46a5-ab02-141280b86f81",
+          "id": "797888e9-34c7-47f2-9ce3-4c36b0792157",
           "status": "OK",
           "code": 200,
           "header": [
             {
               "key": "date",
-              "value": "Sat, 11 Apr 2026 19:45:33 GMT"
+              "value": "Sat, 11 Apr 2026 20:22:29 GMT"
             },
             {
               "key": "server",
@@ -718,10 +718,10 @@
             ]
           },
           "cookie": [],
-          "responseTime": 6,
+          "responseTime": 7,
           "responseSize": 20
         },
-        "id": "d110b6c7-1c7e-4d56-bb78-bb0a4dfde536",
+        "id": "dda1705f-d602-49c2-ae6b-3ea0d4242302",
         "assertions": [
           {
             "assertion": "Payments health responde 200",
@@ -731,15 +731,15 @@
       },
       {
         "cursor": {
-          "ref": "fae7442a-fdf3-458a-a534-00a96a7ef6ae",
+          "ref": "43a9b324-7691-4a25-81a8-448d6bd362ad",
           "length": 6,
           "cycles": 1,
           "position": 2,
           "iteration": 0,
-          "httpRequestId": "c8de1499-e863-4204-92ed-6d2851c71186"
+          "httpRequestId": "aa4a306e-d51a-4b22-a432-4471f874ad8c"
         },
         "item": {
-          "id": "e2a3ff3d-75d4-490f-92b0-7bdebf5ee526",
+          "id": "a1235c9e-6a1b-4696-a0d2-06a2a9c55017",
           "name": "Create Reservation - Pending",
           "request": {
             "url": {
@@ -771,7 +771,7 @@
             {
               "listen": "prerequest",
               "script": {
-                "id": "6ffae7b4-5f29-45a6-8ad0-80ef240d3ccd",
+                "id": "2007d98e-df46-450f-9bd9-c145f7d34fdb",
                 "type": "text/javascript",
                 "exec": [
                   "const now = new Date();",
@@ -785,13 +785,13 @@
                   "pm.collectionVariables.set('flow_check_out_date', checkOut.toISOString());",
                   "pm.collectionVariables.set('flow_idempotency_key', `e2e-fail-checkstatus-${Date.now()}`);"
                 ],
-                "_lastExecutionId": "4c15d517-f55d-454e-8841-7017b96d0846"
+                "_lastExecutionId": "8f1311c9-e9dc-4d26-a20e-b52c496c615b"
               }
             },
             {
               "listen": "test",
               "script": {
-                "id": "49d64d73-c048-4334-a410-da0ce03c5c40",
+                "id": "c41c4c7f-027a-47b0-8364-f1d6fc2a7bdd",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Creacion de reserva responde 201', function () {",
@@ -803,7 +803,7 @@
                   "});",
                   "pm.collectionVariables.set('flow_reservation_id', body.id);"
                 ],
-                "_lastExecutionId": "2c36dc1e-de07-40b7-af34-6231da3f8e2b"
+                "_lastExecutionId": "f82c7288-837f-4b8c-af52-99f0a872b1d3"
               }
             }
           ]
@@ -845,7 +845,7 @@
             },
             {
               "key": "Postman-Token",
-              "value": "85da5852-6bb3-4396-8107-99159639fd27",
+              "value": "8d67278d-284d-410a-a018-3bb55fd21ab6",
               "system": true
             },
             {
@@ -872,17 +872,17 @@
           "method": "POST",
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"id_traveler\": \"e07ec8da-3cd3-4540-a857-4a8384383032\",\n  \"id_property\": \"ca5b3550-ce6d-479a-ad01-3942fbfbdd26\",\n  \"id_room\": \"94cc927b-180b-40c7-8277-08c0e225c225\",\n  \"check_in_date\": \"2026-04-16T19:45:33.989Z\",\n  \"check_out_date\": \"2026-04-19T19:45:33.989Z\",\n  \"number_of_guests\": 2,\n  \"currency\": \"COP\"\n}"
+            "raw": "{\n  \"id_traveler\": \"525c94d4-38a2-41f3-ad7e-0be5a0fdbec6\",\n  \"id_property\": \"44ffed7d-01a7-4f60-af7e-ea904b6fd319\",\n  \"id_room\": \"a83d946f-514f-4d5a-86ae-aa9a8d7e715b\",\n  \"check_in_date\": \"2026-04-16T20:22:30.902Z\",\n  \"check_out_date\": \"2026-04-19T20:22:30.902Z\",\n  \"number_of_guests\": 2,\n  \"currency\": \"COP\"\n}"
           }
         },
         "response": {
-          "id": "a46fccba-5add-4c24-af6f-b58296ed67eb",
+          "id": "238c62e2-8523-40ff-bd38-5edd4e9174bd",
           "status": "Created",
           "code": 201,
           "header": [
             {
               "key": "date",
-              "value": "Sat, 11 Apr 2026 19:45:33 GMT"
+              "value": "Sat, 11 Apr 2026 20:22:30 GMT"
             },
             {
               "key": "server",
@@ -907,42 +907,42 @@
               34,
               58,
               34,
-              55,
-              49,
               99,
-              49,
-              48,
-              101,
-              48,
-              53,
-              45,
-              56,
-              100,
               50,
               53,
+              98,
+              56,
+              49,
+              56,
+              102,
+              45,
+              53,
+              56,
+              53,
+              50,
               45,
               52,
+              54,
               52,
+              100,
+              45,
               97,
-              48,
+              101,
+              101,
+              55,
               45,
               57,
               54,
-              98,
-              101,
-              45,
-              51,
-              50,
-              56,
-              102,
-              52,
               53,
-              57,
-              101,
+              56,
+              50,
+              51,
+              55,
+              56,
+              50,
+              98,
               99,
-              101,
-              101,
-              99,
+              52,
               34,
               44,
               34,
@@ -1040,18 +1040,18 @@
               49,
               54,
               84,
-              49,
-              57,
+              50,
+              48,
               58,
-              52,
-              53,
+              50,
+              50,
               58,
               51,
-              51,
+              48,
               46,
               57,
-              56,
-              57,
+              48,
+              50,
               48,
               48,
               48,
@@ -1086,18 +1086,18 @@
               49,
               57,
               84,
-              49,
-              57,
+              50,
+              48,
               58,
-              52,
-              53,
+              50,
+              50,
               58,
               51,
-              51,
+              48,
               46,
               57,
-              56,
-              57,
+              48,
+              50,
               48,
               48,
               48,
@@ -1128,30 +1128,30 @@
               49,
               49,
               84,
-              49,
-              57,
+              50,
+              48,
               58,
-              52,
-              53,
+              50,
+              50,
               58,
               51,
-              52,
+              48,
               46,
-              48,
-              48,
-              53,
               57,
-              53,
-              48,
+              49,
+              55,
+              49,
+              52,
+              49,
               34,
               125
             ]
           },
           "cookie": [],
-          "responseTime": 20,
+          "responseTime": 19,
           "responseSize": 245
         },
-        "id": "e2a3ff3d-75d4-490f-92b0-7bdebf5ee526",
+        "id": "a1235c9e-6a1b-4696-a0d2-06a2a9c55017",
         "assertions": [
           {
             "assertion": "Creacion de reserva responde 201",
@@ -1165,15 +1165,15 @@
       },
       {
         "cursor": {
-          "ref": "7144c27b-b55a-4af6-aeaa-108ba1efae85",
+          "ref": "0ec7cf3f-8840-4eb5-8bc2-b8a641ee5bc7",
           "length": 6,
           "cycles": 1,
           "position": 3,
           "iteration": 0,
-          "httpRequestId": "05776e1e-847c-4eb0-aad6-d1042bd43ef3"
+          "httpRequestId": "dbc034e5-6d69-4c9c-b143-2d73c9d8e696"
         },
         "item": {
-          "id": "01b2bc1d-690c-43ce-99e1-d73e29785b1b",
+          "id": "95afe999-e9b6-43a3-80df-28f5ca8f7db2",
           "name": "Create Payment - Failed",
           "request": {
             "url": {
@@ -1210,7 +1210,7 @@
             {
               "listen": "test",
               "script": {
-                "id": "31702725-3386-43ac-b2ce-ecd692ad2052",
+                "id": "2a9e0c0a-fed0-419e-af72-86b61d53df8c",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Pago responde 201', function () {",
@@ -1224,7 +1224,7 @@
                   "  pm.expect(body.failure_reason).to.be.oneOf(['card_declined', 'insufficient_funds']);",
                   "});"
                 ],
-                "_lastExecutionId": "9f5143f7-c9b9-467a-b99f-3322a8c658e6"
+                "_lastExecutionId": "b848799d-10e7-4609-84ea-dbd40d04ae83"
               }
             }
           ]
@@ -1271,7 +1271,7 @@
             },
             {
               "key": "Postman-Token",
-              "value": "15ee7b2c-eb87-4609-8047-d8be93cd990c",
+              "value": "6c1ce2dc-375c-4e0f-9070-fcb502b2ce41",
               "system": true
             },
             {
@@ -1298,17 +1298,17 @@
           "method": "POST",
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"reservation_id\": \"71c10e05-8d25-44a0-96be-328f459eceec\",\n  \"traveler_id\": \"e07ec8da-3cd3-4540-a857-4a8384383032\",\n  \"amount_in_cents\": 150000,\n  \"currency\": \"COP\",\n  \"payment_method_token\": \"pm_fail_card_declined\",\n  \"idempotency_key\": \"e2e-fail-checkstatus-1775936733991\"\n}"
+            "raw": "{\n  \"reservation_id\": \"c25b818f-5852-464d-aee7-965823782bc4\",\n  \"traveler_id\": \"525c94d4-38a2-41f3-ad7e-0be5a0fdbec6\",\n  \"amount_in_cents\": 150000,\n  \"currency\": \"COP\",\n  \"payment_method_token\": \"pm_fail_card_declined\",\n  \"idempotency_key\": \"e2e-fail-checkstatus-1775938950904\"\n}"
           }
         },
         "response": {
-          "id": "66f95c38-b3b9-40b2-8400-fca1fa68f992",
+          "id": "f1fec605-348c-447c-9c3a-8aa25c89c372",
           "status": "Created",
           "code": 201,
           "header": [
             {
               "key": "date",
-              "value": "Sat, 11 Apr 2026 19:45:33 GMT"
+              "value": "Sat, 11 Apr 2026 20:22:29 GMT"
             },
             {
               "key": "server",
@@ -1341,42 +1341,42 @@
               34,
               58,
               34,
-              102,
-              101,
-              99,
-              100,
-              54,
-              100,
               49,
-              49,
-              45,
-              57,
-              57,
-              50,
-              100,
-              45,
-              52,
-              102,
-              100,
-              48,
-              45,
+              53,
+              53,
               98,
               57,
-              54,
-              57,
+              99,
+              97,
+              100,
               45,
+              54,
               49,
-              55,
-              50,
-              55,
-              50,
-              101,
-              53,
-              101,
-              55,
-              101,
               51,
+              52,
+              45,
+              52,
+              55,
+              56,
+              50,
+              45,
+              56,
+              101,
+              100,
+              50,
+              45,
+              55,
+              51,
+              52,
+              55,
+              55,
+              102,
+              55,
+              52,
               53,
+              101,
+              101,
+              49,
               34,
               44,
               34,
@@ -1397,42 +1397,42 @@
               34,
               58,
               34,
-              55,
-              49,
               99,
-              49,
-              48,
-              101,
-              48,
-              53,
-              45,
-              56,
-              100,
               50,
               53,
+              98,
+              56,
+              49,
+              56,
+              102,
+              45,
+              53,
+              56,
+              53,
+              50,
               45,
               52,
+              54,
               52,
+              100,
+              45,
               97,
-              48,
+              101,
+              101,
+              55,
               45,
               57,
               54,
-              98,
-              101,
-              45,
-              51,
-              50,
-              56,
-              102,
-              52,
               53,
-              57,
-              101,
+              56,
+              50,
+              51,
+              55,
+              56,
+              50,
+              98,
               99,
-              101,
-              101,
-              99,
+              52,
               34,
               44,
               34,
@@ -1549,30 +1549,30 @@
               99,
               104,
               95,
-              51,
-              99,
-              49,
-              49,
-              48,
-              52,
               97,
-              51,
-              49,
-              100,
-              53,
-              49,
               52,
-              51,
               102,
-              55,
-              97,
-              56,
-              51,
-              99,
-              56,
-              101,
-              49,
+              50,
+              48,
+              48,
+              57,
+              102,
+              100,
               98,
+              55,
+              57,
+              52,
+              98,
+              57,
+              101,
+              97,
+              51,
+              51,
+              52,
+              52,
+              48,
+              55,
+              50,
               34,
               44,
               34,
@@ -1651,10 +1651,10 @@
             ]
           },
           "cookie": [],
-          "responseTime": 26,
+          "responseTime": 27,
           "responseSize": 322
         },
-        "id": "01b2bc1d-690c-43ce-99e1-d73e29785b1b",
+        "id": "95afe999-e9b6-43a3-80df-28f5ca8f7db2",
         "assertions": [
           {
             "assertion": "Pago responde 201",
@@ -1672,15 +1672,15 @@
       },
       {
         "cursor": {
-          "ref": "2764d268-9952-48a2-bf24-96f665902197",
+          "ref": "9a427d31-cec5-40f8-abb3-a597447251af",
           "length": 6,
           "cycles": 1,
           "position": 4,
           "iteration": 0,
-          "httpRequestId": "96060d5c-bef2-48f1-9660-1d387b2ca8d1"
+          "httpRequestId": "29a2b65f-15d6-4aad-8fe7-240ea735afc7"
         },
         "item": {
-          "id": "86b0e294-a879-4a50-a962-8b935ac3401b",
+          "id": "b39ca662-c0ea-48fb-aa36-ed3504738d05",
           "name": "CheckStatus - Cancels Pending Reservation",
           "request": {
             "url": {
@@ -1704,7 +1704,7 @@
             {
               "listen": "test",
               "script": {
-                "id": "60c7fd12-3ff9-41a6-a5b8-e2ac431abe65",
+                "id": "561d697c-3de7-4aa5-bfe3-1cbad30cde1e",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Checkstatus responde 200', function () {",
@@ -1718,7 +1718,7 @@
                   "  pm.expect(body.status_after).to.eql('cancelled');",
                   "});"
                 ],
-                "_lastExecutionId": "d503820b-2c6b-4b21-8fd8-7077cbdef421"
+                "_lastExecutionId": "94965b1a-ff86-40ca-a834-b996ac875691"
               }
             }
           ]
@@ -1731,7 +1731,7 @@
               "api",
               "v1",
               "reservations",
-              "71c10e05-8d25-44a0-96be-328f459eceec",
+              "c25b818f-5852-464d-aee7-965823782bc4",
               "checkstatus"
             ],
             "host": [
@@ -1758,7 +1758,7 @@
             },
             {
               "key": "Postman-Token",
-              "value": "9caad18b-f11e-4b24-ba6b-d9dc2393442f",
+              "value": "29eda238-c6c5-4442-b1e6-405c1840ef0d",
               "system": true
             },
             {
@@ -1780,13 +1780,13 @@
           "method": "GET"
         },
         "response": {
-          "id": "65058279-861f-4907-8719-e522fdb1814f",
+          "id": "b086e7f0-4c24-486d-9a2a-c9b5a704d9fe",
           "status": "OK",
           "code": 200,
           "header": [
             {
               "key": "date",
-              "value": "Sat, 11 Apr 2026 19:45:33 GMT"
+              "value": "Sat, 11 Apr 2026 20:22:30 GMT"
             },
             {
               "key": "server",
@@ -1826,42 +1826,42 @@
               34,
               58,
               34,
-              55,
-              49,
               99,
-              49,
-              48,
-              101,
-              48,
-              53,
-              45,
-              56,
-              100,
               50,
               53,
+              98,
+              56,
+              49,
+              56,
+              102,
+              45,
+              53,
+              56,
+              53,
+              50,
               45,
               52,
+              54,
               52,
+              100,
+              45,
               97,
-              48,
+              101,
+              101,
+              55,
               45,
               57,
               54,
-              98,
-              101,
-              45,
-              51,
-              50,
-              56,
-              102,
-              52,
               53,
-              57,
-              101,
+              56,
+              50,
+              51,
+              55,
+              56,
+              50,
+              98,
               99,
-              101,
-              101,
-              99,
+              52,
               34,
               44,
               34,
@@ -1879,42 +1879,42 @@
               34,
               58,
               34,
-              101,
-              48,
-              55,
-              101,
-              99,
-              56,
-              100,
-              97,
-              45,
-              51,
-              99,
-              100,
-              51,
-              45,
-              52,
               53,
-              52,
-              48,
-              45,
-              97,
-              56,
-              53,
-              55,
-              45,
-              52,
-              97,
-              56,
-              51,
-              56,
-              52,
-              51,
-              56,
-              51,
-              48,
-              51,
               50,
+              53,
+              99,
+              57,
+              52,
+              100,
+              52,
+              45,
+              51,
+              56,
+              97,
+              50,
+              45,
+              52,
+              49,
+              102,
+              51,
+              45,
+              97,
+              100,
+              55,
+              101,
+              45,
+              48,
+              98,
+              101,
+              53,
+              97,
+              48,
+              102,
+              100,
+              98,
+              101,
+              99,
+              54,
               34,
               44,
               34,
@@ -1932,42 +1932,42 @@
               34,
               58,
               34,
-              99,
-              97,
-              53,
-              98,
-              51,
-              53,
-              53,
-              48,
-              45,
-              99,
-              101,
-              54,
-              100,
-              45,
               52,
-              55,
-              57,
-              97,
-              45,
-              97,
+              52,
+              102,
+              102,
+              101,
               100,
+              55,
+              100,
+              45,
               48,
               49,
+              97,
+              55,
               45,
-              51,
-              57,
               52,
-              50,
               102,
-              98,
-              102,
-              98,
-              100,
-              100,
-              50,
               54,
+              48,
+              45,
+              97,
+              102,
+              55,
+              101,
+              45,
+              101,
+              97,
+              57,
+              48,
+              52,
+              98,
+              54,
+              102,
+              100,
+              51,
+              49,
+              57,
               34,
               44,
               34,
@@ -1981,42 +1981,42 @@
               34,
               58,
               34,
+              97,
+              56,
+              51,
+              100,
               57,
               52,
-              99,
-              99,
-              57,
-              50,
-              55,
-              98,
+              54,
+              102,
               45,
+              53,
               49,
-              56,
-              48,
-              98,
+              52,
+              102,
               45,
               52,
-              48,
-              99,
-              55,
+              100,
+              53,
+              97,
               45,
               56,
-              50,
-              55,
-              55,
-              45,
-              48,
-              56,
-              99,
-              48,
+              54,
+              97,
               101,
-              50,
-              50,
+              45,
+              97,
+              97,
+              57,
+              97,
+              56,
+              100,
+              55,
+              101,
+              55,
+              49,
               53,
-              99,
-              50,
-              50,
-              53,
+              98,
               34,
               44,
               34,
@@ -2047,18 +2047,18 @@
               49,
               54,
               84,
-              49,
-              57,
+              50,
+              48,
               58,
-              52,
-              53,
+              50,
+              50,
               58,
               51,
-              51,
+              48,
               46,
               57,
-              56,
-              57,
+              48,
+              50,
               48,
               48,
               48,
@@ -2093,18 +2093,18 @@
               49,
               57,
               84,
-              49,
-              57,
+              50,
+              48,
               58,
-              52,
-              53,
+              50,
+              50,
               58,
               51,
-              51,
+              48,
               46,
               57,
-              56,
-              57,
+              48,
+              50,
               48,
               48,
               48,
@@ -2217,21 +2217,21 @@
               49,
               49,
               84,
-              49,
-              57,
+              50,
+              48,
               58,
-              52,
-              53,
+              50,
+              50,
               58,
               51,
-              52,
+              48,
               46,
-              48,
-              48,
-              53,
               57,
-              53,
-              48,
+              49,
+              55,
+              49,
+              52,
+              49,
               34,
               44,
               34,
@@ -2259,21 +2259,21 @@
               49,
               49,
               84,
-              49,
-              57,
+              50,
+              48,
               58,
-              52,
-              53,
+              50,
+              50,
               58,
               51,
-              52,
+              48,
               46,
-              48,
               57,
-              50,
+              57,
               56,
-              48,
-              54,
+              52,
+              49,
+              57,
               34,
               125,
               44,
@@ -2370,10 +2370,10 @@
             ]
           },
           "cookie": [],
-          "responseTime": 20,
+          "responseTime": 18,
           "responseSize": 563
         },
-        "id": "86b0e294-a879-4a50-a962-8b935ac3401b",
+        "id": "b39ca662-c0ea-48fb-aa36-ed3504738d05",
         "assertions": [
           {
             "assertion": "Checkstatus responde 200",
@@ -2391,15 +2391,15 @@
       },
       {
         "cursor": {
-          "ref": "dbb76969-5ae5-42df-b182-530f6f11cf02",
+          "ref": "432e8b65-ca34-4ecb-99b9-d93bb2931d5b",
           "length": 6,
           "cycles": 1,
           "position": 5,
           "iteration": 0,
-          "httpRequestId": "c4e6538b-d7be-4a47-bbcd-5bb6cd98093b"
+          "httpRequestId": "4e2478aa-82a4-45ba-91ae-6bfa061fcd2d"
         },
         "item": {
-          "id": "2ce0dc23-8613-4fcd-871e-e0269fa2ef37",
+          "id": "57fd1bf6-4953-4b9d-9bb3-ae47f23f4a92",
           "name": "Get Reservation - Cancelled",
           "request": {
             "url": {
@@ -2422,7 +2422,7 @@
             {
               "listen": "test",
               "script": {
-                "id": "053804b9-6484-4626-b1bf-cec41042f98d",
+                "id": "629c9527-5562-42c5-9d16-27432d86bbb7",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Consulta reserva responde 200', function () {",
@@ -2433,7 +2433,7 @@
                   "  pm.expect(body.status).to.eql('cancelled');",
                   "});"
                 ],
-                "_lastExecutionId": "d097ad96-443d-4ff1-b623-05a3f27ede66"
+                "_lastExecutionId": "93c4d39d-d9c2-4b95-b214-170fc7b6779e"
               }
             }
           ]
@@ -2446,7 +2446,7 @@
               "api",
               "v1",
               "reservations",
-              "71c10e05-8d25-44a0-96be-328f459eceec"
+              "c25b818f-5852-464d-aee7-965823782bc4"
             ],
             "host": [
               "localhost"
@@ -2472,7 +2472,7 @@
             },
             {
               "key": "Postman-Token",
-              "value": "8e69c10e-e1a4-4659-a907-db30ebdeb3f5",
+              "value": "271d02b2-6000-4b4e-bbf1-e67ab2dbfa60",
               "system": true
             },
             {
@@ -2494,13 +2494,13 @@
           "method": "GET"
         },
         "response": {
-          "id": "402d3a9a-df99-4227-b230-af5dcc4fa649",
+          "id": "67e018ab-5b6c-4f01-8dcd-40024fef0642",
           "status": "OK",
           "code": 200,
           "header": [
             {
               "key": "date",
-              "value": "Sat, 11 Apr 2026 19:45:33 GMT"
+              "value": "Sat, 11 Apr 2026 20:22:30 GMT"
             },
             {
               "key": "server",
@@ -2525,42 +2525,42 @@
               34,
               58,
               34,
-              55,
-              49,
               99,
-              49,
-              48,
-              101,
-              48,
-              53,
-              45,
-              56,
-              100,
               50,
               53,
+              98,
+              56,
+              49,
+              56,
+              102,
+              45,
+              53,
+              56,
+              53,
+              50,
               45,
               52,
+              54,
               52,
+              100,
+              45,
               97,
-              48,
+              101,
+              101,
+              55,
               45,
               57,
               54,
-              98,
-              101,
-              45,
-              51,
-              50,
-              56,
-              102,
-              52,
               53,
-              57,
-              101,
+              56,
+              50,
+              51,
+              55,
+              56,
+              50,
+              98,
               99,
-              101,
-              101,
-              99,
+              52,
               34,
               44,
               34,
@@ -2578,42 +2578,42 @@
               34,
               58,
               34,
-              101,
-              48,
-              55,
-              101,
-              99,
-              56,
-              100,
-              97,
-              45,
-              51,
-              99,
-              100,
-              51,
-              45,
-              52,
               53,
-              52,
-              48,
-              45,
-              97,
-              56,
-              53,
-              55,
-              45,
-              52,
-              97,
-              56,
-              51,
-              56,
-              52,
-              51,
-              56,
-              51,
-              48,
-              51,
               50,
+              53,
+              99,
+              57,
+              52,
+              100,
+              52,
+              45,
+              51,
+              56,
+              97,
+              50,
+              45,
+              52,
+              49,
+              102,
+              51,
+              45,
+              97,
+              100,
+              55,
+              101,
+              45,
+              48,
+              98,
+              101,
+              53,
+              97,
+              48,
+              102,
+              100,
+              98,
+              101,
+              99,
+              54,
               34,
               44,
               34,
@@ -2631,42 +2631,42 @@
               34,
               58,
               34,
-              99,
-              97,
-              53,
-              98,
-              51,
-              53,
-              53,
-              48,
-              45,
-              99,
-              101,
-              54,
-              100,
-              45,
               52,
-              55,
-              57,
-              97,
-              45,
-              97,
+              52,
+              102,
+              102,
+              101,
               100,
+              55,
+              100,
+              45,
               48,
               49,
+              97,
+              55,
               45,
-              51,
-              57,
               52,
-              50,
               102,
-              98,
-              102,
-              98,
-              100,
-              100,
-              50,
               54,
+              48,
+              45,
+              97,
+              102,
+              55,
+              101,
+              45,
+              101,
+              97,
+              57,
+              48,
+              52,
+              98,
+              54,
+              102,
+              100,
+              51,
+              49,
+              57,
               34,
               44,
               34,
@@ -2680,42 +2680,42 @@
               34,
               58,
               34,
+              97,
+              56,
+              51,
+              100,
               57,
               52,
-              99,
-              99,
-              57,
-              50,
-              55,
-              98,
+              54,
+              102,
               45,
+              53,
               49,
-              56,
-              48,
-              98,
+              52,
+              102,
               45,
               52,
-              48,
-              99,
-              55,
+              100,
+              53,
+              97,
               45,
               56,
-              50,
-              55,
-              55,
-              45,
-              48,
-              56,
-              99,
-              48,
+              54,
+              97,
               101,
-              50,
-              50,
+              45,
+              97,
+              97,
+              57,
+              97,
+              56,
+              100,
+              55,
+              101,
+              55,
+              49,
               53,
-              99,
-              50,
-              50,
-              53,
+              98,
               34,
               44,
               34,
@@ -2746,18 +2746,18 @@
               49,
               54,
               84,
-              49,
-              57,
+              50,
+              48,
               58,
-              52,
-              53,
+              50,
+              50,
               58,
               51,
-              51,
+              48,
               46,
               57,
-              56,
-              57,
+              48,
+              50,
               48,
               48,
               48,
@@ -2792,18 +2792,18 @@
               49,
               57,
               84,
-              49,
-              57,
+              50,
+              48,
               58,
-              52,
-              53,
+              50,
+              50,
               58,
               51,
-              51,
+              48,
               46,
               57,
-              56,
-              57,
+              48,
+              50,
               48,
               48,
               48,
@@ -2916,21 +2916,21 @@
               49,
               49,
               84,
-              49,
-              57,
+              50,
+              48,
               58,
-              52,
-              53,
+              50,
+              50,
               58,
               51,
-              52,
+              48,
               46,
-              48,
-              48,
-              53,
               57,
-              53,
-              48,
+              49,
+              55,
+              49,
+              52,
+              49,
               34,
               44,
               34,
@@ -2958,30 +2958,30 @@
               49,
               49,
               84,
-              49,
-              57,
+              50,
+              48,
               58,
-              52,
-              53,
+              50,
+              50,
               58,
               51,
-              52,
+              48,
               46,
-              48,
               57,
-              50,
+              57,
               56,
-              48,
-              54,
+              52,
+              49,
+              57,
               34,
               125
             ]
           },
           "cookie": [],
-          "responseTime": 6,
+          "responseTime": 8,
           "responseSize": 457
         },
-        "id": "2ce0dc23-8613-4fcd-871e-e0269fa2ef37",
+        "id": "57fd1bf6-4953-4b9d-9bb3-ae47f23f4a92",
         "assertions": [
           {
             "assertion": "Consulta reserva responde 200",

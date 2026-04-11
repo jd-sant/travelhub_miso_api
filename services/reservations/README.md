@@ -26,7 +26,7 @@ PYTHONPATH=src pytest tests/ -v
 
 ## Prueba E2E con Newman (Postman)
 
-Colección disponible en `perf/reservations_checkstatus.postman_collection.json`.
+Coleccion disponible en `postman/e2e/reservations-checkstatus/reservations_checkstatus.postman_collection.json`.
 
 Ejecutar desde la raíz del monorepo:
 
@@ -39,7 +39,7 @@ Nota: este comando toma `INTERNAL_API_KEY` desde el `.env` de la raíz del monor
 O ejecutar directamente con Newman:
 
 ```bash
-npx --yes newman run services/reservations/perf/reservations_checkstatus.postman_collection.json --env-var base_url=http://localhost:8002 --reporters cli
+npx --yes newman run postman/e2e/reservations-checkstatus/reservations_checkstatus.postman_collection.json --env-var base_url=http://localhost:8002 --reporters cli
 ```
 
 Variables de colección:

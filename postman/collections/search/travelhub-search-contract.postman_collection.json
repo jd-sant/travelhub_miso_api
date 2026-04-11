@@ -1,0 +1,41 @@
+{
+  "info": {
+    "_postman_id": "eff589e6-f61a-4df6-839c-9b799323c6ac",
+    "name": "TravelHub Search Contract",
+    "description": "Validaciones contract/smoke para Search service.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health - Search",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('health 200', function () { pm.response.to.have.status(200); });"]}}],
+      "request": {"method": "GET", "header": [], "url": {"raw": "{{search_base_url}}/health", "host": ["{{search_base_url}}"], "path": ["health"]}}
+    },
+    {
+      "name": "Search Status",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });", "const body = pm.response.json();", "pm.test('service is search', function () { pm.expect(body.service).to.eql('search'); });"]}}],
+      "request": {"method": "GET", "header": [], "url": {"raw": "{{search_base_url}}/api/v1/search/status", "host": ["{{search_base_url}}"], "path": ["api", "v1", "search", "status"]}}
+    },
+    {
+      "name": "Search Query",
+      "event": [{"listen": "prerequest", "script": {"type": "text/javascript", "exec": ["const now = new Date();", "const checkIn = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);", "const checkOut = new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000);", "pm.collectionVariables.set('search_check_in', checkIn.toISOString().slice(0, 10));", "pm.collectionVariables.set('search_check_out', checkOut.toISOString().slice(0, 10));"]}}, {"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('search 200', function () { pm.response.to.have.status(200); });", "const body = pm.response.json();", "pm.test('items array exists', function () { pm.expect(body.items).to.be.an('array'); });", "pm.test('pagination exists', function () { pm.expect(body.pagination).to.be.an('object'); });"]}}],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{search_base_url}}/api/v1/search?city=Bogota&check_in={{search_check_in}}&check_out={{search_check_out}}&guests=2&page=1&page_size=5",
+          "host": ["{{search_base_url}}"],
+          "path": ["api", "v1", "search"],
+          "query": [
+            {"key": "city", "value": "Bogota"},
+            {"key": "check_in", "value": "{{search_check_in}}"},
+            {"key": "check_out", "value": "{{search_check_out}}"},
+            {"key": "guests", "value": "2"},
+            {"key": "page", "value": "1"},
+            {"key": "page_size", "value": "5"}
+          ]
+        }
+      }
+    }
+  ]
+}

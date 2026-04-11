@@ -2,15 +2,29 @@
 
 Archivos listos para probar el MVP de `payments` desde Postman y validar los criterios de aceptacion aplicables al backend.
 
-## Archivos
+## Estructura de archivos
 
-- `travelhub-payments.postman_collection.json`
-- `travelhub-payments-stripe-evidence.postman_collection.json`
-- `travelhub-payments-reservations-e2e.postman_collection.json`
-- `travelhub-local.postman_environment.json`
-- `travelhub-payments-reservations-local.postman_environment.json`
-- `travelhub-notifications.postman_collection.json`
-- `travelhub-notifications-local.postman_environment.json`
+- `collections/payments/travelhub-payments.postman_collection.json`
+- `collections/payments/travelhub-payments-stripe-evidence.postman_collection.json`
+- `collections/payments/travelhub-payments-contract.postman_collection.json`
+- `collections/notifications/travelhub-notifications.postman_collection.json`
+- `collections/notifications/travelhub-notifications-contract.postman_collection.json`
+- `collections/users/travelhub-users-contract.postman_collection.json`
+- `collections/security/travelhub-security-contract.postman_collection.json`
+- `collections/reservations/travelhub-reservations-contract.postman_collection.json`
+- `collections/properties/travelhub-properties-contract.postman_collection.json`
+- `collections/search/travelhub-search-contract.postman_collection.json`
+- `e2e/payments-reservations/travelhub-payments-reservations-e2e.postman_collection.json`
+- `e2e/reservation-payment-failure-checkstatus/travelhub-reservation-payment-failure-checkstatus-e2e.postman_collection.json`
+- `e2e/reservations-checkstatus/reservations_checkstatus.postman_collection.json`
+- `e2e/search-p95/search_p95.postman_collection.json`
+- `environments/travelhub-local.postman_environment.json`
+- `environments/travelhub-payments-reservations-local.postman_environment.json`
+- `environments/travelhub-notifications-local.postman_environment.json`
+- `environments/travelhub-microservices-local.postman_environment.json`
+- `reports/payments-reservations/newman-results.json`
+- `reports/reservation-payment-failure-checkstatus/newman-failure-checkstatus-results.json`
+- `reports/debug/newman-failed-flow-results.json`
 
 ## Preparacion
 
@@ -20,7 +34,7 @@ Archivos listos para probar el MVP de `payments` desde Postman y validar los cri
 
 ## Coleccion principal MVP
 
-`travelhub-payments.postman_collection.json`
+`collections/payments/travelhub-payments.postman_collection.json`
 
 Orden sugerido de ejecucion:
 
@@ -45,9 +59,33 @@ Esta coleccion valida:
 - Un request sin el header de transporte seguro es rechazado.
 - Los eventos de pago dejan trazabilidad para confirmacion y recibo.
 
+## Colecciones Contract por Microservicio
+
+Environment sugerido para estas colecciones:
+
+`environments/travelhub-microservices-local.postman_environment.json`
+
+Colecciones:
+
+- `collections/users/travelhub-users-contract.postman_collection.json`
+- `collections/security/travelhub-security-contract.postman_collection.json`
+- `collections/reservations/travelhub-reservations-contract.postman_collection.json`
+- `collections/payments/travelhub-payments-contract.postman_collection.json`
+- `collections/notifications/travelhub-notifications-contract.postman_collection.json`
+- `collections/properties/travelhub-properties-contract.postman_collection.json`
+- `collections/search/travelhub-search-contract.postman_collection.json`
+
+Ejecucion sugerida en lote:
+
+```bash
+for c in $(find postman/collections -type f -name '*.postman_collection.json' | sort); do
+  newman run "$c" -e postman/environments/travelhub-microservices-local.postman_environment.json --reporters cli
+done
+```
+
 ## Coleccion Stripe ejecutable
 
-`travelhub-payments-stripe-evidence.postman_collection.json`
+`collections/payments/travelhub-payments-stripe-evidence.postman_collection.json`
 
 Esta coleccion solo contiene lo que si se puede ejecutar de forma repetible desde Postman o Newman en `stripe_test`:
 
@@ -63,7 +101,7 @@ Valida:
 
 ## Coleccion E2E Payments + Reservations (Newman)
 
-`travelhub-payments-reservations-e2e.postman_collection.json`
+`e2e/payments-reservations/travelhub-payments-reservations-e2e.postman_collection.json`
 
 Valida dos escenarios:
 
@@ -73,8 +111,56 @@ Valida dos escenarios:
 Ejecucion sugerida con Newman:
 
 ```bash
-newman run postman/travelhub-payments-reservations-e2e.postman_collection.json \
-  -e postman/travelhub-payments-reservations-local.postman_environment.json
+newman run postman/e2e/payments-reservations/travelhub-payments-reservations-e2e.postman_collection.json \
+  -e postman/environments/travelhub-payments-reservations-local.postman_environment.json \
+  --reporters cli,json \
+  --reporter-json-export postman/reports/payments-reservations/newman-results.json
+```
+
+## Coleccion E2E Reserva + Pago fallido + CheckStatus (Newman)
+
+`e2e/reservation-payment-failure-checkstatus/travelhub-reservation-payment-failure-checkstatus-e2e.postman_collection.json`
+
+Valida el flujo:
+
+1. Crear reserva (`pending_payment`).
+2. Pago fallido (`failed`).
+3. Ejecutar `checkstatus`.
+4. Verificar que la reserva queda `cancelled`.
+
+Ejecucion sugerida con Newman:
+
+```bash
+newman run postman/e2e/reservation-payment-failure-checkstatus/travelhub-reservation-payment-failure-checkstatus-e2e.postman_collection.json \
+  -e postman/environments/travelhub-payments-reservations-local.postman_environment.json \
+  --reporters cli,json \
+  --reporter-json-export postman/reports/reservation-payment-failure-checkstatus/newman-failure-checkstatus-results.json
+```
+
+## Coleccion E2E Reservations CheckStatus (Newman)
+
+`e2e/reservations-checkstatus/reservations_checkstatus.postman_collection.json`
+
+Ejecucion sugerida con Newman:
+
+```bash
+newman run postman/e2e/reservations-checkstatus/reservations_checkstatus.postman_collection.json \
+  --env-var base_url=http://localhost:8002 \
+  --env-var INTERNAL_API_KEY=${INTERNAL_API_KEY:-dev-internal-key-change-me} \
+  --reporters cli
+```
+
+## Coleccion E2E Search P95 (Newman)
+
+`e2e/search-p95/search_p95.postman_collection.json`
+
+Ejecucion sugerida con Newman:
+
+```bash
+newman run postman/e2e/search-p95/search_p95.postman_collection.json \
+  --env-var base_url=http://localhost:8006 \
+  --iteration-count 130 \
+  --reporters cli
 ```
 
 Prerequisitos:
@@ -108,7 +194,7 @@ La evidencia de esa parte debe tomarse desde el frontend:
 
 ## Coleccion notifications
 
-`travelhub-notifications.postman_collection.json`
+`collections/notifications/travelhub-notifications.postman_collection.json`
 
 Orden sugerido:
 

@@ -1,0 +1,38 @@
+{
+  "info": {
+    "_postman_id": "4de7fbc8-574f-4f9f-8d6a-4bdcc4de2ebf",
+    "name": "TravelHub Payments Contract",
+    "description": "Validaciones contract/smoke para Payments service.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health - Payments",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('health 200', function () { pm.response.to.have.status(200); });"]}}],
+      "request": {"method": "GET", "header": [], "url": {"raw": "{{payments_base_url}}/health", "host": ["{{payments_base_url}}"], "path": ["health"]}}
+    },
+    {
+      "name": "Get Config",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('config 200', function () { pm.response.to.have.status(200); });", "const body = pm.response.json();", "pm.test('provider exists', function () { pm.expect(body.provider).to.be.a('string'); });"]}}],
+      "request": {"method": "GET", "header": [], "url": {"raw": "{{payments_base_url}}/api/v1/payments/config", "host": ["{{payments_base_url}}"], "path": ["api", "v1", "payments", "config"]}}
+    },
+    {
+      "name": "Create Charge Failed",
+      "event": [
+        {"listen": "prerequest", "script": {"type": "text/javascript", "exec": ["pm.collectionVariables.set('pay_reservation_id', pm.variables.replaceIn('{{$randomUUID}}'));", "pm.collectionVariables.set('pay_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));", "pm.collectionVariables.set('pay_idempotency_key', `contract-pay-${Date.now()}`);"]}},
+        {"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('charge failed 201', function () { pm.response.to.have.status(201); });", "const body = pm.response.json();", "pm.test('status failed', function () { pm.expect(body.status).to.eql('failed'); });", "pm.collectionVariables.set('payment_id', body.payment_id);"]}}
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Forwarded-Proto", "value": "https"}],
+        "body": {"mode": "raw", "raw": "{\n  \"reservation_id\": \"{{pay_reservation_id}}\",\n  \"traveler_id\": \"{{pay_traveler_id}}\",\n  \"payment_method_token\": \"pm_fail_card_declined\",\n  \"amount_in_cents\": 200000,\n  \"currency\": \"COP\",\n  \"idempotency_key\": \"{{pay_idempotency_key}}\"\n}"},
+        "url": {"raw": "{{payments_base_url}}/api/v1/payments/charges", "host": ["{{payments_base_url}}"], "path": ["api", "v1", "payments", "charges"]}
+      }
+    },
+    {
+      "name": "Get Payment By Id",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('get payment 200', function () { pm.response.to.have.status(200); });"]}}],
+      "request": {"method": "GET", "header": [], "url": {"raw": "{{payments_base_url}}/api/v1/payments/{{payment_id}}", "host": ["{{payments_base_url}}"], "path": ["api", "v1", "payments", "{{payment_id}}"]}}
+    }
+  ]
+}

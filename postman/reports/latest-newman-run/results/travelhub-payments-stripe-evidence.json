@@ -1,0 +1,1221 @@
+{
+  "collection": {
+    "_": {
+      "postman_id": "a8e9ef20-8d58-4bd2-9717-65d4f7ef5001"
+    },
+    "item": [
+      {
+        "id": "987f45f4-696c-417b-8c7b-e3ab1880fb99",
+        "name": "01 - Config",
+        "item": [
+          {
+            "id": "4380d827-ea2c-409d-b593-acff8327b64b",
+            "name": "Get Payments Config",
+            "request": {
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "payments",
+                  "config"
+                ],
+                "host": [
+                  "{{payments_base_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "d3adc8f8-b8c2-4c42-adc5-96202ae5088c",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Config responde 200', function () {",
+                    "  pm.response.to.have.status(200);",
+                    "});",
+                    "const body = pm.response.json();",
+                    "pm.test('Provider valido', function () {",
+                    "  pm.expect(['fake_stripe', 'stripe_test']).to.include(body.provider);",
+                    "});",
+                    "pm.test('Consistencia de stripe_enabled', function () {",
+                    "  if (body.provider === 'stripe_test') { pm.expect(body.stripe_enabled).to.eql(true); }",
+                    "  if (body.provider === 'fake_stripe') { pm.expect(body.stripe_enabled).to.eql(false); }",
+                    "});",
+                    "pm.test('Consistencia de publishable_key', function () {",
+                    "  if (body.provider === 'stripe_test') { pm.expect(body.publishable_key).to.match(/^pk_test_/); }",
+                    "  if (body.provider === 'fake_stripe') { pm.expect(body.publishable_key).to.eql(''); }",
+                    "});"
+                  ],
+                  "_lastExecutionId": "a55b6acb-87bf-45c7-bb6b-5404d5a06e6d"
+                }
+              }
+            ]
+          }
+        ],
+        "event": []
+      },
+      {
+        "id": "8ac69415-2c4d-460e-b0b7-8244a0a7af65",
+        "name": "02 - Create Intent",
+        "item": [
+          {
+            "id": "7e8a1964-1fa3-4b19-9105-38f8ef12041d",
+            "name": "Create Intent",
+            "request": {
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "payments",
+                  "create-intent"
+                ],
+                "host": [
+                  "{{payments_base_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Forwarded-Proto",
+                  "value": "https"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"reservation_id\": \"{{checkout_reservation_id}}\",\n  \"traveler_id\": \"{{checkout_traveler_id}}\",\n  \"amount_in_cents\": 287650,\n  \"currency\": \"COP\",\n  \"property_name\": \"Renaissance Estate & Private Vineyard\",\n  \"check_in_date\": \"2026-10-12\",\n  \"check_out_date\": \"2026-10-17\"\n}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "prerequest",
+                "script": {
+                  "id": "9773ac73-7745-4649-820b-f229e19e3b04",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.collectionVariables.set('checkout_reservation_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                    "pm.collectionVariables.set('checkout_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));"
+                  ],
+                  "_lastExecutionId": "2585ec09-7cc0-4678-9494-a1f867cc6b07"
+                }
+              },
+              {
+                "listen": "test",
+                "script": {
+                  "id": "85c437a5-fb3f-4329-8307-8e717ae7745e",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Create intent responde 201', function () {",
+                    "  pm.response.to.have.status(201);",
+                    "});",
+                    "const body = pm.response.json();",
+                    "pm.test('Devuelve payment_transaction_id', function () {",
+                    "  pm.expect(body.payment_transaction_id).to.be.a('string');",
+                    "});",
+                    "pm.test('Devuelve campo publishable_key', function () {",
+                    "  pm.expect(body).to.have.property('publishable_key');",
+                    "});",
+                    "pm.collectionVariables.set('payment_transaction_id', body.payment_transaction_id);"
+                  ],
+                  "_lastExecutionId": "c44d84f7-b95c-4d9f-9feb-d97733d04026"
+                }
+              }
+            ]
+          }
+        ],
+        "event": []
+      },
+      {
+        "id": "a515a047-e52f-4a02-994c-d8ba960bf4eb",
+        "name": "03 - Manual Evidence Guide",
+        "item": [
+          {
+            "id": "68b280a5-4835-447e-a40e-d708af58b4f6",
+            "name": "Read Manual Stripe Evidence Note",
+            "request": {
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "payments",
+                  "config"
+                ],
+                "host": [
+                  "{{payments_base_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "method": "GET"
+            },
+            "response": [
+              {
+                "_": {
+                  "postman_previewlanguage": "json"
+                },
+                "id": "30578441-583d-49b4-8033-e28d4281341b",
+                "name": "Manual Stripe evidence",
+                "originalRequest": {
+                  "url": {
+                    "path": [
+                      "api",
+                      "v1",
+                      "payments",
+                      "config"
+                    ],
+                    "host": [
+                      "{{payments_base_url}}"
+                    ],
+                    "query": [],
+                    "variable": []
+                  },
+                  "method": "GET"
+                },
+                "status": "OK",
+                "code": 200,
+                "header": [],
+                "body": "{\n  \"note\": \"El flujo finalize con Stripe requiere un confirmation_token_id de un solo uso generado por Stripe Elements en el navegador.\",\n  \"manual_evidence\": [\n    \"Completar el pago desde /checkout en el frontend.\",\n    \"Tomar evidencia del POST /api/v1/payments/finalize en DevTools.\",\n    \"Validar GET /api/v1/payments/{payment_id} y /events con el payment_id devuelto por el frontend.\",\n    \"Usar Postman/Newman solo para config y create-intent, que son repetibles.\"\n  ]\n}",
+                "cookie": []
+              }
+            ],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "0c73da16-3f57-41fa-83e0-484d5b79e6d8",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('La nota de alcance es visible', function () {",
+                    "  pm.response.to.have.status(200);",
+                    "});"
+                  ],
+                  "_lastExecutionId": "6a9fd463-1c16-4d69-8027-177a9273da05"
+                }
+              }
+            ]
+          }
+        ],
+        "event": []
+      }
+    ],
+    "event": [],
+    "variable": [
+      {
+        "type": "any",
+        "value": "",
+        "key": "payment_transaction_id"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "checkout_reservation_id"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "checkout_traveler_id"
+      }
+    ],
+    "info": {
+      "_postman_id": "a8e9ef20-8d58-4bd2-9717-65d4f7ef5001",
+      "name": "TravelHub Payments Stripe Base Evidence",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+      "description": {
+        "content": "Coleccion ejecutable para validar la evidencia tecnica base de HU016 con Stripe test mode. Solo incluye requests repetibles desde Postman/Newman sin depender de un confirmation_token_id de un solo uso.",
+        "type": "text/plain"
+      }
+    }
+  },
+  "environment": {
+    "_": {
+      "postman_variable_scope": "environment",
+      "postman_exported_at": "2026-04-11T00:00:00.000Z",
+      "postman_exported_using": "Codex"
+    },
+    "id": "1f3a5f3e-6c97-4fe2-b4db-1bbf62d8468f",
+    "name": "TravelHub Microservices Local",
+    "values": [
+      {
+        "type": "any",
+        "value": "http://localhost:8000",
+        "key": "users_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8001",
+        "key": "security_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8002",
+        "key": "reservations_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8003",
+        "key": "payments_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8004",
+        "key": "notifications_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8005",
+        "key": "properties_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8006",
+        "key": "search_base_url"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-internal-secret-key",
+        "key": "internal_api_key"
+      }
+    ]
+  },
+  "globals": {
+    "id": "6a4778c1-a3f7-4f9a-ab75-fe8c86af58c6",
+    "values": []
+  },
+  "run": {
+    "stats": {
+      "iterations": {
+        "total": 1,
+        "pending": 0,
+        "failed": 0
+      },
+      "items": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "scripts": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequests": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "requests": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "tests": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "assertions": {
+        "total": 8,
+        "pending": 0,
+        "failed": 0
+      },
+      "testScripts": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequestScripts": {
+        "total": 1,
+        "pending": 0,
+        "failed": 0
+      }
+    },
+    "timings": {
+      "responseAverage": 20.333333333333332,
+      "responseMin": 5,
+      "responseMax": 30,
+      "responseSd": 10.96458946893235,
+      "dnsAverage": 0,
+      "dnsMin": 0,
+      "dnsMax": 0,
+      "dnsSd": 0,
+      "firstByteAverage": 0,
+      "firstByteMin": 0,
+      "firstByteMax": 0,
+      "firstByteSd": 0,
+      "started": 1775938943292,
+      "completed": 1775938943437
+    },
+    "executions": [
+      {
+        "cursor": {
+          "position": 0,
+          "iteration": 0,
+          "length": 3,
+          "cycles": 1,
+          "empty": false,
+          "eof": false,
+          "bof": true,
+          "cr": false,
+          "ref": "4f5a5d05-42b0-4732-9fbf-a72445ac6805",
+          "httpRequestId": "5d04be15-ca5d-4f45-9d43-d0c35425993b"
+        },
+        "item": {
+          "id": "4380d827-ea2c-409d-b593-acff8327b64b",
+          "name": "Get Payments Config",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "config"
+              ],
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "d3adc8f8-b8c2-4c42-adc5-96202ae5088c",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Config responde 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Provider valido', function () {",
+                  "  pm.expect(['fake_stripe', 'stripe_test']).to.include(body.provider);",
+                  "});",
+                  "pm.test('Consistencia de stripe_enabled', function () {",
+                  "  if (body.provider === 'stripe_test') { pm.expect(body.stripe_enabled).to.eql(true); }",
+                  "  if (body.provider === 'fake_stripe') { pm.expect(body.stripe_enabled).to.eql(false); }",
+                  "});",
+                  "pm.test('Consistencia de publishable_key', function () {",
+                  "  if (body.provider === 'stripe_test') { pm.expect(body.publishable_key).to.match(/^pk_test_/); }",
+                  "  if (body.provider === 'fake_stripe') { pm.expect(body.publishable_key).to.eql(''); }",
+                  "});"
+                ],
+                "_lastExecutionId": "a55b6acb-87bf-45c7-bb6b-5404d5a06e6d"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8003",
+            "path": [
+              "api",
+              "v1",
+              "payments",
+              "config"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "021233fd-5065-4995-8ae9-8035882e6594",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8003",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "59bb8068-45bf-4389-a68e-e97ba16c6b2d",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sat, 11 Apr 2026 20:22:22 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "70"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              112,
+              114,
+              111,
+              118,
+              105,
+              100,
+              101,
+              114,
+              34,
+              58,
+              34,
+              102,
+              97,
+              107,
+              101,
+              95,
+              115,
+              116,
+              114,
+              105,
+              112,
+              101,
+              34,
+              44,
+              34,
+              115,
+              116,
+              114,
+              105,
+              112,
+              101,
+              95,
+              101,
+              110,
+              97,
+              98,
+              108,
+              101,
+              100,
+              34,
+              58,
+              102,
+              97,
+              108,
+              115,
+              101,
+              44,
+              34,
+              112,
+              117,
+              98,
+              108,
+              105,
+              115,
+              104,
+              97,
+              98,
+              108,
+              101,
+              95,
+              107,
+              101,
+              121,
+              34,
+              58,
+              34,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 30,
+          "responseSize": 70
+        },
+        "id": "4380d827-ea2c-409d-b593-acff8327b64b",
+        "assertions": [
+          {
+            "assertion": "Config responde 200",
+            "skipped": false
+          },
+          {
+            "assertion": "Provider valido",
+            "skipped": false
+          },
+          {
+            "assertion": "Consistencia de stripe_enabled",
+            "skipped": false
+          },
+          {
+            "assertion": "Consistencia de publishable_key",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "1622dd1d-8d8f-4259-8576-6d9c2e557ab0",
+          "length": 3,
+          "cycles": 1,
+          "position": 1,
+          "iteration": 0,
+          "httpRequestId": "06247455-571c-4a33-a8f5-6ba6041bb96b"
+        },
+        "item": {
+          "id": "7e8a1964-1fa3-4b19-9105-38f8ef12041d",
+          "name": "Create Intent",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "create-intent"
+              ],
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Forwarded-Proto",
+                "value": "https"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservation_id\": \"{{checkout_reservation_id}}\",\n  \"traveler_id\": \"{{checkout_traveler_id}}\",\n  \"amount_in_cents\": 287650,\n  \"currency\": \"COP\",\n  \"property_name\": \"Renaissance Estate & Private Vineyard\",\n  \"check_in_date\": \"2026-10-12\",\n  \"check_out_date\": \"2026-10-17\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "9773ac73-7745-4649-820b-f229e19e3b04",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('checkout_reservation_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('checkout_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));"
+                ],
+                "_lastExecutionId": "2585ec09-7cc0-4678-9494-a1f867cc6b07"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "85c437a5-fb3f-4329-8307-8e717ae7745e",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Create intent responde 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Devuelve payment_transaction_id', function () {",
+                  "  pm.expect(body.payment_transaction_id).to.be.a('string');",
+                  "});",
+                  "pm.test('Devuelve campo publishable_key', function () {",
+                  "  pm.expect(body).to.have.property('publishable_key');",
+                  "});",
+                  "pm.collectionVariables.set('payment_transaction_id', body.payment_transaction_id);"
+                ],
+                "_lastExecutionId": "c44d84f7-b95c-4d9f-9feb-d97733d04026"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8003",
+            "path": [
+              "api",
+              "v1",
+              "payments",
+              "create-intent"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "X-Forwarded-Proto",
+              "value": "https"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "6847157a-ecc8-439b-874d-8f2f0ee28973",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8003",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "296",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"reservation_id\": \"7f0d38b9-48ec-4115-8389-3cdf90345f9d\",\n  \"traveler_id\": \"bc7e2fc1-6e5c-44bd-8022-7a5c0de3d16b\",\n  \"amount_in_cents\": 287650,\n  \"currency\": \"COP\",\n  \"property_name\": \"Renaissance Estate & Private Vineyard\",\n  \"check_in_date\": \"2026-10-12\",\n  \"check_out_date\": \"2026-10-17\"\n}"
+          }
+        },
+        "response": {
+          "id": "093dd7bc-2430-4e04-a053-a2cdb75fa8e3",
+          "status": "Created",
+          "code": 201,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sat, 11 Apr 2026 20:22:22 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "181"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              112,
+              97,
+              121,
+              109,
+              101,
+              110,
+              116,
+              95,
+              116,
+              114,
+              97,
+              110,
+              115,
+              97,
+              99,
+              116,
+              105,
+              111,
+              110,
+              95,
+              105,
+              100,
+              34,
+              58,
+              34,
+              99,
+              102,
+              48,
+              49,
+              55,
+              101,
+              51,
+              56,
+              45,
+              100,
+              97,
+              51,
+              101,
+              45,
+              52,
+              56,
+              55,
+              97,
+              45,
+              56,
+              54,
+              54,
+              51,
+              45,
+              49,
+              52,
+              54,
+              53,
+              98,
+              97,
+              57,
+              102,
+              102,
+              57,
+              55,
+              97,
+              34,
+              44,
+              34,
+              112,
+              114,
+              111,
+              118,
+              105,
+              100,
+              101,
+              114,
+              95,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              102,
+              97,
+              107,
+              101,
+              95,
+              115,
+              116,
+              114,
+              105,
+              112,
+              101,
+              34,
+              44,
+              34,
+              97,
+              109,
+              111,
+              117,
+              110,
+              116,
+              95,
+              105,
+              110,
+              95,
+              99,
+              101,
+              110,
+              116,
+              115,
+              34,
+              58,
+              50,
+              56,
+              55,
+              54,
+              53,
+              48,
+              44,
+              34,
+              99,
+              117,
+              114,
+              114,
+              101,
+              110,
+              99,
+              121,
+              34,
+              58,
+              34,
+              67,
+              79,
+              80,
+              34,
+              44,
+              34,
+              112,
+              117,
+              98,
+              108,
+              105,
+              115,
+              104,
+              97,
+              98,
+              108,
+              101,
+              95,
+              107,
+              101,
+              121,
+              34,
+              58,
+              34,
+              34,
+              44,
+              34,
+              115,
+              116,
+              114,
+              105,
+              112,
+              101,
+              95,
+              101,
+              110,
+              97,
+              98,
+              108,
+              101,
+              100,
+              34,
+              58,
+              102,
+              97,
+              108,
+              115,
+              101,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 26,
+          "responseSize": 181
+        },
+        "id": "7e8a1964-1fa3-4b19-9105-38f8ef12041d",
+        "assertions": [
+          {
+            "assertion": "Create intent responde 201",
+            "skipped": false
+          },
+          {
+            "assertion": "Devuelve payment_transaction_id",
+            "skipped": false
+          },
+          {
+            "assertion": "Devuelve campo publishable_key",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "6c36198e-0050-4f04-a457-46d48c3a6e05",
+          "length": 3,
+          "cycles": 1,
+          "position": 2,
+          "iteration": 0,
+          "httpRequestId": "147383ca-38e3-4739-b2be-6527f7e643b0"
+        },
+        "item": {
+          "id": "68b280a5-4835-447e-a40e-d708af58b4f6",
+          "name": "Read Manual Stripe Evidence Note",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "config"
+              ],
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [
+            {
+              "_": {
+                "postman_previewlanguage": "json"
+              },
+              "id": "30578441-583d-49b4-8033-e28d4281341b",
+              "name": "Manual Stripe evidence",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "api",
+                    "v1",
+                    "payments",
+                    "config"
+                  ],
+                  "host": [
+                    "{{payments_base_url}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "method": "GET"
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [],
+              "body": "{\n  \"note\": \"El flujo finalize con Stripe requiere un confirmation_token_id de un solo uso generado por Stripe Elements en el navegador.\",\n  \"manual_evidence\": [\n    \"Completar el pago desde /checkout en el frontend.\",\n    \"Tomar evidencia del POST /api/v1/payments/finalize en DevTools.\",\n    \"Validar GET /api/v1/payments/{payment_id} y /events con el payment_id devuelto por el frontend.\",\n    \"Usar Postman/Newman solo para config y create-intent, que son repetibles.\"\n  ]\n}",
+              "cookie": []
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "0c73da16-3f57-41fa-83e0-484d5b79e6d8",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('La nota de alcance es visible', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "_lastExecutionId": "6a9fd463-1c16-4d69-8027-177a9273da05"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8003",
+            "path": [
+              "api",
+              "v1",
+              "payments",
+              "config"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "0ae0f2e7-2a16-4e39-8c55-ed0c94565dc8",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8003",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "8a2c0e6a-0cd2-4f4a-bf3c-5b45904f1976",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sat, 11 Apr 2026 20:22:22 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "70"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              112,
+              114,
+              111,
+              118,
+              105,
+              100,
+              101,
+              114,
+              34,
+              58,
+              34,
+              102,
+              97,
+              107,
+              101,
+              95,
+              115,
+              116,
+              114,
+              105,
+              112,
+              101,
+              34,
+              44,
+              34,
+              115,
+              116,
+              114,
+              105,
+              112,
+              101,
+              95,
+              101,
+              110,
+              97,
+              98,
+              108,
+              101,
+              100,
+              34,
+              58,
+              102,
+              97,
+              108,
+              115,
+              101,
+              44,
+              34,
+              112,
+              117,
+              98,
+              108,
+              105,
+              115,
+              104,
+              97,
+              98,
+              108,
+              101,
+              95,
+              107,
+              101,
+              121,
+              34,
+              58,
+              34,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 5,
+          "responseSize": 70
+        },
+        "id": "68b280a5-4835-447e-a40e-d708af58b4f6",
+        "assertions": [
+          {
+            "assertion": "La nota de alcance es visible",
+            "skipped": false
+          }
+        ]
+      }
+    ],
+    "transfers": {
+      "responseTotal": 321
+    },
+    "failures": [],
+    "error": null
+  }
+}

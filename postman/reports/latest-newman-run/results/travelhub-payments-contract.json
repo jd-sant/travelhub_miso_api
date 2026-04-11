@@ -1,0 +1,1649 @@
+{
+  "collection": {
+    "_": {
+      "postman_id": "4de7fbc8-574f-4f9f-8d6a-4bdcc4de2ebf"
+    },
+    "item": [
+      {
+        "id": "9174d1f8-5281-46db-b857-59823e6b0398",
+        "name": "Health - Payments",
+        "request": {
+          "url": {
+            "path": [
+              "health"
+            ],
+            "host": [
+              "{{payments_base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "7ade5b52-4172-413b-87a8-47e049ffe686",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('health 200', function () { pm.response.to.have.status(200); });"
+              ],
+              "_lastExecutionId": "c7b1ba08-4e01-453a-8fc9-11c8f84b46f6"
+            }
+          }
+        ]
+      },
+      {
+        "id": "cd526782-8b0d-41e6-9462-814c2b682ba7",
+        "name": "Get Config",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "payments",
+              "config"
+            ],
+            "host": [
+              "{{payments_base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "a7cc1d72-f652-4ace-b3a6-59c482af6773",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('config 200', function () { pm.response.to.have.status(200); });",
+                "const body = pm.response.json();",
+                "pm.test('provider exists', function () { pm.expect(body.provider).to.be.a('string'); });"
+              ],
+              "_lastExecutionId": "d727a324-8f14-4832-be6e-1ed80d0d9c10"
+            }
+          }
+        ]
+      },
+      {
+        "id": "ea97d89a-9e7d-43e8-8dc8-6abc2a34ef77",
+        "name": "Create Charge Failed",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "payments",
+              "charges"
+            ],
+            "host": [
+              "{{payments_base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "X-Forwarded-Proto",
+              "value": "https"
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"reservation_id\": \"{{pay_reservation_id}}\",\n  \"traveler_id\": \"{{pay_traveler_id}}\",\n  \"payment_method_token\": \"pm_fail_card_declined\",\n  \"amount_in_cents\": 200000,\n  \"currency\": \"COP\",\n  \"idempotency_key\": \"{{pay_idempotency_key}}\"\n}"
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "prerequest",
+            "script": {
+              "id": "654162d7-41a0-4f48-b4b2-a0700cb2288d",
+              "type": "text/javascript",
+              "exec": [
+                "pm.collectionVariables.set('pay_reservation_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                "pm.collectionVariables.set('pay_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                "pm.collectionVariables.set('pay_idempotency_key', `contract-pay-${Date.now()}`);"
+              ],
+              "_lastExecutionId": "d1b9ce1e-848c-45b1-b9b7-74cfaae19738"
+            }
+          },
+          {
+            "listen": "test",
+            "script": {
+              "id": "6bd43075-6173-4bad-9dd5-0dc8e36cea6d",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('charge failed 201', function () { pm.response.to.have.status(201); });",
+                "const body = pm.response.json();",
+                "pm.test('status failed', function () { pm.expect(body.status).to.eql('failed'); });",
+                "pm.collectionVariables.set('payment_id', body.payment_id);"
+              ],
+              "_lastExecutionId": "8f7650c4-8bb2-4a3c-8cef-c0d94e08f144"
+            }
+          }
+        ]
+      },
+      {
+        "id": "6e332265-2a61-4512-8d04-8ef0302014e1",
+        "name": "Get Payment By Id",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "payments",
+              "{{payment_id}}"
+            ],
+            "host": [
+              "{{payments_base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "91a635cf-5eac-4098-86b9-3bd6ff33d9f7",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('get payment 200', function () { pm.response.to.have.status(200); });"
+              ],
+              "_lastExecutionId": "944d7bda-8f00-4338-8f67-b89e3764e380"
+            }
+          }
+        ]
+      }
+    ],
+    "event": [],
+    "variable": [],
+    "info": {
+      "_postman_id": "4de7fbc8-574f-4f9f-8d6a-4bdcc4de2ebf",
+      "name": "TravelHub Payments Contract",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+      "description": {
+        "content": "Validaciones contract/smoke para Payments service.",
+        "type": "text/plain"
+      }
+    }
+  },
+  "environment": {
+    "_": {
+      "postman_variable_scope": "environment",
+      "postman_exported_at": "2026-04-11T00:00:00.000Z",
+      "postman_exported_using": "Codex"
+    },
+    "id": "1f3a5f3e-6c97-4fe2-b4db-1bbf62d8468f",
+    "name": "TravelHub Microservices Local",
+    "values": [
+      {
+        "type": "any",
+        "value": "http://localhost:8000",
+        "key": "users_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8001",
+        "key": "security_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8002",
+        "key": "reservations_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8003",
+        "key": "payments_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8004",
+        "key": "notifications_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8005",
+        "key": "properties_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8006",
+        "key": "search_base_url"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-internal-secret-key",
+        "key": "internal_api_key"
+      }
+    ]
+  },
+  "globals": {
+    "id": "ae86b183-7a15-45c9-ab23-34ed5b0c0513",
+    "values": []
+  },
+  "run": {
+    "stats": {
+      "iterations": {
+        "total": 1,
+        "pending": 0,
+        "failed": 0
+      },
+      "items": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "scripts": {
+        "total": 5,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequests": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "requests": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "tests": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "assertions": {
+        "total": 6,
+        "pending": 0,
+        "failed": 0
+      },
+      "testScripts": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequestScripts": {
+        "total": 1,
+        "pending": 0,
+        "failed": 0
+      }
+    },
+    "timings": {
+      "responseAverage": 19.25,
+      "responseMin": 6,
+      "responseMax": 33,
+      "responseSd": 11.4755174175285,
+      "dnsAverage": 0,
+      "dnsMin": 0,
+      "dnsMax": 0,
+      "dnsSd": 0,
+      "firstByteAverage": 0,
+      "firstByteMin": 0,
+      "firstByteMax": 0,
+      "firstByteSd": 0,
+      "started": 1775938940872,
+      "completed": 1775938941053
+    },
+    "executions": [
+      {
+        "cursor": {
+          "position": 0,
+          "iteration": 0,
+          "length": 4,
+          "cycles": 1,
+          "empty": false,
+          "eof": false,
+          "bof": true,
+          "cr": false,
+          "ref": "6f2cfb64-2eac-423b-8b2a-2829482908b8",
+          "httpRequestId": "841d3128-c14a-43e7-97a7-8b8c3c66baa9"
+        },
+        "item": {
+          "id": "9174d1f8-5281-46db-b857-59823e6b0398",
+          "name": "Health - Payments",
+          "request": {
+            "url": {
+              "path": [
+                "health"
+              ],
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "7ade5b52-4172-413b-87a8-47e049ffe686",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('health 200', function () { pm.response.to.have.status(200); });"
+                ],
+                "_lastExecutionId": "c7b1ba08-4e01-453a-8fc9-11c8f84b46f6"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8003",
+            "path": [
+              "health"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "12d40faf-c0f7-4531-a622-710b8800e22c",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8003",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "b8c5c4ca-f52b-4e9a-85b8-60b362ab1695",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sat, 11 Apr 2026 20:22:19 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "20"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              104,
+              101,
+              97,
+              108,
+              116,
+              104,
+              121,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 28,
+          "responseSize": 20
+        },
+        "id": "9174d1f8-5281-46db-b857-59823e6b0398",
+        "assertions": [
+          {
+            "assertion": "health 200",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "e13f19a8-9704-4c6d-a949-51d6ddb3e768",
+          "length": 4,
+          "cycles": 1,
+          "position": 1,
+          "iteration": 0,
+          "httpRequestId": "3abc878f-8889-44d4-a11b-6e0b22ef7c10"
+        },
+        "item": {
+          "id": "cd526782-8b0d-41e6-9462-814c2b682ba7",
+          "name": "Get Config",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "config"
+              ],
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "a7cc1d72-f652-4ace-b3a6-59c482af6773",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('config 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test('provider exists', function () { pm.expect(body.provider).to.be.a('string'); });"
+                ],
+                "_lastExecutionId": "d727a324-8f14-4832-be6e-1ed80d0d9c10"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8003",
+            "path": [
+              "api",
+              "v1",
+              "payments",
+              "config"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "f1fbd929-bd0e-4a16-9371-3fb5196e965b",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8003",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "88f3ed16-7e90-4cd6-bddf-b9f89fc0f769",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sat, 11 Apr 2026 20:22:19 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "70"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              112,
+              114,
+              111,
+              118,
+              105,
+              100,
+              101,
+              114,
+              34,
+              58,
+              34,
+              102,
+              97,
+              107,
+              101,
+              95,
+              115,
+              116,
+              114,
+              105,
+              112,
+              101,
+              34,
+              44,
+              34,
+              115,
+              116,
+              114,
+              105,
+              112,
+              101,
+              95,
+              101,
+              110,
+              97,
+              98,
+              108,
+              101,
+              100,
+              34,
+              58,
+              102,
+              97,
+              108,
+              115,
+              101,
+              44,
+              34,
+              112,
+              117,
+              98,
+              108,
+              105,
+              115,
+              104,
+              97,
+              98,
+              108,
+              101,
+              95,
+              107,
+              101,
+              121,
+              34,
+              58,
+              34,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 6,
+          "responseSize": 70
+        },
+        "id": "cd526782-8b0d-41e6-9462-814c2b682ba7",
+        "assertions": [
+          {
+            "assertion": "config 200",
+            "skipped": false
+          },
+          {
+            "assertion": "provider exists",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "f6bac2a5-4082-4ff0-b800-05dbcfbeec3c",
+          "length": 4,
+          "cycles": 1,
+          "position": 2,
+          "iteration": 0,
+          "httpRequestId": "884734da-df17-4eb5-8f4c-4bcae104c547"
+        },
+        "item": {
+          "id": "ea97d89a-9e7d-43e8-8dc8-6abc2a34ef77",
+          "name": "Create Charge Failed",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "charges"
+              ],
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Forwarded-Proto",
+                "value": "https"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservation_id\": \"{{pay_reservation_id}}\",\n  \"traveler_id\": \"{{pay_traveler_id}}\",\n  \"payment_method_token\": \"pm_fail_card_declined\",\n  \"amount_in_cents\": 200000,\n  \"currency\": \"COP\",\n  \"idempotency_key\": \"{{pay_idempotency_key}}\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "654162d7-41a0-4f48-b4b2-a0700cb2288d",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('pay_reservation_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('pay_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('pay_idempotency_key', `contract-pay-${Date.now()}`);"
+                ],
+                "_lastExecutionId": "d1b9ce1e-848c-45b1-b9b7-74cfaae19738"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "6bd43075-6173-4bad-9dd5-0dc8e36cea6d",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('charge failed 201', function () { pm.response.to.have.status(201); });",
+                  "const body = pm.response.json();",
+                  "pm.test('status failed', function () { pm.expect(body.status).to.eql('failed'); });",
+                  "pm.collectionVariables.set('payment_id', body.payment_id);"
+                ],
+                "_lastExecutionId": "8f7650c4-8bb2-4a3c-8cef-c0d94e08f144"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8003",
+            "path": [
+              "api",
+              "v1",
+              "payments",
+              "charges"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "X-Forwarded-Proto",
+              "value": "https"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "c91af960-75c6-4449-b5d2-ef12c6d12ffb",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8003",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "271",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"reservation_id\": \"b8709a87-2a8c-4dd9-bbbb-570960b44240\",\n  \"traveler_id\": \"a006de15-ec6c-4241-a4cb-ae42ec537067\",\n  \"payment_method_token\": \"pm_fail_card_declined\",\n  \"amount_in_cents\": 200000,\n  \"currency\": \"COP\",\n  \"idempotency_key\": \"contract-pay-1775938940966\"\n}"
+          }
+        },
+        "response": {
+          "id": "135a6340-f243-41ba-b243-c61306c52950",
+          "status": "Created",
+          "code": 201,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sat, 11 Apr 2026 20:22:20 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "322"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              112,
+              97,
+              121,
+              109,
+              101,
+              110,
+              116,
+              95,
+              105,
+              100,
+              34,
+              58,
+              34,
+              55,
+              98,
+              57,
+              52,
+              53,
+              102,
+              97,
+              100,
+              45,
+              56,
+              49,
+              102,
+              51,
+              45,
+              52,
+              54,
+              99,
+              102,
+              45,
+              57,
+              49,
+              97,
+              50,
+              45,
+              49,
+              56,
+              100,
+              100,
+              55,
+              56,
+              97,
+              99,
+              99,
+              54,
+              51,
+              53,
+              34,
+              44,
+              34,
+              114,
+              101,
+              115,
+              101,
+              114,
+              118,
+              97,
+              116,
+              105,
+              111,
+              110,
+              95,
+              105,
+              100,
+              34,
+              58,
+              34,
+              98,
+              56,
+              55,
+              48,
+              57,
+              97,
+              56,
+              55,
+              45,
+              50,
+              97,
+              56,
+              99,
+              45,
+              52,
+              100,
+              100,
+              57,
+              45,
+              98,
+              98,
+              98,
+              98,
+              45,
+              53,
+              55,
+              48,
+              57,
+              54,
+              48,
+              98,
+              52,
+              52,
+              50,
+              52,
+              48,
+              34,
+              44,
+              34,
+              112,
+              114,
+              111,
+              118,
+              105,
+              100,
+              101,
+              114,
+              95,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              102,
+              97,
+              107,
+              101,
+              95,
+              115,
+              116,
+              114,
+              105,
+              112,
+              101,
+              34,
+              44,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              102,
+              97,
+              105,
+              108,
+              101,
+              100,
+              34,
+              44,
+              34,
+              97,
+              109,
+              111,
+              117,
+              110,
+              116,
+              95,
+              105,
+              110,
+              95,
+              99,
+              101,
+              110,
+              116,
+              115,
+              34,
+              58,
+              50,
+              48,
+              48,
+              48,
+              48,
+              48,
+              44,
+              34,
+              99,
+              117,
+              114,
+              114,
+              101,
+              110,
+              99,
+              121,
+              34,
+              58,
+              34,
+              67,
+              79,
+              80,
+              34,
+              44,
+              34,
+              103,
+              97,
+              116,
+              101,
+              119,
+              97,
+              121,
+              95,
+              99,
+              104,
+              97,
+              114,
+              103,
+              101,
+              95,
+              105,
+              100,
+              34,
+              58,
+              34,
+              99,
+              104,
+              95,
+              48,
+              56,
+              98,
+              97,
+              99,
+              102,
+              48,
+              97,
+              101,
+              99,
+              57,
+              51,
+              52,
+              98,
+              97,
+              56,
+              98,
+              56,
+              56,
+              52,
+              50,
+              52,
+              57,
+              48,
+              34,
+              44,
+              34,
+              114,
+              101,
+              99,
+              101,
+              105,
+              112,
+              116,
+              95,
+              105,
+              100,
+              34,
+              58,
+              110,
+              117,
+              108,
+              108,
+              44,
+              34,
+              114,
+              101,
+              99,
+              101,
+              105,
+              112,
+              116,
+              95,
+              110,
+              117,
+              109,
+              98,
+              101,
+              114,
+              34,
+              58,
+              110,
+              117,
+              108,
+              108,
+              44,
+              34,
+              102,
+              97,
+              105,
+              108,
+              117,
+              114,
+              101,
+              95,
+              114,
+              101,
+              97,
+              115,
+              111,
+              110,
+              34,
+              58,
+              34,
+              99,
+              97,
+              114,
+              100,
+              95,
+              100,
+              101,
+              99,
+              108,
+              105,
+              110,
+              101,
+              100,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 33,
+          "responseSize": 322
+        },
+        "id": "ea97d89a-9e7d-43e8-8dc8-6abc2a34ef77",
+        "assertions": [
+          {
+            "assertion": "charge failed 201",
+            "skipped": false
+          },
+          {
+            "assertion": "status failed",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "7d5048fd-f864-44d1-8193-8523fc1655aa",
+          "length": 4,
+          "cycles": 1,
+          "position": 3,
+          "iteration": 0,
+          "httpRequestId": "ab6be0e9-aecb-4936-83b5-ad186052050a"
+        },
+        "item": {
+          "id": "6e332265-2a61-4512-8d04-8ef0302014e1",
+          "name": "Get Payment By Id",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "{{payment_id}}"
+              ],
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "91a635cf-5eac-4098-86b9-3bd6ff33d9f7",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('get payment 200', function () { pm.response.to.have.status(200); });"
+                ],
+                "_lastExecutionId": "944d7bda-8f00-4338-8f67-b89e3764e380"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8003",
+            "path": [
+              "api",
+              "v1",
+              "payments",
+              "7b945fad-81f3-46cf-91a2-18dd78acc635"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "b6d80481-3f83-402e-b79e-211ec99e8258",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8003",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "50c920f6-998f-43cf-8012-dc86a8f3f2a9",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sat, 11 Apr 2026 20:22:20 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "322"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              112,
+              97,
+              121,
+              109,
+              101,
+              110,
+              116,
+              95,
+              105,
+              100,
+              34,
+              58,
+              34,
+              55,
+              98,
+              57,
+              52,
+              53,
+              102,
+              97,
+              100,
+              45,
+              56,
+              49,
+              102,
+              51,
+              45,
+              52,
+              54,
+              99,
+              102,
+              45,
+              57,
+              49,
+              97,
+              50,
+              45,
+              49,
+              56,
+              100,
+              100,
+              55,
+              56,
+              97,
+              99,
+              99,
+              54,
+              51,
+              53,
+              34,
+              44,
+              34,
+              114,
+              101,
+              115,
+              101,
+              114,
+              118,
+              97,
+              116,
+              105,
+              111,
+              110,
+              95,
+              105,
+              100,
+              34,
+              58,
+              34,
+              98,
+              56,
+              55,
+              48,
+              57,
+              97,
+              56,
+              55,
+              45,
+              50,
+              97,
+              56,
+              99,
+              45,
+              52,
+              100,
+              100,
+              57,
+              45,
+              98,
+              98,
+              98,
+              98,
+              45,
+              53,
+              55,
+              48,
+              57,
+              54,
+              48,
+              98,
+              52,
+              52,
+              50,
+              52,
+              48,
+              34,
+              44,
+              34,
+              112,
+              114,
+              111,
+              118,
+              105,
+              100,
+              101,
+              114,
+              95,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              102,
+              97,
+              107,
+              101,
+              95,
+              115,
+              116,
+              114,
+              105,
+              112,
+              101,
+              34,
+              44,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              102,
+              97,
+              105,
+              108,
+              101,
+              100,
+              34,
+              44,
+              34,
+              97,
+              109,
+              111,
+              117,
+              110,
+              116,
+              95,
+              105,
+              110,
+              95,
+              99,
+              101,
+              110,
+              116,
+              115,
+              34,
+              58,
+              50,
+              48,
+              48,
+              48,
+              48,
+              48,
+              44,
+              34,
+              99,
+              117,
+              114,
+              114,
+              101,
+              110,
+              99,
+              121,
+              34,
+              58,
+              34,
+              67,
+              79,
+              80,
+              34,
+              44,
+              34,
+              103,
+              97,
+              116,
+              101,
+              119,
+              97,
+              121,
+              95,
+              99,
+              104,
+              97,
+              114,
+              103,
+              101,
+              95,
+              105,
+              100,
+              34,
+              58,
+              34,
+              99,
+              104,
+              95,
+              48,
+              56,
+              98,
+              97,
+              99,
+              102,
+              48,
+              97,
+              101,
+              99,
+              57,
+              51,
+              52,
+              98,
+              97,
+              56,
+              98,
+              56,
+              56,
+              52,
+              50,
+              52,
+              57,
+              48,
+              34,
+              44,
+              34,
+              114,
+              101,
+              99,
+              101,
+              105,
+              112,
+              116,
+              95,
+              105,
+              100,
+              34,
+              58,
+              110,
+              117,
+              108,
+              108,
+              44,
+              34,
+              114,
+              101,
+              99,
+              101,
+              105,
+              112,
+              116,
+              95,
+              110,
+              117,
+              109,
+              98,
+              101,
+              114,
+              34,
+              58,
+              110,
+              117,
+              108,
+              108,
+              44,
+              34,
+              102,
+              97,
+              105,
+              108,
+              117,
+              114,
+              101,
+              95,
+              114,
+              101,
+              97,
+              115,
+              111,
+              110,
+              34,
+              58,
+              34,
+              99,
+              97,
+              114,
+              100,
+              95,
+              100,
+              101,
+              99,
+              108,
+              105,
+              110,
+              101,
+              100,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 10,
+          "responseSize": 322
+        },
+        "id": "6e332265-2a61-4512-8d04-8ef0302014e1",
+        "assertions": [
+          {
+            "assertion": "get payment 200",
+            "skipped": false
+          }
+        ]
+      }
+    ],
+    "transfers": {
+      "responseTotal": 734
+    },
+    "failures": [],
+    "error": null
+  }
+}

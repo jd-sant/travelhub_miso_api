@@ -1,0 +1,15 @@
+collection,scope,config,exit_code,assertions_total,assertions_failed,assertions_passed,duration_ms
+travelhub-notifications-contract.postman_collection.json,contract,env:postman/environments/travelhub-microservices-local.postman_environment.json,0,3,0,3,122
+travelhub-notifications.postman_collection.json,contract,env:postman/environments/travelhub-microservices-local.postman_environment.json,0,5,0,5,144
+travelhub-payments-contract.postman_collection.json,contract,env:postman/environments/travelhub-microservices-local.postman_environment.json,0,6,0,6,181
+travelhub-payments.postman_collection.json,contract,env:postman/environments/travelhub-microservices-local.postman_environment.json,0,27,0,27,590
+travelhub-payments-stripe-evidence.postman_collection.json,contract,env:postman/environments/travelhub-microservices-local.postman_environment.json,0,8,0,8,145
+travelhub-properties-contract.postman_collection.json,contract,env:postman/environments/travelhub-microservices-local.postman_environment.json,0,4,0,4,124
+travelhub-reservations-contract.postman_collection.json,contract,env:postman/environments/travelhub-microservices-local.postman_environment.json,0,6,0,6,135
+travelhub-search-contract.postman_collection.json,contract,env:postman/environments/travelhub-microservices-local.postman_environment.json,0,6,0,6,124
+travelhub-security-contract.postman_collection.json,contract,env:postman/environments/travelhub-microservices-local.postman_environment.json,0,3,0,3,170
+travelhub-users-contract.postman_collection.json,contract,env:postman/environments/travelhub-microservices-local.postman_environment.json,0,2,0,2,101
+travelhub-payments-reservations-e2e.postman_collection.json,e2e,env:postman/environments/travelhub-payments-reservations-local.postman_environment.json,0,17,0,17,1093
+travelhub-reservation-payment-failure-checkstatus-e2e.postman_collection.json,e2e,env:postman/environments/travelhub-payments-reservations-local.postman_environment.json,0,12,0,12,247
+reservations_checkstatus.postman_collection.json,e2e,vars:base_url=http://localhost:8002;INTERNAL_API_KEY=travelhub-internal-secret-key,0,12,0,12,241
+search_p95.postman_collection.json,perf,vars:base_url=http://localhost:8006;iteration-count=130,0,131,0,131,5933
