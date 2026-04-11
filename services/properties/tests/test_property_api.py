@@ -57,7 +57,7 @@ def test_get_property_endpoint_with_seeded_data(client: TestClient):
     
     # Should have images
     assert len(data["images"]) == 5
-    assert data["images"][0]["url"] == "/mock/property-1.svg"
+    assert data["images"][0]["url"] == "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80"
     
     # Should have reviews
     assert len(data["reviews"]) == 2
