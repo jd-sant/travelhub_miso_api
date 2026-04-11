@@ -2,34 +2,30 @@ from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
 
 class PropertySearchItem(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
     id: UUID
-    name: str = Field(alias="nombre")
-    city: str = Field(alias="ciudad")
-    country: str = Field(alias="pais")
-    max_capacity: int = Field(alias="capacidad_maxima")
-    main_image_url: str | None = Field(alias="imagen_principal_url")
+    name: str
+    city: str
+    country: str
+    max_capacity: int
+    main_image_url: str | None
     rating: float | None
-    price_from: Decimal = Field(alias="precio_desde")
-    currency: str = Field(alias="moneda")
-    amenities: list[str] = Field(default_factory=list, alias="amenidades")
+    price_from: Decimal
+    currency: str
+    amenities: list[str] = Field(default_factory=list)
 
 
 class SearchQuery(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
-    city: str = Field(min_length=2, max_length=120, alias="ciudad")
+    city: str = Field(min_length=2, max_length=120)
     check_in: date
     check_out: date
-    guests: int = Field(ge=1, alias="huespedes")
-    amenities: list[str] = Field(default_factory=list, alias="amenidades")
-    min_price: Decimal | None = Field(default=None, ge=0, alias="precio_min")
-    max_price: Decimal | None = Field(default=None, ge=0, alias="precio_max")
+    guests: int = Field(ge=1)
+    amenities: list[str] = Field(default_factory=list)
+    min_price: Decimal | None = Field(default=None, ge=0)
+    max_price: Decimal | None = Field(default=None, ge=0)
     order_by: str = Field(default="price")
     order_dir: str = Field(default="asc")
     page: int = Field(default=1, ge=1)
@@ -56,8 +52,6 @@ class EmptyStateSuggestion(BaseModel):
 
 
 class SearchResponse(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
     items: list[PropertySearchItem]
     pagination: SearchPagination
     empty_state: list[EmptyStateSuggestion] = Field(default_factory=list)

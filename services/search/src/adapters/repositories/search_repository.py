@@ -35,53 +35,53 @@ class SQLModelSearchRepository(SearchRepository):
             select(InventoryCalendar.room_type_id)
             .where(
                 and_(
-                    InventoryCalendar.fecha >= query.check_in,
-                    InventoryCalendar.fecha < query.check_out,
-                    InventoryCalendar.unidades_disponibles
-                    > InventoryCalendar.unidades_bloqueadas,
+                    InventoryCalendar.date >= query.check_in,
+                    InventoryCalendar.date < query.check_out,
+                    InventoryCalendar.available_units
+                    > InventoryCalendar.blocked_units,
                 )
             )
             .group_by(InventoryCalendar.room_type_id)
-            .having(func.count(func.distinct(InventoryCalendar.fecha)) == nights)
+            .having(func.count(func.distinct(InventoryCalendar.date)) == nights)
         )
 
         avg_calendar_price_subq = (
-            select(func.avg(RateCalendar.precio))
+            select(func.avg(RateCalendar.price))
             .where(
                 and_(
                     RateCalendar.rate_plan_id == RatePlan.id,
-                    RateCalendar.fecha >= query.check_in,
-                    RateCalendar.fecha < query.check_out,
+                    RateCalendar.date >= query.check_in,
+                    RateCalendar.date < query.check_out,
                 )
             )
             .correlate(RatePlan)
             .scalar_subquery()
         )
 
-        effective_price_expr = func.coalesce(avg_calendar_price_subq, RatePlan.precio_base)
+        effective_price_expr = func.coalesce(avg_calendar_price_subq, RatePlan.base_price)
         min_price_expr = func.min(effective_price_expr)
 
         base_stmt = (
             select(
                 Property.id,
-                Property.nombre,
-                Property.ciudad,
-                Property.pais,
-                Property.capacidad_maxima,
-                Property.imagen_principal_url,
+                Property.name,
+                Property.city,
+                Property.country,
+                Property.max_capacity,
+                Property.main_image_url,
                 Property.rating,
-                min_price_expr.label("precio_desde"),
-                func.min(RatePlan.moneda).label("moneda"),
+                min_price_expr.label("price_from"),
+                func.min(RatePlan.currency).label("currency"),
             )
             .join(RoomType, RoomType.property_id == Property.id)
             .join(RatePlan, RatePlan.room_type_id == RoomType.id)
             .where(
                 and_(
-                    func.lower(Property.ciudad) == city,
-                    Property.estado_activo.is_(True),
-                    RoomType.estado_activo.is_(True),
-                    RatePlan.estado_activo.is_(True),
-                    RoomType.capacidad >= query.guests,
+                    func.lower(Property.city) == city,
+                    Property.is_active.is_(True),
+                    RoomType.is_active.is_(True),
+                    RatePlan.is_active.is_(True),
+                    RoomType.capacity >= query.guests,
                     RoomType.id.in_(available_room_type_subq),
                 )
             )
@@ -91,19 +91,19 @@ class SQLModelSearchRepository(SearchRepository):
             amenity_match_subq = (
                 select(PropertyAmenity.property_id)
                 .join(Amenity, Amenity.id == PropertyAmenity.amenity_id)
-                .where(func.lower(Amenity.nombre).in_(amenities))
+                .where(func.lower(Amenity.name).in_(amenities))
                 .group_by(PropertyAmenity.property_id)
-                .having(func.count(func.distinct(func.lower(Amenity.nombre))) == len(set(amenities)))
+                .having(func.count(func.distinct(func.lower(Amenity.name))) == len(set(amenities)))
             )
             base_stmt = base_stmt.where(Property.id.in_(amenity_match_subq))
 
         grouped_stmt = base_stmt.group_by(
             Property.id,
-            Property.nombre,
-            Property.ciudad,
-            Property.pais,
-            Property.capacidad_maxima,
-            Property.imagen_principal_url,
+            Property.name,
+            Property.city,
+            Property.country,
+            Property.max_capacity,
+            Property.main_image_url,
             Property.rating,
         )
 
@@ -118,7 +118,7 @@ class SQLModelSearchRepository(SearchRepository):
         sort_map = {
             "price": min_price_expr,
             "rating": func.coalesce(Property.rating, 0),
-            "name": Property.nombre,
+            "name": Property.name,
         }
         sort_expr = sort_map.get(query.order_by.lower(), min_price_expr)
         sort_fn = desc if query.order_dir.lower() == "desc" else asc
@@ -135,10 +135,10 @@ class SQLModelSearchRepository(SearchRepository):
         amenities_by_property: dict = {}
         if property_ids:
             amenity_rows = self.session.exec(
-                select(PropertyAmenity.property_id, Amenity.nombre)
+                select(PropertyAmenity.property_id, Amenity.name)
                 .join(Amenity, Amenity.id == PropertyAmenity.amenity_id)
                 .where(PropertyAmenity.property_id.in_(property_ids))
-                .order_by(Amenity.nombre)
+                .order_by(Amenity.name)
             ).all()
             for property_id, amenity_name in amenity_rows:
                 amenities_by_property.setdefault(property_id, []).append(amenity_name)
@@ -146,14 +146,14 @@ class SQLModelSearchRepository(SearchRepository):
         items = [
             PropertySearchItem(
                 id=row.id,
-                name=row.nombre,
-                city=row.ciudad,
-                country=row.pais,
-                max_capacity=row.capacidad_maxima,
-                main_image_url=row.imagen_principal_url,
+                name=row.name,
+                city=row.city,
+                country=row.country,
+                max_capacity=row.max_capacity,
+                main_image_url=row.main_image_url,
                 rating=row.rating,
-                price_from=Decimal(str(row.precio_desde)),
-                currency=row.moneda,
+                price_from=Decimal(str(row.price_from)),
+                currency=row.currency,
                 amenities=amenities_by_property.get(row.id, []),
             )
             for row in rows

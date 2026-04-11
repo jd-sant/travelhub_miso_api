@@ -46,7 +46,7 @@ class TestSearchRepository:
                 check_in=date(2026, 4, 10),
                 check_out=date(2026, 4, 12),
                 guests=2,
-                amenities=["wifi", "piscina"],
+                amenities=["wifi", "pool"],
                 page=1,
                 page_size=10,
             )
@@ -55,7 +55,7 @@ class TestSearchRepository:
         assert result.total >= 1
         for item in result.items:
             assert "wifi" in item.amenities
-            assert "piscina" in item.amenities
+            assert "pool" in item.amenities
 
     def test_search_filters_by_price(self, search_repository):
         result = search_repository.search(
@@ -114,13 +114,13 @@ class TestSearchRepository:
         db_session.add(
             Property(
                 id=property_id,
-                nombre="Hotel Precio Agregado",
-                ciudad="Bogota",
-                pais="Colombia",
-                descripcion="Regresion para filtro por precio agregado",
-                estado_activo=True,
-                capacidad_maxima=2,
-                imagen_principal_url="https://cdn.example.com/aggregate-price.jpg",
+                name="Hotel Aggregate Price",
+                city="Bogota",
+                country="Colombia",
+                description="Regression for aggregated price filter",
+                is_active=True,
+                max_capacity=2,
+                main_image_url="https://cdn.example.com/aggregate-price.jpg",
                 rating=4.5,
             )
         )
@@ -128,53 +128,53 @@ class TestSearchRepository:
             RoomType(
                 id=room_type_id,
                 property_id=property_id,
-                nombre="Habitacion Agregada",
-                capacidad=2,
-                estado_activo=True,
+                name="Aggregate Room",
+                capacity=2,
+                is_active=True,
             )
         )
         for day in (date(2026, 4, 10), date(2026, 4, 11)):
             db_session.add(
                 InventoryCalendar(
                     room_type_id=room_type_id,
-                    fecha=day,
-                    unidades_disponibles=3,
-                    unidades_bloqueadas=0,
+                    date=day,
+                    available_units=3,
+                    blocked_units=0,
                 )
             )
         db_session.add(
             RatePlan(
                 id=cheap_rate_plan_id,
                 room_type_id=room_type_id,
-                nombre="Tarifa Basica",
-                moneda="USD",
-                precio_base=Decimal("50.00"),
-                estado_activo=True,
+                name="Basic Rate",
+                currency="USD",
+                base_price=Decimal("50.00"),
+                is_active=True,
             )
         )
         db_session.add(
             RatePlan(
                 id=expensive_rate_plan_id,
                 room_type_id=room_type_id,
-                nombre="Tarifa Premium",
-                moneda="USD",
-                precio_base=Decimal("150.00"),
-                estado_activo=True,
+                name="Premium Rate",
+                currency="USD",
+                base_price=Decimal("150.00"),
+                is_active=True,
             )
         )
         for rate_plan_id in (cheap_rate_plan_id, expensive_rate_plan_id):
             db_session.add(
                 RateCalendar(
                     rate_plan_id=rate_plan_id,
-                    fecha=date(2026, 4, 10),
-                    precio=Decimal("50.00") if rate_plan_id == cheap_rate_plan_id else Decimal("150.00"),
+                    date=date(2026, 4, 10),
+                    price=Decimal("50.00") if rate_plan_id == cheap_rate_plan_id else Decimal("150.00"),
                 )
             )
             db_session.add(
                 RateCalendar(
                     rate_plan_id=rate_plan_id,
-                    fecha=date(2026, 4, 11),
-                    precio=Decimal("50.00") if rate_plan_id == cheap_rate_plan_id else Decimal("150.00"),
+                    date=date(2026, 4, 11),
+                    price=Decimal("50.00") if rate_plan_id == cheap_rate_plan_id else Decimal("150.00"),
                 )
             )
 

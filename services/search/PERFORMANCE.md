@@ -9,7 +9,7 @@ Objetivo SLO local: p95 < 800 ms para `GET /api/v1/search`.
 - Entorno: Docker Compose local, `APP_ENV=development`.
 - Dataset: seed activo en development.
 - Endpoint bajo prueba:
-  - `GET /api/v1/search?ciudad=Bogota&check_in=2026-04-10&check_out=2026-04-12&huespedes=2&page=1&page_size=10`
+  - `GET /api/v1/search?city=Bogota&check_in=2026-04-10&check_out=2026-04-12&guests=2&page=1&page_size=10`
 
 ## 2) Verificacion del volumen de datos
 

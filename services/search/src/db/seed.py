@@ -20,14 +20,14 @@ TARGET_PROPERTY_COUNT = 1000
 SEED_DATES = (date(2026, 4, 10), date(2026, 4, 11))
 
 AMENITY_CATALOG = [
-    ("wifi", "conectividad"),
-    ("piscina", "recreacion"),
-    ("gimnasio", "bienestar"),
-    ("parqueadero", "comodidad"),
-    ("pet_friendly", "mascotas"),
-    ("aire_acondicionado", "comodidad"),
-    ("desayuno_incluido", "gastronomia"),
-    ("spa", "bienestar"),
+    ("wifi", "connectivity"),
+    ("pool", "recreation"),
+    ("gym", "wellness"),
+    ("parking", "comfort"),
+    ("pet_friendly", "pets"),
+    ("air_conditioning", "comfort"),
+    ("breakfast_included", "gastronomy"),
+    ("spa", "wellness"),
 ]
 
 CITIES = [
@@ -73,14 +73,14 @@ def seed_dummy_data_if_needed() -> None:
             session.add(
                 Property(
                     id=property_id,
-                    nombre=f"Hotel Demo Search {idx:02d}",
-                    ciudad=city,
-                    pais="Colombia",
-                    direccion=f"Carrera {20 + idx} #10-{40 + idx}",
-                    descripcion="Propiedad dummy para pruebas locales en Postman.",
-                    estado_activo=True,
-                    capacidad_maxima=capacity,
-                    imagen_principal_url=f"https://cdn.example.com/hotel-{idx:02d}.jpg",
+                    name=f"Hotel Demo Search {idx:02d}",
+                    city=city,
+                    country="Colombia",
+                    address=f"Carrera {20 + idx} #10-{40 + idx}",
+                    description="Dummy property for local Postman and API tests.",
+                    is_active=True,
+                    max_capacity=capacity,
+                    main_image_url=f"https://cdn.example.com/hotel-{idx:02d}.jpg",
                     rating=rating,
                 )
             )
@@ -89,10 +89,10 @@ def seed_dummy_data_if_needed() -> None:
                 RoomType(
                     id=room_type_id,
                     property_id=property_id,
-                    nombre="Habitacion Estandar",
-                    descripcion="Habitacion base del dataset dummy",
-                    capacidad=capacity,
-                    estado_activo=True,
+                    name="Standard Room",
+                    description="Base room type for dummy dataset",
+                    capacity=capacity,
+                    is_active=True,
                 )
             )
 
@@ -100,11 +100,11 @@ def seed_dummy_data_if_needed() -> None:
                 RatePlan(
                     id=rate_plan_id,
                     room_type_id=room_type_id,
-                    nombre="Tarifa Flexible",
-                    descripcion="Cancelable hasta 24h antes",
-                    moneda="USD",
-                    precio_base=base_price,
-                    estado_activo=True,
+                    name="Flexible Rate",
+                    description="Cancelable up to 24h before check-in",
+                    currency="USD",
+                    base_price=base_price,
+                    is_active=True,
                 )
             )
 
@@ -112,16 +112,16 @@ def seed_dummy_data_if_needed() -> None:
                 session.add(
                     InventoryCalendar(
                         room_type_id=room_type_id,
-                        fecha=seed_day,
-                        unidades_disponibles=5 + (idx % 3),
-                        unidades_bloqueadas=0,
+                        date=seed_day,
+                        available_units=5 + (idx % 3),
+                        blocked_units=0,
                     )
                 )
                 session.add(
                     RateCalendar(
                         rate_plan_id=rate_plan_id,
-                        fecha=seed_day,
-                        precio=base_price + Decimal(5 * day_offset),
+                        date=seed_day,
+                        price=base_price + Decimal(5 * day_offset),
                     )
                 )
 
@@ -142,18 +142,18 @@ def seed_dummy_data_if_needed() -> None:
                 Service(
                     id=uuid4(),
                     property_id=property_id,
-                    nombre="desayuno",
-                    descripcion="Servicio de desayuno incluido",
-                    estado_activo=True,
+                    name="breakfast",
+                    description="Breakfast service included",
+                    is_active=True,
                 )
             )
             session.add(
                 Service(
                     id=uuid4(),
                     property_id=property_id,
-                    nombre="recepcion_24h",
-                    descripcion="Atencion 24 horas",
-                    estado_activo=True,
+                    name="front_desk_24h",
+                    description="24-hour front desk service",
+                    is_active=True,
                 )
             )
 
@@ -164,13 +164,13 @@ def _ensure_amenity_catalog(session: Session) -> dict[str, object]:
     amenity_id_by_name: dict[str, object] = {}
     existing_amenities = session.exec(select(Amenity)).all()
     for amenity in existing_amenities:
-        amenity_id_by_name[amenity.nombre] = amenity.id
+        amenity_id_by_name[amenity.name] = amenity.id
 
     for name, category in AMENITY_CATALOG:
         if name in amenity_id_by_name:
             continue
 
-        amenity = Amenity(id=uuid4(), nombre=name, categoria=category)
+        amenity = Amenity(id=uuid4(), name=name, category=category)
         session.add(amenity)
         session.flush()
         amenity_id_by_name[name] = amenity.id

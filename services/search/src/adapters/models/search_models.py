@@ -1,4 +1,4 @@
-from datetime import UTC, date, datetime
+from datetime import UTC, date as dt_date, datetime
 from decimal import Decimal
 from typing import Optional
 from uuid import UUID, uuid4
@@ -8,46 +8,46 @@ from sqlmodel import Field, Relationship, SQLModel
 
 
 class PropertyAmenity(SQLModel, table=True):
-    __tablename__ = "propiedad_amenidad"
+    __tablename__ = "property_amenity"
     __table_args__ = (
         Index(
-            "ix_propiedad_amenidad_amenidad_id",
+            "ix_property_amenity_amenity_id",
             "amenity_id",
         ),
         Index(
-            "ix_propiedad_amenidad_amenidad_propiedad",
+            "ix_property_amenity_amenity_property",
             "amenity_id",
             "property_id",
         ),
     )
 
     property_id: UUID = Field(
-        foreign_key="propiedades.id", primary_key=True
+        foreign_key="properties.id", primary_key=True
     )
     amenity_id: UUID = Field(
-        foreign_key="amenidades.id", primary_key=True
+        foreign_key="amenities.id", primary_key=True
     )
 
 
 class Property(SQLModel, table=True):
-    __tablename__ = "propiedades"
+    __tablename__ = "properties"
     __table_args__ = (
         Index(
-            "ix_propiedades_ciudad_estado",
-            "ciudad",
-            "estado_activo",
+            "ix_properties_city_active",
+            "city",
+            "is_active",
         ),
     )
 
     id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
-    nombre: str = Field(max_length=160, index=True)
-    ciudad: str = Field(max_length=120, index=True)
-    pais: str = Field(max_length=120)
-    direccion: Optional[str] = Field(default=None, max_length=250)
-    descripcion: Optional[str] = Field(default=None)
-    estado_activo: bool = Field(default=True, index=True)
-    capacidad_maxima: int = Field(ge=1, index=True)
-    imagen_principal_url: Optional[str] = Field(default=None, max_length=500)
+    name: str = Field(max_length=160, index=True)
+    city: str = Field(max_length=120, index=True)
+    country: str = Field(max_length=120)
+    address: Optional[str] = Field(default=None, max_length=250)
+    description: Optional[str] = Field(default=None)
+    is_active: bool = Field(default=True, index=True)
+    max_capacity: int = Field(ge=1, index=True)
+    main_image_url: Optional[str] = Field(default=None, max_length=500)
     rating: Optional[float] = Field(default=None, ge=0, le=5, index=True)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
@@ -62,22 +62,22 @@ class Property(SQLModel, table=True):
 
 
 class RoomType(SQLModel, table=True):
-    __tablename__ = "tipos_habitacion"
+    __tablename__ = "room_types"
     __table_args__ = (
         Index(
-            "ix_tipos_habitacion_propiedad_estado_capacidad",
+            "ix_room_types_property_active_capacity",
             "property_id",
-            "estado_activo",
-            "capacidad",
+            "is_active",
+            "capacity",
         ),
     )
 
     id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
-    property_id: UUID = Field(foreign_key="propiedades.id", index=True)
-    nombre: str = Field(max_length=140)
-    descripcion: Optional[str] = Field(default=None)
-    capacidad: int = Field(ge=1, index=True)
-    estado_activo: bool = Field(default=True, index=True)
+    property_id: UUID = Field(foreign_key="properties.id", index=True)
+    name: str = Field(max_length=140)
+    description: Optional[str] = Field(default=None)
+    capacity: int = Field(ge=1, index=True)
+    is_active: bool = Field(default=True, index=True)
 
     property: Property = Relationship(back_populates="room_types")
     rate_plans: list["RatePlan"] = Relationship(
@@ -89,25 +89,25 @@ class RoomType(SQLModel, table=True):
 
 
 class RatePlan(SQLModel, table=True):
-    __tablename__ = "planes_tarifa"
+    __tablename__ = "rate_plans"
     __table_args__ = (
         Index(
-            "ix_planes_tarifa_tipo_estado_precio",
+            "ix_rate_plans_room_type_active_base_price",
             "room_type_id",
-            "estado_activo",
-            "precio_base",
+            "is_active",
+            "base_price",
         ),
     )
 
     id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
     room_type_id: UUID = Field(
-        foreign_key="tipos_habitacion.id", index=True
+        foreign_key="room_types.id", index=True
     )
-    nombre: str = Field(max_length=140)
-    descripcion: Optional[str] = Field(default=None)
-    moneda: str = Field(default="USD", min_length=3, max_length=3)
-    precio_base: Decimal = Field(default=Decimal("0.00"), ge=0, max_digits=12, decimal_places=2)
-    estado_activo: bool = Field(default=True, index=True)
+    name: str = Field(max_length=140)
+    description: Optional[str] = Field(default=None)
+    currency: str = Field(default="USD", min_length=3, max_length=3)
+    base_price: Decimal = Field(default=Decimal("0.00"), ge=0, max_digits=12, decimal_places=2)
+    is_active: bool = Field(default=True, index=True)
 
     room_type: RoomType = Relationship(
         back_populates="rate_plans"
@@ -118,29 +118,29 @@ class RatePlan(SQLModel, table=True):
 
 
 class InventoryCalendar(SQLModel, table=True):
-    __tablename__ = "calendario_inventario"
+    __tablename__ = "inventory_calendar"
     __table_args__ = (
         UniqueConstraint(
             "room_type_id",
-            "fecha",
-            name="uq_calendario_inventario_tipo_habitacion_fecha",
+            "date",
+            name="uq_inventory_calendar_room_type_date",
         ),
         Index(
-            "ix_calendario_inventario_tipo_fecha_disponibilidad",
+            "ix_inventory_calendar_room_type_date_availability",
             "room_type_id",
-            "fecha",
-            "unidades_disponibles",
-            "unidades_bloqueadas",
+            "date",
+            "available_units",
+            "blocked_units",
         ),
     )
 
     id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
     room_type_id: UUID = Field(
-        foreign_key="tipos_habitacion.id", index=True
+        foreign_key="room_types.id", index=True
     )
-    fecha: date = Field(index=True)
-    unidades_disponibles: int = Field(default=0, ge=0)
-    unidades_bloqueadas: int = Field(default=0, ge=0)
+    date: dt_date = Field(index=True)
+    available_units: int = Field(default=0, ge=0)
+    blocked_units: int = Field(default=0, ge=0)
 
     room_type: RoomType = Relationship(
         back_populates="inventory_calendar"
@@ -148,54 +148,54 @@ class InventoryCalendar(SQLModel, table=True):
 
 
 class RateCalendar(SQLModel, table=True):
-    __tablename__ = "calendario_tarifas"
+    __tablename__ = "rate_calendar"
     __table_args__ = (
         UniqueConstraint(
             "rate_plan_id",
-            "fecha",
-            name="uq_calendario_tarifas_plan_tarifa_fecha",
+            "date",
+            name="uq_rate_calendar_rate_plan_date",
         ),
         Index(
-            "ix_calendario_tarifas_plan_fecha_precio",
+            "ix_rate_calendar_rate_plan_date_price",
             "rate_plan_id",
-            "fecha",
-            "precio",
+            "date",
+            "price",
         ),
     )
 
     id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
-    rate_plan_id: UUID = Field(foreign_key="planes_tarifa.id", index=True)
-    fecha: date = Field(index=True)
-    precio: Decimal = Field(default=Decimal("0.00"), ge=0, max_digits=12, decimal_places=2)
+    rate_plan_id: UUID = Field(foreign_key="rate_plans.id", index=True)
+    date: dt_date = Field(index=True)
+    price: Decimal = Field(default=Decimal("0.00"), ge=0, max_digits=12, decimal_places=2)
 
     rate_plan: RatePlan = Relationship(back_populates="rate_calendar")
 
 
 class Service(SQLModel, table=True):
-    __tablename__ = "servicios"
+    __tablename__ = "services"
     __table_args__ = (
         UniqueConstraint(
             "property_id",
-            "nombre",
-            name="uq_servicios_propiedad_nombre",
+            "name",
+            name="uq_services_property_name",
         ),
     )
 
     id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
-    property_id: UUID = Field(foreign_key="propiedades.id", index=True)
-    nombre: str = Field(max_length=120)
-    descripcion: Optional[str] = Field(default=None)
-    estado_activo: bool = Field(default=True, index=True)
+    property_id: UUID = Field(foreign_key="properties.id", index=True)
+    name: str = Field(max_length=120)
+    description: Optional[str] = Field(default=None)
+    is_active: bool = Field(default=True, index=True)
 
     property: Property = Relationship(back_populates="services")
 
 
 class Amenity(SQLModel, table=True):
-    __tablename__ = "amenidades"
+    __tablename__ = "amenities"
 
     id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
-    nombre: str = Field(max_length=120, index=True, unique=True)
-    categoria: Optional[str] = Field(default=None, max_length=120)
+    name: str = Field(max_length=120, index=True, unique=True)
+    category: Optional[str] = Field(default=None, max_length=120)
 
     properties: list["Property"] = Relationship(
         back_populates="amenities", link_model=PropertyAmenity

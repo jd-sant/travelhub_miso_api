@@ -36,14 +36,14 @@ Microservicio de búsqueda de propiedades de TravelHub.
 
 - `GET /api/v1/search`
 - Query params obligatorios:
-  - `ciudad`
+  - `city`
   - `check_in` (YYYY-MM-DD)
   - `check_out` (YYYY-MM-DD)
-  - `huespedes`
+  - `guests`
 - Query params opcionales:
-  - `amenidades` (repetible)
-  - `precio_min`
-  - `precio_max`
+  - `amenities` (repetible)
+  - `min_price`
+  - `max_price`
   - `order_by` (`price|rating|name`)
   - `order_dir` (`asc|desc`)
   - `page` (>= 1)
@@ -52,7 +52,7 @@ Microservicio de búsqueda de propiedades de TravelHub.
 Ejemplo:
 
 ```http
-GET /api/v1/search?ciudad=Bogota&check_in=2026-04-10&check_out=2026-04-12&huespedes=2&page=1&page_size=10
+GET /api/v1/search?city=Bogota&check_in=2026-04-10&check_out=2026-04-12&guests=2&page=1&page_size=10
 ```
 
 Respuesta:
@@ -62,15 +62,15 @@ Respuesta:
   "items": [
     {
       "id": "uuid",
-      "nombre": "Hotel Demo Search 01",
-      "ciudad": "Bogota",
-      "pais": "Colombia",
-      "capacidad_maxima": 3,
-      "imagen_principal_url": "https://cdn.example.com/hotel-01.jpg",
+      "name": "Hotel Demo Search 01",
+      "city": "Bogota",
+      "country": "Colombia",
+      "max_capacity": 3,
+      "main_image_url": "https://cdn.example.com/hotel-01.jpg",
       "rating": 4.2,
-      "precio_desde": "98.00",
-      "moneda": "USD",
-      "amenidades": ["wifi", "piscina"]
+      "price_from": "98.00",
+      "currency": "USD",
+      "amenities": ["wifi", "pool"]
     }
   ],
   "pagination": {
@@ -88,7 +88,7 @@ Respuesta:
 - `422`: faltantes o formato invalido de query params.
 - `400`: reglas de negocio invalidas.
   - `check_out` debe ser mayor que `check_in`.
-  - `precio_min` no puede ser mayor que `precio_max`.
+  - `min_price` no puede ser mayor que `max_price`.
 
 ## Endpoint de diagnostico local
 

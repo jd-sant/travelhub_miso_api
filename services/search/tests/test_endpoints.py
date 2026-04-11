@@ -20,10 +20,10 @@ class TestSearchHealthEndpoints:
         response = client.get(
             "/api/v1/search",
             params={
-                "ciudad": "Bogota",
+                "city": "Bogota",
                 "check_in": "2026-04-10",
                 "check_out": "2026-04-12",
-                "huespedes": 2,
+                "guests": 2,
                 "page": 1,
                 "page_size": 10,
             },
@@ -40,10 +40,10 @@ class TestSearchHealthEndpoints:
         response = client.get(
             "/api/v1/search",
             params={
-                "ciudad": "Medellin",
+                "city": "Medellin",
                 "check_in": "2026-04-10",
                 "check_out": "2026-04-12",
-                "huespedes": 2,
+                "guests": 2,
             },
         )
 
@@ -59,7 +59,7 @@ class TestSearchHealthEndpoints:
             params={
                 "check_in": "2026-04-10",
                 "check_out": "2026-04-12",
-                "huespedes": 2,
+                "guests": 2,
             },
         )
 
@@ -69,10 +69,10 @@ class TestSearchHealthEndpoints:
         response = client.get(
             "/api/v1/search",
             params={
-                "ciudad": "Bogota",
+                "city": "Bogota",
                 "check_in": "2026-04-12",
                 "check_out": "2026-04-10",
-                "huespedes": 2,
+                "guests": 2,
             },
         )
 
@@ -83,27 +83,27 @@ class TestSearchHealthEndpoints:
         response = client.get(
             "/api/v1/search",
             params={
-                "ciudad": "Bogota",
+                "city": "Bogota",
                 "check_in": "2026-04-10",
                 "check_out": "2026-04-12",
-                "huespedes": 2,
-                "precio_min": "200",
-                "precio_max": "100",
+                "guests": 2,
+                "min_price": "200",
+                "max_price": "100",
             },
         )
 
         assert response.status_code == 400
-        assert "precio_min" in response.json()["detail"]
+        assert "min_price" in response.json()["detail"]
 
     def test_search_properties_filters_by_amenities(self, client):
         response = client.get(
             "/api/v1/search",
             params={
-                "ciudad": "Bogota",
+                "city": "Bogota",
                 "check_in": "2026-04-10",
                 "check_out": "2026-04-12",
-                "huespedes": 2,
-                "amenidades": ["wifi", "piscina"],
+                "guests": 2,
+                "amenities": ["wifi", "pool"],
             },
         )
 
@@ -111,36 +111,36 @@ class TestSearchHealthEndpoints:
         payload = response.json()
         assert payload["pagination"]["total"] >= 1
         for item in payload["items"]:
-            assert "wifi" in item["amenidades"]
-            assert "piscina" in item["amenidades"]
+            assert "wifi" in item["amenities"]
+            assert "pool" in item["amenities"]
 
     def test_search_properties_filters_by_price_range(self, client):
         response = client.get(
             "/api/v1/search",
             params={
-                "ciudad": "Bogota",
+                "city": "Bogota",
                 "check_in": "2026-04-10",
                 "check_out": "2026-04-12",
-                "huespedes": 2,
-                "precio_min": "90",
-                "precio_max": "200",
+                "guests": 2,
+                "min_price": "90",
+                "max_price": "200",
             },
         )
 
         assert response.status_code == 200
         payload = response.json()
         for item in payload["items"]:
-            assert float(item["precio_desde"]) >= 90
-            assert float(item["precio_desde"]) <= 200
+            assert float(item["price_from"]) >= 90
+            assert float(item["price_from"]) <= 200
 
     def test_search_properties_invalid_page_limit(self, client):
         response = client.get(
             "/api/v1/search",
             params={
-                "ciudad": "Bogota",
+                "city": "Bogota",
                 "check_in": "2026-04-10",
                 "check_out": "2026-04-12",
-                "huespedes": 2,
+                "guests": 2,
                 "page": 0,
             },
         )
@@ -151,10 +151,10 @@ class TestSearchHealthEndpoints:
         response = client.get(
             "/api/v1/search",
             params={
-                "ciudad": "Bogota",
+                "city": "Bogota",
                 "check_in": "2026-04-10",
                 "check_out": "2026-04-12",
-                "huespedes": 2,
+                "guests": 2,
                 "page_size": 101,
             },
         )

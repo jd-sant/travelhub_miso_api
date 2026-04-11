@@ -7,10 +7,10 @@ class TestSearchUseCase:
     def test_execute_returns_results(self, search_use_case):
         result = search_use_case.execute(
             SearchQuery(
-                ciudad="Bogota",
+                city="Bogota",
                 check_in=date(2026, 4, 10),
                 check_out=date(2026, 4, 12),
-                huespedes=2,
+                guests=2,
                 page=1,
                 page_size=10,
             )
@@ -22,10 +22,10 @@ class TestSearchUseCase:
     def test_execute_returns_empty_when_no_results(self, search_use_case):
         result = search_use_case.execute(
             SearchQuery(
-                ciudad="CiudadInexistente",
+                city="CiudadInexistente",
                 check_in=date(2026, 4, 10),
                 check_out=date(2026, 4, 12),
-                huespedes=2,
+                guests=2,
                 page=1,
                 page_size=10,
             )

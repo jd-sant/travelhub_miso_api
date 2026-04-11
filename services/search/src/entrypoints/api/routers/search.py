@@ -40,13 +40,13 @@ def search_status() -> dict[str, str]:
     },
 )
 def search_properties(
-    ciudad: str = Query(min_length=2, max_length=120),
+    city: str = Query(min_length=2, max_length=120),
     check_in: date = Query(),
     check_out: date = Query(),
-    huespedes: int = Query(ge=1),
-    amenidades: list[str] = Query(default=[]),
-    precio_min: Decimal | None = Query(default=None, ge=0),
-    precio_max: Decimal | None = Query(default=None, ge=0),
+    guests: int = Query(ge=1),
+    amenities: list[str] = Query(default=[]),
+    min_price: Decimal | None = Query(default=None, ge=0),
+    max_price: Decimal | None = Query(default=None, ge=0),
     order_by: str = Query(default="price"),
     order_dir: str = Query(default="asc"),
     page: int = Query(default=1, ge=1),
@@ -57,13 +57,13 @@ def search_properties(
 
     try:
         query = SearchQuery(
-            city=ciudad,
+            city=city,
             check_in=check_in,
             check_out=check_out,
-            guests=huespedes,
-            amenities=amenidades,
-            min_price=precio_min,
-            max_price=precio_max,
+            guests=guests,
+            amenities=amenities,
+            min_price=min_price,
+            max_price=max_price,
             order_by=order_by,
             order_dir=order_dir,
             page=page,
@@ -78,11 +78,11 @@ def search_properties(
             empty_state = [
                 EmptyStateSuggestion(
                     code="TRY_OTHER_CITY",
-                    message="No encontramos resultados en esa ciudad. Intenta otra ciudad cercana.",
+                    message="No results found in this city. Try a nearby city.",
                 ),
                 EmptyStateSuggestion(
                     code="TRY_OTHER_DATES",
-                    message="Prueba con fechas diferentes para encontrar mayor disponibilidad.",
+                    message="Try different dates to find better availability.",
                 ),
             ]
 
@@ -112,7 +112,7 @@ def _validate_search_rules(query: SearchQuery) -> None:
         and query.min_price > query.max_price
     ):
         raise InvalidSearchRuleError(
-            "precio_min cannot be greater than precio_max"
+            "min_price cannot be greater than max_price"
         )
 
     valid_order_fields = {"price", "rating", "name"}
@@ -171,11 +171,11 @@ if settings.is_local_dev:
             "properties": [
                 {
                     "id": str(p.id),
-                    "name": p.nombre,
-                    "city": p.ciudad,
-                    "country": p.pais,
-                    "max_capacity": p.capacidad_maxima,
-                    "main_image_url": p.imagen_principal_url,
+                    "name": p.name,
+                    "city": p.city,
+                    "country": p.country,
+                    "max_capacity": p.max_capacity,
+                    "main_image_url": p.main_image_url,
                     "rating": p.rating,
                 }
                 for p in properties
