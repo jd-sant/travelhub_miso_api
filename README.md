@@ -8,15 +8,16 @@ El proyecto sigue una arquitectura de microservicios donde cada servicio tiene s
 
 ```text
 travelhub_miso/
-|-- services/
-|   |-- users/          # Gestion de usuarios y roles
-|   |-- security/       # Autenticacion, OTP y JWT
-|   |-- reservations/   # Creacion y consulta de reservas
-|   `-- payments/       # Pagos tokenizados y recibos
-|-- docker-compose.yml  # Orquestacion local
-|-- init-schemas.sql    # Creacion de schemas en PostgreSQL
-|-- Makefile            # Comandos de desarrollo
-`-- .github/workflows/  # CI/CD con GitHub Actions
+├── services/
+│   ├── users/          # Gestión de usuarios y roles
+│   ├── security/       # Autenticación, OTP y JWT
+│   ├── properties/     # Detalles de propiedades
+│   ├── reservations/   # Creación y consulta de reservas
+|   └── payments/       # Pagos tokenizados y recibos
+├── docker-compose.yml  # Orquestación local
+├── init-schemas.sql    # Creación de schemas en PostgreSQL
+├── Makefile            # Comandos de desarrollo
+└── .github/workflows/  # CI/CD con GitHub Actions
 ```
 
 Cada microservicio sigue arquitectura hexagonal:
@@ -53,10 +54,11 @@ service/
 
 | Servicio | Puerto | Schema BD | Descripcion |
 |----------|--------|-----------|-------------|
-| `users` | 8000 | `users_schema` | Gestion de usuarios y roles |
-| `security` | 8001 | `security_schema` | Autenticacion, OTP y tokens JWT |
-| `reservations` | 8002 | `reservations_schema` | Creacion y consulta de reservas |
-| `payments` | 8003 | `payments_schema` | Procesamiento seguro de pagos con token |
+| [users](services/users/README.md) | 8000 | `users_schema` | Gestión de usuarios y roles |
+| [security](services/security/README.md) | 8001 | `security_schema` | Autenticación, OTP y tokens JWT |
+| [reservations](services/reservations/README.md) | 8002 | `reservations_schema` | Creación y consulta de reservas |
+| [payments](services/payments/README.md) | 8003 | `payments_schema` | Procesamiento seguro de pagos con token |
+| [properties](services/properties/README.md) | 8004 | `properties_schema` | Detalles de propiedades y hospedajes |
 
 ## Ejecucion local
 
@@ -88,15 +90,18 @@ Los servicios quedan disponibles en:
 ### Tests
 
 ```bash
+# Con make (recomendado)
 make users-test
 make security-test
 make reservations-test
 make payments-test
+make properties-test      # Tests del servicio de propiedades
 
 PYTHONPATH=services/users/src pytest services/users/tests/ -v
 PYTHONPATH=services/security/src pytest services/security/tests/ -v
 PYTHONPATH=services/reservations/src pytest services/reservations/tests/ -v
 PYTHONPATH=services/payments/src pytest services/payments/tests/ -v
+PYTHONPATH=services/properties/src pytest services/properties/tests/ -v
 ```
 
 ## Comandos disponibles
@@ -105,12 +110,13 @@ PYTHONPATH=services/payments/src pytest services/payments/tests/ -v
 make help              # Ver todos los comandos
 make docker-up         # Levantar servicios
 make docker-down       # Detener servicios
-make docker-build      # Construir imagenes
+make docker-build      # Construir imágenes
 make clean             # Limpiar __pycache__
 make users-test        # Tests del servicio de usuarios
 make security-test     # Tests del servicio de seguridad
 make reservations-test # Tests del servicio de reservas
 make payments-test     # Tests del servicio de pagos
+make properties-test   # Tests del servicio de propiedades
 ```
 
 ## CI / CD

@@ -36,6 +36,7 @@ jobs:
       security: ${{ steps.filter.outputs.security }}
       reservations: ${{ steps.filter.outputs.reservations }}
       payments: ${{ steps.filter.outputs.payments }}
+      properties: ${{ steps.filter.outputs.properties }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -50,6 +51,8 @@ jobs:
               - 'services/reservations/**'
             payments:
               - 'services/payments/**'
+            properties:
+              - 'services/properties/**'
 
   test-users:
     needs: [validate-pr-description, detect-changes]
@@ -146,6 +149,25 @@ jobs:
       - name: Run reservations tests
         run: PYTHONPATH=services/reservations/src pytest services/reservations/tests/ -v
 
+  test-properties:
+    needs: [validate-pr-description, detect-changes]
+    if: needs.detect-changes.outputs.properties == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r services/properties/requirements.txt
+
+      - name: Run properties tests
+        run: PYTHONPATH=services/properties/src pytest services/properties/tests/ -v
+
   tests:
     name: tests
     needs:
@@ -155,6 +177,7 @@ jobs:
       - test-security
       - test-payments
       - test-reservations
+      - test-properties
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -166,6 +189,7 @@ jobs:
           echo "test-security: ${{ needs.test-security.result }}"
           echo "test-payments: ${{ needs.test-payments.result }}"
           echo "test-reservations: ${{ needs.test-reservations.result }}"
+          echo "test-properties: ${{ needs.test-properties.result }}"
 
           if [[ "${{ needs.validate-pr-description.result }}" != "success" ]]; then
             echo "La validacion de descripcion de PR no fue exitosa"
@@ -189,6 +213,11 @@ jobs:
 
           if [[ "${{ needs.test-reservations.result }}" == "failure" || "${{ needs.test-reservations.result }}" == "cancelled" ]]; then
             echo "El job test-reservations termino en estado ${{ needs.test-reservations.result }}"
+            exit 1
+          fi
+
+          if [[ "${{ needs.test-properties.result }}" == "failure" || "${{ needs.test-properties.result }}" == "cancelled" ]]; then
+            echo "El job test-properties termino en estado ${{ needs.test-properties.result }}"
             exit 1
           fi
 
