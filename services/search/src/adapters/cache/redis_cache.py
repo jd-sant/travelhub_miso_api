@@ -38,3 +38,6 @@ class RedisCache(CachePort):
             logger.debug("cache set: %s (ttl=%ds)", key, ttl)
         except (RedisError, TypeError) as exc:
             logger.warning("Redis SET failed for %s: %s", key, exc)
+
+    def get_ttl(self) -> int:
+        return self._ttl

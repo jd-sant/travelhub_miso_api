@@ -46,7 +46,7 @@ class SQLModelSearchRepository(SearchRepository):
         result = self._search_from_db(query)
 
         if self._cache is not None:
-            self._cache.set(key, result.model_dump(mode="json"), ttl=self._cache._ttl)
+            self._cache.set(key, result.model_dump(mode="json"), ttl=self._cache.get_ttl())
 
         return result
 

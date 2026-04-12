@@ -18,3 +18,9 @@ class CachePort(ABC):
         Stores value under key with a TTL in seconds.
         Silent failure: must not raise exceptions if the cache backend fails.
         """
+
+    @abstractmethod
+    def get_ttl(self) -> int:
+        """
+        Returns the default TTL (time-to-live) in seconds for cache entries.
+        """
