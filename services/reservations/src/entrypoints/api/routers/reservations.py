@@ -38,6 +38,7 @@ def get_reservation_scheduler() -> ReservationScheduler:
             lambda_arn=settings.lambda_arn,
             scheduler_role_arn=settings.scheduler_role_arn,
             api_base_url=settings.api_base_url,
+            scheduler_group_name=settings.scheduler_group_name,
             delay_minutes=settings.reservation_scheduler_delay_minutes,
         )
     except (ValueError, RuntimeError) as exc:

@@ -22,6 +22,7 @@ class EventBridgeReservationScheduler(ReservationScheduler):
         lambda_arn: str,
         scheduler_role_arn: str,
         api_base_url: str,
+        scheduler_group_name: str = "default",
         delay_minutes: int = 15,
     ) -> None:
         import boto3
@@ -30,6 +31,7 @@ class EventBridgeReservationScheduler(ReservationScheduler):
         self._lambda_arn = lambda_arn
         self._scheduler_role_arn = scheduler_role_arn
         self._api_base_url = api_base_url.rstrip("/")
+        self._scheduler_group_name = scheduler_group_name
         self._delay_minutes = delay_minutes
 
     def schedule_reservation_expiration(self, reservation_id: str) -> str:
@@ -45,6 +47,7 @@ class EventBridgeReservationScheduler(ReservationScheduler):
         try:
             self._client.create_schedule(
                 Name=schedule_name,
+                GroupName=self._scheduler_group_name,
                 ScheduleExpression=schedule_expression,
                 ScheduleExpressionTimezone="UTC",
                 Target={
@@ -67,7 +70,7 @@ class EventBridgeReservationScheduler(ReservationScheduler):
     def cancel_reservation_expiration(self, reservation_id: str) -> None:
         schedule_name = f"verify-reservation-{reservation_id}"
         try:
-            self._client.delete_schedule(Name=schedule_name)
+            self._client.delete_schedule(Name=schedule_name, GroupName=self._scheduler_group_name)
         except ClientError as exc:
             code = exc.response.get("Error", {}).get("Code")
             if code != "ResourceNotFoundException":
