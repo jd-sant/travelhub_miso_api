@@ -28,9 +28,9 @@ phases:
       - echo Pushing Docker image...
       - docker push $IMAGE_REPO:latest
       - docker push $IMAGE_REPO:$IMAGE_TAG
-      - echo Writing Image metadata...
-      - printf '{"ImageURI":"%s:%s"}' $IMAGE_REPO $IMAGE_TAG > imageDetail.json
+      - echo Writing Image Definitions file...
+      - printf '[{"name":"notifications","imageUri":"%s.dkr.ecr.us-east-1.amazonaws.com/travelhub-notifications:latest"}]' $AWS_ACCOUNT_ID > imagedefinitions.json
 
 artifacts:
   files:
-    - imageDetail.json
+    - imagedefinitions.json
