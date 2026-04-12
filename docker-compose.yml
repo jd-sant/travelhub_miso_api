@@ -21,6 +21,7 @@ services:
       context: ./services/users
     environment:
       PYTHONPATH: /app/src
+      ALLOWED_CORS_ORIGIN: ${ALLOWED_CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
       RDS_HOSTNAME: postgres
       RDS_USERNAME: travelhub_user
       RDS_PASSWORD: travelhub_pass
@@ -40,6 +41,7 @@ services:
       context: ./services/security
     environment:
       PYTHONPATH: /app/src
+      ALLOWED_CORS_ORIGIN: ${ALLOWED_CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
       RDS_HOSTNAME: postgres
       RDS_USERNAME: travelhub_user
       RDS_PASSWORD: travelhub_pass
@@ -70,6 +72,7 @@ services:
       PYTHONPATH: /app/src
       ENV: ${ENV:-development}
       APP_ENV: ${APP_ENV:-development}
+      ALLOWED_CORS_ORIGIN: ${ALLOWED_CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
       RESERVATION_SCHEDULER_ENABLED: ${RESERVATION_SCHEDULER_ENABLED:-false}
       RESERVATION_SCHEDULER_DELAY_MINUTES: ${RESERVATION_SCHEDULER_DELAY_MINUTES:-15}
       AWS_REGION: ${AWS_REGION:-us-east-1}
@@ -88,7 +91,7 @@ services:
       DB_ECHO: "False"
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
     ports:
-      - "8002:8002"
+      - "8002:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -98,6 +101,7 @@ services:
       context: ./services/payments
     environment:
       PYTHONPATH: /app/src
+      ALLOWED_CORS_ORIGIN: ${ALLOWED_CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
       RDS_HOSTNAME: postgres
       RDS_USERNAME: travelhub_user
       RDS_PASSWORD: travelhub_pass
@@ -108,16 +112,15 @@ services:
       PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-fake_stripe}
       PAYMENTS_COMPLIANCE_MODE: ${PAYMENTS_COMPLIANCE_MODE:-false}
       PAYMENT_DUPLICATE_WINDOW_SECONDS: "2"
-      ENFORCE_TLS_HEADER: "True"
+      ENFORCE_TLS_HEADER: ${ENFORCE_TLS_HEADER:-true}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
       PAYMENT_INTEGRITY_SECRET: ${PAYMENT_INTEGRITY_SECRET:-travelhub-payments-secret-change-in-prod}
       PAYMENTS_DATA_ENCRYPTION_KEY: ${PAYMENTS_DATA_ENCRYPTION_KEY:-dev-payments-encryption-key-change-me}
       NOTIFICATIONS_SERVICE_URL: http://notifications:8000
-      RESERVATIONS_SERVICE_URL: http://reservations:8002
+      RESERVATIONS_SERVICE_URL: http://reservations:8000
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
-      ALLOWED_CORS_ORIGINS: ${ALLOWED_CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
     ports:
       - "8003:8000"
     depends_on:
@@ -155,6 +158,7 @@ services:
       context: ./services/properties
     environment:
       PYTHONPATH: /app/src
+      ALLOWED_CORS_ORIGIN: ${ALLOWED_CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
       RDS_HOSTNAME: postgres
       RDS_USERNAME: travelhub_user
       RDS_PASSWORD: travelhub_pass
@@ -175,6 +179,7 @@ services:
       PYTHONPATH: /app/src
       ENV: ${ENV:-development}
       APP_ENV: ${APP_ENV:-development}
+      ALLOWED_CORS_ORIGIN: ${ALLOWED_CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
       DATABASE_URL: postgresql://travelhub_user:travelhub_pass@postgres:5432/travelhub
       DB_SCHEMA: search_schema
       DB_ECHO: "False"
@@ -182,7 +187,7 @@ services:
       REDIS_PORT: "6379"
       REDIS_CACHE_ENABLED: "true"
     ports:
-      - "8006:8003"
+      - "8006:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -190,7 +195,7 @@ services:
         condition: service_healthy
 
   redis:
-    image: redis:7-alpine
+    image: public.ecr.aws/docker/library/redis:7-alpine
     ports:
       - "127.0.0.1:6379:6379"
     healthcheck:

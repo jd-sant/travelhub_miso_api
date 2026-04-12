@@ -42,6 +42,14 @@ class Settings:
         return os.getenv("DB_ECHO", "False").lower() == "true"
 
     @property
+    def allowed_cors_origins(self) -> list[str]:
+        raw_origins = os.getenv("ALLOWED_CORS_ORIGIN")
+        if raw_origins:
+            return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+
+        return ["http://localhost:3000", "http://127.0.0.1:3000"]
+
+    @property
     def jwt_secret_key(self) -> str:
         value = os.getenv("JWT_SECRET_KEY")
         if value:

@@ -98,7 +98,7 @@ PYTHONPATH=src pytest tests/test_payments_security_posture.py -v
 | `STRIPE_SECRET_KEY` | - | Secret key de Stripe en modo test |
 | `STRIPE_PUBLISHABLE_KEY` | - | Publishable key de Stripe en modo test |
 | `STRIPE_WEBHOOK_SECRET` | - | Secreto para verificar firma del webhook |
-| `ALLOWED_CORS_ORIGINS` | `http://localhost:3000,http://127.0.0.1:3000` | Origenes permitidos para el frontend |
+| `ALLOWED_CORS_ORIGIN` | `http://localhost:3000,http://127.0.0.1:3000` | Origenes permitidos para el frontend |
 
 ## Notas de arquitectura
 

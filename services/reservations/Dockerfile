@@ -18,6 +18,6 @@ COPY --from=base /app/src/ /app/src/
 ENV PYTHONPATH=/app/src
 ENV PYTHONUNBUFFERED=1
 
-EXPOSE 8002
+EXPOSE 8000
 
-CMD ["uvicorn", "entrypoints.api.main:app", "--host", "0.0.0.0", "--port", "8002"]
+CMD ["uvicorn", "entrypoints.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -4,6 +4,11 @@ from functools import lru_cache
 
 class Settings:
     @property
+    def allowed_cors_origins(self) -> list[str]:
+        raw = os.getenv("ALLOWED_CORS_ORIGIN", "http://localhost:3000,http://127.0.0.1:3000")
+        return [o.strip() for o in raw.split(",") if o.strip()]
+
+    @property
     def reservation_scheduler_enabled(self) -> bool:
         return os.getenv("RESERVATION_SCHEDULER_ENABLED", "false").lower() == "true"
 

@@ -166,4 +166,5 @@ Ver `.env.example` para la lista minima. Variables principales:
 |----------|-------------|
 | `JWT_SECRET_KEY` | Clave secreta para firmar tokens JWT |
 | `INTERNAL_API_KEY` | Clave para comunicacion entre servicios |
+| `ALLOWED_CORS_ORIGIN` | Origenes permitidos para CORS en formato separado por comas |
 | `PAYMENT_INTEGRITY_SECRET` | Secreto para checksum e integridad de requests de pago |
