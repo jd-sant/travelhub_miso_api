@@ -33,6 +33,10 @@ class Settings:
         return os.getenv("API_BASE_URL", "")
 
     @property
+    def scheduler_group_name(self) -> str:
+        return os.getenv("SCHEDULER_GROUP_NAME", "default")
+
+    @property
     def rds_hostname(self) -> str:
         return os.getenv("RDS_HOSTNAME", "localhost")
 
