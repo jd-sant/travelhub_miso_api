@@ -131,7 +131,7 @@ class Settings:
     @property
     def allowed_cors_origins(self) -> list[str]:
         raw = os.getenv(
-            "ALLOWED_CORS_ORIGINS",
+            "ALLOWED_CORS_ORIGIN",
             "http://localhost:3000,http://127.0.0.1:3000",
         )
         return [origin.strip() for origin in raw.split(",") if origin.strip()]

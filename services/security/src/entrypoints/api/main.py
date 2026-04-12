@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from core.auth_middleware import AuthMiddleware
+from core.config import settings
 from db.session import create_db_and_tables
 from entrypoints.api.routers.auth import router as auth_router
 
@@ -19,7 +20,7 @@ def create_application() -> FastAPI:
     app.add_middleware(AuthMiddleware)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000"],
+        allow_origins=settings.allowed_cors_origins,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE"],
         allow_headers=["Authorization", "Content-Type"],

@@ -63,7 +63,7 @@ class Settings:
 
     @property
     def cors_allow_origins(self) -> list[str]:
-        raw_origins = os.getenv("CORS_ALLOW_ORIGINS")
+        raw_origins = os.getenv("ALLOWED_CORS_ORIGIN")
         if raw_origins:
             return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
 

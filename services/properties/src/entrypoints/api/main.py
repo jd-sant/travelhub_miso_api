@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from core.config import settings
 from db.session import create_db_and_tables
 from entrypoints.api.routers.properties import (
     router as properties_router,
@@ -22,10 +23,10 @@ def create_application() -> FastAPI:
     )
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=settings.allowed_cors_origins,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type"],
     )
     app.include_router(properties_router, prefix="/api/v1")
 

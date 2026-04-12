@@ -32,6 +32,14 @@ class Settings:
         return os.getenv("DB_ECHO", "False").lower() == "true"
 
     @property
+    def allowed_cors_origins(self) -> list[str]:
+        raw_origins = os.getenv("ALLOWED_CORS_ORIGIN")
+        if raw_origins:
+            return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+
+        return ["http://localhost:3000", "http://127.0.0.1:3000"]
+
+    @property
     def database_url(self) -> str:
         return f"postgresql://{self.rds_username}:{self.rds_password}@{self.rds_hostname}:{self.rds_port}/{self.rds_db_name}"
 

@@ -21,6 +21,7 @@ services:
       context: ./services/users
     environment:
       PYTHONPATH: /app/src
+      ALLOWED_CORS_ORIGIN: ${ALLOWED_CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
       RDS_HOSTNAME: postgres
       RDS_USERNAME: travelhub_user
       RDS_PASSWORD: travelhub_pass
@@ -40,6 +41,7 @@ services:
       context: ./services/security
     environment:
       PYTHONPATH: /app/src
+      ALLOWED_CORS_ORIGIN: ${ALLOWED_CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
       RDS_HOSTNAME: postgres
       RDS_USERNAME: travelhub_user
       RDS_PASSWORD: travelhub_pass
@@ -70,6 +72,7 @@ services:
       PYTHONPATH: /app/src
       ENV: ${ENV:-development}
       APP_ENV: ${APP_ENV:-development}
+      ALLOWED_CORS_ORIGIN: ${ALLOWED_CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
       RESERVATION_SCHEDULER_ENABLED: ${RESERVATION_SCHEDULER_ENABLED:-false}
       RESERVATION_SCHEDULER_DELAY_MINUTES: ${RESERVATION_SCHEDULER_DELAY_MINUTES:-15}
       AWS_REGION: ${AWS_REGION:-us-east-1}
@@ -98,6 +101,7 @@ services:
       context: ./services/payments
     environment:
       PYTHONPATH: /app/src
+      ALLOWED_CORS_ORIGIN: ${ALLOWED_CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
       RDS_HOSTNAME: postgres
       RDS_USERNAME: travelhub_user
       RDS_PASSWORD: travelhub_pass
@@ -117,7 +121,6 @@ services:
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
-      ALLOWED_CORS_ORIGINS: ${ALLOWED_CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
     ports:
       - "8003:8000"
     depends_on:
@@ -155,6 +158,7 @@ services:
       context: ./services/properties
     environment:
       PYTHONPATH: /app/src
+      ALLOWED_CORS_ORIGIN: ${ALLOWED_CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
       RDS_HOSTNAME: postgres
       RDS_USERNAME: travelhub_user
       RDS_PASSWORD: travelhub_pass
@@ -175,6 +179,7 @@ services:
       PYTHONPATH: /app/src
       ENV: ${ENV:-development}
       APP_ENV: ${APP_ENV:-development}
+      ALLOWED_CORS_ORIGIN: ${ALLOWED_CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
       DATABASE_URL: postgresql://travelhub_user:travelhub_pass@postgres:5432/travelhub
       DB_SCHEMA: search_schema
       DB_ECHO: "False"
