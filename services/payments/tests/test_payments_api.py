@@ -40,6 +40,8 @@ class FakeStripeCheckoutGateway:
     def create_and_confirm_payment(self, **kwargs):
         if self.finalize_status == "card_error":
             raise StripePaymentFailureError(code="card_declined", message="Your card was declined.")
+        if self.finalize_status == "card_error_insufficient":
+            raise StripePaymentFailureError(code="insufficient_funds", message="Your card has insufficient funds.")
         if self.finalize_status == "idempotency_error":
             raise StripeIdempotencyConflictError("Duplicate Stripe confirmation attempt.")
         if self.finalize_status == "requires_action":
@@ -734,3 +736,40 @@ def test_finalize_stripe_payment_returns_failed_response_for_card_error(client, 
     assert stored_payment is not None
     assert stored_payment.status == "failed"
     assert stored_payment.failure_reason == "card_declined"
+
+
+def test_finalize_stripe_payment_returns_failed_response_for_insufficient_funds(client, test_engine, monkeypatch):
+    monkeypatch.setenv("PAYMENT_PROVIDER", "stripe_test")
+    monkeypatch.setenv("STRIPE_SECRET_KEY", "sk_test_example")
+    monkeypatch.setenv("STRIPE_PUBLISHABLE_KEY", "pk_test_example")
+    gateway = FakeStripeCheckoutGateway(finalize_status="card_error_insufficient")
+    client.app.dependency_overrides[get_stripe_checkout_gateway] = lambda: gateway
+
+    create_response = client.post(
+        "/api/v1/payments/create-intent",
+        json=_checkout_payload(),
+        headers=SECURE_HEADERS,
+    )
+    transaction_id = create_response.json()["payment_transaction_id"]
+
+    finalize_response = client.post(
+        "/api/v1/payments/finalize",
+        json={
+            "payment_transaction_id": transaction_id,
+            "confirmation_token_id": "ctoken_test_insufficient",
+        },
+        headers=SECURE_HEADERS,
+    )
+
+    assert finalize_response.status_code == 200
+    body = finalize_response.json()
+    assert body["status"] == "failed"
+    assert body["payment_id"] is not None
+    assert "insufficient" in body["error"].lower()
+
+    with Session(test_engine) as session:
+        stored_payment = session.exec(select(Payment)).first()
+
+    assert stored_payment is not None
+    assert stored_payment.status == "failed"
+    assert stored_payment.failure_reason == "insufficient_funds"

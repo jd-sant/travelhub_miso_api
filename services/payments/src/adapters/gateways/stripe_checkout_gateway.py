@@ -31,9 +31,18 @@ class StripeSdkCheckoutGateway(StripeCheckoutGateway):
             )
             return dict(intent)
         except self._stripe.error.CardError as exc:
+            error_payload = self._extract_card_error_payload(exc)
             raise StripePaymentFailureError(
-                code=getattr(exc, "code", None),
-                message=getattr(exc, "user_message", None) or str(exc),
+                code=(
+                    error_payload.get("decline_code")
+                    or error_payload.get("code")
+                    or getattr(exc, "code", None)
+                ),
+                message=(
+                    error_payload.get("message")
+                    or getattr(exc, "user_message", None)
+                    or str(exc)
+                ),
             ) from exc
         except self._stripe.error.IdempotencyError as exc:
             raise StripeIdempotencyConflictError(str(exc)) from exc
@@ -45,3 +54,27 @@ class StripeSdkCheckoutGateway(StripeCheckoutGateway):
             secret=settings.stripe_webhook_secret.get_secret_value(),
         )
         return dict(event)
+
+    def _extract_card_error_payload(self, exc) -> dict[str, str | None]:
+        payload: dict[str, str | None] = {
+            "code": None,
+            "decline_code": None,
+            "message": None,
+        }
+
+        error = getattr(exc, "error", None)
+        if error is not None:
+            payload["code"] = getattr(error, "code", None)
+            payload["decline_code"] = getattr(error, "decline_code", None)
+            payload["message"] = getattr(error, "message", None)
+
+        if payload["message"] is None:
+            json_body = getattr(exc, "json_body", None)
+            if isinstance(json_body, dict):
+                error_body = json_body.get("error")
+                if isinstance(error_body, dict):
+                    payload["code"] = payload["code"] or error_body.get("code")
+                    payload["decline_code"] = payload["decline_code"] or error_body.get("decline_code")
+                    payload["message"] = payload["message"] or error_body.get("message")
+
+        return payload
