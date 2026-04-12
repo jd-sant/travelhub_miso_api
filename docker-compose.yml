@@ -112,7 +112,7 @@ services:
       PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-fake_stripe}
       PAYMENTS_COMPLIANCE_MODE: ${PAYMENTS_COMPLIANCE_MODE:-false}
       PAYMENT_DUPLICATE_WINDOW_SECONDS: "2"
-      ENFORCE_TLS_HEADER: "True"
+      ENFORCE_TLS_HEADER: ${ENFORCE_TLS_HEADER:-true}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
       PAYMENT_INTEGRITY_SECRET: ${PAYMENT_INTEGRITY_SECRET:-travelhub-payments-secret-change-in-prod}
       PAYMENTS_DATA_ENCRYPTION_KEY: ${PAYMENTS_DATA_ENCRYPTION_KEY:-dev-payments-encryption-key-change-me}
