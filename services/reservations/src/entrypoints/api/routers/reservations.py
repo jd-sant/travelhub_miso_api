@@ -1,17 +1,22 @@
+from functools import lru_cache
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session
 
 from adapters.repositories.reservation_repository import SQLModelReservationRepository
-from db.session import get_session
-from domain.schemas.reservation import (
-    ReservationCreateRequest,
-    ReservationResponse,
-    ReservationSummary,
+from adapters.services.scheduler_service import (
+    EventBridgeReservationScheduler,
+    NoOpReservationScheduler,
 )
+from core.config import settings
+from db.session import get_session
+from domain.ports.reservation_scheduler import ReservationScheduler
+from domain.schemas.reservation import ReservationCreateRequest, ReservationResponse, ReservationSummary
 from domain.use_cases.create_reservation import CreateReservationUseCase
 from errors import (
     InvalidReservationDateError,
-    ReservationNotFoundError,
+    ReservationSchedulingError,
     RoomNotAvailableError,
 )
 
@@ -22,10 +27,31 @@ def get_reservation_repository(session: Session = Depends(get_session)):
     return SQLModelReservationRepository(session)
 
 
+@lru_cache
+def get_reservation_scheduler() -> ReservationScheduler:
+    if not settings.reservation_scheduler_enabled:
+        return NoOpReservationScheduler()
+
+    try:
+        return EventBridgeReservationScheduler(
+            aws_region=settings.aws_region,
+            lambda_arn=settings.lambda_arn,
+            scheduler_role_arn=settings.scheduler_role_arn,
+            api_base_url=settings.api_base_url,
+            delay_minutes=settings.reservation_scheduler_delay_minutes,
+        )
+    except (ValueError, RuntimeError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Scheduler configuration error",
+        ) from exc
+
+
 def get_create_reservation_use_case(
     repository=Depends(get_reservation_repository),
+    scheduler: ReservationScheduler = Depends(get_reservation_scheduler),
 ):
-    return CreateReservationUseCase(repository)
+    return CreateReservationUseCase(repository, scheduler)
 
 
 @router.post(
@@ -67,6 +93,11 @@ def create_reservation(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
+    except ReservationSchedulingError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -82,8 +113,6 @@ def get_reservation(
     """
     Get a specific reservation by ID.
     """
-    from uuid import UUID
-
     try:
         reservation_uuid = UUID(reservation_id)
     except ValueError:

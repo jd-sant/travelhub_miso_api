@@ -10,6 +10,12 @@ class PaymentStatus(str, Enum):
     failed = "failed"
 
 
+class ReservationConfirmationOutboxStatus(str, Enum):
+    pending = "pending"
+    succeeded = "succeeded"
+    failed = "failed"
+
+
 class PaymentChargeRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -79,3 +85,25 @@ class PaymentPublicResponse(BaseModel):
     receipt_id: UUID | None = None
     receipt_number: str | None = None
     failure_reason: str | None = None
+
+
+class ReservationConfirmationOutboxRecord(BaseModel):
+    outbox_id: UUID
+    payment_id: UUID
+    reservation_id: UUID
+    status: ReservationConfirmationOutboxStatus
+    attempt_count: int
+    max_attempts: int
+    next_retry_at: datetime
+    last_error: str | None = None
+    last_attempt_at: datetime | None = None
+    processed_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class ReservationConfirmationRetryResponse(BaseModel):
+    processed_count: int
+    succeeded_count: int
+    failed_count: int
+    pending_count: int

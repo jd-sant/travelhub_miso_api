@@ -1,0 +1,118 @@
+{
+  "info": {
+    "name": "Search API p95 Benchmark",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Search p95 sample",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.info.iteration === 0) {",
+              "    pm.collectionVariables.set('latency_samples', '[]');",
+              "    pm.collectionVariables.set('warmup_count', '10');",
+              "}",
+              "pm.collectionVariables.set('request_start_ms', String(Date.now()));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "var start = Number(pm.collectionVariables.get('request_start_ms') || Date.now());",
+              "var latency = Date.now() - start;",
+              "var samples = JSON.parse(pm.collectionVariables.get('latency_samples') || '[]');",
+              "samples.push(latency);",
+              "pm.collectionVariables.set('latency_samples', JSON.stringify(samples));",
+              "",
+              "if (pm.info.iteration === pm.info.iterationCount - 1) {",
+              "    var warmupCount = Number(pm.collectionVariables.get('warmup_count') || '10');",
+              "    var effective = samples.slice(warmupCount);",
+              "    effective.sort(function (a, b) { return a - b; });",
+              "",
+              "    var avg = effective.reduce(function (acc, value) { return acc + value; }, 0) / (effective.length || 1);",
+              "    var pick = function (p) {",
+              "        if (!effective.length) return 0;",
+              "        var idx = Math.max(0, Math.min(effective.length - 1, Math.floor((p / 100) * (effective.length - 1))));",
+              "        return effective[idx];",
+              "    };",
+              "",
+              "    var p50 = pick(50);",
+              "    var p95 = pick(95);",
+              "    var p99 = pick(99);",
+              "",
+              "    console.log('requests=' + effective.length);",
+              "    console.log('avg_ms=' + avg.toFixed(2));",
+              "    console.log('p50_ms=' + p50.toFixed(2));",
+              "    console.log('p95_ms=' + p95.toFixed(2));",
+              "    console.log('p99_ms=' + p99.toFixed(2));",
+              "",
+              "    pm.test('p95 < 800ms', function () {",
+              "        pm.expect(p95).to.be.below(800);",
+              "    });",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/search?city=Bogota&check_in=2026-04-10&check_out=2026-04-12&guests=2&page=1&page_size=10",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "search"
+          ],
+          "query": [
+            {
+              "key": "city",
+              "value": "Bogota"
+            },
+            {
+              "key": "check_in",
+              "value": "2026-04-10"
+            },
+            {
+              "key": "check_out",
+              "value": "2026-04-12"
+            },
+            {
+              "key": "guests",
+              "value": "2"
+            },
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "page_size",
+              "value": "10"
+            }
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8006"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-.PHONY: help docker-up docker-down docker-build docker-logs clean users-test users-build users-logs security-test security-build security-logs reservations-test reservations-build reservations-logs payments-test payments-security-scan payments-build payments-logs notifications-test notifications-security-scan notifications-build notifications-logs properties-test properties-build properties-logs
+.PHONY: help docker-up docker-down docker-build docker-logs clean users-test users-build users-logs security-test security-build security-logs reservations-test reservations-build reservations-logs payments-test payments-security-scan payments-build payments-logs notifications-test notifications-security-scan notifications-build notifications-logs properties-test properties-build properties-logs reservations-perf search-test search-build search-logs search-perf
 
 help:
 	@echo "=== TravelHub Monorepo ==="
@@ -41,6 +41,13 @@ help:
 	@echo "  make properties-test  - Run properties tests"
 	@echo "  make properties-build - Build properties image"
 	@echo "  make properties-logs  - Tail properties logs"
+	@echo "  make reservations-perf  - Run Newman E2E collection for checkstatus flow"
+	@echo ""
+	@echo "Search service:"
+	@echo "  make search-test   - Run search tests"
+	@echo "  make search-build  - Build search image"
+	@echo "  make search-logs   - Tail search logs"
+	@echo "  make search-perf   - Run local p95 benchmark with Newman against search API"
 
 # Global commands
 docker-up:
@@ -124,3 +131,20 @@ properties-build:
 
 properties-logs:
 	docker compose logs -f properties
+
+reservations-perf:
+	@set -a; [ -f .env ] && . ./.env; set +a; \
+	npx --yes newman run postman/e2e/reservations-checkstatus/reservations_checkstatus.postman_collection.json --env-var base_url=http://localhost:8002 --env-var INTERNAL_API_KEY=$${INTERNAL_API_KEY:-dev-internal-key-change-me} --reporters cli
+
+# Search service
+search-test:
+	cd services/search && PYTHONPATH=src pytest tests/ -v
+
+search-build:
+	docker compose build search
+
+search-logs:
+	docker compose logs -f search
+
+search-perf:
+	npx --yes newman run postman/e2e/search-p95/search_p95.postman_collection.json --env-var base_url=http://localhost:8006 --iteration-count 130 --reporters cli

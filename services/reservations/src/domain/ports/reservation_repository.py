@@ -9,7 +9,12 @@ from domain.schemas.reservation import ReservationCreateRequest, ReservationResp
 
 class ReservationRepository(ABC):
     @abstractmethod
-    def add(self, payload: ReservationCreateRequest, total_price: Decimal) -> ReservationResponse:
+    def add(
+        self,
+        payload: ReservationCreateRequest,
+        total_price: Decimal,
+        reservation_id: UUID | None = None,
+    ) -> ReservationResponse:
         pass
 
     @abstractmethod

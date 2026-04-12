@@ -11,3 +11,14 @@ class NotificationDispatcher(ABC):
         source_ip: str | None = None,
     ) -> None:
         raise NotImplementedError
+
+
+class ReservationUpdater(ABC):
+    @abstractmethod
+    def confirm_reservation(
+        self,
+        *,
+        reservation_id: UUID,
+        source_ip: str | None = None,
+    ) -> None:
+        raise NotImplementedError

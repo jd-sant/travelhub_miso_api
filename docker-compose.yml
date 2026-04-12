@@ -28,7 +28,7 @@ services:
       RDS_PORT: "5432"
       DB_SCHEMA: users_schema
       DB_ECHO: "False"
-      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
     ports:
       - "8000:8000"
     depends_on:
@@ -47,9 +47,9 @@ services:
       RDS_PORT: "5432"
       DB_SCHEMA: security_schema
       DB_ECHO: "False"
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-travelhub-jwt-secret-change-in-prod}
       USERS_SERVICE_URL: http://users:8000
-      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
@@ -68,8 +68,17 @@ services:
       context: ./services/reservations
     environment:
       PYTHONPATH: /app/src
-      ENV: production
-      APP_ENV: production
+      ENV: ${ENV:-development}
+      APP_ENV: ${APP_ENV:-development}
+      RESERVATION_SCHEDULER_ENABLED: ${RESERVATION_SCHEDULER_ENABLED:-false}
+      RESERVATION_SCHEDULER_DELAY_MINUTES: ${RESERVATION_SCHEDULER_DELAY_MINUTES:-15}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      LAMBDA_ARN: ${LAMBDA_ARN:-}
+      SCHEDULER_ROLE_ARN: ${SCHEDULER_ROLE_ARN:-}
+      API_BASE_URL: ${API_BASE_URL:-}
       RDS_HOSTNAME: postgres
       RDS_USERNAME: travelhub_user
       RDS_PASSWORD: travelhub_pass
@@ -77,7 +86,7 @@ services:
       RDS_PORT: "5432"
       DB_SCHEMA: reservations_schema
       DB_ECHO: "False"
-      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
     ports:
       - "8002:8002"
     depends_on:
@@ -100,14 +109,15 @@ services:
       PAYMENTS_COMPLIANCE_MODE: ${PAYMENTS_COMPLIANCE_MODE:-false}
       PAYMENT_DUPLICATE_WINDOW_SECONDS: "2"
       ENFORCE_TLS_HEADER: "True"
-      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
-      PAYMENT_INTEGRITY_SECRET: ${PAYMENT_INTEGRITY_SECRET}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
+      PAYMENT_INTEGRITY_SECRET: ${PAYMENT_INTEGRITY_SECRET:-travelhub-payments-secret-change-in-prod}
       PAYMENTS_DATA_ENCRYPTION_KEY: ${PAYMENTS_DATA_ENCRYPTION_KEY:-dev-payments-encryption-key-change-me}
       NOTIFICATIONS_SERVICE_URL: http://notifications:8000
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
-      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
-      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
-      ALLOWED_CORS_ORIGINS: ${ALLOWED_CORS_ORIGINS}
+      RESERVATIONS_SERVICE_URL: http://reservations:8002
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      ALLOWED_CORS_ORIGINS: ${ALLOWED_CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
     ports:
       - "8003:8000"
     depends_on:
@@ -126,7 +136,7 @@ services:
       RDS_PORT: "5432"
       DB_SCHEMA: notifications_schema
       DB_ECHO: "False"
-      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
       PAYMENTS_SERVICE_URL: http://payments:8000
       USERS_SERVICE_URL: http://users:8000
       SMTP_HOST: ${SMTP_HOST:-}
@@ -157,6 +167,37 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+
+  search:
+    build:
+      context: ./services/search
+    environment:
+      PYTHONPATH: /app/src
+      ENV: ${ENV:-development}
+      APP_ENV: ${APP_ENV:-development}
+      DATABASE_URL: postgresql://travelhub_user:travelhub_pass@postgres:5432/travelhub
+      DB_SCHEMA: search_schema
+      DB_ECHO: "False"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_CACHE_ENABLED: "true"
+    ports:
+      - "8006:8003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:

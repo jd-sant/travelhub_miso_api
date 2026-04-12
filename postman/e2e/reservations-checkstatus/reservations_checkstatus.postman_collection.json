@@ -1,0 +1,208 @@
+{
+  "info": {
+    "name": "Reservations CheckStatus E2E",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', function () { pm.response.to.have.status(200); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create reservation (pending_payment)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function uuidv4() {",
+              "  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {",
+              "    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);",
+              "    return v.toString(16);",
+              "  });",
+              "}",
+              "var now = new Date();",
+              "var checkIn = new Date(now.getTime() + (5 * 24 * 60 * 60 * 1000));",
+              "var checkOut = new Date(now.getTime() + (8 * 24 * 60 * 60 * 1000));",
+              "pm.collectionVariables.set('id_traveler', uuidv4());",
+              "pm.collectionVariables.set('id_property', uuidv4());",
+              "pm.collectionVariables.set('id_room', uuidv4());",
+              "pm.collectionVariables.set('check_in_date', checkIn.toISOString());",
+              "pm.collectionVariables.set('check_out_date', checkOut.toISOString());"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 201', function () { pm.response.to.have.status(201); });",
+              "var data = pm.response.json();",
+              "pm.test('reservation starts pending_payment', function () { pm.expect(data.status).to.eql('pending_payment'); });",
+              "pm.collectionVariables.set('reservation_id', data.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_traveler\": \"{{id_traveler}}\",\n  \"id_property\": \"{{id_property}}\",\n  \"id_room\": \"{{id_room}}\",\n  \"check_in_date\": \"{{check_in_date}}\",\n  \"check_out_date\": \"{{check_out_date}}\",\n  \"number_of_guests\": 2,\n  \"currency\": \"COP\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/reservations",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "reservations"]
+        }
+      }
+    },
+    {
+      "name": "Check status (should cancel pending_payment)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "X-Internal-Api-Key", "value": "{{internal_api_key}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/internal/reservations/{{reservation_id}}/checkstatus",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "internal", "reservations", "{{reservation_id}}", "checkstatus"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+              "var data = pm.response.json();",
+              "pm.test('action cancelled', function () { pm.expect(data.action_applied).to.eql('cancelled'); });",
+              "pm.test('status after cancelled', function () { pm.expect(data.status_after).to.eql('cancelled'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Check status again (idempotent)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "X-Internal-Api-Key", "value": "{{internal_api_key}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/internal/reservations/{{reservation_id}}/checkstatus",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "internal", "reservations", "{{reservation_id}}", "checkstatus"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+              "var data = pm.response.json();",
+              "pm.test('action none', function () { pm.expect(data.action_applied).to.eql('none'); });",
+              "pm.test('still cancelled', function () { pm.expect(data.status_after).to.eql('cancelled'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Internal PATCH status with invalid key (403)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-Internal-Api-Key", "value": "{{WRONG_INTERNAL_API_KEY}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"confirmed\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/internal/reservations/{{reservation_id}}/status",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "internal", "reservations", "{{reservation_id}}", "status"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 403', function () { pm.response.to.have.status(403); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Internal PATCH status with valid key (200)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-Internal-Api-Key", "value": "{{INTERNAL_API_KEY}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"confirmed\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/internal/reservations/{{reservation_id}}/status",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "internal", "reservations", "{{reservation_id}}", "status"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+              "var data = pm.response.json();",
+              "pm.test('status after confirmed', function () { pm.expect(data.status_after).to.eql('confirmed'); });"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8002" },
+    { "key": "INTERNAL_API_KEY", "value": "dev-internal-key-change-me" },
+    { "key": "WRONG_INTERNAL_API_KEY", "value": "invalid-key" }
+  ]
+}

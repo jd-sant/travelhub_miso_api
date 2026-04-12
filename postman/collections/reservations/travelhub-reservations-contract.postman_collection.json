@@ -1,0 +1,38 @@
+{
+  "info": {
+    "_postman_id": "12f45be6-8be0-4ecb-a661-4f11775365ec",
+    "name": "TravelHub Reservations Contract",
+    "description": "Validaciones contract/smoke para Reservations service.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health - Reservations",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('health 200', function () { pm.response.to.have.status(200); });"]}}],
+      "request": {"method": "GET", "header": [], "url": {"raw": "{{reservations_base_url}}/health", "host": ["{{reservations_base_url}}"], "path": ["health"]}}
+    },
+    {
+      "name": "Create Reservation",
+      "event": [
+        {"listen": "prerequest", "script": {"type": "text/javascript", "exec": ["const now = new Date();", "const checkIn = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);", "const checkOut = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);", "pm.collectionVariables.set('res_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));", "pm.collectionVariables.set('res_property_id', pm.variables.replaceIn('{{$randomUUID}}'));", "pm.collectionVariables.set('res_room_id', pm.variables.replaceIn('{{$randomUUID}}'));", "pm.collectionVariables.set('res_check_in', checkIn.toISOString());", "pm.collectionVariables.set('res_check_out', checkOut.toISOString());"]}},
+        {"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('create reservation 201', function () { pm.response.to.have.status(201); });", "const body = pm.response.json();", "pm.test('status pending_payment', function () { pm.expect(body.status).to.eql('pending_payment'); });", "pm.collectionVariables.set('reservation_id', body.id);"]}}
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\n  \"id_traveler\": \"{{res_traveler_id}}\",\n  \"id_property\": \"{{res_property_id}}\",\n  \"id_room\": \"{{res_room_id}}\",\n  \"check_in_date\": \"{{res_check_in}}\",\n  \"check_out_date\": \"{{res_check_out}}\",\n  \"number_of_guests\": 2,\n  \"currency\": \"COP\"\n}"},
+        "url": {"raw": "{{reservations_base_url}}/api/v1/reservations", "host": ["{{reservations_base_url}}"], "path": ["api", "v1", "reservations"]}
+      }
+    },
+    {
+      "name": "Get Reservation",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('get reservation 200', function () { pm.response.to.have.status(200); });"]}}],
+      "request": {"method": "GET", "header": [], "url": {"raw": "{{reservations_base_url}}/api/v1/reservations/{{reservation_id}}", "host": ["{{reservations_base_url}}"], "path": ["api", "v1", "reservations", "{{reservation_id}}"]}}
+    },
+    {
+      "name": "CheckStatus Cancels Pending",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('checkstatus 200', function () { pm.response.to.have.status(200); });", "const body = pm.response.json();", "pm.test('status_after cancelled', function () { pm.expect(body.status_after).to.eql('cancelled'); });"]}}],
+      "request": {"method": "POST", "header": [{"key": "X-Internal-Api-Key", "value": "{{internal_api_key}}"}], "url": {"raw": "{{reservations_base_url}}/api/v1/internal/reservations/{{reservation_id}}/checkstatus", "host": ["{{reservations_base_url}}"], "path": ["api", "v1", "internal", "reservations", "{{reservation_id}}", "checkstatus"]}}
+    }
+  ]
+}

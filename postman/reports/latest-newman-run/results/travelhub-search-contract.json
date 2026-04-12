@@ -1,0 +1,1138 @@
+{
+  "collection": {
+    "_": {
+      "postman_id": "eff589e6-f61a-4df6-839c-9b799323c6ac"
+    },
+    "item": [
+      {
+        "id": "b5033ad5-2185-42b2-8f43-245e950f38e8",
+        "name": "Health - Search",
+        "request": {
+          "url": {
+            "path": [
+              "health"
+            ],
+            "host": [
+              "{{search_base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "4da99e2e-8a4e-48d2-9412-01658cd9267d",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('health 200', function () { pm.response.to.have.status(200); });"
+              ],
+              "_lastExecutionId": "7b8d9126-8a1e-4d95-ba89-849d89df7ade"
+            }
+          }
+        ]
+      },
+      {
+        "id": "83ebcb75-ad93-41f1-946c-0f54e28c8229",
+        "name": "Search Status",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "search",
+              "status"
+            ],
+            "host": [
+              "{{search_base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "bb53f747-ff6c-4286-9f12-a2c342539221",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                "const body = pm.response.json();",
+                "pm.test('service is search', function () { pm.expect(body.service).to.eql('search'); });"
+              ],
+              "_lastExecutionId": "21b9b9c7-a77d-463e-9e84-9822c380f2bb"
+            }
+          }
+        ]
+      },
+      {
+        "id": "9983b15e-9ce4-4187-a4c9-4aa66c01fdc4",
+        "name": "Search Query",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "search"
+            ],
+            "host": [
+              "{{search_base_url}}"
+            ],
+            "query": [
+              {
+                "key": "city",
+                "value": "Bogota"
+              },
+              {
+                "key": "check_in",
+                "value": "{{search_check_in}}"
+              },
+              {
+                "key": "check_out",
+                "value": "{{search_check_out}}"
+              },
+              {
+                "key": "guests",
+                "value": "2"
+              },
+              {
+                "key": "page",
+                "value": "1"
+              },
+              {
+                "key": "page_size",
+                "value": "5"
+              }
+            ],
+            "variable": []
+          },
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "prerequest",
+            "script": {
+              "id": "feda54cd-4cea-4173-8a21-73a4d21d6c73",
+              "type": "text/javascript",
+              "exec": [
+                "const now = new Date();",
+                "const checkIn = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);",
+                "const checkOut = new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000);",
+                "pm.collectionVariables.set('search_check_in', checkIn.toISOString().slice(0, 10));",
+                "pm.collectionVariables.set('search_check_out', checkOut.toISOString().slice(0, 10));"
+              ],
+              "_lastExecutionId": "4fa09a70-22bd-45b1-9f1e-d762714c9cff"
+            }
+          },
+          {
+            "listen": "test",
+            "script": {
+              "id": "cc13da9d-89df-4ad9-8aa7-62adc8f57d23",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('search 200', function () { pm.response.to.have.status(200); });",
+                "const body = pm.response.json();",
+                "pm.test('items array exists', function () { pm.expect(body.items).to.be.an('array'); });",
+                "pm.test('pagination exists', function () { pm.expect(body.pagination).to.be.an('object'); });"
+              ],
+              "_lastExecutionId": "fc89b1b0-ca90-4fb5-a48a-2775f4c27509"
+            }
+          }
+        ]
+      }
+    ],
+    "event": [],
+    "variable": [],
+    "info": {
+      "_postman_id": "eff589e6-f61a-4df6-839c-9b799323c6ac",
+      "name": "TravelHub Search Contract",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+      "description": {
+        "content": "Validaciones contract/smoke para Search service.",
+        "type": "text/plain"
+      }
+    }
+  },
+  "environment": {
+    "_": {
+      "postman_variable_scope": "environment",
+      "postman_exported_at": "2026-04-11T00:00:00.000Z",
+      "postman_exported_using": "Codex"
+    },
+    "id": "1f3a5f3e-6c97-4fe2-b4db-1bbf62d8468f",
+    "name": "TravelHub Microservices Local",
+    "values": [
+      {
+        "type": "any",
+        "value": "http://localhost:8000",
+        "key": "users_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8001",
+        "key": "security_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8002",
+        "key": "reservations_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8003",
+        "key": "payments_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8004",
+        "key": "notifications_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8005",
+        "key": "properties_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8006",
+        "key": "search_base_url"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-internal-secret-key",
+        "key": "internal_api_key"
+      }
+    ]
+  },
+  "globals": {
+    "id": "8d6c7797-d212-4f38-9e4c-9f9f4ae9dec4",
+    "values": []
+  },
+  "run": {
+    "stats": {
+      "iterations": {
+        "total": 1,
+        "pending": 0,
+        "failed": 0
+      },
+      "items": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "scripts": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequests": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "requests": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "tests": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "assertions": {
+        "total": 6,
+        "pending": 0,
+        "failed": 0
+      },
+      "testScripts": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequestScripts": {
+        "total": 1,
+        "pending": 0,
+        "failed": 0
+      }
+    },
+    "timings": {
+      "responseAverage": 16.333333333333332,
+      "responseMin": 5,
+      "responseMax": 30,
+      "responseSd": 10.338708279513883,
+      "dnsAverage": 0,
+      "dnsMin": 0,
+      "dnsMax": 0,
+      "dnsSd": 0,
+      "firstByteAverage": 0,
+      "firstByteMin": 0,
+      "firstByteMax": 0,
+      "firstByteSd": 0,
+      "started": 1775938946025,
+      "completed": 1775938946149
+    },
+    "executions": [
+      {
+        "cursor": {
+          "position": 0,
+          "iteration": 0,
+          "length": 3,
+          "cycles": 1,
+          "empty": false,
+          "eof": false,
+          "bof": true,
+          "cr": false,
+          "ref": "ff0f86b5-7999-4bb5-932d-18cd0d7f529e",
+          "httpRequestId": "6f2371de-50f1-488e-9286-08ab1daefe7f"
+        },
+        "item": {
+          "id": "b5033ad5-2185-42b2-8f43-245e950f38e8",
+          "name": "Health - Search",
+          "request": {
+            "url": {
+              "path": [
+                "health"
+              ],
+              "host": [
+                "{{search_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "4da99e2e-8a4e-48d2-9412-01658cd9267d",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('health 200', function () { pm.response.to.have.status(200); });"
+                ],
+                "_lastExecutionId": "7b8d9126-8a1e-4d95-ba89-849d89df7ade"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8006",
+            "path": [
+              "health"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "ac879004-72e8-40c0-bd2b-87100458239a",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8006",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "2870ee12-6f6b-466a-98d7-baf79db37da5",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sat, 11 Apr 2026 20:22:26 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "20"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              104,
+              101,
+              97,
+              108,
+              116,
+              104,
+              121,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 30,
+          "responseSize": 20
+        },
+        "id": "b5033ad5-2185-42b2-8f43-245e950f38e8",
+        "assertions": [
+          {
+            "assertion": "health 200",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "71f5bfac-5742-44ea-9f43-dcb9f7c93acc",
+          "length": 3,
+          "cycles": 1,
+          "position": 1,
+          "iteration": 0,
+          "httpRequestId": "ac5e8d87-3863-4275-80c2-c45f8a353b0b"
+        },
+        "item": {
+          "id": "83ebcb75-ad93-41f1-946c-0f54e28c8229",
+          "name": "Search Status",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "search",
+                "status"
+              ],
+              "host": [
+                "{{search_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "bb53f747-ff6c-4286-9f12-a2c342539221",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test('service is search', function () { pm.expect(body.service).to.eql('search'); });"
+                ],
+                "_lastExecutionId": "21b9b9c7-a77d-463e-9e84-9822c380f2bb"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8006",
+            "path": [
+              "api",
+              "v1",
+              "search",
+              "status"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "220c9b5f-1c8c-42cd-92c4-cd5fa90d6b2f",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8006",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "7ef4a649-2f4f-4072-84eb-c17cf07917b4",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sat, 11 Apr 2026 20:22:26 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "34"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              101,
+              114,
+              118,
+              105,
+              99,
+              101,
+              34,
+              58,
+              34,
+              115,
+              101,
+              97,
+              114,
+              99,
+              104,
+              34,
+              44,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              111,
+              107,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 5,
+          "responseSize": 34
+        },
+        "id": "83ebcb75-ad93-41f1-946c-0f54e28c8229",
+        "assertions": [
+          {
+            "assertion": "status 200",
+            "skipped": false
+          },
+          {
+            "assertion": "service is search",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "b1c998c3-97a9-4719-afae-f07491c21634",
+          "length": 3,
+          "cycles": 1,
+          "position": 2,
+          "iteration": 0,
+          "httpRequestId": "0393ee37-ec2e-459b-bf1d-aef84a194101"
+        },
+        "item": {
+          "id": "9983b15e-9ce4-4187-a4c9-4aa66c01fdc4",
+          "name": "Search Query",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "search"
+              ],
+              "host": [
+                "{{search_base_url}}"
+              ],
+              "query": [
+                {
+                  "key": "city",
+                  "value": "Bogota"
+                },
+                {
+                  "key": "check_in",
+                  "value": "{{search_check_in}}"
+                },
+                {
+                  "key": "check_out",
+                  "value": "{{search_check_out}}"
+                },
+                {
+                  "key": "guests",
+                  "value": "2"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "5"
+                }
+              ],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "feda54cd-4cea-4173-8a21-73a4d21d6c73",
+                "type": "text/javascript",
+                "exec": [
+                  "const now = new Date();",
+                  "const checkIn = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);",
+                  "const checkOut = new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000);",
+                  "pm.collectionVariables.set('search_check_in', checkIn.toISOString().slice(0, 10));",
+                  "pm.collectionVariables.set('search_check_out', checkOut.toISOString().slice(0, 10));"
+                ],
+                "_lastExecutionId": "4fa09a70-22bd-45b1-9f1e-d762714c9cff"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "cc13da9d-89df-4ad9-8aa7-62adc8f57d23",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('search 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test('items array exists', function () { pm.expect(body.items).to.be.an('array'); });",
+                  "pm.test('pagination exists', function () { pm.expect(body.pagination).to.be.an('object'); });"
+                ],
+                "_lastExecutionId": "fc89b1b0-ca90-4fb5-a48a-2775f4c27509"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8006",
+            "path": [
+              "api",
+              "v1",
+              "search"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [
+              {
+                "key": "city",
+                "value": "Bogota"
+              },
+              {
+                "key": "check_in",
+                "value": "2026-04-13"
+              },
+              {
+                "key": "check_out",
+                "value": "2026-04-15"
+              },
+              {
+                "key": "guests",
+                "value": "2"
+              },
+              {
+                "key": "page",
+                "value": "1"
+              },
+              {
+                "key": "page_size",
+                "value": "5"
+              }
+            ],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "0f009d5d-566c-45cc-bad9-9f854471bae0",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8006",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "95dc6fdc-667a-479a-93da-94be120eceab",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sat, 11 Apr 2026 20:22:26 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "305"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              105,
+              116,
+              101,
+              109,
+              115,
+              34,
+              58,
+              91,
+              93,
+              44,
+              34,
+              112,
+              97,
+              103,
+              105,
+              110,
+              97,
+              116,
+              105,
+              111,
+              110,
+              34,
+              58,
+              123,
+              34,
+              116,
+              111,
+              116,
+              97,
+              108,
+              34,
+              58,
+              48,
+              44,
+              34,
+              112,
+              97,
+              103,
+              101,
+              34,
+              58,
+              49,
+              44,
+              34,
+              112,
+              97,
+              103,
+              101,
+              95,
+              115,
+              105,
+              122,
+              101,
+              34,
+              58,
+              53,
+              44,
+              34,
+              116,
+              111,
+              116,
+              97,
+              108,
+              95,
+              112,
+              97,
+              103,
+              101,
+              115,
+              34,
+              58,
+              48,
+              125,
+              44,
+              34,
+              101,
+              109,
+              112,
+              116,
+              121,
+              95,
+              115,
+              116,
+              97,
+              116,
+              101,
+              34,
+              58,
+              91,
+              123,
+              34,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              84,
+              82,
+              89,
+              95,
+              79,
+              84,
+              72,
+              69,
+              82,
+              95,
+              67,
+              73,
+              84,
+              89,
+              34,
+              44,
+              34,
+              109,
+              101,
+              115,
+              115,
+              97,
+              103,
+              101,
+              34,
+              58,
+              34,
+              78,
+              111,
+              32,
+              101,
+              110,
+              99,
+              111,
+              110,
+              116,
+              114,
+              97,
+              109,
+              111,
+              115,
+              32,
+              114,
+              101,
+              115,
+              117,
+              108,
+              116,
+              97,
+              100,
+              111,
+              115,
+              32,
+              101,
+              110,
+              32,
+              101,
+              115,
+              97,
+              32,
+              99,
+              105,
+              117,
+              100,
+              97,
+              100,
+              46,
+              32,
+              73,
+              110,
+              116,
+              101,
+              110,
+              116,
+              97,
+              32,
+              111,
+              116,
+              114,
+              97,
+              32,
+              99,
+              105,
+              117,
+              100,
+              97,
+              100,
+              32,
+              99,
+              101,
+              114,
+              99,
+              97,
+              110,
+              97,
+              46,
+              34,
+              125,
+              44,
+              123,
+              34,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              84,
+              82,
+              89,
+              95,
+              79,
+              84,
+              72,
+              69,
+              82,
+              95,
+              68,
+              65,
+              84,
+              69,
+              83,
+              34,
+              44,
+              34,
+              109,
+              101,
+              115,
+              115,
+              97,
+              103,
+              101,
+              34,
+              58,
+              34,
+              80,
+              114,
+              117,
+              101,
+              98,
+              97,
+              32,
+              99,
+              111,
+              110,
+              32,
+              102,
+              101,
+              99,
+              104,
+              97,
+              115,
+              32,
+              100,
+              105,
+              102,
+              101,
+              114,
+              101,
+              110,
+              116,
+              101,
+              115,
+              32,
+              112,
+              97,
+              114,
+              97,
+              32,
+              101,
+              110,
+              99,
+              111,
+              110,
+              116,
+              114,
+              97,
+              114,
+              32,
+              109,
+              97,
+              121,
+              111,
+              114,
+              32,
+              100,
+              105,
+              115,
+              112,
+              111,
+              110,
+              105,
+              98,
+              105,
+              108,
+              105,
+              100,
+              97,
+              100,
+              46,
+              34,
+              125,
+              93,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 14,
+          "responseSize": 305
+        },
+        "id": "9983b15e-9ce4-4187-a4c9-4aa66c01fdc4",
+        "assertions": [
+          {
+            "assertion": "search 200",
+            "skipped": false
+          },
+          {
+            "assertion": "items array exists",
+            "skipped": false
+          },
+          {
+            "assertion": "pagination exists",
+            "skipped": false
+          }
+        ]
+      }
+    ],
+    "transfers": {
+      "responseTotal": 359
+    },
+    "failures": [],
+    "error": null
+  }
+}

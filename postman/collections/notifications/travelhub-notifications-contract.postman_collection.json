@@ -1,0 +1,33 @@
+{
+  "info": {
+    "_postman_id": "ab696fa2-d65b-4ecc-b0a5-53822c769f65",
+    "name": "TravelHub Notifications Contract",
+    "description": "Validaciones contract/smoke para Notifications service.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health - Notifications",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('health 200', function () { pm.response.to.have.status(200); });"]}}],
+      "request": {"method": "GET", "header": [], "url": {"raw": "{{notifications_base_url}}/health", "host": ["{{notifications_base_url}}"], "path": ["health"]}}
+    },
+    {
+      "name": "Get Notification Wrong Key",
+      "event": [{"listen": "prerequest", "script": {"type": "text/javascript", "exec": ["pm.collectionVariables.set('notif_random_id', pm.variables.replaceIn('{{$randomUUID}}'));"]}}, {"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('forbidden 403', function () { pm.response.to.have.status(403); });"]}}],
+      "request": {
+        "method": "GET",
+        "header": [{"key": "X-Internal-Api-Key", "value": "invalid-key"}],
+        "url": {"raw": "{{notifications_base_url}}/api/v1/notifications/{{notif_random_id}}", "host": ["{{notifications_base_url}}"], "path": ["api", "v1", "notifications", "{{notif_random_id}}"]}
+      }
+    },
+    {
+      "name": "Get Notification Valid Key Not Found",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('not found 404', function () { pm.response.to.have.status(404); });"]}}],
+      "request": {
+        "method": "GET",
+        "header": [{"key": "X-Internal-Api-Key", "value": "{{internal_api_key}}"}],
+        "url": {"raw": "{{notifications_base_url}}/api/v1/notifications/{{notif_random_id}}", "host": ["{{notifications_base_url}}"], "path": ["api", "v1", "notifications", "{{notif_random_id}}"]}
+      }
+    }
+  ]
+}

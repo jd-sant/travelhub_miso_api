@@ -14,7 +14,8 @@ travelhub_miso/
 |   |-- properties/     # Detalles de propiedades
 |   |-- reservations/   # Creacion y consulta de reservas
 |   |-- payments/       # Pagos tokenizados y recibos
-|   `-- notifications/  # Confirmaciones y notificaciones de pago
+|   |-- notifications/  # Confirmaciones y notificaciones de pago
+|   `-- search/         # Busqueda de propiedades y disponibilidad
 |-- docker-compose.yml  # Orquestacion local
 |-- init-schemas.sql    # Creacion de schemas en PostgreSQL
 |-- Makefile            # Comandos de desarrollo
@@ -61,6 +62,7 @@ service/
 | `payments` | 8003 | `payments_schema` | Procesamiento seguro de pagos con token |
 | `notifications` | 8004 | `notifications_schema` | Confirmaciones y notificaciones de pago |
 | `properties` | 8005 | `properties_schema` | Detalles de propiedades y hospedajes |
+| [search](services/search/) | 8006 | `search_schema` | Búsqueda de propiedades, filtros y disponibilidad |
 
 ## Ejecucion local
 
@@ -90,6 +92,7 @@ Los servicios quedan disponibles en:
 - Payments: http://localhost:8003
 - Notifications: http://localhost:8004
 - Properties: http://localhost:8005
+- Search: http://localhost:8006
 
 ### Tests
 
@@ -101,6 +104,7 @@ make reservations-test
 make payments-test
 make notifications-test
 make properties-test
+make search-test
 
 PYTHONPATH=services/users/src pytest services/users/tests/ -v
 PYTHONPATH=services/security/src pytest services/security/tests/ -v
@@ -108,6 +112,7 @@ PYTHONPATH=services/reservations/src pytest services/reservations/tests/ -v
 PYTHONPATH=services/payments/src pytest services/payments/tests/ -v
 PYTHONPATH=services/notifications/src pytest services/notifications/tests/ -v
 PYTHONPATH=services/properties/src pytest services/properties/tests/ -v
+PYTHONPATH=services/search/src pytest services/search/tests/ -v
 ```
 
 ## Comandos disponibles
@@ -124,6 +129,10 @@ make reservations-test # Tests del servicio de reservas
 make payments-test     # Tests del servicio de pagos
 make notifications-test # Tests del servicio de notificaciones
 make properties-test   # Tests del servicio de propiedades
+make search-test      # Tests del servicio de búsqueda
+make search-build     # Build del servicio de búsqueda
+make search-logs      # Logs del servicio de búsqueda
+make search-perf      # Benchmark p95 del servicio de búsqueda
 ```
 
 ## CI / CD

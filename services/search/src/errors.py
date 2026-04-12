@@ -1,0 +1,2 @@
+class InvalidSearchRuleError(Exception):
+    pass

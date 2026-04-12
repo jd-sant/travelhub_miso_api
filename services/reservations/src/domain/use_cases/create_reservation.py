@@ -1,18 +1,30 @@
 from datetime import datetime
 from decimal import Decimal
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from domain.ports.reservation_repository import ReservationRepository
+from domain.ports.reservation_scheduler import ReservationScheduler
 from domain.schemas.reservation import ReservationCreateRequest, ReservationResponse
 from domain.use_cases.base import BaseUseCase
-from errors import InvalidReservationDateError, RoomNotAvailableError
+from errors import (
+    InvalidReservationDateError,
+    ReservationSchedulingError,
+    RoomNotAvailableError,
+)
 
 
 class CreateReservationUseCase(BaseUseCase[ReservationCreateRequest, ReservationResponse]):
-    def __init__(self, repository: ReservationRepository):
+    def __init__(
+        self,
+        repository: ReservationRepository,
+        scheduler: ReservationScheduler | None = None,
+    ):
         self.repository = repository
+        self.scheduler = scheduler
 
     def execute(self, payload: ReservationCreateRequest) -> ReservationResponse:
+        reservation_id = uuid4()
+
         # Validar fechas
         if payload.check_in_date >= payload.check_out_date:
             raise InvalidReservationDateError(
@@ -33,8 +45,25 @@ class CreateReservationUseCase(BaseUseCase[ReservationCreateRequest, Reservation
             payload.id_property, payload.currency, payload.check_in_date, payload.check_out_date
         )
 
+        if self.scheduler is not None:
+            try:
+                self.scheduler.schedule_reservation_expiration(str(reservation_id))
+            except Exception as exc:
+                raise ReservationSchedulingError(
+                    "La reservacion no pudo completarse"
+                ) from exc
+
         # Crear la reserva con el precio calculado
-        reservation = self.repository.add(payload, total_price)
+        try:
+            reservation = self.repository.add(payload, total_price, reservation_id=reservation_id)
+        except Exception:
+            if self.scheduler is not None:
+                try:
+                    self.scheduler.cancel_reservation_expiration(str(reservation_id))
+                except Exception:
+                    pass
+            raise
+
         return reservation
 
     def _calculate_price_with_taxes(

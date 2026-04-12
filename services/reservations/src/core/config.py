@@ -4,6 +4,30 @@ from functools import lru_cache
 
 class Settings:
     @property
+    def reservation_scheduler_enabled(self) -> bool:
+        return os.getenv("RESERVATION_SCHEDULER_ENABLED", "false").lower() == "true"
+
+    @property
+    def reservation_scheduler_delay_minutes(self) -> int:
+        return int(os.getenv("RESERVATION_SCHEDULER_DELAY_MINUTES", "15"))
+
+    @property
+    def aws_region(self) -> str:
+        return os.getenv("AWS_REGION", "us-east-1")
+
+    @property
+    def lambda_arn(self) -> str:
+        return os.getenv("LAMBDA_ARN", "")
+
+    @property
+    def scheduler_role_arn(self) -> str:
+        return os.getenv("SCHEDULER_ROLE_ARN", "")
+
+    @property
+    def api_base_url(self) -> str:
+        return os.getenv("API_BASE_URL", "")
+
+    @property
     def rds_hostname(self) -> str:
         return os.getenv("RDS_HOSTNAME", "localhost")
 
@@ -57,6 +81,24 @@ class Settings:
                 "INTERNAL_API_KEY debe estar configurado en entornos de producción."
             )
         return "dev-internal-key-change-me"
+
+    def validate_scheduler_config(self) -> None:
+        """Validate scheduler configuration if enabled. Raises RuntimeError if validation fails."""
+        if not self.reservation_scheduler_enabled:
+            return
+
+        missing_values = []
+        if not self.lambda_arn:
+            missing_values.append("LAMBDA_ARN")
+        if not self.scheduler_role_arn:
+            missing_values.append("SCHEDULER_ROLE_ARN")
+        if not self.api_base_url:
+            missing_values.append("API_BASE_URL")
+
+        if missing_values:
+            raise RuntimeError(
+                f"Scheduler enabled but missing configuration: {', '.join(missing_values)}"
+            )
 
 
 @lru_cache

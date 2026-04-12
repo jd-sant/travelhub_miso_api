@@ -1,0 +1,449 @@
+{
+  "info": {
+    "_postman_id": "6a9f86a1-2bb3-4c68-a5c2-8f2f7d33e201",
+    "name": "TravelHub Payments-Reservations E2E",
+    "description": "Flujo E2E cross-service con escenario exitoso y escenario de error (pago confirmado sin actualizacion de reserva).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 - Health",
+      "item": [
+        {
+          "name": "Health - Reservations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Reservations health responde 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reservations_base_url}}/health",
+              "host": [
+                "{{reservations_base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Health - Payments",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Payments health responde 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{payments_base_url}}/health",
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "01 - Happy Path",
+      "item": [
+        {
+          "name": "Create Reservation - Pending",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const now = new Date();",
+                  "const checkIn = new Date(now.getTime() + (5 * 24 * 60 * 60 * 1000));",
+                  "const checkOut = new Date(now.getTime() + (8 * 24 * 60 * 60 * 1000));",
+                  "pm.collectionVariables.set('happy_reservation_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('happy_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('happy_property_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('happy_room_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('happy_check_in_date', checkIn.toISOString());",
+                  "pm.collectionVariables.set('happy_check_out_date', checkOut.toISOString());",
+                  "pm.collectionVariables.set('happy_idempotency_key', `e2e-happy-${Date.now()}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Creacion de reserva responde 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Reserva inicia en pending_payment', function () {",
+                  "  pm.expect(body.status).to.eql('pending_payment');",
+                  "});",
+                  "pm.collectionVariables.set('happy_reservation_id', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_traveler\": \"{{happy_traveler_id}}\",\n  \"id_property\": \"{{happy_property_id}}\",\n  \"id_room\": \"{{happy_room_id}}\",\n  \"check_in_date\": \"{{happy_check_in_date}}\",\n  \"check_out_date\": \"{{happy_check_out_date}}\",\n  \"number_of_guests\": 2,\n  \"currency\": \"COP\"\n}"
+            },
+            "url": {
+              "raw": "{{reservations_base_url}}/api/v1/reservations",
+              "host": [
+                "{{reservations_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Payment - Confirmed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Pago responde 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Pago queda confirmado', function () {",
+                  "  pm.expect(body.status).to.eql('confirmed');",
+                  "});",
+                  "pm.collectionVariables.set('happy_payment_id', body.payment_id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Forwarded-Proto",
+                "value": "https"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservation_id\": \"{{happy_reservation_id}}\",\n  \"traveler_id\": \"{{happy_traveler_id}}\",\n  \"payment_method_token\": \"pm_tok_visa_ok\",\n  \"amount_in_cents\": 125000,\n  \"currency\": \"COP\",\n  \"idempotency_key\": \"{{happy_idempotency_key}}\"\n}"
+            },
+            "url": {
+              "raw": "{{payments_base_url}}/api/v1/payments/charges",
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "charges"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Reservation - Confirmed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Consulta reserva responde 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Reserva queda confirmed', function () {",
+                  "  pm.expect(body.status).to.eql('confirmed');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reservations_base_url}}/api/v1/reservations/{{happy_reservation_id}}",
+              "host": [
+                "{{reservations_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservations",
+                "{{happy_reservation_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 - Error Path (Payment confirmed, reservation update failed)",
+      "item": [
+        {
+          "name": "Create Control Reservation - Pending",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const now = new Date();",
+                  "const checkIn = new Date(now.getTime() + (10 * 24 * 60 * 60 * 1000));",
+                  "const checkOut = new Date(now.getTime() + (12 * 24 * 60 * 60 * 1000));",
+                  "pm.collectionVariables.set('error_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('error_property_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('error_room_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('error_check_in_date', checkIn.toISOString());",
+                  "pm.collectionVariables.set('error_check_out_date', checkOut.toISOString());",
+                  "pm.collectionVariables.set('error_idempotency_key', `e2e-error-${Date.now()}`);",
+                  "pm.collectionVariables.set('error_missing_reservation_id', pm.variables.replaceIn('{{$randomUUID}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Reserva de control responde 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Reserva de control inicia pending_payment', function () {",
+                  "  pm.expect(body.status).to.eql('pending_payment');",
+                  "});",
+                  "pm.collectionVariables.set('error_control_reservation_id', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_traveler\": \"{{error_traveler_id}}\",\n  \"id_property\": \"{{error_property_id}}\",\n  \"id_room\": \"{{error_room_id}}\",\n  \"check_in_date\": \"{{error_check_in_date}}\",\n  \"check_out_date\": \"{{error_check_out_date}}\",\n  \"number_of_guests\": 2,\n  \"currency\": \"COP\"\n}"
+            },
+            "url": {
+              "raw": "{{reservations_base_url}}/api/v1/reservations",
+              "host": [
+                "{{reservations_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Payment for Missing Reservation - Still Confirmed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Pago responde 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Pago se confirma aunque falla update de reserva', function () {",
+                  "  pm.expect(body.status).to.eql('confirmed');",
+                  "});",
+                  "pm.collectionVariables.set('error_payment_id', body.payment_id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Forwarded-Proto",
+                "value": "https"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservation_id\": \"{{error_missing_reservation_id}}\",\n  \"traveler_id\": \"{{error_traveler_id}}\",\n  \"payment_method_token\": \"pm_tok_visa_ok\",\n  \"amount_in_cents\": 125000,\n  \"currency\": \"COP\",\n  \"idempotency_key\": \"{{error_idempotency_key}}\"\n}"
+            },
+            "url": {
+              "raw": "{{payments_base_url}}/api/v1/payments/charges",
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "charges"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Retry Reservation Confirmations - Expect Failed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Retry endpoint responde 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Existe al menos un item procesado en retry', function () {",
+                  "  pm.expect(body.processed_count).to.be.greaterThan(0);",
+                  "});",
+                  "pm.test('Existe al menos un fallo en retry por reserva inexistente', function () {",
+                  "  pm.expect(body.failed_count).to.be.greaterThan(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Internal-Api-Key",
+                "value": "{{internal_api_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{payments_base_url}}/api/v1/internal/reservation-confirmations/retry",
+              "host": [
+                "{{payments_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "internal",
+                "reservation-confirmations",
+                "retry"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Control Reservation Remains Pending",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Consulta reserva control responde 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Reserva control sigue pending_payment', function () {",
+                  "  pm.expect(body.status).to.eql('pending_payment');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{reservations_base_url}}/api/v1/reservations/{{error_control_reservation_id}}",
+              "host": [
+                "{{reservations_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reservations",
+                "{{error_control_reservation_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "reservations_base_url",
+      "value": "http://localhost:8002"
+    },
+    {
+      "key": "payments_base_url",
+      "value": "http://localhost:8003"
+    },
+    {
+      "key": "internal_api_key",
+      "value": "dev-internal-key-change-me"
+    }
+  ]
+}

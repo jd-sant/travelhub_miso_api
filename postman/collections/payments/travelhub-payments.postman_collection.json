@@ -57,7 +57,9 @@
               "script": {
                 "exec": [
                   "const suffix = Date.now();",
-                  "pm.collectionVariables.set('success_idempotency_key', `booking-success-${suffix}`);"
+                  "pm.collectionVariables.set('success_idempotency_key', `booking-success-${suffix}`);",
+                  "pm.collectionVariables.set('reservation_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));"
                 ],
                 "type": "text/javascript"
               }
@@ -229,7 +231,9 @@
               "script": {
                 "exec": [
                   "const suffix = Date.now();",
-                  "pm.collectionVariables.set('failure_idempotency_key', `booking-failure-${suffix}`);"
+                  "pm.collectionVariables.set('failure_idempotency_key', `booking-failure-${suffix}`);",
+                  "if (!pm.collectionVariables.get('reservation_id')) { pm.collectionVariables.set('reservation_id', pm.variables.replaceIn('{{$randomUUID}}')); }",
+                  "if (!pm.collectionVariables.get('traveler_id')) { pm.collectionVariables.set('traveler_id', pm.variables.replaceIn('{{$randomUUID}}')); }"
                 ],
                 "type": "text/javascript"
               }
@@ -536,7 +540,9 @@
               "script": {
                 "exec": [
                   "const suffix = Date.now();",
-                  "pm.collectionVariables.set('tls_failure_idempotency_key', `booking-tls-${suffix}`);"
+                  "pm.collectionVariables.set('tls_failure_idempotency_key', `booking-tls-${suffix}`);",
+                  "if (!pm.collectionVariables.get('reservation_id')) { pm.collectionVariables.set('reservation_id', pm.variables.replaceIn('{{$randomUUID}}')); }",
+                  "if (!pm.collectionVariables.get('traveler_id')) { pm.collectionVariables.set('traveler_id', pm.variables.replaceIn('{{$randomUUID}}')); }"
                 ],
                 "type": "text/javascript"
               }

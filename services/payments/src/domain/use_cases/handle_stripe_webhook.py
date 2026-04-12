@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from core.config import settings
@@ -10,7 +10,7 @@ from core.security import (
 )
 from domain.ports.payment_audit_repository import PaymentAuditRepository
 from domain.ports.payment_checkout_repository import PaymentCheckoutRepository
-from domain.ports.notification_dispatcher import NotificationDispatcher
+from domain.ports.notification_dispatcher import NotificationDispatcher, ReservationUpdater
 from domain.ports.payment_repository import PaymentRepository
 from domain.ports.stripe_checkout_gateway import StripeCheckoutGateway
 from domain.schemas.audit import PaymentAuditLogRecord
@@ -28,12 +28,14 @@ class HandleStripeWebhookUseCase(BaseUseCase[tuple[bytes, str], None]):
         audit_repository: PaymentAuditRepository,
         gateway: StripeCheckoutGateway,
         notification_dispatcher: NotificationDispatcher,
+        reservation_updater: ReservationUpdater,
     ):
         self.checkout_repository = checkout_repository
         self.payment_repository = payment_repository
         self.audit_repository = audit_repository
         self.gateway = gateway
         self.notification_dispatcher = notification_dispatcher
+        self.reservation_updater = reservation_updater
 
     def execute(
         self,
@@ -114,6 +116,11 @@ class HandleStripeWebhookUseCase(BaseUseCase[tuple[bytes, str], None]):
             )
         )
         if stored_payment.status == PaymentStatus.confirmed:
+            self._dispatch_reservation_confirmation_request(
+                reservation_id=stored_payment.reservation_id,
+                payment_id=stored_payment.payment_id,
+                source_ip=source_ip,
+            )
             self._dispatch_notification_request(stored_payment.payment_id, source_ip)
         session.payment_id = stored_payment.payment_id
         session.status = stored_payment.status.value
@@ -256,5 +263,55 @@ class HandleStripeWebhookUseCase(BaseUseCase[tuple[bytes, str], None]):
                     ip_address=source_ip,
                     payload={"error": str(exc)},
                     created_at=datetime.now(timezone.utc),
+                )
+            )
+
+    def _dispatch_reservation_confirmation_request(
+        self,
+        reservation_id,
+        payment_id,
+        source_ip: str | None,
+    ) -> None:
+        try:
+            self.reservation_updater.confirm_reservation(
+                reservation_id=reservation_id,
+                source_ip=source_ip,
+            )
+            self.audit_repository.add_log(
+                PaymentAuditLogRecord(
+                    payment_id=payment_id,
+                    entity_type="payment",
+                    entity_id=str(payment_id),
+                    action="reservation.confirmation.requested",
+                    ip_address=source_ip,
+                    payload={
+                        "reservation_id": str(reservation_id),
+                        "dispatch_status": "requested",
+                    },
+                    created_at=datetime.now(timezone.utc),
+                )
+            )
+        except Exception as exc:  # noqa: BLE001
+            now = datetime.now(timezone.utc)
+            self.payment_repository.upsert_reservation_confirmation_outbox_failure(
+                payment_id=payment_id,
+                reservation_id=reservation_id,
+                error_message=str(exc),
+                next_retry_at=now,
+                max_attempts=settings.reservation_confirmation_retry_max_attempts,
+            )
+            self.audit_repository.add_log(
+                PaymentAuditLogRecord(
+                    payment_id=payment_id,
+                    entity_type="payment",
+                    entity_id=str(payment_id),
+                    action="reservation.confirmation.dispatch_failed",
+                    ip_address=source_ip,
+                    payload={
+                        "reservation_id": str(reservation_id),
+                        "error": str(exc),
+                        "queued_for_retry": True,
+                    },
+                    created_at=now,
                 )
             )

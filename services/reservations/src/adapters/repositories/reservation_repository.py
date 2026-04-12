@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
@@ -33,7 +33,12 @@ class SQLModelReservationRepository(ReservationRepository):
     def __init__(self, session: Session):
         self.session = session
 
-    def add(self, payload: ReservationCreateRequest, total_price: Decimal) -> ReservationResponse:
+    def add(
+        self,
+        payload: ReservationCreateRequest,
+        total_price: Decimal,
+        reservation_id: UUID | None = None,
+    ) -> ReservationResponse:
         # Verificar disponibilidad antes de crear
         if not self.check_room_availability(
             payload.id_room, payload.check_in_date, payload.check_out_date
@@ -43,6 +48,7 @@ class SQLModelReservationRepository(ReservationRepository):
             )
 
         reservation = Reservation(
+            id=reservation_id or uuid4(),
             id_traveler=payload.id_traveler,
             id_property=payload.id_property,
             id_room=payload.id_room,

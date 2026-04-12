@@ -13,7 +13,14 @@ from adapters.models.payment_audit_log import PaymentAuditLog
 from adapters.models.payment_checkout_session import PaymentCheckoutSession
 from adapters.models.payment import Payment
 from adapters.models.payment_event import PaymentEvent
-from assembly import get_notification_dispatcher, get_stripe_checkout_gateway
+from adapters.models.payment_reservation_confirmation_outbox import (
+    PaymentReservationConfirmationOutbox,
+)
+from assembly import (
+    get_notification_dispatcher,
+    get_reservation_updater,
+    get_stripe_checkout_gateway,
+)
 from core.config import settings
 from core.security import build_request_checksum, hash_token
 from db.session import get_session
@@ -83,6 +90,17 @@ class FakeNotificationDispatcher:
             raise RuntimeError("notifications unavailable")
 
 
+class FakeReservationUpdater:
+    def __init__(self, should_fail: bool = False):
+        self.should_fail = should_fail
+        self.calls = []
+
+    def confirm_reservation(self, *, reservation_id, source_ip=None):
+        self.calls.append({"reservation_id": reservation_id, "source_ip": source_ip})
+        if self.should_fail:
+            raise RuntimeError("reservations unavailable")
+
+
 def _build_app(test_engine):
     app = create_application()
 
@@ -142,6 +160,8 @@ def client(test_engine):
     with Session(test_engine) as session:
         for audit_log in session.exec(select(PaymentAuditLog)).all():
             session.delete(audit_log)
+        for outbox_item in session.exec(select(PaymentReservationConfirmationOutbox)).all():
+            session.delete(outbox_item)
         for checkout_session in session.exec(select(PaymentCheckoutSession)).all():
             session.delete(checkout_session)
         for event in session.exec(select(PaymentEvent)).all():
@@ -216,6 +236,7 @@ def test_create_payment_success_generates_receipt_and_events(client, test_engine
     }
     assert {log.action for log in stored_audit_logs} == {
         "payment.charge.confirmed",
+        "reservation.confirmation.requested",
         "notification.payment_confirmation.requested",
     }
 
@@ -249,6 +270,17 @@ def test_create_payment_success_dispatches_notification_request(client):
     assert str(dispatcher.calls[0]["payment_id"]) == response.json()["payment_id"]
 
 
+def test_create_payment_success_dispatches_reservation_confirmation(client):
+    updater = FakeReservationUpdater()
+    client.app.dependency_overrides[get_reservation_updater] = lambda: updater
+
+    response = client.post("/api/v1/payments/charges", json=_payload(), headers=SECURE_HEADERS)
+
+    assert response.status_code == 201
+    assert len(updater.calls) == 1
+    assert str(updater.calls[0]["reservation_id"]) == response.json()["reservation_id"]
+
+
 def test_create_payment_success_does_not_fail_when_notification_dispatch_fails(client, test_engine):
     dispatcher = FakeNotificationDispatcher(should_fail=True)
     client.app.dependency_overrides[get_notification_dispatcher] = lambda: dispatcher
@@ -263,6 +295,70 @@ def test_create_payment_success_does_not_fail_when_notification_dispatch_fails(c
     assert "notification.payment_confirmation.dispatch_failed" in {
         log.action for log in stored_audit_logs
     }
+
+
+def test_create_payment_success_does_not_fail_when_reservation_update_fails(client, test_engine):
+    updater = FakeReservationUpdater(should_fail=True)
+    client.app.dependency_overrides[get_reservation_updater] = lambda: updater
+
+    response = client.post("/api/v1/payments/charges", json=_payload(), headers=SECURE_HEADERS)
+
+    assert response.status_code == 201
+
+    with Session(test_engine) as session:
+        stored_audit_logs = session.exec(select(PaymentAuditLog)).all()
+        outbox_items = session.exec(select(PaymentReservationConfirmationOutbox)).all()
+
+    assert "reservation.confirmation.dispatch_failed" in {
+        log.action for log in stored_audit_logs
+    }
+    assert len(outbox_items) == 1
+    assert outbox_items[0].status == "pending"
+    assert outbox_items[0].attempt_count == 1
+
+
+def test_retry_reservation_confirmations_processes_pending_outbox(client, test_engine):
+    failing_updater = FakeReservationUpdater(should_fail=True)
+    client.app.dependency_overrides[get_reservation_updater] = lambda: failing_updater
+
+    create_response = client.post("/api/v1/payments/charges", json=_payload(), headers=SECURE_HEADERS)
+
+    assert create_response.status_code == 201
+
+    with Session(test_engine) as session:
+        outbox_item = session.exec(select(PaymentReservationConfirmationOutbox)).first()
+
+    assert outbox_item is not None
+    assert outbox_item.status == "pending"
+
+    success_updater = FakeReservationUpdater(should_fail=False)
+    client.app.dependency_overrides[get_reservation_updater] = lambda: success_updater
+
+    retry_response = client.post(
+        "/api/v1/internal/reservation-confirmations/retry",
+        headers={"X-Internal-Api-Key": settings.internal_api_key},
+    )
+
+    assert retry_response.status_code == 200
+    body = retry_response.json()
+    assert body["processed_count"] == 1
+    assert body["succeeded_count"] == 1
+    assert body["failed_count"] == 0
+
+    with Session(test_engine) as session:
+        updated_outbox = session.exec(select(PaymentReservationConfirmationOutbox)).first()
+
+    assert updated_outbox is not None
+    assert updated_outbox.status == "succeeded"
+
+
+def test_retry_reservation_confirmations_requires_internal_api_key(client):
+    response = client.post(
+        "/api/v1/internal/reservation-confirmations/retry",
+        headers={"X-Internal-Api-Key": "invalid-key"},
+    )
+
+    assert response.status_code == 403
 
 
 def test_create_payment_card_declined_returns_clear_reason(client):
