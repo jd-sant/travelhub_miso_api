@@ -443,7 +443,7 @@
     },
     {
       "key": "internal_api_key",
-      "value": "dev-internal-key-change-me"
+      "value": "travelhub-internal-secret-key"
     }
   ]
 }
