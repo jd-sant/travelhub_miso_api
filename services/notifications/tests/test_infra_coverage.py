@@ -58,6 +58,11 @@ class _Runner:
         return None
 
 
+def _create_app_without_db_startup(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("SKIP_DB_INIT_ON_STARTUP", "true")
+    return create_application()
+
+
 @pytest.mark.parametrize(
     "exc, expected_status",
     [
@@ -66,12 +71,12 @@ class _Runner:
         (PaymentConfirmationUnavailableError("downstream"), 503),
     ],
 )
-def test_internal_router_maps_domain_errors_to_http(exc, expected_status):
+def test_internal_router_maps_domain_errors_to_http(monkeypatch, exc, expected_status):
     class _FailingUseCase:
         def execute(self, _payload):
             raise exc
 
-    app = create_application()
+    app = _create_app_without_db_startup(monkeypatch)
     app.dependency_overrides[get_create_payment_confirmation_use_case] = lambda: _FailingUseCase()
     app.dependency_overrides[get_notification_delivery_runner] = lambda: _Runner()
 
@@ -85,8 +90,8 @@ def test_internal_router_maps_domain_errors_to_http(exc, expected_status):
     assert response.status_code == expected_status
 
 
-def test_internal_router_schedules_background_task_for_pending_notification():
-    app = create_application()
+def test_internal_router_schedules_background_task_for_pending_notification(monkeypatch):
+    app = _create_app_without_db_startup(monkeypatch)
     app.dependency_overrides[get_create_payment_confirmation_use_case] = lambda: _SuccessUseCase()
     app.dependency_overrides[get_notification_delivery_runner] = lambda: _Runner()
 

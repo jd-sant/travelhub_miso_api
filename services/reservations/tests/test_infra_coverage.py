@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from uuid import uuid4
@@ -174,8 +175,7 @@ def test_settings_validate_scheduler_config(monkeypatch):
     settings.validate_scheduler_config()
 
 
-@pytest.mark.asyncio
-async def test_lifespan_invokes_bootstrap_hooks(monkeypatch):
+def test_lifespan_invokes_bootstrap_hooks(monkeypatch):
     called = {"db": 0, "validate": 0}
 
     monkeypatch.setattr(main_module, "create_db_and_tables", lambda: called.__setitem__("db", called["db"] + 1))
@@ -185,7 +185,10 @@ async def test_lifespan_invokes_bootstrap_hooks(monkeypatch):
         SimpleNamespace(validate_scheduler_config=lambda: called.__setitem__("validate", called["validate"] + 1), allowed_cors_origins=["http://localhost:3000"]),
     )
 
-    async with main_module.lifespan(main_module.app):
-        pass
+    async def _run_lifespan() -> None:
+        async with main_module.lifespan(main_module.app):
+            pass
+
+    asyncio.run(_run_lifespan())
 
     assert called == {"db": 1, "validate": 1}
