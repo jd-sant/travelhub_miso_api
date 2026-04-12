@@ -119,10 +119,10 @@ class TestCriteriosDeAceptacion:
         errors: list[str] = []
 
         def run(idx: int) -> float:
-            use_case = search_use_case_factory()
+            runner = search_use_case_factory()
             query = SEARCH_QUERIES[idx % len(SEARCH_QUERIES)]
             start = time.perf_counter()
-            use_case.execute(query)
+            runner(query)
             return (time.perf_counter() - start) * 1000
 
         with ThreadPoolExecutor(max_workers=100) as pool:
@@ -157,7 +157,7 @@ class TestCriteriosDeAceptacion:
         errors = 0
 
         def run_one(idx: int):
-            return search_use_case_factory().execute(SEARCH_QUERIES[idx % len(SEARCH_QUERIES)])
+            return search_use_case_factory()(SEARCH_QUERIES[idx % len(SEARCH_QUERIES)])
 
         with ThreadPoolExecutor(max_workers=20) as pool:
             futures = [pool.submit(run_one, i) for i in range(total)]

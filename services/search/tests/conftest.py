@@ -77,9 +77,8 @@ def search_use_case(search_repository):
 @pytest.fixture
 def search_use_case_factory():
     """
-    Returns a callable that creates a fresh SearchPropertiesUseCase with its own Session.
-    Required for multi-threaded performance tests: SQLite StaticPool is not thread-safe
-    when a single Session is shared across threads.
+    Returns a callable for performance tests.
+    Each invocation opens and closes its own Session to avoid leaks in concurrent runs.
     """
     from db.session import engine
     from adapters.repositories import SQLModelSearchRepository
@@ -87,8 +86,12 @@ def search_use_case_factory():
     from sqlmodel import Session
 
     def _factory():
-        session = Session(engine)
-        repo = SQLModelSearchRepository(session)
-        return SearchPropertiesUseCase(repo)
+        def run_search(payload):
+            with Session(engine) as session:
+                repo = SQLModelSearchRepository(session)
+                use_case = SearchPropertiesUseCase(repo)
+                return use_case.execute(payload)
+
+        return run_search
 
     return _factory
