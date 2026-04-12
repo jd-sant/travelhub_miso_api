@@ -20,16 +20,22 @@ from domain.schemas.search import PropertySearchItem, SearchQuery, SearchResult
 logger = logging.getLogger(__name__)
 
 
+def _normalize_decimal(value: Decimal | None) -> str:
+    if value is None:
+        return ""
+    return format(value.normalize(), "f")
+
+
 def _make_cache_key(query: SearchQuery) -> str:
     """Deterministic, normalized cache key from all query parameters."""
-    amenities_key = ",".join(sorted(a.strip().lower() for a in query.amenities))
+    amenities_key = ",".join(sorted({a.strip().lower() for a in query.amenities if a.strip()}))
     return (
         f"search:"
         f"{query.city.strip().lower()}:"
         f"{query.check_in}:{query.check_out}:"
         f"{query.guests}:"
         f"{amenities_key}:"
-        f"{query.min_price}:{query.max_price}:"
+        f"{_normalize_decimal(query.min_price)}:{_normalize_decimal(query.max_price)}:"
         f"{query.order_by.lower()}:{query.order_dir.lower()}:"
         f"{query.page}:{query.page_size}"
     )

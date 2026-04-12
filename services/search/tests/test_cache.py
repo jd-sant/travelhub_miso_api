@@ -1,5 +1,6 @@
 """Tests for cache layer: correctness, hit/miss, silent failure, key generation."""
 from datetime import date
+from decimal import Decimal
 from unittest.mock import MagicMock
 
 import pytest
@@ -32,6 +33,16 @@ class TestMakeCacheKey:
     def test_amenities_order_independent(self):
         q1 = make_query(amenities=["wifi", "pool"])
         q2 = make_query(amenities=["pool", "wifi"])
+        assert _make_cache_key(q1) == _make_cache_key(q2)
+
+    def test_amenities_duplicates_do_not_change_key(self):
+        q1 = make_query(amenities=["wifi", "wifi", "pool"])
+        q2 = make_query(amenities=["pool", "wifi"])
+        assert _make_cache_key(q1) == _make_cache_key(q2)
+
+    def test_decimal_filters_are_normalized(self):
+        q1 = make_query(min_price=Decimal("1"), max_price=Decimal("10.00"))
+        q2 = make_query(min_price=Decimal("1.0"), max_price=Decimal("10"))
         assert _make_cache_key(q1) == _make_cache_key(q2)
 
     def test_different_city_different_key(self):
