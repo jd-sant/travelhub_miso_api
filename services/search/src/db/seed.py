@@ -20,38 +20,42 @@ from db.session import engine
 PROPERTY_SEED_SPECS = (
     {
         "id": UUID("11111111-1111-1111-1111-111111111111"),
-        "name": "Mansion Renacentista E2E",
+        "name": "Mansión Renacentista & Viñedo Privado",
         "city": "Bogota",
-        "capacity": 4,
-        "rating": 4.9,
-        "base_price": Decimal("125.00"),
+        "capacity": 12,
+        "rating": 4.98,
+        "base_price": Decimal("1240.00"),
+        "currency": "COP",
         "amenities": ("wifi", "pool", "gym", "spa"),
     },
     {
         "id": UUID("22222222-2222-2222-2222-222222222222"),
-        "name": "Penthouse Playa E2E",
+        "name": "Penthouse Moderno Frente a la Playa",
         "city": "Cartagena",
-        "capacity": 3,
-        "rating": 4.8,
-        "base_price": Decimal("145.00"),
+        "capacity": 8,
+        "rating": 4.87,
+        "base_price": Decimal("2150.00"),
+        "currency": "USD",
         "amenities": ("wifi", "pool", "parking", "air_conditioning"),
     },
     {
         "id": UUID("33333333-3333-3333-3333-333333333333"),
-        "name": "Refugio Alpino E2E",
+        "name": "Refugio Alpino de Montaña",
         "city": "Cali",
-        "capacity": 5,
-        "rating": 4.7,
-        "base_price": Decimal("110.00"),
+        "capacity": 14,
+        "rating": 4.92,
+        "base_price": Decimal("890.00"),
+        "currency": "EUR",
         "amenities": ("wifi", "gym", "pet_friendly", "breakfast_included"),
     },
     {
         "id": UUID("44444444-4444-4444-4444-444444444444"),
-        "name": "Villa Tropical E2E",
+        "name": "Villa Paraíso Tropical",
         "city": "Santa Marta",
-        "capacity": 6,
-        "rating": 4.6,
-        "base_price": Decimal("135.00"),
+        "capacity": 10,
+        "rating": 4.99,
+        "base_price": Decimal("1650.00"),
+        "currency": "USD",
         "amenities": ("wifi", "pool", "breakfast_included", "air_conditioning"),
     },
 )
@@ -110,10 +114,9 @@ def _build_local_seed_image_url(idx: int) -> str:
 
 
 def _build_seed_price(base_price: Decimal, seed_day: date) -> Decimal:
-    # Keep prices in a practical E2E range for filters (e.g. max_price=200).
-    seasonality = Decimal((seed_day.month % 4) * 3)  # 0..9
-    intra_window = Decimal((seed_day.day - 10) * 2)  # 0..12 for days 10..16
-    return base_price + seasonality + intra_window
+    # Keep nightly price consistent with Properties service for E2E checks.
+    _ = seed_day
+    return base_price
 
 
 def _clear_search_dataset(session: Session) -> None:
@@ -129,6 +132,46 @@ def _clear_search_dataset(session: Session) -> None:
     session.commit()
 
 
+def _has_seed_metadata_drift(session: Session) -> bool:
+    properties = session.exec(select(Property)).all()
+    property_by_id = {prop.id: prop for prop in properties}
+
+    room_types = session.exec(select(RoomType)).all()
+    room_type_by_property = {rt.property_id: rt for rt in room_types}
+
+    rate_plans = session.exec(select(RatePlan)).all()
+    rate_plan_by_room_type = {rp.room_type_id: rp for rp in rate_plans}
+
+    for spec in PROPERTY_SEED_SPECS:
+        prop = property_by_id.get(spec["id"])
+        if prop is None:
+            return True
+
+        if prop.name != spec["name"]:
+            return True
+        if prop.city != spec["city"]:
+            return True
+        if int(prop.max_capacity) != int(spec["capacity"]):
+            return True
+        if abs(float(prop.rating or 0.0) - float(spec["rating"])) > 1e-9:
+            return True
+
+        room_type = room_type_by_property.get(spec["id"])
+        if room_type is None:
+            return True
+
+        rate_plan = rate_plan_by_room_type.get(room_type.id)
+        if rate_plan is None:
+            return True
+
+        if rate_plan.currency != spec["currency"]:
+            return True
+        if Decimal(rate_plan.base_price) != Decimal(spec["base_price"]):
+            return True
+
+    return False
+
+
 def seed_dummy_data_if_needed() -> None:
     if not _is_seed_enabled():
         return
@@ -142,9 +185,15 @@ def seed_dummy_data_if_needed() -> None:
             inventory_rows = session.exec(select(func.count()).select_from(InventoryCalendar)).one()
             rate_rows = session.exec(select(func.count()).select_from(RateCalendar)).one()
             expected_rows = TARGET_PROPERTY_COUNT * len(SEED_DATES)
+            metadata_drift = _has_seed_metadata_drift(session)
 
             # If existing local data does not match canonical IDs or date coverage, reset and reseed.
-            if existing_ids != fixed_ids or inventory_rows != expected_rows or rate_rows != expected_rows:
+            if (
+                existing_ids != fixed_ids
+                or inventory_rows != expected_rows
+                or rate_rows != expected_rows
+                or metadata_drift
+            ):
                 _clear_search_dataset(session)
                 current_count = 0
 
@@ -200,7 +249,7 @@ def seed_dummy_data_if_needed() -> None:
                     room_type_id=room_type_id,
                     name="Flexible Rate",
                     description="Cancelable up to 24h before check-in",
-                    currency="USD",
+                    currency=spec["currency"],
                     base_price=base_price,
                     is_active=True,
                 )
