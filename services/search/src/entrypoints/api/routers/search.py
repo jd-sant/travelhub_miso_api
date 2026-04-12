@@ -1,10 +1,13 @@
 from datetime import date
 from decimal import Decimal
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from redis import Redis
 from sqlmodel import Session, select
 
-from assembly import get_search_properties_use_case
+from assembly import build_cache, get_search_properties_use_case
+from db.redis import get_redis_client
 from adapters.models import Amenity
 from adapters.models import InventoryCalendar
 from adapters.models import Property
@@ -52,8 +55,10 @@ def search_properties(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=100),
     session: Session = Depends(get_session),
+    redis: Optional[Redis] = Depends(get_redis_client),
 ) -> SearchResponse:
-    use_case: SearchPropertiesUseCase = get_search_properties_use_case(session)
+    cache = build_cache(redis)
+    use_case: SearchPropertiesUseCase = get_search_properties_use_case(session, cache)
 
     try:
         query = SearchQuery(

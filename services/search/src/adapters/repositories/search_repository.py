@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import Optional
 
 from sqlalchemy import and_, asc, desc, func
 from sqlmodel import Session, select
@@ -10,15 +11,46 @@ from adapters.models import PropertyAmenity
 from adapters.models import RateCalendar
 from adapters.models import RatePlan
 from adapters.models import RoomType
+from domain.ports.cache_port import CachePort
 from domain.ports.search_repository import SearchRepository
 from domain.schemas.search import PropertySearchItem, SearchQuery, SearchResult
 
 
+def _make_cache_key(query: SearchQuery) -> str:
+    """Deterministic, normalized cache key from all query parameters."""
+    amenities_key = ",".join(sorted(a.strip().lower() for a in query.amenities))
+    return (
+        f"search:"
+        f"{query.city.strip().lower()}:"
+        f"{query.check_in}:{query.check_out}:"
+        f"{query.guests}:"
+        f"{amenities_key}:"
+        f"{query.min_price}:{query.max_price}:"
+        f"{query.order_by.lower()}:{query.order_dir.lower()}:"
+        f"{query.page}:{query.page_size}"
+    )
+
+
 class SQLModelSearchRepository(SearchRepository):
-    def __init__(self, session: Session):
+    def __init__(self, session: Session, cache: Optional[CachePort] = None):
         self.session = session
+        self._cache = cache
 
     def search(self, query: SearchQuery) -> SearchResult:
+        if self._cache is not None:
+            key = _make_cache_key(query)
+            cached = self._cache.get(key)
+            if cached is not None:
+                return SearchResult.model_validate(cached)
+
+        result = self._search_from_db(query)
+
+        if self._cache is not None:
+            self._cache.set(key, result.model_dump(mode="json"), ttl=self._cache._ttl)
+
+        return result
+
+    def _search_from_db(self, query: SearchQuery) -> SearchResult:
         nights = (query.check_out - query.check_in).days
         if nights <= 0:
             return SearchResult(
@@ -165,3 +197,4 @@ class SQLModelSearchRepository(SearchRepository):
             page=query.page,
             page_size=query.page_size,
         )
+
