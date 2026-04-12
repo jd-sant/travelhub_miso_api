@@ -12,8 +12,6 @@ services:
       - ./init-schemas.sql:/docker-entrypoint-initdb.d/init-schemas.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U travelhub_user -d travelhub"]
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U travelhub_user -d travelhub"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -21,7 +19,6 @@ services:
   users:
     build:
       context: ./services/users
-    environment:
     environment:
       PYTHONPATH: /app/src
       RDS_HOSTNAME: postgres
@@ -33,10 +30,6 @@ services:
       DB_ECHO: "False"
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
     ports:
-      - "8000:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
       - "8000:8000"
     depends_on:
       postgres:
