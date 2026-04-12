@@ -122,3 +122,23 @@ class TestSearchRepositoryCacheCorrectness:
         query = make_query()
         result = search_repository.search(query)
         assert result is not None
+
+
+class TestSearchRepositoryMalformedCache:
+
+    def test_malformed_cache_is_treated_as_miss_and_deleted(
+        self, search_repository, fake_redis
+    ):
+        query = make_query()
+        key = _make_cache_key(query)
+        fake_redis.set(key, '{"total": 1, "page": 1, "page_size": 10}')
+
+        cache = RedisCache(fake_redis, ttl=300)
+        delete_spy = MagicMock(wraps=cache.delete)
+        cache.delete = delete_spy
+        repo = type(search_repository)(search_repository.session, cache)
+
+        result = repo.search(query)
+
+        assert result is not None
+        delete_spy.assert_called_once_with(key)

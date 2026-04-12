@@ -1,8 +1,10 @@
 from decimal import Decimal
+import logging
 from typing import Optional
 
 from sqlalchemy import and_, asc, desc, func
 from sqlmodel import Session, select
+from pydantic import ValidationError
 
 from adapters.models import Amenity
 from adapters.models import InventoryCalendar
@@ -14,6 +16,8 @@ from adapters.models import RoomType
 from domain.ports.cache_port import CachePort
 from domain.ports.search_repository import SearchRepository
 from domain.schemas.search import PropertySearchItem, SearchQuery, SearchResult
+
+logger = logging.getLogger(__name__)
 
 
 def _make_cache_key(query: SearchQuery) -> str:
@@ -37,15 +41,23 @@ class SQLModelSearchRepository(SearchRepository):
         self._cache = cache
 
     def search(self, query: SearchQuery) -> SearchResult:
+        key = None
         if self._cache is not None:
             key = _make_cache_key(query)
             cached = self._cache.get(key)
             if cached is not None:
-                return SearchResult.model_validate(cached)
+                try:
+                    return SearchResult.model_validate(cached)
+                except ValidationError as exc:
+                    logger.warning("Invalid cached search result for %s: %s", key, exc)
+                    try:
+                        self._cache.delete(key)
+                    except Exception as delete_exc:
+                        logger.warning("Failed to delete invalid cached search result for %s: %s", key, delete_exc)
 
         result = self._search_from_db(query)
 
-        if self._cache is not None:
+        if self._cache is not None and key is not None:
             self._cache.set(key, result.model_dump(mode="json"), ttl=self._cache.get_ttl())
 
         return result

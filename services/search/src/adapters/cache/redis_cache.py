@@ -39,5 +39,12 @@ class RedisCache(CachePort):
         except (RedisError, TypeError) as exc:
             logger.warning("Redis SET failed for %s: %s", key, exc)
 
+    def delete(self, key: str) -> None:
+        try:
+            self._client.delete(key)
+            logger.debug("cache delete: %s", key)
+        except RedisError as exc:
+            logger.warning("Redis DELETE failed for %s: %s", key, exc)
+
     def get_ttl(self) -> int:
         return self._ttl
