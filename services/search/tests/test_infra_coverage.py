@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import importlib.util
+from pathlib import Path
 from datetime import date
 from decimal import Decimal
 from types import SimpleNamespace
@@ -11,7 +13,13 @@ from db import session as session_module
 from domain.schemas import SearchQuery
 from entrypoints.api.routers import search as search_router
 from errors import InvalidSearchRuleError
-from tests import test_performance as perf_module
+
+
+_PERF_MODULE_PATH = Path(__file__).with_name("test_performance.py")
+_PERF_SPEC = importlib.util.spec_from_file_location("search_test_performance", _PERF_MODULE_PATH)
+assert _PERF_SPEC is not None and _PERF_SPEC.loader is not None
+perf_module = importlib.util.module_from_spec(_PERF_SPEC)
+_PERF_SPEC.loader.exec_module(perf_module)
 
 
 def test_search_router_rule_validations_and_pagination():
