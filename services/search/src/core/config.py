@@ -81,6 +81,30 @@ class Settings:
     def cors_allow_credentials(self) -> bool:
         return os.getenv("CORS_ALLOW_CREDENTIALS", "false").lower() == "true"
 
+    @property
+    def redis_host(self) -> str:
+        return os.getenv("REDIS_HOST", "localhost")
+
+    @property
+    def redis_port(self) -> int:
+        return int(os.getenv("REDIS_PORT", "6379"))
+
+    @property
+    def redis_db(self) -> int:
+        return int(os.getenv("REDIS_DB", "0"))
+
+    @property
+    def redis_cache_enabled(self) -> bool:
+        return os.getenv("REDIS_CACHE_ENABLED", "true").lower() == "true"
+
+    @property
+    def redis_cache_ttl_seconds(self) -> int:
+        return int(os.getenv("REDIS_CACHE_TTL_SECONDS", "300"))
+
+    @property
+    def redis_connection_pool_size(self) -> int:
+        return int(os.getenv("REDIS_CONNECTION_POOL_SIZE", "10"))
+
 
 @lru_cache
 def get_settings() -> Settings:
