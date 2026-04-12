@@ -17,7 +17,22 @@ from core.config import settings
 from db.session import engine
 
 TARGET_PROPERTY_COUNT = 1000
-SEED_DATES = (date(2026, 4, 10), date(2026, 4, 11))
+
+
+def _build_seed_dates() -> tuple[date, ...]:
+    """
+    Build contiguous availability windows across several months.
+    We seed days 10-16 for each month from April to December 2026 so
+    short stays (e.g. 10->12) work consistently in each month.
+    """
+    days: list[date] = []
+    for month in range(4, 13):
+        for day in range(10, 17):
+            days.append(date(2026, month, day))
+    return tuple(days)
+
+
+SEED_DATES = _build_seed_dates()
 
 AMENITY_CATALOG = [
     ("wifi", "connectivity"),
@@ -47,6 +62,12 @@ def _is_seed_enabled() -> bool:
     if db_url.startswith("postgresql") and settings.is_local_dev:
         return True
     return False
+
+
+def _build_local_seed_image_url(idx: int) -> str:
+    # Local generic image path to avoid external URL dependency.
+    variant = ((idx - 1) % 24) + 1
+    return f"/assets/seed-images/hotel-{variant:02d}.jpg"
 
 
 def seed_dummy_data_if_needed() -> None:
@@ -80,7 +101,7 @@ def seed_dummy_data_if_needed() -> None:
                     description="Dummy property for local Postman and API tests.",
                     is_active=True,
                     max_capacity=capacity,
-                    main_image_url=f"https://cdn.example.com/hotel-{idx:02d}.jpg",
+                    main_image_url=_build_local_seed_image_url(idx),
                     rating=rating,
                 )
             )

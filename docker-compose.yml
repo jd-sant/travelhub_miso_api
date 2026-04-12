@@ -88,7 +88,7 @@ services:
       DB_ECHO: "False"
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
     ports:
-      - "8002:8002"
+      - "8002:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -113,7 +113,7 @@ services:
       PAYMENT_INTEGRITY_SECRET: ${PAYMENT_INTEGRITY_SECRET:-travelhub-payments-secret-change-in-prod}
       PAYMENTS_DATA_ENCRYPTION_KEY: ${PAYMENTS_DATA_ENCRYPTION_KEY:-dev-payments-encryption-key-change-me}
       NOTIFICATIONS_SERVICE_URL: http://notifications:8000
-      RESERVATIONS_SERVICE_URL: http://reservations:8002
+      RESERVATIONS_SERVICE_URL: http://reservations:8000
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
@@ -182,7 +182,7 @@ services:
       REDIS_PORT: "6379"
       REDIS_CACHE_ENABLED: "true"
     ports:
-      - "8006:8003"
+      - "8006:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -190,7 +190,7 @@ services:
         condition: service_healthy
 
   redis:
-    image: redis:7-alpine
+    image: public.ecr.aws/docker/library/redis:7-alpine
     ports:
       - "127.0.0.1:6379:6379"
     healthcheck:
