@@ -10,26 +10,26 @@ phases:
       - python3.11 --version
 
       - echo Installing dependencies...
-      - pip install -r services/properties/requirements.txt
+      - pip install -r services/search/requirements.txt
 
   build:
     commands:
       - echo Build started on `date`
 
       - echo Running tests...
-      - PYTHONPATH=services/properties/src pytest services/properties/tests/ -v --tb=short
+      - PYTHONPATH=services/search/src pytest services/search/tests/ -v --tb=short
 
       - echo Building Docker image...
-      - docker build -t travelhub-properties services/properties/
-      - docker tag travelhub-properties:latest $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/travelhub-properties:latest
+      - docker build -t travelhub-search services/search/
+      - docker tag travelhub-search:latest $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/travelhub-search:latest
 
   post_build:
     commands:
       - echo Build completed on `date`
       - echo Pushing Docker image...
-      - docker push $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/travelhub-properties:latest
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/travelhub-search:latest
       - echo Writing Image Definitions file...
-      - printf '[{"name":"properties","imageUri":"%s.dkr.ecr.us-east-1.amazonaws.com/travelhub-properties:latest"}]' $AWS_ACCOUNT_ID > imagedefinitions.json
+      - printf '[{"name":"search","imageUri":"%s.dkr.ecr.us-east-1.amazonaws.com/travelhub-search:latest"}]' $AWS_ACCOUNT_ID > imagedefinitions.json
 
 artifacts:
   files:
