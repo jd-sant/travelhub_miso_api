@@ -29,7 +29,22 @@ jobs:
               core.setFailed("La descripcion del PR es obligatoria y no puede estar vacia.");
             }
 
+  validate-service-ci-mapping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Validate service-to-CI mapping
+        run: python .github/scripts/validate_pr_ci_mapping.py
+
   detect-changes:
+    needs: [validate-service-ci-mapping]
     runs-on: ubuntu-latest
     outputs:
       users: ${{ steps.filter.outputs.users }}
@@ -38,6 +53,7 @@ jobs:
       payments: ${{ steps.filter.outputs.payments }}
       notifications: ${{ steps.filter.outputs.notifications }}
       properties: ${{ steps.filter.outputs.properties }}
+      search: ${{ steps.filter.outputs.search }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -56,6 +72,8 @@ jobs:
               - 'services/notifications/**'
             properties:
               - 'services/properties/**'
+            search:
+              - 'services/search/**'
 
   test-users:
     needs: [validate-pr-description, detect-changes]
@@ -197,10 +215,30 @@ jobs:
       - name: Run properties tests
         run: PYTHONPATH=services/properties/src pytest services/properties/tests/ -v
 
+  test-search:
+    needs: [validate-pr-description, detect-changes]
+    if: needs.detect-changes.outputs.search == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r services/search/requirements.txt
+
+      - name: Run search tests
+        run: PYTHONPATH=services/search/src pytest services/search/tests/ -v
+
   tests:
     name: tests
     needs:
       - validate-pr-description
+      - validate-service-ci-mapping
       - detect-changes
       - test-users
       - test-security
@@ -208,12 +246,14 @@ jobs:
       - test-reservations
       - test-notifications
       - test-properties
+      - test-search
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Validate aggregate status
         run: |
           echo "validate-pr-description: ${{ needs.validate-pr-description.result }}"
+          echo "validate-service-ci-mapping: ${{ needs.validate-service-ci-mapping.result }}"
           echo "detect-changes: ${{ needs.detect-changes.result }}"
           echo "test-users: ${{ needs.test-users.result }}"
           echo "test-security: ${{ needs.test-security.result }}"
@@ -221,9 +261,15 @@ jobs:
           echo "test-reservations: ${{ needs.test-reservations.result }}"
           echo "test-notifications: ${{ needs.test-notifications.result }}"
           echo "test-properties: ${{ needs.test-properties.result }}"
+          echo "test-search: ${{ needs.test-search.result }}"
 
           if [[ "${{ needs.validate-pr-description.result }}" != "success" ]]; then
             echo "La validacion de descripcion de PR no fue exitosa"
+            exit 1
+          fi
+
+          if [[ "${{ needs.validate-service-ci-mapping.result }}" != "success" ]]; then
+            echo "La validacion del mapeo servicio-CI no fue exitosa"
             exit 1
           fi
 
@@ -254,6 +300,11 @@ jobs:
 
           if [[ "${{ needs.test-properties.result }}" == "failure" || "${{ needs.test-properties.result }}" == "cancelled" ]]; then
             echo "El job test-properties termino en estado ${{ needs.test-properties.result }}"
+            exit 1
+          fi
+
+          if [[ "${{ needs.test-search.result }}" == "failure" || "${{ needs.test-search.result }}" == "cancelled" ]]; then
+            echo "El job test-search termino en estado ${{ needs.test-search.result }}"
             exit 1
           fi
 
