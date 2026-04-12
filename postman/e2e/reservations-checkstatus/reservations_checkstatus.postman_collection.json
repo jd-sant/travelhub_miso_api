@@ -84,12 +84,14 @@
     {
       "name": "Check status (should cancel pending_payment)",
       "request": {
-        "method": "GET",
-        "header": [],
+        "method": "POST",
+        "header": [
+          { "key": "X-Internal-Api-Key", "value": "{{internal_api_key}}" }
+        ],
         "url": {
-          "raw": "{{base_url}}/api/v1/reservations/{{reservation_id}}/checkstatus",
+          "raw": "{{base_url}}/api/v1/internal/reservations/{{reservation_id}}/checkstatus",
           "host": ["{{base_url}}"],
-          "path": ["api", "v1", "reservations", "{{reservation_id}}", "checkstatus"]
+          "path": ["api", "v1", "internal", "reservations", "{{reservation_id}}", "checkstatus"]
         }
       },
       "event": [
@@ -110,12 +112,14 @@
     {
       "name": "Check status again (idempotent)",
       "request": {
-        "method": "GET",
-        "header": [],
+        "method": "POST",
+        "header": [
+          { "key": "X-Internal-Api-Key", "value": "{{internal_api_key}}" }
+        ],
         "url": {
-          "raw": "{{base_url}}/api/v1/reservations/{{reservation_id}}/checkstatus",
+          "raw": "{{base_url}}/api/v1/internal/reservations/{{reservation_id}}/checkstatus",
           "host": ["{{base_url}}"],
-          "path": ["api", "v1", "reservations", "{{reservation_id}}", "checkstatus"]
+          "path": ["api", "v1", "internal", "reservations", "{{reservation_id}}", "checkstatus"]
         }
       },
       "event": [

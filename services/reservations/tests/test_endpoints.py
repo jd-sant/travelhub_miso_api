@@ -162,7 +162,10 @@ class TestReservationEndpoints:
         create_response = client.post("/api/v1/reservations", json=payload)
         reservation_id = create_response.json()["id"]
 
-        response = client.get(f"/api/v1/reservations/{reservation_id}/checkstatus")
+        response = client.post(
+            f"/api/v1/internal/reservations/{reservation_id}/checkstatus",
+            headers={"X-Internal-Api-Key": settings.internal_api_key},
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -190,9 +193,13 @@ class TestReservationEndpoints:
         create_response = client.post("/api/v1/reservations", json=payload)
         reservation_id = create_response.json()["id"]
 
-        client.get(f"/api/v1/reservations/{reservation_id}/checkstatus")
-        second_response = client.get(
-            f"/api/v1/reservations/{reservation_id}/checkstatus"
+        client.post(
+            f"/api/v1/internal/reservations/{reservation_id}/checkstatus",
+            headers={"X-Internal-Api-Key": settings.internal_api_key},
+        )
+        second_response = client.post(
+            f"/api/v1/internal/reservations/{reservation_id}/checkstatus",
+            headers={"X-Internal-Api-Key": settings.internal_api_key},
         )
 
         assert second_response.status_code == 200
@@ -202,16 +209,46 @@ class TestReservationEndpoints:
         assert data["action_applied"] == "none"
 
     def test_checkstatus_returns_404_if_not_found(self, client):
-        response = client.get(f"/api/v1/reservations/{uuid4()}/checkstatus")
+        response = client.post(
+            f"/api/v1/internal/reservations/{uuid4()}/checkstatus",
+            headers={"X-Internal-Api-Key": settings.internal_api_key},
+        )
 
         assert response.status_code == 404
         assert "Reservation not found" in response.json()["detail"]
 
     def test_checkstatus_returns_400_for_invalid_id_format(self, client):
-        response = client.get("/api/v1/reservations/not-a-valid-uuid/checkstatus")
+        response = client.post(
+            "/api/v1/internal/reservations/not-a-valid-uuid/checkstatus",
+            headers={"X-Internal-Api-Key": settings.internal_api_key},
+        )
 
         assert response.status_code == 400
         assert "Invalid reservation ID format" in response.json()["detail"]
+
+    def test_checkstatus_returns_403_without_api_key(self, client):
+        traveler_id = str(uuid4())
+        property_id = str(uuid4())
+        room_id = str(uuid4())
+        check_in = (datetime.now(UTC) + timedelta(days=5)).isoformat()
+        check_out = (datetime.now(UTC) + timedelta(days=8)).isoformat()
+
+        payload = {
+            "id_traveler": traveler_id,
+            "id_property": property_id,
+            "id_room": room_id,
+            "check_in_date": check_in,
+            "check_out_date": check_out,
+            "number_of_guests": 2,
+            "currency": "COP",
+        }
+        create_response = client.post("/api/v1/reservations", json=payload)
+        reservation_id = create_response.json()["id"]
+
+        response = client.post(f"/api/v1/internal/reservations/{reservation_id}/checkstatus")
+
+        assert response.status_code == 403
+        assert response.json()["detail"] == "Forbidden"
 
     def test_internal_patch_status_updates_reservation(self, client):
         traveler_id = str(uuid4())

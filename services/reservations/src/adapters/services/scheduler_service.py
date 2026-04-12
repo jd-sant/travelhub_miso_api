@@ -39,7 +39,7 @@ class EventBridgeReservationScheduler(ReservationScheduler):
 
         payload = {
             "reservation_id": reservation_id,
-            "api_url": f"{self._api_base_url}/api/v1/reservations/{reservation_id}/checkstatus",
+            "api_url": f"{self._api_base_url}/api/v1/internal/reservations/{reservation_id}/checkstatus",
         }
 
         try:

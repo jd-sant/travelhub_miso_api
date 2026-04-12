@@ -32,7 +32,7 @@
     {
       "name": "CheckStatus Cancels Pending",
       "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('checkstatus 200', function () { pm.response.to.have.status(200); });", "const body = pm.response.json();", "pm.test('status_after cancelled', function () { pm.expect(body.status_after).to.eql('cancelled'); });"]}}],
-      "request": {"method": "GET", "header": [], "url": {"raw": "{{reservations_base_url}}/api/v1/reservations/{{reservation_id}}/checkstatus", "host": ["{{reservations_base_url}}"], "path": ["api", "v1", "reservations", "{{reservation_id}}", "checkstatus"]}}
+      "request": {"method": "POST", "header": [{"key": "X-Internal-Api-Key", "value": "{{internal_api_key}}"}], "url": {"raw": "{{reservations_base_url}}/api/v1/internal/reservations/{{reservation_id}}/checkstatus", "host": ["{{reservations_base_url}}"], "path": ["api", "v1", "internal", "reservations", "{{reservation_id}}", "checkstatus"]}}
     }
   ]
 }

@@ -178,11 +178,26 @@ services:
       DATABASE_URL: postgresql://travelhub_user:travelhub_pass@postgres:5432/travelhub
       DB_SCHEMA: search_schema
       DB_ECHO: "False"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_CACHE_ENABLED: "true"
     ports:
       - "8006:8003"
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:

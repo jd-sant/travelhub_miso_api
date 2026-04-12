@@ -224,16 +224,22 @@
             }
           ],
           "request": {
-            "method": "GET",
-            "header": [],
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Internal-Api-Key",
+                "value": "{{internal_api_key}}"
+              }
+            ],
             "url": {
-              "raw": "{{reservations_base_url}}/api/v1/reservations/{{flow_reservation_id}}/checkstatus",
+              "raw": "{{reservations_base_url}}/api/v1/internal/reservations/{{flow_reservation_id}}/checkstatus",
               "host": [
                 "{{reservations_base_url}}"
               ],
               "path": [
                 "api",
                 "v1",
+                "internal",
                 "reservations",
                 "{{flow_reservation_id}}",
                 "checkstatus"

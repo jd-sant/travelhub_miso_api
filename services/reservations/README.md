@@ -64,9 +64,13 @@ Retorna el detalle completo de la reserva.
 
 ### Verificar estado de reserva
 
-`GET /api/v1/reservations/{reservation_id}/checkstatus`
+`POST /api/v1/internal/reservations/{reservation_id}/checkstatus`
 
 Consulta la reserva y, si el estado actual es `pending_payment`, ejecuta una transición a `cancelled` mediante el flujo interno del servicio.
+
+Header requerido:
+
+- `X-Internal-Api-Key`
 
 Respuesta:
 
@@ -99,4 +103,4 @@ Body:
 
 - La validación de disponibilidad solo ignora reservas canceladas.
 - El estado inicial de una reserva creada por el servicio es `pending_payment`.
-- El flujo de `checkstatus` está pensado para ser consumido por la capa que coordina el hold de pago.
+- El flujo de `checkstatus` está pensado para ser consumido por la capa que coordina el hold de pago vía endpoint interno.
