@@ -1,4 +1,6 @@
 import logging
+import time
+from threading import Lock
 from typing import Optional
 
 from redis import Redis, ConnectionPool
@@ -9,6 +11,9 @@ from core.config import settings
 logger = logging.getLogger(__name__)
 
 _pool: Optional[ConnectionPool] = None
+_pool_lock = Lock()
+_retry_interval_seconds = 5.0
+_next_retry_at = 0.0
 
 
 def _build_pool() -> Optional[ConnectionPool]:
@@ -38,15 +43,32 @@ def _build_pool() -> Optional[ConnectionPool]:
         logger.warning("Redis no disponible: %s. Búsquedas irán directo a BD.", exc)
         return None
 
-
-_pool = _build_pool()
-
-
 def get_redis_client() -> Optional[Redis]:
     """
     Retorna cliente Redis listo para usar, o None si Redis no está disponible.
     None es el mecanismo de fallback: el repositorio lo maneja sin lanzar excepción.
     """
-    if _pool is None:
-        return None
-    return Redis(connection_pool=_pool)
+    global _pool
+    global _next_retry_at
+
+    with _pool_lock:
+        if not settings.redis_cache_enabled:
+            if _pool is not None:
+                _pool.disconnect()
+                _pool = None
+            _next_retry_at = 0.0
+            return None
+
+        if _pool is None:
+            now = time.monotonic()
+            if now < _next_retry_at:
+                return None
+
+            _pool = _build_pool()
+            if _pool is None:
+                _next_retry_at = now + _retry_interval_seconds
+                return None
+
+            _next_retry_at = 0.0
+
+        return Redis(connection_pool=_pool)
