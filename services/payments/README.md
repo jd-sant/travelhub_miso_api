@@ -67,12 +67,16 @@ PYTHONPATH=src uvicorn entrypoints.api.main:app --reload --port 8003
 ### Tests
 
 ```bash
+# Desde la raiz del monorepo
 make payments-test
-# o
+# o, desde services/payments
 PYTHONPATH=services/payments/src pytest services/payments/tests/ -v
 
 # postura de seguridad
+# Desde la raiz del monorepo
 make payments-security-scan
+# o, desde services/payments
+PYTHONPATH=src pytest tests/test_payments_security_posture.py -v
 ```
 
 ## Configuracion
