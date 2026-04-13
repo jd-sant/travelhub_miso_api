@@ -1,6 +1,6 @@
 # Reporte de Tests con Coverage
 
-Fecha de ejecución: 13 de abril de 2026
+Fecha de ejecución: 12 de abril de 2026
 Workspace: travelhub_miso
 
 ## Resumen Ejecutivo
