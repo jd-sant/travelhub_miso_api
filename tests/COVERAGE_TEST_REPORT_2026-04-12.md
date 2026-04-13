@@ -9,10 +9,10 @@ Workspace: travelhub_miso
 - Servicios ejecutados: 7/7.
 - Total de tests ejecutados: 218.
 - Resultado consolidado:
-  - Passed: 213
+  - Passed: 216
   - Skipped: 2
-  - Failed: 3
-- Coverage global ponderado aproximado (suma de líneas): 91.60%
+  - Failed: 0
+- Coverage global ponderado aproximado (suma de líneas): 91.85%
 
 ## Comando de referencia usado
 
@@ -26,7 +26,7 @@ Se ejecutó cobertura por servicio con el intérprete local del entorno virtual,
 |---|---|---|
 | users | 28 passed | 92% (756 stmts, 60 miss) |
 | security | 22 passed | 91% (887 stmts, 78 miss) |
-| reservations | 39 passed, 3 failed | 91% (1006 stmts, 90 miss) |
+| reservations | 42 passed | 93% (1009 stmts, 71 miss) |
 | payments | 44 passed | 90% (2202 stmts, 218 miss) |
 | notifications | 15 passed | 92% (840 stmts, 70 miss) |
 | properties | 16 passed | 95% (557 stmts, 30 miss) |

@@ -1,0 +1,88 @@
+==> security
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0 -- /home/diego/Documentos/miso/travelhub_miso/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/diego/Documentos/miso/travelhub_miso/services/security
+plugins: asyncio-0.21.1, anyio-3.7.1
+asyncio: mode=Mode.STRICT
+collecting ... collected 22 items
+
+tests/test_auth_api.py::test_login_valid_credentials_returns_otp_message PASSED [  4%]
+tests/test_auth_api.py::test_login_valid_credentials_sends_otp PASSED    [  9%]
+tests/test_auth_api.py::test_login_wrong_password_returns_401 PASSED     [ 13%]
+tests/test_auth_api.py::test_login_unknown_email_returns_401 PASSED      [ 18%]
+tests/test_auth_api.py::test_login_generic_message_no_user_enumeration PASSED [ 22%]
+tests/test_auth_api.py::test_verify_otp_correct_code_returns_jwt PASSED  [ 27%]
+tests/test_auth_api.py::test_verify_otp_wrong_code_returns_401 PASSED    [ 31%]
+tests/test_auth_api.py::test_verify_otp_three_failures_locks_account PASSED [ 36%]
+tests/test_auth_api.py::test_verify_otp_no_active_otp_returns_401 PASSED [ 40%]
+tests/test_auth_api.py::test_ip_blocked_after_10_failed_attempts PASSED  [ 45%]
+tests/test_auth_api.py::test_validate_token_valid PASSED                 [ 50%]
+tests/test_auth_api.py::test_validate_token_invalid_returns_401 PASSED   [ 54%]
+tests/test_jwt.py::test_create_token_returns_string PASSED               [ 59%]
+tests/test_jwt.py::test_decode_token_returns_correct_claims PASSED       [ 63%]
+tests/test_jwt.py::test_decode_expired_token_raises_error PASSED         [ 68%]
+tests/test_jwt.py::test_decode_tampered_token_raises_error PASSED        [ 72%]
+tests/test_jwt.py::test_decode_garbage_raises_error PASSED               [ 77%]
+tests/test_otp.py::test_generate_otp_returns_six_digits PASSED           [ 81%]
+tests/test_otp.py::test_generate_otp_pads_with_zeros PASSED              [ 86%]
+tests/test_otp.py::test_generate_otp_custom_length PASSED                [ 90%]
+tests/test_smtp_otp_sender.py::test_smtp_otp_sender_sends_email PASSED   [ 95%]
+tests/test_smtp_otp_sender.py::test_smtp_otp_sender_raises_on_failure PASSED [100%]
+
+============================== 22 passed in 2.21s ==============================
+Name                                                              Stmts   Miss  Cover   Missing
+-----------------------------------------------------------------------------------------------
+/home/diego/Documentos/miso/travelhub_miso/services/__init__.py       0      0   100%
+__init__.py                                                           0      0   100%
+src/adapters/__init__.py                                              0      0   100%
+src/adapters/models/__init__.py                                       0      0   100%
+src/adapters/models/audit_log.py                                     12      0   100%
+src/adapters/models/login_attempt.py                                 11      0   100%
+src/adapters/models/otp_code.py                                      13      0   100%
+src/adapters/models/user_lock.py                                      7      0   100%
+src/adapters/repositories/__init__.py                                 0      0   100%
+src/adapters/repositories/audit_repository.py                        12      0   100%
+src/adapters/repositories/login_attempt_repository.py                16      0   100%
+src/adapters/repositories/otp_repository.py                          37      1    97%   54
+src/adapters/repositories/user_lock_repository.py                    24      4    83%   29-30, 37-40
+src/adapters/services/__init__.py                                     0      0   100%
+src/adapters/services/log_otp_sender.py                               7      2    71%   10-11
+src/adapters/services/smtp_otp_sender.py                             25      0   100%
+src/adapters/services/users_client.py                                17      9    47%   15-31
+src/assembly.py                                                      40      5    88%   28, 56-60
+src/core/__init__.py                                                  0      0   100%
+src/core/config.py                                                   97     18    81%   28, 34, 46-50, 57-62, 94, 98-106
+src/core/jwt_handler.py                                              16      0   100%
+src/core/otp.py                                                       9      0   100%
+src/core/roles.py                                                    11      2    82%   12, 17
+src/db/__init__.py                                                    0      0   100%
+src/db/session.py                                                    23     11    52%   26-31, 35-41, 45-46
+src/domain/__init__.py                                                0      0   100%
+src/domain/ports/__init__.py                                          0      0   100%
+src/domain/ports/audit_repository.py                                  7      1    86%   16
+src/domain/ports/auth_repository.py                                   7      1    86%   12
+src/domain/ports/login_attempt_repository.py                         11      2    82%   16, 20
+src/domain/ports/otp_repository.py                                   21      5    76%   19, 23, 27, 31, 35
+src/domain/ports/otp_sender.py                                        5      1    80%   7
+src/domain/ports/user_lock_repository.py                             14      3    79%   11, 15, 19
+src/domain/schemas/__init__.py                                        0      0   100%
+src/domain/schemas/auth.py                                           39      0   100%
+src/domain/use_cases/__init__.py                                      0      0   100%
+src/domain/use_cases/base.py                                          8      1    88%   11
+src/domain/use_cases/login.py                                        48      1    98%   57
+src/domain/use_cases/validate_token.py                               13      2    85%   18-19
+src/domain/use_cases/verify_otp.py                                   49      5    90%   43-47
+src/entrypoints/__init__.py                                           0      0   100%
+src/entrypoints/api/__init__.py                                       0      0   100%
+src/entrypoints/api/routers/__init__.py                               0      0   100%
+src/entrypoints/api/routers/auth.py                                  47      4    91%   37, 65, 90, 123
+src/errors.py                                                        18      0   100%
+tests/__init__.py                                                     0      0   100%
+tests/conftest.py                                                    68      0   100%
+tests/test_auth_api.py                                               74      0   100%
+tests/test_jwt.py                                                    40      0   100%
+tests/test_otp.py                                                    14      0   100%
+tests/test_smtp_otp_sender.py                                        27      0   100%
+-----------------------------------------------------------------------------------------------
+TOTAL                                                               887     78    91%

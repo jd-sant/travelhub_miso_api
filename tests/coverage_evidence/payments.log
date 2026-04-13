@@ -1,0 +1,115 @@
+==> payments
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0 -- /home/diego/Documentos/miso/travelhub_miso/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/diego/Documentos/miso/travelhub_miso/services/payments
+plugins: asyncio-0.21.1, anyio-3.7.1
+asyncio: mode=Mode.STRICT
+collecting ... collected 44 items
+
+tests/test_payments_api.py::test_create_payment_success_generates_receipt_and_events PASSED [  2%]
+tests/test_payments_api.py::test_create_payment_failure_returns_clear_reason PASSED [  4%]
+tests/test_payments_api.py::test_create_payment_success_dispatches_notification_request PASSED [  6%]
+tests/test_payments_api.py::test_create_payment_success_dispatches_reservation_confirmation PASSED [  9%]
+tests/test_payments_api.py::test_create_payment_success_does_not_fail_when_notification_dispatch_fails PASSED [ 11%]
+tests/test_payments_api.py::test_create_payment_success_does_not_fail_when_reservation_update_fails PASSED [ 13%]
+tests/test_payments_api.py::test_retry_reservation_confirmations_processes_pending_outbox PASSED [ 15%]
+tests/test_payments_api.py::test_retry_reservation_confirmations_requires_internal_api_key PASSED [ 18%]
+tests/test_payments_api.py::test_create_payment_card_declined_returns_clear_reason PASSED [ 20%]
+tests/test_payments_api.py::test_create_payment_rejects_raw_card_fields PASSED [ 22%]
+tests/test_payments_api.py::test_create_payment_rejects_duplicate_within_two_seconds PASSED [ 25%]
+tests/test_payments_api.py::test_create_payment_rejects_reused_idempotency_key PASSED [ 27%]
+tests/test_payments_api.py::test_create_payment_rejects_invalid_checksum PASSED [ 29%]
+tests/test_payments_api.py::test_create_payment_accepts_valid_checksum PASSED [ 31%]
+tests/test_payments_api.py::test_get_payment_by_id_returns_created_payment PASSED [ 34%]
+tests/test_payments_api.py::test_list_events_returns_created_events PASSED [ 36%]
+tests/test_payments_api.py::test_list_events_returns_404_for_unknown_payment PASSED [ 38%]
+tests/test_payments_api.py::test_tls_header_can_be_enforced PASSED       [ 40%]
+tests/test_payments_api.py::test_cors_allows_frontend_origin PASSED      [ 43%]
+tests/test_payments_api.py::test_get_payments_config_returns_current_provider PASSED [ 45%]
+tests/test_payments_api.py::test_create_checkout_session_returns_transaction_metadata PASSED [ 47%]
+tests/test_payments_api.py::test_create_charge_is_disabled_when_provider_is_not_fake_stripe PASSED [ 50%]
+tests/test_payments_api.py::test_finalize_stripe_payment_materializes_confirmed_payment PASSED [ 52%]
+tests/test_payments_api.py::test_get_payment_confirmation_returns_checkout_summary PASSED [ 54%]
+tests/test_payments_api.py::test_webhook_can_complete_requires_action_checkout PASSED [ 56%]
+tests/test_payments_api.py::test_finalize_stripe_payment_returns_failed_response_for_card_error PASSED [ 59%]
+tests/test_payments_api.py::test_finalize_stripe_payment_returns_failed_response_for_insufficient_funds PASSED [ 61%]
+tests/test_payments_security_posture.py::test_encrypt_sensitive_value_roundtrip PASSED [ 63%]
+tests/test_payments_security_posture.py::test_sanitize_sensitive_data_redacts_known_financial_fields PASSED [ 65%]
+tests/test_payments_security_posture.py::test_payment_audit_repository_sanitizes_payload PASSED [ 68%]
+tests/test_payments_security_posture.py::test_settings_require_stripe_provider_in_compliance_mode PASSED [ 70%]
+tests/test_payments_security_posture.py::test_settings_require_encryption_key_in_compliance_mode PASSED [ 72%]
+tests/test_payments_security_posture.py::test_settings_require_notifications_service_url_in_compliance_mode PASSED [ 75%]
+tests/test_payments_security_posture.py::test_settings_require_reservations_service_url_in_compliance_mode PASSED [ 77%]
+tests/test_payments_security_posture.py::test_backend_source_has_no_hardcoded_pan_literals PASSED [ 79%]
+tests/test_unit_coverage_boost.py::test_finalize_raises_when_stripe_not_configured PASSED [ 81%]
+tests/test_unit_coverage_boost.py::test_finalize_raises_when_checkout_session_not_found PASSED [ 84%]
+tests/test_unit_coverage_boost.py::test_finalize_returns_existing_session_when_payment_already_created PASSED [ 86%]
+tests/test_unit_coverage_boost.py::test_finalize_handles_idempotency_conflict PASSED [ 88%]
+tests/test_unit_coverage_boost.py::test_finalize_dispatch_failures_are_audited_and_queued PASSED [ 90%]
+tests/test_unit_coverage_boost.py::test_handle_webhook_verification_and_existing_payment_paths PASSED [ 93%]
+tests/test_unit_coverage_boost.py::test_security_helpers_cover_encryption_checksum_and_redaction PASSED [ 95%]
+tests/test_unit_coverage_boost.py::test_http_dispatchers_cover_no_url_and_success PASSED [ 97%]
+tests/test_unit_coverage_boost.py::test_stripe_gateway_extract_card_error_payload_branches PASSED [100%]
+
+============================= 44 passed in 14.26s ==============================
+Name                                                             Stmts   Miss  Cover   Missing
+----------------------------------------------------------------------------------------------
+src/adapters/__init__.py                                             0      0   100%
+src/adapters/gateways/__init__.py                                    0      0   100%
+src/adapters/gateways/stripe_checkout_gateway.py                    36     13    64%   8-11, 22-48, 51-56
+src/adapters/gateways/stripe_gateway.py                             18      0   100%
+src/adapters/models/__init__.py                                      0      0   100%
+src/adapters/models/payment.py                                      27      0   100%
+src/adapters/models/payment_audit_log.py                            15      0   100%
+src/adapters/models/payment_checkout_session.py                     22      0   100%
+src/adapters/models/payment_event.py                                10      0   100%
+src/adapters/models/payment_reservation_confirmation_outbox.py      18      0   100%
+src/adapters/repositories/__init__.py                                0      0   100%
+src/adapters/repositories/payment_audit_repository.py               12      0   100%
+src/adapters/repositories/payment_checkout_repository.py            42      1    98%   100
+src/adapters/repositories/payment_repository.py                     90     23    74%   129-131, 194-201, 227, 244-254
+src/adapters/services/notification_dispatcher.py                    14      0   100%
+src/adapters/services/reservation_updater.py                        14      0   100%
+src/assembly.py                                                     64      3    95%   61, 66, 72
+src/core/__init__.py                                                 0      0   100%
+src/core/config.py                                                 152     25    84%   42, 48, 63, 82, 92, 105, 107, 116, 161-164, 168-171, 177, 184, 191, 193, 201-205
+src/core/security.py                                                71      1    99%   115
+src/db/__init__.py                                                   0      0   100%
+src/db/session.py                                                   32     17    47%   28-33, 37-43, 47-54, 58-59
+src/domain/__init__.py                                               0      0   100%
+src/domain/ports/__init__.py                                         0      0   100%
+src/domain/ports/notification_dispatcher.py                         10      2    80%   13, 24
+src/domain/ports/payment_audit_repository.py                         6      1    83%   9
+src/domain/ports/payment_checkout_repository.py                     19      5    74%   10, 14, 18, 22, 26
+src/domain/ports/payment_gateway.py                                  6      1    83%   9
+src/domain/ports/payment_repository.py                              41     12    71%   15, 24, 28, 32, 36, 40, 44, 56, 65, 74, 86, 90
+src/domain/ports/stripe_checkout_gateway.py                          8      2    75%   15, 19
+src/domain/schemas/__init__.py                                       0      0   100%
+src/domain/schemas/audit.py                                         13      0   100%
+src/domain/schemas/checkout.py                                      75      0   100%
+src/domain/schemas/payment.py                                       88      0   100%
+src/domain/use_cases/__init__.py                                     0      0   100%
+src/domain/use_cases/base.py                                         8      1    88%   11
+src/domain/use_cases/create_payment_charge.py                       84      8    90%   126-143
+src/domain/use_cases/create_payment_checkout_session.py             18      0   100%
+src/domain/use_cases/finalize_stripe_payment.py                    117     17    85%   161-183, 317-325
+src/domain/use_cases/get_payment.py                                 13      1    92%   16
+src/domain/use_cases/get_payment_checkout_session.py                13      1    92%   16
+src/domain/use_cases/get_payment_confirmation_summary.py            16      1    94%   24
+src/domain/use_cases/handle_stripe_webhook.py                       92     13    86%   55, 59, 76-90, 256-257, 294-303
+src/domain/use_cases/list_payment_events.py                         12      0   100%
+src/domain/use_cases/retry_reservation_confirmations.py             37      8    78%   62-79
+src/entrypoints/__init__.py                                          0      0   100%
+src/entrypoints/api/__init__.py                                      0      0   100%
+src/entrypoints/api/main.py                                         22      2    91%   15, 33
+src/entrypoints/api/routers/__init__.py                              0      0   100%
+src/entrypoints/api/routers/internal.py                             17      1    94%   23
+src/entrypoints/api/routers/payments.py                             93     18    81%   58, 61, 88-89, 103-108, 122-123, 137-138, 193-194, 213-214
+src/errors.py                                                       27      0   100%
+tests/__init__.py                                                    0      0   100%
+tests/test_payments_api.py                                         434     29    93%   46, 54, 71, 119-139, 143, 162, 164, 166, 168, 170, 181
+tests/test_payments_security_posture.py                             86      1    99%   161
+tests/test_unit_coverage_boost.py                                  210     11    95%   32, 40, 43, 59, 62, 69, 78, 84, 87, 90, 93
+----------------------------------------------------------------------------------------------
+TOTAL                                                             2202    218    90%
