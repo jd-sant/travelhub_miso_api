@@ -1,0 +1,90 @@
+==> reservations
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0 -- /home/diego/Documentos/miso/travelhub_miso/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/diego/Documentos/miso/travelhub_miso/services/reservations
+configfile: pytest.ini
+plugins: asyncio-0.21.1, anyio-3.7.1
+asyncio: mode=Mode.STRICT
+collecting ... collected 42 items
+
+tests/test_endpoints.py::TestReservationEndpoints::test_create_reservation_successfully PASSED [  2%]
+tests/test_endpoints.py::TestReservationEndpoints::test_create_reservation_returns_400_if_checkout_before_checkin PASSED [  4%]
+tests/test_endpoints.py::TestReservationEndpoints::test_create_reservation_returns_400_if_room_not_available PASSED [  7%]
+tests/test_endpoints.py::TestReservationEndpoints::test_get_reservation_successfully PASSED [  9%]
+tests/test_endpoints.py::TestReservationEndpoints::test_get_reservation_returns_404_if_not_found PASSED [ 11%]
+tests/test_endpoints.py::TestReservationEndpoints::test_get_reservation_returns_400_for_invalid_id_format PASSED [ 14%]
+tests/test_endpoints.py::TestReservationEndpoints::test_checkstatus_cancels_pending_payment_reservation PASSED [ 16%]
+tests/test_endpoints.py::TestReservationEndpoints::test_checkstatus_does_not_change_non_pending_status PASSED [ 19%]
+tests/test_endpoints.py::TestReservationEndpoints::test_checkstatus_returns_404_if_not_found PASSED [ 21%]
+tests/test_endpoints.py::TestReservationEndpoints::test_checkstatus_returns_400_for_invalid_id_format PASSED [ 23%]
+tests/test_endpoints.py::TestReservationEndpoints::test_checkstatus_returns_403_without_api_key PASSED [ 26%]
+tests/test_endpoints.py::TestReservationEndpoints::test_internal_patch_status_updates_reservation PASSED [ 28%]
+tests/test_endpoints.py::TestReservationEndpoints::test_internal_patch_status_returns_403_with_invalid_key PASSED [ 30%]
+tests/test_endpoints.py::TestReservationEndpoints::test_internal_patch_status_returns_422_for_invalid_status PASSED [ 33%]
+tests/test_endpoints.py::TestReservationEndpoints::test_health_check_endpoint PASSED [ 35%]
+tests/test_endpoints.py::TestReservationEndpoints::test_create_reservation_with_different_currencies PASSED [ 38%]
+tests/test_infra_coverage.py::test_scheduler_create_and_cancel_success_paths PASSED [ 40%]
+tests/test_infra_coverage.py::test_scheduler_raises_runtime_error_on_create_failure PASSED [ 42%]
+tests/test_infra_coverage.py::test_scheduler_cancel_ignores_not_found_and_raises_other_errors PASSED [ 45%]
+tests/test_infra_coverage.py::test_create_reservation_rolls_back_schedule_when_repository_add_fails PASSED [ 47%]
+tests/test_infra_coverage.py::test_create_reservation_wraps_scheduler_errors PASSED [ 50%]
+tests/test_infra_coverage.py::test_settings_validate_scheduler_config PASSED [ 52%]
+tests/test_infra_coverage.py::test_lifespan_invokes_bootstrap_hooks PASSED [ 54%]
+tests/test_repository.py::TestReservationRepository::test_add_creates_reservation_successfully PASSED [ 57%]
+tests/test_repository.py::TestReservationRepository::test_get_by_id_returns_reservation PASSED [ 59%]
+tests/test_repository.py::TestReservationRepository::test_get_by_id_returns_none_for_nonexistent_reservation PASSED [ 61%]
+tests/test_repository.py::TestReservationRepository::test_list_by_traveler_returns_all_traveler_reservations PASSED [ 64%]
+tests/test_repository.py::TestReservationRepository::test_check_room_availability_returns_true_if_available PASSED [ 66%]
+tests/test_repository.py::TestReservationRepository::test_check_room_availability_returns_false_if_overlapping_reservation PASSED [ 69%]
+tests/test_repository.py::TestReservationRepository::test_check_room_availability_ignores_cancelled_reservations PASSED [ 71%]
+tests/test_repository.py::TestReservationRepository::test_update_status_changes_reservation_status PASSED [ 73%]
+tests/test_repository.py::TestReservationRepository::test_add_raises_error_if_room_not_available PASSED [ 76%]
+tests/test_use_cases.py::TestCreateReservationUseCase::test_execute_creates_reservation_with_calculated_price PASSED [ 78%]
+tests/test_use_cases.py::TestCreateReservationUseCase::test_execute_validates_dates PASSED [ 80%]
+tests/test_use_cases.py::TestCreateReservationUseCase::test_execute_raises_error_if_dates_are_equal PASSED [ 83%]
+tests/test_use_cases.py::TestCreateReservationUseCase::test_execute_calculates_correct_price_for_single_night PASSED [ 85%]
+tests/test_use_cases.py::TestCreateReservationUseCase::test_execute_applies_correct_tax_rate_for_each_currency PASSED [ 88%]
+tests/test_use_cases.py::TestCreateReservationUseCase::test_execute_uses_unknown_currency_tax_rate PASSED [ 90%]
+tests/test_use_cases.py::TestCreateReservationUseCase::test_execute_checks_room_availability PASSED [ 92%]
+tests/test_use_cases.py::TestCheckReservationStatusUseCase::test_execute_cancels_pending_payment_reservation PASSED [ 95%]
+tests/test_use_cases.py::TestCheckReservationStatusUseCase::test_execute_keeps_non_pending_payment_reservation PASSED [ 97%]
+tests/test_use_cases.py::TestUpdateReservationStatusUseCase::test_execute_updates_status_and_returns_transition PASSED [100%]
+
+============================== 42 passed in 1.19s ==============================
+Name                                                  Stmts   Miss  Cover   Missing
+-----------------------------------------------------------------------------------
+src/adapters/__init__.py                                  0      0   100%
+src/adapters/models/__init__.py                           0      0   100%
+src/adapters/models/reservation.py                       17      0   100%
+src/adapters/repositories/__init__.py                     0      0   100%
+src/adapters/repositories/reservation_repository.py      46      4    91%   65-67, 102
+src/adapters/services/__init__.py                         2      0   100%
+src/adapters/services/scheduler_service.py               37      8    78%   14, 28-35
+src/core/__init__.py                                      0      0   100%
+src/core/config.py                                       83     15    82%   17, 21, 37, 41, 45, 49, 53, 57, 61, 69-73, 86, 89
+src/db/__init__.py                                        0      0   100%
+src/db/session.py                                        23     13    43%   24-31, 35-41, 45-46
+src/domain/__init__.py                                    0      0   100%
+src/domain/ports/__init__.py                              2      0   100%
+src/domain/ports/reservation_repository.py               22      5    77%   18, 22, 26, 32, 36
+src/domain/ports/reservation_scheduler.py                 6      0   100%
+src/domain/schemas/__init__.py                            0      0   100%
+src/domain/schemas/reservation.py                        45      0   100%
+src/domain/use_cases/__init__.py                          0      0   100%
+src/domain/use_cases/base.py                              8      1    88%   11
+src/domain/use_cases/check_reservation_status.py         19      0   100%
+src/domain/use_cases/create_reservation.py               42      2    95%   63-64
+src/domain/use_cases/update_reservation.py               21      4    81%   19-20, 24, 29
+src/entrypoints/__init__.py                               0      0   100%
+src/entrypoints/api/main.py                              19      0   100%
+src/entrypoints/api/routers/internal.py                  44      8    82%   71-72, 93-94, 101-107
+src/entrypoints/api/routers/reservations.py              48      8    83%   35-45, 97-103
+src/errors.py                                            12      0   100%
+tests/conftest.py                                        54      1    98%   18
+tests/test_endpoints.py                                 174      0   100%
+tests/test_infra_coverage.py                            123      2    98%   148, 155
+tests/test_repository.py                                 76      0   100%
+tests/test_use_cases.py                                  86      0   100%
+-----------------------------------------------------------------------------------
+TOTAL                                                  1009     71    93%

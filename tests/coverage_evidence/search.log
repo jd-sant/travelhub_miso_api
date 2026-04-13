@@ -1,0 +1,105 @@
+==> search
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0 -- /home/diego/Documentos/miso/travelhub_miso/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/diego/Documentos/miso/travelhub_miso/services/search
+configfile: pytest.ini
+plugins: asyncio-0.21.1, anyio-3.7.1
+asyncio: mode=Mode.STRICT
+collecting ... collected 51 items
+
+tests/test_cache.py::TestMakeCacheKey::test_same_params_produce_same_key PASSED [  1%]
+tests/test_cache.py::TestMakeCacheKey::test_amenities_order_independent PASSED [  3%]
+tests/test_cache.py::TestMakeCacheKey::test_amenities_duplicates_do_not_change_key PASSED [  5%]
+tests/test_cache.py::TestMakeCacheKey::test_decimal_filters_are_normalized PASSED [  7%]
+tests/test_cache.py::TestMakeCacheKey::test_different_city_different_key PASSED [  9%]
+tests/test_cache.py::TestMakeCacheKey::test_different_dates_different_key PASSED [ 11%]
+tests/test_cache.py::TestMakeCacheKey::test_different_page_different_key PASSED [ 13%]
+tests/test_cache.py::TestMakeCacheKey::test_key_starts_with_search_prefix PASSED [ 15%]
+tests/test_cache.py::TestRedisCache::test_get_miss_returns_none PASSED   [ 17%]
+tests/test_cache.py::TestRedisCache::test_set_and_get_returns_same_data PASSED [ 19%]
+tests/test_cache.py::TestRedisCache::test_ttl_is_applied PASSED          [ 21%]
+tests/test_cache.py::TestRedisCache::test_get_redis_error_returns_none PASSED [ 23%]
+tests/test_cache.py::TestRedisCache::test_set_redis_error_does_not_raise PASSED [ 25%]
+tests/test_cache.py::TestSearchRepositoryCacheCorrectness::test_result_with_cache_equals_result_without_cache PASSED [ 27%]
+tests/test_cache.py::TestSearchRepositoryCacheCorrectness::test_second_call_is_cache_hit PASSED [ 29%]
+tests/test_cache.py::TestSearchRepositoryCacheCorrectness::test_cache_none_works_identically_to_no_cache PASSED [ 31%]
+tests/test_cache.py::TestSearchRepositoryMalformedCache::test_malformed_cache_is_treated_as_miss_and_deleted PASSED [ 33%]
+tests/test_config.py::TestSearchSettings::test_test_environment_is_not_development PASSED [ 35%]
+tests/test_config.py::TestSearchSettings::test_local_dev_environment_enables_dev_features PASSED [ 37%]
+tests/test_config.py::TestSearchSettings::test_allowed_cors_origin_env_is_used_when_present PASSED [ 39%]
+tests/test_endpoints.py::TestSearchHealthEndpoints::test_health_check PASSED [ 41%]
+tests/test_endpoints.py::TestSearchHealthEndpoints::test_search_status PASSED [ 43%]
+tests/test_endpoints.py::TestSearchHealthEndpoints::test_list_test_dataset PASSED [ 45%]
+tests/test_endpoints.py::TestSearchHealthEndpoints::test_search_properties_success PASSED [ 47%]
+tests/test_endpoints.py::TestSearchHealthEndpoints::test_search_properties_empty_state PASSED [ 49%]
+tests/test_endpoints.py::TestSearchHealthEndpoints::test_search_properties_missing_required PASSED [ 50%]
+tests/test_endpoints.py::TestSearchHealthEndpoints::test_search_properties_invalid_dates_rule PASSED [ 52%]
+tests/test_endpoints.py::TestSearchHealthEndpoints::test_search_properties_invalid_price_range_rule PASSED [ 54%]
+tests/test_endpoints.py::TestSearchHealthEndpoints::test_search_properties_filters_by_amenities PASSED [ 56%]
+tests/test_endpoints.py::TestSearchHealthEndpoints::test_search_properties_filters_by_price_range PASSED [ 58%]
+tests/test_endpoints.py::TestSearchHealthEndpoints::test_search_properties_invalid_page_limit PASSED [ 60%]
+tests/test_endpoints.py::TestSearchHealthEndpoints::test_search_properties_invalid_page_size_limit PASSED [ 62%]
+tests/test_infra_coverage.py::test_search_router_rule_validations_and_pagination PASSED [ 64%]
+tests/test_infra_coverage.py::test_seed_helpers_and_metadata_drift_detection PASSED [ 66%]
+tests/test_infra_coverage.py::test_seed_enablement_matrix PASSED         [ 68%]
+tests/test_infra_coverage.py::test_session_quote_identifier_validation PASSED [ 70%]
+tests/test_infra_coverage.py::test_performance_helpers_cover_skipped_paths PASSED [ 72%]
+tests/test_performance.py::TestCriteriosDeAceptacion::test_ca3_cache_hit_bajo_200ms PASSED [ 74%]
+tests/test_performance.py::TestCriteriosDeAceptacion::test_ca1_p95_bajo_800ms_carga_normal PASSED [ 76%]
+tests/test_performance.py::TestCriteriosDeAceptacion::test_ca2_100_concurrentes_p95_800ms_p99_1200ms SKIPPEDthreaded.) [ 78%]
+tests/test_performance.py::TestCriteriosDeAceptacion::test_ca2_tasa_de_error_menor_1_porciento SKIPPEDthreaded.) [ 80%]
+tests/test_redis_db.py::test_get_redis_client_retries_after_interval PASSED [ 82%]
+tests/test_redis_db.py::test_get_redis_client_disables_and_clears_pool PASSED [ 84%]
+tests/test_repository.py::TestSearchRepository::test_search_success_with_pagination PASSED [ 86%]
+tests/test_repository.py::TestSearchRepository::test_search_filters_by_amenities PASSED [ 88%]
+tests/test_repository.py::TestSearchRepository::test_search_filters_by_price PASSED [ 90%]
+tests/test_repository.py::TestSearchRepository::test_search_returns_empty_for_unknown_city PASSED [ 92%]
+tests/test_repository.py::TestSearchRepository::test_search_returns_empty_for_invalid_date_range PASSED [ 94%]
+tests/test_repository.py::TestSearchRepository::test_search_price_filter_uses_aggregated_min_price PASSED [ 96%]
+tests/test_use_cases.py::TestSearchUseCase::test_execute_returns_results PASSED [ 98%]
+tests/test_use_cases.py::TestSearchUseCase::test_execute_returns_empty_when_no_results PASSED [100%]
+
+======================== 49 passed, 2 skipped in 1.82s =========================
+Name                                             Stmts   Miss  Cover   Missing
+------------------------------------------------------------------------------
+src/adapters/__init__.py                             0      0   100%
+src/adapters/cache/__init__.py                       2      0   100%
+src/adapters/cache/redis_cache.py                   36      2    94%   46-47
+src/adapters/models/__init__.py                      9      0   100%
+src/adapters/models/search_models.py                85      0   100%
+src/adapters/repositories/__init__.py                2      0   100%
+src/adapters/repositories/search_repository.py      80      2    98%   61-62
+src/assembly.py                                     17      1    94%   18
+src/core/__init__.py                                 0      0   100%
+src/core/config.py                                  77     12    84%   24, 28, 32, 36, 40, 44, 50, 55, 86, 90, 94, 106
+src/db/__init__.py                                   0      0   100%
+src/db/redis.py                                     42     11    74%   21-44
+src/db/seed.py                                     133     13    90%   151, 153, 155, 157, 161, 165, 168, 170, 177, 201, 210, 310, 314
+src/db/session.py                                   37     13    65%   32, 38-45, 50-53
+src/domain/__init__.py                               0      0   100%
+src/domain/ports/__init__.py                         2      0   100%
+src/domain/ports/cache_port.py                      11      0   100%
+src/domain/ports/search_repository.py                6      1    83%   9
+src/domain/schemas/__init__.py                       7      0   100%
+src/domain/schemas/search.py                        44      0   100%
+src/domain/use_cases/__init__.py                     2      0   100%
+src/domain/use_cases/base.py                         8      1    88%   11
+src/domain/use_cases/search_properties.py            8      0   100%
+src/entrypoints/__init__.py                          0      0   100%
+src/entrypoints/api/__init__.py                      0      0   100%
+src/entrypoints/api/main.py                         22      2    91%   15-16
+src/entrypoints/api/routers/__init__.py              0      0   100%
+src/entrypoints/api/routers/search.py               75      1    99%   151
+src/errors.py                                        2      0   100%
+tests/conftest.py                                   63     12    81%   83-97
+tests/test_cache.py                                 90      0   100%
+tests/test_config.py                                21      0   100%
+tests/test_endpoints.py                             63      2    97%   136-137
+tests/test_infra_coverage.py                        66      0   100%
+tests/test_performance.py                           73      4    95%   133-134, 167-168
+tests/test_redis_db.py                              41      0   100%
+tests/test_repository.py                            54      2    96%   75-76
+tests/test_use_cases.py                             11      0   100%
+------------------------------------------------------------------------------
+TOTAL                                             1189     79    93%

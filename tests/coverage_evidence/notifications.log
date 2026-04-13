@@ -1,0 +1,76 @@
+==> notifications
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0 -- /home/diego/Documentos/miso/travelhub_miso/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/diego/Documentos/miso/travelhub_miso/services/notifications
+plugins: asyncio-0.21.1, anyio-3.7.1
+asyncio: mode=Mode.STRICT
+collecting ... collected 15 items
+
+tests/test_infra_coverage.py::test_internal_router_maps_domain_errors_to_http[exc0-409] PASSED [  6%]
+tests/test_infra_coverage.py::test_internal_router_maps_domain_errors_to_http[exc1-404] PASSED [ 13%]
+tests/test_infra_coverage.py::test_internal_router_maps_domain_errors_to_http[exc2-503] PASSED [ 20%]
+tests/test_infra_coverage.py::test_internal_router_schedules_background_task_for_pending_notification PASSED [ 26%]
+tests/test_infra_coverage.py::test_payment_confirmation_client_success PASSED [ 33%]
+tests/test_infra_coverage.py::test_payment_confirmation_client_maps_404_and_transport_errors PASSED [ 40%]
+tests/test_infra_coverage.py::test_privacy_helpers_cover_sensitive_paths PASSED [ 46%]
+tests/test_notifications_api.py::test_create_payment_confirmation_persists_notification_and_audit PASSED [ 53%]
+tests/test_notifications_api.py::test_get_notification_returns_created_notification PASSED [ 60%]
+tests/test_notifications_api.py::test_get_notification_requires_internal_api_key PASSED [ 66%]
+tests/test_notifications_api.py::test_create_payment_confirmation_is_idempotent_by_payment_id PASSED [ 73%]
+tests/test_notifications_security_posture.py::test_mask_email_obfuscates_local_part PASSED [ 80%]
+tests/test_notifications_security_posture.py::test_sanitize_sensitive_data_redacts_known_financial_fields PASSED [ 86%]
+tests/test_notifications_security_posture.py::test_settings_require_https_internal_urls_in_non_dev PASSED [ 93%]
+tests/test_notifications_security_posture.py::test_backend_source_has_no_hardcoded_pan_literals PASSED [100%]
+
+============================== 15 passed in 2.90s ==============================
+Name                                                               Stmts   Miss  Cover   Missing
+------------------------------------------------------------------------------------------------
+src/adapters/__init__.py                                               0      0   100%
+src/adapters/models/__init__.py                                        0      0   100%
+src/adapters/models/notification.py                                   18      0   100%
+src/adapters/models/notification_audit_log.py                         14      0   100%
+src/adapters/models/notification_delivery_attempt.py                  11      0   100%
+src/adapters/repositories/__init__.py                                  0      0   100%
+src/adapters/repositories/delivery_attempt_repository.py              11      0   100%
+src/adapters/repositories/notification_audit_repository.py            12      0   100%
+src/adapters/repositories/notification_repository.py                  34      1    97%   58
+src/adapters/services/__init__.py                                      0      0   100%
+src/adapters/services/in_process_notification_delivery_runner.py      17      0   100%
+src/adapters/services/log_email_sender.py                             10      0   100%
+src/adapters/services/payment_confirmation_client.py                  20      1    95%   22
+src/assembly.py                                                       47     12    74%   34, 44-52, 56, 60-62, 85, 102
+src/core/__init__.py                                                   0      0   100%
+src/core/config.py                                                    80     13    84%   33, 39, 51, 55, 59, 63, 67, 73, 75, 88-90, 99
+src/core/privacy.py                                                   43      0   100%
+src/db/__init__.py                                                     0      0   100%
+src/db/session.py                                                     32     17    47%   24-29, 33-37, 41-46, 50-51
+src/domain/__init__.py                                                 0      0   100%
+src/domain/ports/__init__.py                                           0      0   100%
+src/domain/ports/delivery_attempt_repository.py                        6      1    83%   9
+src/domain/ports/email_sender.py                                       5      1    80%   7
+src/domain/ports/notification_audit_repository.py                      6      1    83%   9
+src/domain/ports/notification_delivery_runner.py                       6      1    83%   13
+src/domain/ports/notification_repository.py                           16      4    75%   10, 14, 18, 22
+src/domain/ports/payment_confirmation_source.py                        7      1    86%   10
+src/domain/ports/traveler_profile_source.py                            7      1    86%   10
+src/domain/schemas/__init__.py                                         0      0   100%
+src/domain/schemas/notification.py                                    71      0   100%
+src/domain/use_cases/__init__.py                                       0      0   100%
+src/domain/use_cases/base.py                                           8      1    88%   11
+src/domain/use_cases/create_payment_confirmation.py                   38      2    95%   79, 83
+src/domain/use_cases/get_notification.py                              14      1    93%   17
+src/domain/use_cases/send_payment_confirmation.py                     50      6    88%   41, 44, 57-60
+src/entrypoints/__init__.py                                            0      0   100%
+src/entrypoints/api/__init__.py                                        0      0   100%
+src/entrypoints/api/main.py                                           20      2    90%   14, 25
+src/entrypoints/api/routers/__init__.py                                0      0   100%
+src/entrypoints/api/routers/internal_notifications.py                 23      1    96%   37
+src/entrypoints/api/routers/notifications.py                          16      2    88%   24-25
+src/errors.py                                                          8      0   100%
+tests/__init__.py                                                      0      0   100%
+tests/test_infra_coverage.py                                          78      0   100%
+tests/test_notifications_api.py                                       86      0   100%
+tests/test_notifications_security_posture.py                          26      1    96%   57
+------------------------------------------------------------------------------------------------
+TOTAL                                                                840     70    92%

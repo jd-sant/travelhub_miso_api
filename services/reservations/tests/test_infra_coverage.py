@@ -75,6 +75,7 @@ def test_scheduler_create_and_cancel_success_paths():
     scheduler._lambda_arn = "arn:aws:lambda:us-east-1:123456789012:function:fn"
     scheduler._scheduler_role_arn = "arn:aws:iam::123456789012:role/scheduler-role"
     scheduler._api_base_url = "https://api.example.com"
+    scheduler._scheduler_group_name = "default"
     scheduler._delay_minutes = 15
 
     reservation_id = str(uuid4())
@@ -92,6 +93,7 @@ def test_scheduler_raises_runtime_error_on_create_failure():
     scheduler._lambda_arn = "arn:aws:lambda:us-east-1:123:function:fn"
     scheduler._scheduler_role_arn = "arn:aws:iam::123:role/r"
     scheduler._api_base_url = "https://api.example.com"
+    scheduler._scheduler_group_name = "default"
     scheduler._delay_minutes = 15
     scheduler._client.fail_create = ClientError(
         {
@@ -110,6 +112,7 @@ def test_scheduler_raises_runtime_error_on_create_failure():
 def test_scheduler_cancel_ignores_not_found_and_raises_other_errors():
     scheduler = EventBridgeReservationScheduler.__new__(EventBridgeReservationScheduler)
     scheduler._client = _FakeSchedulerClient()
+    scheduler._scheduler_group_name = "default"
 
     scheduler._client.fail_delete = ClientError(
         {"Error": {"Code": "ResourceNotFoundException", "Message": "missing"}},
