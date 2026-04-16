@@ -1,0 +1,64 @@
+==> properties
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0 -- /home/diego/Documentos/miso/travelhub_miso/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/diego/Documentos/miso/travelhub_miso/services/properties
+plugins: asyncio-0.21.1, anyio-3.7.1
+asyncio: mode=Mode.STRICT
+collecting ... collected 16 items
+
+tests/test_get_detail.py::test_list_properties_success PASSED            [  6%]
+tests/test_get_detail.py::test_get_property_detail_with_images_and_reviews PASSED [ 12%]
+tests/test_get_detail.py::test_get_property_detail_not_found PASSED      [ 18%]
+tests/test_get_detail.py::test_property_detail_has_all_fields PASSED     [ 25%]
+tests/test_property_api.py::test_list_properties_endpoint_success PASSED [ 31%]
+tests/test_property_api.py::test_list_properties_endpoint_empty_filter PASSED [ 37%]
+tests/test_property_api.py::test_get_property_endpoint_with_seeded_data PASSED [ 43%]
+tests/test_property_api.py::test_get_property_endpoint_not_found PASSED  [ 50%]
+tests/test_property_api.py::test_get_property_endpoint_multiple_properties PASSED [ 56%]
+tests/test_property_api.py::test_health_check PASSED                     [ 62%]
+tests/test_seeded_data.py::test_list_properties_returns_seeded_data PASSED [ 68%]
+tests/test_seeded_data.py::test_get_renaissance_estate PASSED            [ 75%]
+tests/test_seeded_data.py::test_get_beachfront_penthouse PASSED          [ 81%]
+tests/test_seeded_data.py::test_get_alpine_lodge PASSED                  [ 87%]
+tests/test_seeded_data.py::test_get_tropical_villa PASSED                [ 93%]
+tests/test_seeded_data.py::test_property_amenities_loaded_correctly PASSED [100%]
+
+============================== 16 passed in 0.84s ==============================
+Name                                               Stmts   Miss  Cover   Missing
+--------------------------------------------------------------------------------
+src/adapters/__init__.py                               0      0   100%
+src/adapters/models/__init__.py                        0      0   100%
+src/adapters/models/property.py                       19      0   100%
+src/adapters/models/property_image.py                 11      0   100%
+src/adapters/models/property_review.py                13      0   100%
+src/adapters/repositories/__init__.py                  0      0   100%
+src/adapters/repositories/property_repository.py      43      4    91%   29-30, 86-87
+src/assembly.py                                       13      0   100%
+src/core/__init__.py                                   0      0   100%
+src/core/config.py                                    39      3    92%   28, 38, 47
+src/db/__init__.py                                     0      0   100%
+src/db/seed.py                                        34      4    88%   172, 226-228
+src/db/session.py                                     26     13    50%   27-32, 36-46, 50-51
+src/domain/__init__.py                                 0      0   100%
+src/domain/ports/__init__.py                           0      0   100%
+src/domain/ports/property_repository.py               11      2    82%   12, 17
+src/domain/schemas/__init__.py                         0      0   100%
+src/domain/schemas/property.py                        49      0   100%
+src/domain/use_cases/__init__.py                       0      0   100%
+src/domain/use_cases/base.py                           8      1    88%   11
+src/domain/use_cases/get_properties_list.py            8      0   100%
+src/domain/use_cases/get_property_detail.py           13      0   100%
+src/entrypoints/__init__.py                            0      0   100%
+src/entrypoints/api/__init__.py                        0      0   100%
+src/entrypoints/api/main.py                           19      2    89%   15-16
+src/entrypoints/api/routers/__init__.py                0      0   100%
+src/entrypoints/api/routers/properties.py             17      0   100%
+src/errors.py                                          2      0   100%
+tests/__init__.py                                      0      0   100%
+tests/conftest.py                                     32      1    97%   15
+tests/test_get_detail.py                              56      0   100%
+tests/test_property_api.py                            58      0   100%
+tests/test_seeded_data.py                             86      0   100%
+--------------------------------------------------------------------------------
+TOTAL                                                557     30    95%
