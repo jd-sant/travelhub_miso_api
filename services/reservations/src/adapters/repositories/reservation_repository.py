@@ -4,6 +4,7 @@ from typing import Optional
 from uuid import UUID, uuid4
 
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import update
 from sqlmodel import Session, select
 
 from adapters.models.reservation import Reservation
@@ -112,20 +113,33 @@ class SQLModelReservationRepository(ReservationRepository):
         *,
         expected_version: int | None = None,
     ) -> Optional[ReservationResponse]:
+        where_clause = Reservation.id == id
+        if expected_version is not None:
+            where_clause = where_clause & (Reservation.version == expected_version)
+
+        result = self.session.exec(
+            update(Reservation)
+            .where(where_clause)
+            .values(
+                status=status,
+                version=Reservation.version + 1,
+                updated_at=datetime.now(UTC),
+            )
+        )
+
+        if result.rowcount == 0:
+            exists = self.session.exec(
+                select(Reservation.id).where(Reservation.id == id)
+            ).first()
+            if not exists:
+                return None
+            raise ReservationConcurrencyError("Reservation version conflict")
+
+        self.session.commit()
         reservation = self.session.exec(
             select(Reservation).where(Reservation.id == id)
         ).first()
-        if not reservation:
-            return None
-        if expected_version is not None and reservation.version != expected_version:
-            raise ReservationConcurrencyError("Reservation version conflict")
-        reservation.status = status
-        reservation.version = (reservation.version or 1) + 1
-        reservation.updated_at = datetime.now(UTC)
-        self.session.add(reservation)
-        self.session.commit()
-        self.session.refresh(reservation)
-        return _to_response(reservation)
+        return _to_response(reservation) if reservation else None
 
     def apply_updates(
         self,
@@ -141,33 +155,44 @@ class SQLModelReservationRepository(ReservationRepository):
         cancelled_at: datetime | None = None,
         cancellation_reason: str | None = None,
     ) -> Optional[ReservationResponse]:
+        where_clause = Reservation.id == id
+        if expected_version is not None:
+            where_clause = where_clause & (Reservation.version == expected_version)
+
+        update_values = {
+            "status": status,
+            "version": Reservation.version + 1,
+            "updated_at": datetime.now(UTC),
+        }
+        if check_in_date is not None:
+            update_values["check_in_date"] = check_in_date
+        if check_out_date is not None:
+            update_values["check_out_date"] = check_out_date
+        if number_of_guests is not None:
+            update_values["number_of_guests"] = number_of_guests
+        if total_price is not None:
+            update_values["total_price"] = total_price
+        if last_policy_snapshot is not None:
+            update_values["last_policy_snapshot"] = last_policy_snapshot
+        if cancelled_at is not None:
+            update_values["cancelled_at"] = cancelled_at
+        if cancellation_reason is not None:
+            update_values["cancellation_reason"] = cancellation_reason
+
+        result = self.session.exec(
+            update(Reservation).where(where_clause).values(**update_values)
+        )
+
+        if result.rowcount == 0:
+            exists = self.session.exec(
+                select(Reservation.id).where(Reservation.id == id)
+            ).first()
+            if not exists:
+                return None
+            raise ReservationConcurrencyError("Reservation version conflict")
+
+        self.session.commit()
         reservation = self.session.exec(
             select(Reservation).where(Reservation.id == id)
         ).first()
-        if not reservation:
-            return None
-        if expected_version is not None and reservation.version != expected_version:
-            raise ReservationConcurrencyError("Reservation version conflict")
-
-        reservation.status = status
-        if check_in_date is not None:
-            reservation.check_in_date = check_in_date
-        if check_out_date is not None:
-            reservation.check_out_date = check_out_date
-        if number_of_guests is not None:
-            reservation.number_of_guests = number_of_guests
-        if total_price is not None:
-            reservation.total_price = total_price
-        if last_policy_snapshot is not None:
-            reservation.last_policy_snapshot = last_policy_snapshot
-        if cancelled_at is not None:
-            reservation.cancelled_at = cancelled_at
-        if cancellation_reason is not None:
-            reservation.cancellation_reason = cancellation_reason
-
-        reservation.version = (reservation.version or 1) + 1
-        reservation.updated_at = datetime.now(UTC)
-        self.session.add(reservation)
-        self.session.commit()
-        self.session.refresh(reservation)
-        return _to_response(reservation)
+        return _to_response(reservation) if reservation else None

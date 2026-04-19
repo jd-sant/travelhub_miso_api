@@ -12,6 +12,7 @@ class ReservationStatus(str, Enum):
     cancelled = "cancelled"
     modification_pending_payment = "modification_pending_payment"
     modification_confirmed = "modification_confirmed"
+    additional_charge_failed = "additional_charge_failed"
     cancel_requested = "cancel_requested"
     refund_pending = "refund_pending"
     refund_completed = "refund_completed"

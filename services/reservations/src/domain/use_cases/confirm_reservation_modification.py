@@ -121,14 +121,37 @@ class ConfirmReservationModificationUseCase:
         else:
             status_after = "modification_confirmed"
 
+        pending_modification = {
+            "check_in_date": preview.reservation_after_preview.check_in_date,
+            "check_out_date": preview.reservation_after_preview.check_out_date,
+            "number_of_guests": preview.reservation_after_preview.number_of_guests,
+            "total_price": preview.reservation_after_preview.total_price,
+        }
+        pending_modification_payload = {
+            "check_in_date": pending_modification["check_in_date"].isoformat(),
+            "check_out_date": pending_modification["check_out_date"].isoformat(),
+            "number_of_guests": pending_modification["number_of_guests"],
+            "total_price": str(pending_modification["total_price"]),
+        }
+
+        apply_changes_now = additional_charge_amount <= Decimal("0.00")
+
         updated = self.reservation_repository.apply_updates(
             reservation_id,
             status=status_after,
             expected_version=reservation_before.version,
-            check_in_date=preview.reservation_after_preview.check_in_date,
-            check_out_date=preview.reservation_after_preview.check_out_date,
-            number_of_guests=preview.reservation_after_preview.number_of_guests,
-            total_price=preview.reservation_after_preview.total_price,
+            check_in_date=(
+                pending_modification["check_in_date"] if apply_changes_now else None
+            ),
+            check_out_date=(
+                pending_modification["check_out_date"] if apply_changes_now else None
+            ),
+            number_of_guests=(
+                pending_modification["number_of_guests"] if apply_changes_now else None
+            ),
+            total_price=(
+                pending_modification["total_price"] if apply_changes_now else None
+            ),
             last_policy_snapshot=preview.policy_applied.model_dump_json(),
         )
         if not updated:
@@ -146,6 +169,11 @@ class ConfirmReservationModificationUseCase:
                     **updated.model_dump(mode="json"),
                     "correlation_id": correlation_id,
                     "payment_dispatch_status": payment_dispatch_status,
+                    "pending_modification": (
+                        pending_modification_payload
+                        if additional_charge_amount > Decimal("0.00")
+                        else None
+                    ),
                 },
             )
         )

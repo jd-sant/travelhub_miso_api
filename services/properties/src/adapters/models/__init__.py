@@ -4,8 +4,8 @@ from adapters.models.property_image import PropertyImage
 from adapters.models.property_review import PropertyReview
 
 __all__ = [
-	"Property",
-	"PropertyCancellationPolicy",
-	"PropertyImage",
-	"PropertyReview",
+    "Property",
+    "PropertyCancellationPolicy",
+    "PropertyImage",
+    "PropertyReview",
 ]

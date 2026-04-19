@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from decimal import Decimal, InvalidOperation
 from hmac import compare_digest
 from uuid import UUID
 
@@ -82,7 +83,37 @@ def _resolve_refund_status_transition(
 def _resolve_additional_charge_status_transition(callback_status: str) -> tuple[str, str]:
     if callback_status == "succeeded":
         return "modification_confirmed", "additional_charge_completed"
-    return "confirmed", "additional_charge_failed"
+    return "additional_charge_failed", "additional_charge_failed"
+
+
+def _to_naive_datetime(value: object) -> datetime:
+    if isinstance(value, datetime):
+        return value.replace(tzinfo=None) if value.tzinfo is not None else value
+    if isinstance(value, str):
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return parsed.replace(tzinfo=None) if parsed.tzinfo is not None else parsed
+    raise ValueError("Invalid datetime value")
+
+
+def _find_pending_modification_payload(
+    reservation_id: UUID,
+    event_repository: ReservationEventRepository,
+) -> dict | None:
+    events = event_repository.list_by_reservation(reservation_id)
+    for event in reversed(events):
+        if event.event_type != ReservationEventType.modification_confirmed:
+            continue
+        payload = event.after_payload or {}
+        dispatch_status = payload.get("payment_dispatch_status")
+        if dispatch_status not in (
+            "additional_charge_requested",
+            "additional_charge_pending_retry",
+        ):
+            continue
+        proposal = payload.get("pending_modification")
+        if isinstance(proposal, dict):
+            return proposal
+    return None
 
 
 @router.post(
@@ -284,12 +315,43 @@ def apply_additional_charge_result(
     status_after, action_applied = _resolve_additional_charge_status_transition(
         payload.status.value
     )
-    try:
-        updated = repository.apply_updates(
+
+    update_kwargs: dict = {
+        "status": status_after,
+        "expected_version": reservation_before.version,
+    }
+
+    if payload.status.value == "succeeded":
+        pending_modification = _find_pending_modification_payload(
             reservation_uuid,
-            status=status_after,
-            expected_version=reservation_before.version,
+            event_repository,
         )
+        if not pending_modification:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Pending modification payload not found for callback application",
+            )
+        try:
+            update_kwargs.update(
+                {
+                    "check_in_date": _to_naive_datetime(
+                        pending_modification["check_in_date"]
+                    ),
+                    "check_out_date": _to_naive_datetime(
+                        pending_modification["check_out_date"]
+                    ),
+                    "number_of_guests": int(pending_modification["number_of_guests"]),
+                    "total_price": Decimal(str(pending_modification["total_price"])),
+                }
+            )
+        except (KeyError, ValueError, TypeError, InvalidOperation) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Invalid pending modification payload: {exc}",
+            )
+
+    try:
+        updated = repository.apply_updates(reservation_uuid, **update_kwargs)
     except ReservationConcurrencyError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

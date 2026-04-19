@@ -38,7 +38,7 @@
       "name": "Create Confirmed Reservation For Preview",
       "event": [
         {"listen": "prerequest", "script": {"type": "text/javascript", "exec": ["const now = new Date();", "const checkIn = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);", "const checkOut = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);", "pm.collectionVariables.set('preview_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));", "pm.collectionVariables.set('preview_property_id', '11111111-1111-1111-1111-111111111111');", "pm.collectionVariables.set('preview_room_id', pm.variables.replaceIn('{{$randomUUID}}'));", "pm.collectionVariables.set('preview_check_in', checkIn.toISOString());", "pm.collectionVariables.set('preview_check_out', checkOut.toISOString());"]}},
-        {"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('create preview reservation 201', function () { pm.response.to.have.status(201); });", "const body = pm.response.json();", "pm.collectionVariables.set('preview_reservation_id', body.id);"]}}
+        {"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('create preview reservation 201', function () { pm.response.to.have.status(201); });", "const body = pm.response.json();", "pm.collectionVariables.set('preview_reservation_id', body.id);", "pm.collectionVariables.set('preview_original_check_in', body.check_in_date);", "pm.collectionVariables.set('preview_original_check_out', body.check_out_date);"]}}
       ],
       "request": {
         "method": "POST",
@@ -71,6 +71,16 @@
       "name": "Confirm Modification Replay Idempotent",
       "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('confirm modification replay 200', function () { pm.response.to.have.status(200); });", "const body = pm.response.json();", "pm.test('same idempotency key returned', function () { pm.expect(body.idempotency_key).to.eql(pm.collectionVariables.get('mod_confirm_idempotency_key')); });"]}}],
       "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Traveler-Id", "value": "{{preview_traveler_id}}"}], "body": {"mode": "raw", "raw": "{\n  \"idempotency_key\": \"{{mod_confirm_idempotency_key}}\",\n  \"check_in_date\": \"{{preview_mod_check_in}}\",\n  \"check_out_date\": \"{{preview_mod_check_out}}\",\n  \"number_of_guests\": 3\n}"}, "url": {"raw": "{{reservations_base_url}}/api/v1/reservations/{{preview_reservation_id}}/modifications/confirm", "host": ["{{reservations_base_url}}"], "path": ["api", "v1", "reservations", "{{preview_reservation_id}}", "modifications", "confirm"]}}
+    },
+    {
+      "name": "Apply Additional Charge Callback - Failed",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('additional charge callback 200', function () { pm.response.to.have.status(200); });", "const body = pm.response.json();", "pm.test('status_after additional_charge_failed', function () { pm.expect(body.status_after).to.eql('additional_charge_failed'); });"]}}],
+      "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Internal-Api-Key", "value": "{{internal_api_key}}"}], "body": {"mode": "raw", "raw": "{\n  \"status\": \"failed\",\n  \"payment_id\": \"{{$randomUUID}}\",\n  \"amount_in_cents\": 11900\n}"}, "url": {"raw": "{{reservations_base_url}}/api/v1/internal/reservations/{{preview_reservation_id}}/additional-charge-result", "host": ["{{reservations_base_url}}"], "path": ["api", "v1", "internal", "reservations", "{{preview_reservation_id}}", "additional-charge-result"]}}
+    },
+    {
+      "name": "Get Reservation - Additional Charge Failed",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('get reservation after additional charge failure 200', function () { pm.response.to.have.status(200); });", "const body = pm.response.json();", "pm.test('status additional_charge_failed', function () { pm.expect(body.status).to.eql('additional_charge_failed'); });", "pm.test('check_in remains original', function () {", "  pm.expect(body.check_in_date).to.eql(pm.collectionVariables.get('preview_original_check_in'));", "});", "pm.test('check_out remains original', function () {", "  pm.expect(body.check_out_date).to.eql(pm.collectionVariables.get('preview_original_check_out'));", "});"]}}],
+      "request": {"method": "GET", "header": [{"key": "X-Traveler-Id", "value": "{{preview_traveler_id}}"}], "url": {"raw": "{{reservations_base_url}}/api/v1/reservations/{{preview_reservation_id}}", "host": ["{{reservations_base_url}}"], "path": ["api", "v1", "reservations", "{{preview_reservation_id}}"]}}
     },
     {
       "name": "Get Reservation History",

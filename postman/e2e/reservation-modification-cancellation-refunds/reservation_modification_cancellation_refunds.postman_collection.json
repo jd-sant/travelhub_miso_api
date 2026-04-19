@@ -111,6 +111,54 @@
       "name": "Get Reservation - Modification Confirmed",
       "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('reservation 200', function () { pm.response.to.have.status(200); });", "const body = pm.response.json();", "pm.test('status modification_confirmed', function () { pm.expect(body.status).to.eql('modification_confirmed'); });"]}}],
       "request": {"method": "GET", "header": [], "url": {"raw": "{{reservations_base_url}}/api/v1/reservations/{{mod_reservation_id}}", "host": ["{{reservations_base_url}}"], "path": ["api", "v1", "reservations", "{{mod_reservation_id}}"]}}
+    },
+    {
+      "name": "Create Reservation - Additional Charge Failure Scenario",
+      "event": [
+        {"listen": "prerequest", "script": {"type": "text/javascript", "exec": ["const now = new Date();", "const checkIn = new Date(now.getTime() + 11 * 24 * 60 * 60 * 1000);", "const checkOut = new Date(now.getTime() + 13 * 24 * 60 * 60 * 1000);", "const newCheckOut = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);", "pm.collectionVariables.set('acf_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));", "pm.collectionVariables.set('acf_property_id', '11111111-1111-1111-1111-111111111111');", "pm.collectionVariables.set('acf_room_id', pm.variables.replaceIn('{{$randomUUID}}'));", "pm.collectionVariables.set('acf_check_in', checkIn.toISOString());", "pm.collectionVariables.set('acf_check_out', checkOut.toISOString());", "pm.collectionVariables.set('acf_new_check_out', newCheckOut.toISOString());", "pm.collectionVariables.set('acf_payment_idempotency', `e2e-acf-pay-${Date.now()}`);", "pm.collectionVariables.set('acf_confirm_idempotency', `e2e-acf-confirm-${Date.now()}`);"]}},
+        {"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('create reservation 201', function () { pm.response.to.have.status(201); });", "const body = pm.response.json();", "pm.collectionVariables.set('acf_reservation_id', body.id);", "pm.collectionVariables.set('acf_original_check_in', body.check_in_date);", "pm.collectionVariables.set('acf_original_check_out', body.check_out_date);"]}}
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\n  \"id_traveler\": \"{{acf_traveler_id}}\",\n  \"id_property\": \"{{acf_property_id}}\",\n  \"id_room\": \"{{acf_room_id}}\",\n  \"check_in_date\": \"{{acf_check_in}}\",\n  \"check_out_date\": \"{{acf_check_out}}\",\n  \"number_of_guests\": 2,\n  \"currency\": \"COP\"\n}"},
+        "url": {"raw": "{{reservations_base_url}}/api/v1/reservations", "host": ["{{reservations_base_url}}"], "path": ["api", "v1", "reservations"]}
+      }
+    },
+    {
+      "name": "Create Payment - Additional Charge Failure Scenario",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('payment 201', function () { pm.response.to.have.status(201); });", "pm.test('payment confirmed', function () { pm.expect(pm.response.json().status).to.eql('confirmed'); });"]}}],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Forwarded-Proto", "value": "https"}, {"key": "X-Correlation-Id", "value": "e2e-acf-payment"}],
+        "body": {"mode": "raw", "raw": "{\n  \"reservation_id\": \"{{acf_reservation_id}}\",\n  \"traveler_id\": \"{{acf_traveler_id}}\",\n  \"payment_method_token\": \"pm_tok_visa_ok\",\n  \"amount_in_cents\": 23800,\n  \"currency\": \"COP\",\n  \"idempotency_key\": \"{{acf_payment_idempotency}}\"\n}"},
+        "url": {"raw": "{{payments_base_url}}/api/v1/payments/charges", "host": ["{{payments_base_url}}"], "path": ["api", "v1", "payments", "charges"]}
+      }
+    },
+    {
+      "name": "Confirm Modification - Additional Charge Pending",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('confirm modification 200', function () { pm.response.to.have.status(200); });", "const body = pm.response.json();", "pm.test('status modification_pending_payment', function () { pm.expect(body.status_after).to.eql('modification_pending_payment'); });"]}}],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Traveler-Id", "value": "{{acf_traveler_id}}"}, {"key": "X-Correlation-Id", "value": "e2e-acf-confirm"}],
+        "body": {"mode": "raw", "raw": "{\n  \"idempotency_key\": \"{{acf_confirm_idempotency}}\",\n  \"check_in_date\": \"{{acf_check_in}}\",\n  \"check_out_date\": \"{{acf_new_check_out}}\",\n  \"number_of_guests\": 3\n}"},
+        "url": {"raw": "{{reservations_base_url}}/api/v1/reservations/{{acf_reservation_id}}/modifications/confirm", "host": ["{{reservations_base_url}}"], "path": ["api", "v1", "reservations", "{{acf_reservation_id}}", "modifications", "confirm"]}
+      }
+    },
+    {
+      "name": "Apply Additional Charge Callback - Failed",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('additional charge callback 200', function () { pm.response.to.have.status(200); });", "const body = pm.response.json();", "pm.test('status_after additional_charge_failed', function () { pm.expect(body.status_after).to.eql('additional_charge_failed'); });"]}}],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Internal-Api-Key", "value": "{{internal_api_key}}"}, {"key": "X-Correlation-Id", "value": "e2e-acf-callback"}],
+        "body": {"mode": "raw", "raw": "{\n  \"status\": \"failed\",\n  \"payment_id\": \"{{$randomUUID}}\",\n  \"amount_in_cents\": 11900\n}"},
+        "url": {"raw": "{{reservations_base_url}}/api/v1/internal/reservations/{{acf_reservation_id}}/additional-charge-result", "host": ["{{reservations_base_url}}"], "path": ["api", "v1", "internal", "reservations", "{{acf_reservation_id}}", "additional-charge-result"]}
+      }
+    },
+    {
+      "name": "Get Reservation - Additional Charge Failed",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('reservation 200', function () { pm.response.to.have.status(200); });", "const body = pm.response.json();", "pm.test('status additional_charge_failed', function () { pm.expect(body.status).to.eql('additional_charge_failed'); });", "pm.test('check_in remains original', function () {", "  pm.expect(body.check_in_date).to.eql(pm.collectionVariables.get('acf_original_check_in'));", "});", "pm.test('check_out remains original', function () {", "  pm.expect(body.check_out_date).to.eql(pm.collectionVariables.get('acf_original_check_out'));", "});"]}}],
+      "request": {"method": "GET", "header": [], "url": {"raw": "{{reservations_base_url}}/api/v1/reservations/{{acf_reservation_id}}", "host": ["{{reservations_base_url}}"], "path": ["api", "v1", "reservations", "{{acf_reservation_id}}"]}}
     }
   ]
 }
