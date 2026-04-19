@@ -29,7 +29,7 @@ services:
       RDS_PORT: "5432"
       DB_SCHEMA: users_schema
       DB_ECHO: "False"
-      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-travelhub-internal-secret-key}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
     ports:
       - "8000:8000"
     depends_on:
@@ -51,7 +51,7 @@ services:
       DB_ECHO: "False"
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-travelhub-jwt-secret-change-in-prod}
       USERS_SERVICE_URL: http://users:8000
-      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-travelhub-internal-secret-key}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
@@ -89,7 +89,7 @@ services:
       RDS_PORT: "5432"
       DB_SCHEMA: reservations_schema
       DB_ECHO: "False"
-      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-travelhub-internal-secret-key}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
     ports:
       - "8002:8000"
     depends_on:
@@ -113,7 +113,7 @@ services:
       PAYMENTS_COMPLIANCE_MODE: ${PAYMENTS_COMPLIANCE_MODE:-false}
       PAYMENT_DUPLICATE_WINDOW_SECONDS: "2"
       ENFORCE_TLS_HEADER: ${ENFORCE_TLS_HEADER:-true}
-      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-travelhub-internal-secret-key}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
       PAYMENT_INTEGRITY_SECRET: ${PAYMENT_INTEGRITY_SECRET:-travelhub-payments-secret-change-in-prod}
       PAYMENTS_DATA_ENCRYPTION_KEY: ${PAYMENTS_DATA_ENCRYPTION_KEY:-dev-payments-encryption-key-change-me}
       NOTIFICATIONS_SERVICE_URL: http://notifications:8000
@@ -166,6 +166,7 @@ services:
       RDS_PORT: "5432"
       DB_SCHEMA: properties_schema
       DB_ECHO: "False"
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
     ports:
       - "8005:8000"
     depends_on:

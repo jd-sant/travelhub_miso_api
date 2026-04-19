@@ -6,6 +6,9 @@ from adapters.repositories.property_repository import (
 )
 from db.session import get_session
 from domain.ports.property_repository import PropertyRepository
+from domain.use_cases.get_property_cancellation_policy import (
+    GetPropertyCancellationPolicyUseCase,
+)
 from domain.use_cases.get_property_detail import (
     GetPropertyDetailUseCase,
 )
@@ -30,3 +33,9 @@ def get_properties_list_use_case(
     repository: PropertyRepository = Depends(get_property_repository),
 ) -> GetPropertiesListUseCase:
     return GetPropertiesListUseCase(repository)
+
+
+def get_property_cancellation_policy_use_case(
+    repository: PropertyRepository = Depends(get_property_repository),
+) -> GetPropertyCancellationPolicyUseCase:
+    return GetPropertyCancellationPolicyUseCase(repository)

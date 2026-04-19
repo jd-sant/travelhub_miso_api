@@ -3,6 +3,7 @@ from typing import Optional
 from uuid import UUID
 
 from domain.schemas.property import PropertyResponse, PropertyListResponse
+from domain.schemas.property_policy import PropertyCancellationPolicyResponse
 
 
 class PropertyRepository(ABC):
@@ -14,4 +15,11 @@ class PropertyRepository(ABC):
     @abstractmethod
     def list_all(self) -> list[PropertyListResponse]:
         """List all properties with their images"""
+        pass
+
+    @abstractmethod
+    def get_cancellation_policy(
+        self, property_id: UUID
+    ) -> Optional[PropertyCancellationPolicyResponse]:
+        """Get the active cancellation policy for a property"""
         pass

@@ -3,6 +3,7 @@ from collections.abc import Generator
 from sqlalchemy import event, text
 from sqlmodel import Session, SQLModel, create_engine
 
+from adapters.models import Property, PropertyCancellationPolicy, PropertyImage, PropertyReview
 from core.config import settings
 from db.seed import seed_properties_if_empty
 
@@ -39,6 +40,7 @@ def create_db_and_tables() -> None:
                 text(f"CREATE SCHEMA IF NOT EXISTS {settings.db_schema}")
             )
             conn.commit()
+    _ = (Property, PropertyCancellationPolicy, PropertyImage, PropertyReview)
     SQLModel.metadata.create_all(engine)
     
     # Seed database if empty

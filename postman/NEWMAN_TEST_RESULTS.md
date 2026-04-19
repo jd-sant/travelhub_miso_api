@@ -30,7 +30,7 @@
 | travelhub-users-contract.postman_collection.json | contract | env: postman/environments/travelhub-microservices-local.postman_environment.json | 0 | 2/2 |
 | travelhub-payments-reservations-e2e.postman_collection.json | e2e | env: postman/environments/travelhub-payments-reservations-local.postman_environment.json | 0 | 17/17 |
 | travelhub-reservation-payment-failure-checkstatus-e2e.postman_collection.json | e2e | env: postman/environments/travelhub-payments-reservations-local.postman_environment.json | 0 | 12/12 |
-| reservations_checkstatus.postman_collection.json | e2e | vars: base_url=http://localhost:8002, INTERNAL_API_KEY=travelhub-internal-secret-key | 0 | 12/12 |
+| reservations_checkstatus.postman_collection.json | e2e | vars: base_url=http://localhost:8002, INTERNAL_API_KEY=dev-internal-key-change-me | 0 | 12/12 |
 | search_p95.postman_collection.json | perf | vars: base_url=http://localhost:8006, iteration-count=130 | 0 | 131/131 |
 
 ## Resultado

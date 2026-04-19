@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from core.config import settings
 from db.session import create_db_and_tables
+from entrypoints.api.routers.internal import router as internal_router
 from entrypoints.api.routers.properties import (
     router as properties_router,
 )
@@ -29,6 +30,7 @@ def create_application() -> FastAPI:
         allow_headers=["Authorization", "Content-Type"],
     )
     app.include_router(properties_router, prefix="/api/v1")
+    app.include_router(internal_router, prefix="/api/v1")
 
     @app.get("/health")
     def health_check() -> dict[str, str]:

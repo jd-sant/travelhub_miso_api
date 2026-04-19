@@ -4,6 +4,10 @@ from functools import lru_cache
 
 class Settings:
     @property
+    def internal_api_key(self) -> str:
+        return os.getenv("INTERNAL_API_KEY", "dev-internal-key-change-me")
+
+    @property
     def rds_hostname(self) -> str:
         return os.getenv("RDS_HOSTNAME", "localhost")
 
