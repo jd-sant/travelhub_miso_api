@@ -157,6 +157,13 @@ class Settings:
         return value
 
     @property
+    def properties_service_url(self) -> str:
+        value = os.getenv("PROPERTIES_SERVICE_URL", "").rstrip("/")
+        if value:
+            self._assert_internal_service_url(value, "PROPERTIES_SERVICE_URL")
+        return value
+
+    @property
     def reservation_confirmation_retry_base_seconds(self) -> int:
         value = int(os.getenv("RESERVATION_CONFIRMATION_RETRY_BASE_SECONDS", "30"))
         if value <= 0:
