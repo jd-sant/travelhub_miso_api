@@ -15,10 +15,12 @@ from domain.schemas.checkout import PaymentCheckoutSessionRecord, PaymentFinaliz
 from domain.schemas.payment import PaymentChargeResponse, PaymentStatus
 from domain.use_cases.finalize_stripe_payment import FinalizeStripePaymentUseCase
 from domain.use_cases.handle_stripe_webhook import HandleStripeWebhookUseCase
+from domain.use_cases.process_queued_payments import ProcessQueuedPaymentsUseCase
 from errors import (
     PaymentCheckoutSessionNotFoundError,
     StripeConfigurationError,
     StripeIdempotencyConflictError,
+    StripePaymentFailureError,
     StripeWebhookVerificationError,
 )
 
@@ -54,6 +56,10 @@ class _PaymentRepo:
         self.events = []
         self.outbox_failures = []
         self.by_gateway = None
+        self.processing_outbox = {}
+        self.processing_succeeded = []
+        self.processing_retries = []
+        self.processing_started = []
 
     def find_by_idempotency_key(self, _idempotency_key):
         return None
@@ -91,6 +97,42 @@ class _PaymentRepo:
 
     def count_reservation_confirmation_outbox_pending(self, **_kwargs):
         return 0
+
+    def upsert_payment_processing_outbox(self, **kwargs):
+        payment_id = kwargs["payment_id"]
+        self.processing_outbox[payment_id] = SimpleNamespace(
+            outbox_id=uuid4(),
+            payment_id=payment_id,
+            checkout_session_id=kwargs["checkout_session_id"],
+            status="pending",
+            attempt_count=0,
+            max_attempts=kwargs["max_attempts"],
+            next_retry_at=kwargs["next_retry_at"],
+            source_ip=kwargs["source_ip"],
+            last_error=None,
+            last_attempt_at=None,
+            processed_at=None,
+            created_at=kwargs["next_retry_at"],
+            updated_at=kwargs["next_retry_at"],
+        )
+
+    def get_payment_processing_outbox(self, *, payment_id):
+        return self.processing_outbox.get(payment_id)
+
+    def list_due_payment_processing_outbox(self, **_kwargs):
+        return list(self.processing_outbox.values())
+
+    def mark_payment_processing_outbox_processing(self, **kwargs):
+        self.processing_started.append(kwargs)
+
+    def mark_payment_processing_outbox_succeeded(self, **kwargs):
+        self.processing_succeeded.append(kwargs)
+
+    def mark_payment_processing_outbox_retry(self, **kwargs):
+        self.processing_retries.append(kwargs)
+
+    def count_payment_processing_outbox_pending(self, **_kwargs):
+        return len(self.processing_outbox)
 
 
 class _AuditRepo:
@@ -161,7 +203,7 @@ def _session_record() -> PaymentCheckoutSessionRecord:
         idempotency_key="idemp-1234",
         confirmation_token_id=None,
         payment_intent_id="pi_webhook",
-        status="pending",
+        status="created",
         payment_id=None,
         client_secret=None,
         error=None,
@@ -175,9 +217,7 @@ def _use_case(monkeypatch, session: PaymentCheckoutSessionRecord | None, gateway
         "domain.use_cases.finalize_stripe_payment.settings",
         SimpleNamespace(
             stripe_enabled=True,
-            payment_duplicate_window_seconds=2,
-            payment_integrity_secret="secret",
-            reservation_confirmation_retry_max_attempts=5,
+            payment_processing_retry_max_attempts=5,
         ),
     )
     checkout_repo = _CheckoutRepo(session)
@@ -187,9 +227,6 @@ def _use_case(monkeypatch, session: PaymentCheckoutSessionRecord | None, gateway
         checkout_repository=checkout_repo,
         payment_repository=payment_repo,
         audit_repository=audit_repo,
-        gateway=gateway or _Gateway(),
-        notification_dispatcher=_NotificationDispatcher(),
-        reservation_updater=_ReservationUpdater(),
     )
     return use_case, checkout_repo, payment_repo, audit_repo
 
@@ -199,7 +236,11 @@ def test_finalize_raises_when_stripe_not_configured(monkeypatch):
         "domain.use_cases.finalize_stripe_payment.settings",
         SimpleNamespace(stripe_enabled=False),
     )
-    use_case = FinalizeStripePaymentUseCase(_CheckoutRepo(_session_record()), _PaymentRepo(), _AuditRepo(), _Gateway(), _NotificationDispatcher(), _ReservationUpdater())
+    use_case = FinalizeStripePaymentUseCase(
+        _CheckoutRepo(_session_record()),
+        _PaymentRepo(),
+        _AuditRepo(),
+    )
     with pytest.raises(StripeConfigurationError):
         use_case.execute(PaymentFinalizeRequest(payment_transaction_id=uuid4(), confirmation_token_id="tok"))
 
@@ -213,7 +254,7 @@ def test_finalize_raises_when_checkout_session_not_found(monkeypatch):
 def test_finalize_returns_existing_session_when_payment_already_created(monkeypatch):
     session = _session_record()
     session.payment_id = uuid4()
-    session.status = "confirmed"
+    session.status = "pending"
 
     use_case, *_ = _use_case(monkeypatch, session)
     response = use_case.execute(
@@ -223,14 +264,13 @@ def test_finalize_returns_existing_session_when_payment_already_created(monkeypa
         )
     )
 
-    assert response.status == "confirmed"
+    assert response.status == "pending"
     assert response.payment_id == session.payment_id
 
 
-def test_finalize_handles_idempotency_conflict(monkeypatch):
+def test_finalize_creates_pending_payment_and_queue(monkeypatch):
     session = _session_record()
-    gateway = _Gateway(err=StripeIdempotencyConflictError("dup"))
-    use_case, *_ = _use_case(monkeypatch, session, gateway=gateway)
+    use_case, checkout_repo, payment_repo, audit_repo = _use_case(monkeypatch, session)
 
     response = use_case.execute(
         PaymentFinalizeRequest(
@@ -239,45 +279,77 @@ def test_finalize_handles_idempotency_conflict(monkeypatch):
         )
     )
 
-    assert response.error is not None
-    assert "Duplicate" in response.error
+    assert response.status == "pending"
+    assert response.payment_id is not None
+    assert checkout_repo.updated is not None
+    assert checkout_repo.updated.status == "pending"
+    assert response.payment_id in payment_repo.processing_outbox
+    assert "payment.finalize.accepted" in {log.action for log in audit_repo.logs}
 
 
-def test_finalize_dispatch_failures_are_audited_and_queued(monkeypatch):
+def test_process_queued_payments_confirms_pending_payment(monkeypatch):
     session = _session_record()
     monkeypatch.setattr(
-        "domain.use_cases.finalize_stripe_payment.settings",
+        "domain.use_cases.process_queued_payments.settings",
         SimpleNamespace(
-            stripe_enabled=True,
-            payment_duplicate_window_seconds=2,
-            payment_integrity_secret="secret",
+            payment_processing_retry_base_seconds=5,
+            payment_processing_retry_max_backoff_seconds=60,
+            payment_processing_retry_batch_size=10,
             reservation_confirmation_retry_max_attempts=3,
         ),
     )
     checkout_repo = _CheckoutRepo(session)
     payment_repo = _PaymentRepo()
     audit_repo = _AuditRepo()
-    use_case = FinalizeStripePaymentUseCase(
-        checkout_repository=checkout_repo,
+    pending_payment = PaymentChargeResponse(
+        payment_id=uuid4(),
+        reservation_id=session.reservation_id,
+        traveler_id=session.traveler_id,
+        provider_code=session.provider_code,
+        status=PaymentStatus.pending,
+        amount_in_cents=session.amount_in_cents,
+        currency=session.currency,
+        gateway_charge_id=None,
+        gateway_status="queued",
+        idempotency_key=session.idempotency_key,
+        request_fingerprint="fp",
+        duplicate_guard_key="dg",
+        request_checksum="cs",
+        payment_method_token_hash="ht",
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
+    )
+    payment_repo.saved.append(pending_payment)
+    session.payment_id = pending_payment.payment_id
+    payment_repo.upsert_payment_processing_outbox(
+        payment_id=pending_payment.payment_id,
+        checkout_session_id=session.payment_transaction_id,
+        source_ip="127.0.0.1",
+        next_retry_at=datetime.now(timezone.utc),
+        max_attempts=3,
+    )
+
+    use_case = ProcessQueuedPaymentsUseCase(
         payment_repository=payment_repo,
+        checkout_repository=checkout_repo,
         audit_repository=audit_repo,
         gateway=_Gateway(intent={"id": "pi_2", "status": "succeeded", "client_secret": "cs"}),
-        notification_dispatcher=_NotificationDispatcher(fail=True),
-        reservation_updater=_ReservationUpdater(fail=True),
+        notification_dispatcher=_NotificationDispatcher(),
+        reservation_updater=_ReservationUpdater(),
     )
 
     response = use_case.execute(
-        PaymentFinalizeRequest(
-            payment_transaction_id=session.payment_transaction_id,
-            confirmation_token_id="tok_2",
-        )
+        session.payment_transaction_id,
+        source_ip="127.0.0.1",
     )
 
-    assert response.status == "confirmed"
-    assert len(payment_repo.outbox_failures) == 1
+    assert response.processed_count == 1
+    assert response.succeeded_count == 1
+    assert payment_repo.saved[-1].status == PaymentStatus.confirmed
+    assert len(payment_repo.processing_succeeded) == 1
     actions = {log.action for log in audit_repo.logs}
-    assert "notification.payment_confirmation.dispatch_failed" in actions
-    assert "reservation.confirmation.dispatch_failed" in actions
+    assert "payment.processing.started" in actions
+    assert "payment.processing.confirmed" in actions
 
 
 def test_handle_webhook_verification_and_existing_payment_paths(monkeypatch):
@@ -312,7 +384,7 @@ def test_handle_webhook_verification_and_existing_payment_paths(monkeypatch):
         reservation_id=session.reservation_id,
         traveler_id=session.traveler_id,
         provider_code=session.provider_code,
-        status=PaymentStatus.confirmed,
+        status=PaymentStatus.pending,
         amount_in_cents=session.amount_in_cents,
         currency=session.currency,
         gateway_charge_id=session.payment_intent_id or "",
@@ -326,10 +398,12 @@ def test_handle_webhook_verification_and_existing_payment_paths(monkeypatch):
         updated_at=datetime.now(timezone.utc),
     )
     payment_repo.by_gateway = existing_payment
+    session.payment_id = existing_payment.payment_id
 
     use_case.execute((b"{}", "sig-ok"), source_ip="127.0.0.1")
     assert checkout_repo.updated is not None
     assert checkout_repo.updated.payment_id == existing_payment.payment_id
+    assert payment_repo.saved[-1].status == PaymentStatus.confirmed
 
 
 def test_security_helpers_cover_encryption_checksum_and_redaction():

@@ -185,6 +185,34 @@ class Settings:
         return value
 
     @property
+    def payment_processing_retry_base_seconds(self) -> int:
+        value = int(os.getenv("PAYMENT_PROCESSING_RETRY_BASE_SECONDS", "5"))
+        if value <= 0:
+            raise RuntimeError("PAYMENT_PROCESSING_RETRY_BASE_SECONDS debe ser mayor a 0.")
+        return value
+
+    @property
+    def payment_processing_retry_max_backoff_seconds(self) -> int:
+        value = int(os.getenv("PAYMENT_PROCESSING_RETRY_MAX_BACKOFF_SECONDS", "60"))
+        if value <= 0:
+            raise RuntimeError("PAYMENT_PROCESSING_RETRY_MAX_BACKOFF_SECONDS debe ser mayor a 0.")
+        return value
+
+    @property
+    def payment_processing_retry_max_attempts(self) -> int:
+        value = int(os.getenv("PAYMENT_PROCESSING_RETRY_MAX_ATTEMPTS", "5"))
+        if value <= 0:
+            raise RuntimeError("PAYMENT_PROCESSING_RETRY_MAX_ATTEMPTS debe ser mayor a 0.")
+        return value
+
+    @property
+    def payment_processing_retry_batch_size(self) -> int:
+        value = int(os.getenv("PAYMENT_PROCESSING_RETRY_BATCH_SIZE", "50"))
+        if value <= 0:
+            raise RuntimeError("PAYMENT_PROCESSING_RETRY_BATCH_SIZE debe ser mayor a 0.")
+        return value
+
+    @property
     def internal_api_key(self) -> str:
         value = os.getenv("INTERNAL_API_KEY")
         if value:

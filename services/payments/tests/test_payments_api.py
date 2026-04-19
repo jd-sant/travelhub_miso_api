@@ -13,11 +13,16 @@ from adapters.models.payment_audit_log import PaymentAuditLog
 from adapters.models.payment_checkout_session import PaymentCheckoutSession
 from adapters.models.payment import Payment
 from adapters.models.payment_event import PaymentEvent
+from adapters.models.payment_processing_outbox import PaymentProcessingOutbox
 from adapters.models.payment_reservation_confirmation_outbox import (
     PaymentReservationConfirmationOutbox,
 )
+from adapters.services.in_process_payment_processing_runner import (
+    InProcessPaymentProcessingRunner,
+)
 from assembly import (
     get_notification_dispatcher,
+    get_payment_processing_runner,
     get_reservation_updater,
     get_stripe_checkout_gateway,
 )
@@ -160,6 +165,8 @@ def client(test_engine):
     with Session(test_engine) as session:
         for audit_log in session.exec(select(PaymentAuditLog)).all():
             session.delete(audit_log)
+        for processing_item in session.exec(select(PaymentProcessingOutbox)).all():
+            session.delete(processing_item)
         for outbox_item in session.exec(select(PaymentReservationConfirmationOutbox)).all():
             session.delete(outbox_item)
         for checkout_session in session.exec(select(PaymentCheckoutSession)).all():
@@ -569,6 +576,14 @@ def test_finalize_stripe_payment_materializes_confirmed_payment(client, test_eng
     dispatcher = FakeNotificationDispatcher()
     client.app.dependency_overrides[get_stripe_checkout_gateway] = lambda: gateway
     client.app.dependency_overrides[get_notification_dispatcher] = lambda: dispatcher
+    client.app.dependency_overrides[get_payment_processing_runner] = lambda: (
+        InProcessPaymentProcessingRunner(
+            session_factory=lambda: Session(test_engine),
+            gateway=gateway,
+            notification_dispatcher=dispatcher,
+            reservation_updater=FakeReservationUpdater(),
+        )
+    )
 
     create_response = client.post(
         "/api/v1/payments/create-intent",
@@ -586,16 +601,16 @@ def test_finalize_stripe_payment_materializes_confirmed_payment(client, test_eng
         headers=SECURE_HEADERS,
     )
 
-    assert finalize_response.status_code == 200
+    assert finalize_response.status_code == 202
     body = finalize_response.json()
-    assert body["status"] == "confirmed"
+    assert body["status"] == "pending"
     assert body["payment_id"] is not None
-    assert body["payment_intent_id"] == "pi_test_123"
 
     with Session(test_engine) as session:
         stored_session = session.exec(select(PaymentCheckoutSession)).first()
         stored_payment = session.exec(select(Payment)).first()
         stored_audit_logs = session.exec(select(PaymentAuditLog)).all()
+        processing_item = session.exec(select(PaymentProcessingOutbox)).first()
 
     assert stored_session is not None
     assert stored_session.status == "confirmed"
@@ -606,22 +621,36 @@ def test_finalize_stripe_payment_materializes_confirmed_payment(client, test_eng
     assert stored_session.client_secret.startswith("enc:v1:")
     assert stored_payment is not None
     assert stored_payment.gateway_charge_id == "pi_test_123"
+    assert stored_payment.status == "confirmed"
     assert stored_payment.receipt_number is not None
+    assert processing_item is not None
+    assert processing_item.status == "succeeded"
     assert len(dispatcher.calls) == 1
     assert str(dispatcher.calls[0]["payment_id"]) == body["payment_id"]
     confirmed_audit = next(
-        log for log in stored_audit_logs if log.action == "payment.finalize.confirmed"
+        log for log in stored_audit_logs if log.action == "payment.processing.confirmed"
     )
     assert confirmed_audit.payload["amount_in_cents"] == 287650
-    assert confirmed_audit.payload["currency"] == "COP"
+    accepted_audit = next(
+        log for log in stored_audit_logs if log.action == "payment.finalize.accepted"
+    )
+    assert accepted_audit.payload["currency"] == "COP"
 
 
-def test_get_payment_confirmation_returns_checkout_summary(client, monkeypatch):
+def test_get_payment_confirmation_returns_checkout_summary(client, test_engine, monkeypatch):
     monkeypatch.setenv("PAYMENT_PROVIDER", "stripe_test")
     monkeypatch.setenv("STRIPE_SECRET_KEY", "sk_test_example")
     monkeypatch.setenv("STRIPE_PUBLISHABLE_KEY", "pk_test_example")
     gateway = FakeStripeCheckoutGateway(finalize_status="succeeded")
     client.app.dependency_overrides[get_stripe_checkout_gateway] = lambda: gateway
+    client.app.dependency_overrides[get_payment_processing_runner] = lambda: (
+        InProcessPaymentProcessingRunner(
+            session_factory=lambda: Session(test_engine),
+            gateway=gateway,
+            notification_dispatcher=FakeNotificationDispatcher(),
+            reservation_updater=FakeReservationUpdater(),
+        )
+    )
 
     create_response = client.post(
         "/api/v1/payments/create-intent",
@@ -639,6 +668,7 @@ def test_get_payment_confirmation_returns_checkout_summary(client, monkeypatch):
         headers=SECURE_HEADERS,
     )
 
+    assert finalize_response.status_code == 202
     payment_id = finalize_response.json()["payment_id"]
     response = client.get(f"/api/v1/payments/{payment_id}/confirmation")
 
@@ -658,6 +688,14 @@ def test_webhook_can_complete_requires_action_checkout(client, test_engine, monk
     monkeypatch.setenv("STRIPE_WEBHOOK_SECRET", "whsec_test")
     gateway = FakeStripeCheckoutGateway(finalize_status="requires_action")
     client.app.dependency_overrides[get_stripe_checkout_gateway] = lambda: gateway
+    client.app.dependency_overrides[get_payment_processing_runner] = lambda: (
+        InProcessPaymentProcessingRunner(
+            session_factory=lambda: Session(test_engine),
+            gateway=gateway,
+            notification_dispatcher=FakeNotificationDispatcher(),
+            reservation_updater=FakeReservationUpdater(),
+        )
+    )
 
     create_response = client.post(
         "/api/v1/payments/create-intent",
@@ -675,8 +713,12 @@ def test_webhook_can_complete_requires_action_checkout(client, test_engine, monk
         headers=SECURE_HEADERS,
     )
 
-    assert finalize_response.status_code == 200
-    assert finalize_response.json()["status"] == "requires_action"
+    assert finalize_response.status_code == 202
+    assert finalize_response.json()["status"] == "pending"
+
+    status_response = client.get(f"/api/v1/payments/checkout/{transaction_id}")
+    assert status_response.status_code == 200
+    assert status_response.json()["status"] == "requires_action"
 
     webhook_response = client.post(
         "/api/v1/payments/webhook",
@@ -707,6 +749,14 @@ def test_finalize_stripe_payment_returns_failed_response_for_card_error(client, 
     monkeypatch.setenv("STRIPE_PUBLISHABLE_KEY", "pk_test_example")
     gateway = FakeStripeCheckoutGateway(finalize_status="card_error")
     client.app.dependency_overrides[get_stripe_checkout_gateway] = lambda: gateway
+    client.app.dependency_overrides[get_payment_processing_runner] = lambda: (
+        InProcessPaymentProcessingRunner(
+            session_factory=lambda: Session(test_engine),
+            gateway=gateway,
+            notification_dispatcher=FakeNotificationDispatcher(),
+            reservation_updater=FakeReservationUpdater(),
+        )
+    )
 
     create_response = client.post(
         "/api/v1/payments/create-intent",
@@ -724,11 +774,10 @@ def test_finalize_stripe_payment_returns_failed_response_for_card_error(client, 
         headers=SECURE_HEADERS,
     )
 
-    assert finalize_response.status_code == 200
+    assert finalize_response.status_code == 202
     body = finalize_response.json()
-    assert body["status"] == "failed"
+    assert body["status"] == "pending"
     assert body["payment_id"] is not None
-    assert "declined" in body["error"].lower()
 
     with Session(test_engine) as session:
         stored_payment = session.exec(select(Payment)).first()
@@ -744,6 +793,14 @@ def test_finalize_stripe_payment_returns_failed_response_for_insufficient_funds(
     monkeypatch.setenv("STRIPE_PUBLISHABLE_KEY", "pk_test_example")
     gateway = FakeStripeCheckoutGateway(finalize_status="card_error_insufficient")
     client.app.dependency_overrides[get_stripe_checkout_gateway] = lambda: gateway
+    client.app.dependency_overrides[get_payment_processing_runner] = lambda: (
+        InProcessPaymentProcessingRunner(
+            session_factory=lambda: Session(test_engine),
+            gateway=gateway,
+            notification_dispatcher=FakeNotificationDispatcher(),
+            reservation_updater=FakeReservationUpdater(),
+        )
+    )
 
     create_response = client.post(
         "/api/v1/payments/create-intent",
@@ -761,11 +818,10 @@ def test_finalize_stripe_payment_returns_failed_response_for_insufficient_funds(
         headers=SECURE_HEADERS,
     )
 
-    assert finalize_response.status_code == 200
+    assert finalize_response.status_code == 202
     body = finalize_response.json()
-    assert body["status"] == "failed"
+    assert body["status"] == "pending"
     assert body["payment_id"] is not None
-    assert "insufficient" in body["error"].lower()
 
     with Session(test_engine) as session:
         stored_payment = session.exec(select(Payment)).first()

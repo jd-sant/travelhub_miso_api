@@ -1,6 +1,18 @@
+import asyncio
+import json
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    Header,
+    HTTPException,
+    Request,
+    Response,
+    status,
+)
+from fastapi.responses import StreamingResponse
 
 from assembly import (
     get_create_payment_checkout_session_use_case,
@@ -11,6 +23,7 @@ from assembly import (
     get_get_payment_checkout_session_use_case,
     get_handle_stripe_webhook_use_case,
     get_list_payment_events_use_case,
+    get_payment_processing_runner,
 )
 from core.config import settings
 from domain.schemas.checkout import (
@@ -22,7 +35,13 @@ from domain.schemas.checkout import (
     PaymentFinalizeResponse,
     PaymentsConfigResponse,
 )
-from domain.schemas.payment import PaymentChargeRequest, PaymentEventResponse, PaymentPublicResponse
+from domain.schemas.payment import (
+    PaymentChargeRequest,
+    PaymentEventResponse,
+    PaymentPublicResponse,
+    PaymentStatus,
+)
+from domain.ports.payment_processing_runner import PaymentProcessingRunner
 from domain.use_cases.create_payment_checkout_session import CreatePaymentCheckoutSessionUseCase
 from domain.use_cases.create_payment_charge import CreatePaymentChargeUseCase
 from domain.use_cases.finalize_stripe_payment import FinalizeStripePaymentUseCase
@@ -89,17 +108,31 @@ def create_checkout_session(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
 
-@router.post("/finalize", response_model=PaymentFinalizeResponse, status_code=status.HTTP_200_OK)
+@router.post(
+    "/finalize",
+    response_model=PaymentFinalizeResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
 def finalize_stripe_payment(
+    background_tasks: BackgroundTasks,
     request: Request,
     payload: PaymentFinalizeRequest,
     x_forwarded_proto: str | None = Header(default=None),
     x_forwarded_for: str | None = Header(default=None),
     use_case: FinalizeStripePaymentUseCase = Depends(get_finalize_stripe_payment_use_case),
+    runner: PaymentProcessingRunner = Depends(get_payment_processing_runner),
 ) -> PaymentFinalizeResponse:
     try:
         _assert_secure_transport(x_forwarded_proto)
-        return use_case.execute(payload, source_ip=_resolve_source_ip(request, x_forwarded_for))
+        source_ip = _resolve_source_ip(request, x_forwarded_for)
+        response = use_case.execute(payload, source_ip=source_ip)
+        if response.status == "pending":
+            background_tasks.add_task(
+                runner.run_checkout_processing,
+                payment_transaction_id=payload.payment_transaction_id,
+                source_ip=source_ip,
+            )
+        return response
     except InsecureTransportError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except PaymentCheckoutSessionNotFoundError:
@@ -195,6 +228,65 @@ def get_payment(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Pago no encontrado.",
         )
+
+
+@router.get("/{payment_id}/stream", status_code=status.HTTP_200_OK)
+async def stream_payment_status(
+    payment_id: UUID,
+    get_payment_use_case: GetPaymentUseCase = Depends(get_get_payment_use_case),
+    list_events_use_case: ListPaymentEventsUseCase = Depends(get_list_payment_events_use_case),
+) -> StreamingResponse:
+    try:
+        get_payment_use_case.execute(payment_id)
+    except PaymentNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Pago no encontrado.",
+        )
+
+    async def event_stream():
+        last_status: str | None = None
+        last_failure_reason: str | None = None
+        seen_event_ids: set[str] = set()
+        while True:
+            payment = get_payment_use_case.execute(payment_id)
+            events = list_events_use_case.execute(payment_id)
+
+            for event in events:
+                event_id = str(event.event_id)
+                if event_id in seen_event_ids:
+                    continue
+                seen_event_ids.add(event_id)
+                yield (
+                    "event: payment_event\n"
+                    f"data: {json.dumps({'event_id': event_id, 'event_type': event.event_type, 'payload': event.payload, 'created_at': event.created_at.isoformat()})}\n\n"
+                )
+
+            current_status = payment.status.value
+            if (
+                current_status != last_status
+                or payment.failure_reason != last_failure_reason
+            ):
+                yield (
+                    "event: payment_status\n"
+                    f"data: {json.dumps({'payment_id': str(payment.payment_id), 'status': current_status, 'failure_reason': payment.failure_reason, 'receipt_id': str(payment.receipt_id) if payment.receipt_id else None, 'receipt_number': payment.receipt_number})}\n\n"
+                )
+                last_status = current_status
+                last_failure_reason = payment.failure_reason
+
+            if payment.status in {PaymentStatus.confirmed, PaymentStatus.failed}:
+                break
+
+            await asyncio.sleep(1)
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        },
+    )
 
 
 @router.get(

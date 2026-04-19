@@ -6,12 +6,20 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class PaymentStatus(str, Enum):
+    pending = "pending"
     confirmed = "confirmed"
     failed = "failed"
 
 
 class ReservationConfirmationOutboxStatus(str, Enum):
     pending = "pending"
+    succeeded = "succeeded"
+    failed = "failed"
+
+
+class PaymentProcessingOutboxStatus(str, Enum):
+    pending = "pending"
+    processing = "processing"
     succeeded = "succeeded"
     failed = "failed"
 
@@ -50,8 +58,8 @@ class PaymentChargeResponse(BaseModel):
     status: PaymentStatus
     amount_in_cents: int
     currency: str
-    gateway_charge_id: str
-    gateway_status: str
+    gateway_charge_id: str | None = None
+    gateway_status: str | None = None
     idempotency_key: str
     request_fingerprint: str
     duplicate_guard_key: str
@@ -81,7 +89,7 @@ class PaymentPublicResponse(BaseModel):
     status: PaymentStatus
     amount_in_cents: int
     currency: str
-    gateway_charge_id: str
+    gateway_charge_id: str | None = None
     receipt_id: UUID | None = None
     receipt_number: str | None = None
     failure_reason: str | None = None
@@ -100,6 +108,29 @@ class ReservationConfirmationOutboxRecord(BaseModel):
     processed_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
+
+
+class PaymentProcessingOutboxRecord(BaseModel):
+    outbox_id: UUID
+    payment_id: UUID
+    checkout_session_id: UUID
+    status: PaymentProcessingOutboxStatus
+    attempt_count: int
+    max_attempts: int
+    next_retry_at: datetime
+    source_ip: str | None = None
+    last_error: str | None = None
+    last_attempt_at: datetime | None = None
+    processed_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class PaymentProcessingRetryResponse(BaseModel):
+    processed_count: int
+    succeeded_count: int
+    failed_count: int
+    pending_count: int
 
 
 class ReservationConfirmationRetryResponse(BaseModel):
