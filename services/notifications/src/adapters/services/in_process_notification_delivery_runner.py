@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from datetime import datetime
 from uuid import UUID
 
 from sqlmodel import Session
@@ -25,6 +26,7 @@ class InProcessNotificationDeliveryRunner(NotificationDeliveryRunner):
         *,
         notification_id: UUID,
         source_ip: str | None = None,
+        payment_confirmed_at: datetime | None = None,
     ) -> None:
         with self.session_factory() as session:
             use_case = SendPaymentConfirmationUseCase(
@@ -33,4 +35,8 @@ class InProcessNotificationDeliveryRunner(NotificationDeliveryRunner):
                 audit_repository=SQLModelNotificationAuditRepository(session),
                 email_sender=self.email_sender,
             )
-            use_case.execute(notification_id, source_ip)
+            use_case.execute(
+                notification_id,
+                source_ip=source_ip,
+                payment_confirmed_at=payment_confirmed_at,
+            )

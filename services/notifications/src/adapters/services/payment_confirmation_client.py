@@ -38,6 +38,13 @@ class HttpPaymentConfirmationClient(PaymentConfirmationSource):
             receipt_id=payload.get("receipt_id"),
             receipt_number=payload.get("receipt_number"),
             property_name=payload.get("property_name"),
+            property_address=payload.get("property_address"),
             check_in_date=payload.get("check_in_date"),
             check_out_date=payload.get("check_out_date"),
+            guests_count=payload.get("guests_count"),
+            nights=payload.get("nights"),
+            nightly_rate_in_cents=payload.get("nightly_rate_in_cents"),
+            taxes_in_cents=payload.get("taxes_in_cents"),
+            total_in_cents=payload.get("total_in_cents"),
+            cancellation_policy=payload.get("cancellation_policy"),
         )

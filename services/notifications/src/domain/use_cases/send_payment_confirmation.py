@@ -1,5 +1,10 @@
+import json
+import logging
 from datetime import datetime, timezone
-from uuid import uuid4, UUID
+from pathlib import Path
+from uuid import UUID, uuid4
+
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from core.privacy import mask_email
 from domain.ports.delivery_attempt_repository import DeliveryAttemptRepository
@@ -16,6 +21,16 @@ from domain.schemas.notification import (
 )
 from domain.use_cases.base import BaseUseCase
 from errors import NotificationNotFoundError
+
+logger = logging.getLogger(__name__)
+
+_TEMPLATES_DIR = Path(__file__).resolve().parents[2] / "adapters" / "templates"
+_env = Environment(
+    loader=FileSystemLoader(str(_TEMPLATES_DIR)),
+    autoescape=select_autoescape(["html"]),
+    trim_blocks=False,
+    lstrip_blocks=False,
+)
 
 
 class SendPaymentConfirmationUseCase(BaseUseCase[UUID, NotificationResponse]):
@@ -35,6 +50,7 @@ class SendPaymentConfirmationUseCase(BaseUseCase[UUID, NotificationResponse]):
         self,
         notification_id: UUID,
         source_ip: str | None = None,
+        payment_confirmed_at: datetime | None = None,
     ) -> NotificationResponse:
         notification = self.notification_repository.get_by_id(notification_id)
         if notification is None:
@@ -43,7 +59,7 @@ class SendPaymentConfirmationUseCase(BaseUseCase[UUID, NotificationResponse]):
         if notification.status == NotificationStatus.sent:
             return self._to_response(notification)
 
-        body = self._build_body(notification)
+        html_body = self._render(notification)
         attempt_status = DeliveryAttemptStatus.sent
         failure_reason = None
         provider_message_id = None
@@ -51,7 +67,7 @@ class SendPaymentConfirmationUseCase(BaseUseCase[UUID, NotificationResponse]):
             provider_message_id = self.email_sender.send(
                 recipient_email=notification.recipient_email,
                 subject=notification.subject,
-                body=body,
+                html_body=html_body,
             )
             notification.status = NotificationStatus.sent
         except Exception as exc:  # noqa: BLE001
@@ -59,7 +75,8 @@ class SendPaymentConfirmationUseCase(BaseUseCase[UUID, NotificationResponse]):
             failure_reason = str(exc)
             notification.status = NotificationStatus.failed
 
-        notification.updated_at = datetime.now(timezone.utc)
+        email_sent_at = datetime.now(timezone.utc)
+        notification.updated_at = email_sent_at
         stored_notification = self.notification_repository.update(notification)
         self.delivery_attempt_repository.add_attempt(
             NotificationDeliveryAttemptRecord(
@@ -72,6 +89,32 @@ class SendPaymentConfirmationUseCase(BaseUseCase[UUID, NotificationResponse]):
                 created_at=stored_notification.updated_at,
             )
         )
+
+        audit_payload = {
+            "provider_message_id": provider_message_id,
+            "failure_reason": failure_reason,
+            "status": stored_notification.status.value,
+            "payment_confirmed_at": (
+                payment_confirmed_at.isoformat() if payment_confirmed_at else None
+            ),
+            "notification_created_at": stored_notification.created_at.isoformat(),
+            "email_sent_at": email_sent_at.isoformat(),
+        }
+        if payment_confirmed_at is not None:
+            latency_ms = int(
+                (email_sent_at - payment_confirmed_at).total_seconds() * 1000
+            )
+            audit_payload["latency_ms"] = latency_ms
+            logger.info(
+                "payment_confirmation_latency_ms",
+                extra={
+                    "notification_id": str(stored_notification.notification_id),
+                    "latency_ms": latency_ms,
+                    "sla_30s_met": latency_ms <= 30_000,
+                    "status": stored_notification.status.value,
+                },
+            )
+
         self.audit_repository.add_log(
             NotificationAuditLogRecord(
                 notification_id=stored_notification.notification_id,
@@ -84,35 +127,41 @@ class SendPaymentConfirmationUseCase(BaseUseCase[UUID, NotificationResponse]):
                     else "notification.payment_confirmation.failed"
                 ),
                 ip_address=source_ip,
-                payload={
-                    "provider_message_id": provider_message_id,
-                    "failure_reason": failure_reason,
-                    "status": stored_notification.status.value,
-                },
+                payload=audit_payload,
                 created_at=stored_notification.updated_at,
             )
         )
         return self._to_response(stored_notification)
 
-    def _build_body(self, notification: NotificationRecord) -> str:
-        payment_summary = notification.payload.get("payment_summary", {})
-        lines = [
-            f"Hola {notification.recipient_name},",
-            "",
-            "Tu pago fue confirmado exitosamente.",
-            f"Reserva: {payment_summary.get('reservation_id')}",
-            f"Pago: {payment_summary.get('payment_id')}",
-            f"Monto: {payment_summary.get('amount_in_cents', 0) / 100:.2f} {payment_summary.get('currency', '')}",
-        ]
-        if payment_summary.get("property_name"):
-            lines.append(f"Propiedad: {payment_summary['property_name']}")
-        if payment_summary.get("check_in_date") and payment_summary.get("check_out_date"):
-            lines.append(
-                f"Fechas: {payment_summary['check_in_date']} - {payment_summary['check_out_date']}"
-            )
-        if payment_summary.get("receipt_number"):
-            lines.append(f"Recibo: {payment_summary['receipt_number']}")
-        return "\n".join(lines)
+    def _render(self, notification: NotificationRecord) -> str:
+        summary = notification.payload.get("payment_summary", {})
+        currency = summary.get("currency", "")
+
+        def _money(cents: int | None) -> str | None:
+            if cents is None:
+                return None
+            return f"{cents / 100:.2f}"
+
+        context = {
+            "recipient_name": notification.recipient_name,
+            "reservation_id": summary.get("reservation_id"),
+            "receipt_number": summary.get("receipt_number"),
+            "property_name": summary.get("property_name"),
+            "property_address": summary.get("property_address"),
+            "check_in_date": summary.get("check_in_date"),
+            "check_out_date": summary.get("check_out_date"),
+            "guests_count": summary.get("guests_count"),
+            "nights": summary.get("nights"),
+            "nightly_rate": _money(summary.get("nightly_rate_in_cents")),
+            "taxes": _money(summary.get("taxes_in_cents")),
+            "total": _money(summary.get("total_in_cents") or summary.get("amount_in_cents")),
+            "currency": currency,
+            "cancellation_policy": (
+                summary.get("cancellation_policy")
+                or "Consulta la política de cancelación en tu panel de reservas."
+            ),
+        }
+        return _env.get_template("payment_confirmation.html").render(**context)
 
     def _to_response(self, notification: NotificationRecord) -> NotificationResponse:
         return NotificationResponse(

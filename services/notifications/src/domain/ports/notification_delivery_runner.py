@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 from uuid import UUID
 
 
@@ -9,5 +10,6 @@ class NotificationDeliveryRunner(ABC):
         *,
         notification_id: UUID,
         source_ip: str | None = None,
+        payment_confirmed_at: datetime | None = None,
     ) -> None:
         raise NotImplementedError
