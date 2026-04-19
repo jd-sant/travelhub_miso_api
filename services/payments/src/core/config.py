@@ -185,6 +185,37 @@ class Settings:
         return value
 
     @property
+    def aws_region(self) -> str:
+        return os.getenv("AWS_REGION", "us-east-1")
+
+    @property
+    def notifications_queue_url(self) -> str:
+        return os.getenv("NOTIFICATIONS_QUEUE_URL", "").strip()
+
+    @property
+    def notifications_dispatch_mode(self) -> str:
+        """sqs (default cuando hay queue url) | http (fallback legacy) | noop."""
+        explicit = os.getenv("NOTIFICATIONS_DISPATCH_MODE", "").strip().lower()
+        if explicit in {"sqs", "http", "noop"}:
+            return explicit
+        if self.notifications_queue_url:
+            return "sqs"
+        if self.notifications_service_url:
+            return "http"
+        return "noop"
+
+    @property
+    def default_cancellation_policy(self) -> str:
+        return os.getenv(
+            "DEFAULT_CANCELLATION_POLICY",
+            "Cancelacion gratuita hasta 48 horas antes del check-in. Despues se cobra la primera noche.",
+        )
+
+    @property
+    def default_tax_rate_by_currency(self) -> dict[str, float]:
+        return {"COP": 0.19, "USD": 0.08, "MXN": 0.16, "EUR": 0.21, "BRL": 0.17}
+
+    @property
     def internal_api_key(self) -> str:
         value = os.getenv("INTERNAL_API_KEY")
         if value:
