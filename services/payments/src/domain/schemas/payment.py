@@ -16,6 +16,12 @@ class ReservationConfirmationOutboxStatus(str, Enum):
     failed = "failed"
 
 
+class PaymentRefundStatus(str, Enum):
+    pending = "pending"
+    succeeded = "succeeded"
+    failed = "failed"
+
+
 class PaymentChargeRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -31,6 +37,15 @@ class PaymentChargeRequest(BaseModel):
     @classmethod
     def uppercase_currency(cls, value: str) -> str:
         return value.upper()
+
+
+class PaymentRefundCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    payment_id: UUID
+    amount_in_cents: int = Field(gt=0)
+    reason: str = Field(min_length=4, max_length=255)
+    idempotency_key: str = Field(min_length=8, max_length=255)
 
 
 class GatewayChargeResult(BaseModel):
@@ -87,6 +102,45 @@ class PaymentPublicResponse(BaseModel):
     failure_reason: str | None = None
 
 
+class PaymentRefundResponse(BaseModel):
+    refund_id: UUID
+    payment_id: UUID
+    reservation_id: UUID
+    traveler_id: UUID
+    amount_in_cents: int
+    currency: str
+    reason: str
+    idempotency_key: str
+    status: PaymentRefundStatus
+    retry_count: int
+    max_attempts: int
+    sla_deadline_at: datetime
+    next_retry_at: datetime
+    last_error: str | None = None
+    processed_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class PaymentRefundPublicResponse(BaseModel):
+    refund_id: UUID
+    payment_id: UUID
+    reservation_id: UUID
+    traveler_id: UUID
+    amount_in_cents: int
+    currency: str
+    reason: str
+    status: PaymentRefundStatus
+    retry_count: int
+    max_attempts: int
+    sla_deadline_at: datetime
+    next_retry_at: datetime
+    last_error: str | None = None
+    processed_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
 class ReservationConfirmationOutboxRecord(BaseModel):
     outbox_id: UUID
     payment_id: UUID
@@ -103,6 +157,13 @@ class ReservationConfirmationOutboxRecord(BaseModel):
 
 
 class ReservationConfirmationRetryResponse(BaseModel):
+    processed_count: int
+    succeeded_count: int
+    failed_count: int
+    pending_count: int
+
+
+class PaymentRefundRetryResponse(BaseModel):
     processed_count: int
     succeeded_count: int
     failed_count: int
