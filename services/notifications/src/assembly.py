@@ -41,13 +41,17 @@ def get_notification_audit_repository(
 
 
 def get_email_sender() -> EmailSender:
+    if settings.ses_from_address:
+        from adapters.services.ses_email_sender import SesEmailSender
+
+        return SesEmailSender()
     if settings.smtp_host:
         from adapters.services.smtp_email_sender import SmtpEmailSender
 
         return SmtpEmailSender()
     if settings.app_env not in ("development", "dev", "test"):
         raise PaymentConfirmationUnavailableError(
-            "SMTP_HOST debe estar configurado para despachar confirmaciones en entornos no-dev."
+            "SES_FROM_ADDRESS o SMTP_HOST debe estar configurado para despachar confirmaciones en entornos no-dev."
         )
     return LogEmailSender()
 

@@ -93,6 +93,35 @@ class Settings:
     def skip_db_init_on_startup(self) -> bool:
         return os.getenv("SKIP_DB_INIT_ON_STARTUP", "False").lower() == "true"
 
+    @property
+    def aws_region(self) -> str:
+        return os.getenv("AWS_REGION", "us-east-1")
+
+    @property
+    def notifications_queue_url(self) -> str:
+        return os.getenv("NOTIFICATIONS_QUEUE_URL", "").strip()
+
+    @property
+    def ses_from_address(self) -> str:
+        return os.getenv("SES_FROM_ADDRESS", "").strip()
+
+    @property
+    def ses_region(self) -> str:
+        return os.getenv("SES_REGION", self.aws_region)
+
+    @property
+    def service_mode(self) -> str:
+        """api | worker. Controla el CMD del contenedor."""
+        return os.getenv("SERVICE_MODE", "api").strip().lower()
+
+    @property
+    def sqs_poll_wait_seconds(self) -> int:
+        return int(os.getenv("SQS_POLL_WAIT_SECONDS", "20"))
+
+    @property
+    def sqs_max_messages(self) -> int:
+        return int(os.getenv("SQS_MAX_MESSAGES", "10"))
+
     def _assert_internal_service_url(self, value: str, variable_name: str) -> None:
         parsed = urlparse(value)
         if not parsed.scheme or not parsed.netloc:

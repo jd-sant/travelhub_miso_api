@@ -10,25 +10,24 @@ from errors import PaymentConfirmationUnavailableError, TravelerProfileNotFoundE
 
 class HttpTravelerProfileClient(TravelerProfileSource):
     def get_traveler(self, traveler_id: UUID) -> TravelerProfileRecord:
-        url = f"{settings.users_service_url}/api/v1/users"
+        url = f"{settings.users_service_url}/api/v1/internal/users/{traveler_id}"
         try:
-            response = httpx.get(url, timeout=5.0)
+            response = httpx.get(
+                url,
+                headers={"X-Internal-Api-Key": settings.internal_api_key},
+                timeout=5.0,
+            )
+            if response.status_code == 404:
+                raise TravelerProfileNotFoundError(
+                    f"No se encontro informacion del viajero {traveler_id}."
+                )
             response.raise_for_status()
         except httpx.HTTPError as exc:
             raise PaymentConfirmationUnavailableError(
                 "No fue posible consultar la informacion del viajero."
             ) from exc
 
-        users = response.json()
-        traveler = next(
-            (user for user in users if str(user.get("id")) == str(traveler_id)),
-            None,
-        )
-        if traveler is None:
-            raise TravelerProfileNotFoundError(
-                f"No se encontro informacion del viajero {traveler_id}."
-            )
-
+        traveler = response.json()
         return TravelerProfileRecord(
             traveler_id=traveler["id"],
             email=traveler["email"],

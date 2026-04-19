@@ -2,6 +2,11 @@
 
 Microservicio responsable de resolver la informacion de confirmacion del pago, persistir la notificacion, registrar auditoria y despachar el mensaje por email mediante un sender desacoplado.
 
+## Modos de ejecución
+
+`SERVICE_MODE=api` (default) levanta FastAPI. `SERVICE_MODE=worker` ejecuta
+el consumer SQS (`entrypoints.worker.notifications_consumer`).
+
 ## Endpoints
 
 | Metodo | Ruta | Descripcion |
