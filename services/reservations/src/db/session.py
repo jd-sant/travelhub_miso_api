@@ -3,7 +3,7 @@ from collections.abc import Generator
 from sqlalchemy import event, inspect, text
 from sqlmodel import Session, SQLModel, create_engine
 
-from adapters.models import Reservation, ReservationEvent
+from adapters.models import Reservation, ReservationCommandLog, ReservationEvent
 from core.config import settings
 
 _is_postgres = settings.database_url.startswith("postgresql")
@@ -34,7 +34,7 @@ if _is_postgres:
 
 def create_db_and_tables() -> None:
     # Keep explicit model references so SQLModel metadata includes all tables.
-    _ = (Reservation, ReservationEvent)
+    _ = (Reservation, ReservationEvent, ReservationCommandLog)
     if _is_postgres:
         with engine.connect() as conn:
             conn.execute(

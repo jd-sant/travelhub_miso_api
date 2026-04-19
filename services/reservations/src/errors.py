@@ -32,3 +32,11 @@ class PropertyNotFoundError(Exception):
 
 class PropertyServiceUnavailableError(Exception):
     pass
+
+
+class ReservationOwnershipError(Exception):
+    pass
+
+
+class InvalidReservationOperationError(Exception):
+    pass

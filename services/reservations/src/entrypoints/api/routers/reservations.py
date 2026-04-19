@@ -1,9 +1,12 @@
 from functools import lru_cache
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from sqlmodel import Session
 
+from adapters.repositories.reservation_command_log_repository import (
+    SQLModelReservationCommandLogRepository,
+)
 from adapters.repositories.reservation_repository import SQLModelReservationRepository
 from adapters.repositories.reservation_event_repository import (
     SQLModelReservationEventRepository,
@@ -18,14 +21,25 @@ from db.session import get_session
 from domain.ports.property_service_client import PropertyServiceClient
 from domain.ports.reservation_scheduler import ReservationScheduler
 from domain.schemas.reservation import (
+    ReservationCancellationConfirmRequest,
     ReservationCancellationPreviewResponse,
+    ReservationConfirmResponse,
     ReservationCreateRequest,
+    ReservationHistoryResponse,
+    ReservationModificationConfirmRequest,
     ReservationModificationPreviewRequest,
     ReservationModificationPreviewResponse,
     ReservationResponse,
     ReservationSummary,
 )
+from domain.use_cases.confirm_reservation_cancellation import (
+    ConfirmReservationCancellationUseCase,
+)
+from domain.use_cases.confirm_reservation_modification import (
+    ConfirmReservationModificationUseCase,
+)
 from domain.use_cases.create_reservation import CreateReservationUseCase
+from domain.use_cases.get_reservation_history import GetReservationHistoryUseCase
 from domain.use_cases.preview_reservation_cancellation import (
     PreviewReservationCancellationUseCase,
 )
@@ -33,11 +47,13 @@ from domain.use_cases.preview_reservation_modification import (
     PreviewReservationModificationUseCase,
 )
 from errors import (
+    InvalidReservationOperationError,
     InvalidReservationDateError,
     PropertyNotFoundError,
     PropertyServiceUnavailableError,
     ReservationSchedulingError,
     ReservationNotFoundError,
+    ReservationOwnershipError,
     RoomNotAvailableError,
 )
 
@@ -50,6 +66,10 @@ def get_reservation_repository(session: Session = Depends(get_session)):
 
 def get_reservation_event_repository(session: Session = Depends(get_session)):
     return SQLModelReservationEventRepository(session)
+
+
+def get_reservation_command_log_repository(session: Session = Depends(get_session)):
+    return SQLModelReservationCommandLogRepository(session)
 
 
 def get_property_service_client() -> PropertyServiceClient:
@@ -106,6 +126,60 @@ def get_preview_cancellation_use_case(
         property_client,
         event_repository,
     )
+
+
+def get_confirm_modification_use_case(
+    repository=Depends(get_reservation_repository),
+    event_repository=Depends(get_reservation_event_repository),
+    command_log_repository=Depends(get_reservation_command_log_repository),
+    preview_use_case: PreviewReservationModificationUseCase = Depends(
+        get_preview_modification_use_case
+    ),
+):
+    return ConfirmReservationModificationUseCase(
+        repository,
+        event_repository,
+        command_log_repository,
+        preview_use_case,
+    )
+
+
+def get_confirm_cancellation_use_case(
+    repository=Depends(get_reservation_repository),
+    event_repository=Depends(get_reservation_event_repository),
+    command_log_repository=Depends(get_reservation_command_log_repository),
+    preview_use_case: PreviewReservationCancellationUseCase = Depends(
+        get_preview_cancellation_use_case
+    ),
+):
+    return ConfirmReservationCancellationUseCase(
+        repository,
+        event_repository,
+        command_log_repository,
+        preview_use_case,
+    )
+
+
+def get_reservation_history_use_case(
+    repository=Depends(get_reservation_repository),
+    event_repository=Depends(get_reservation_event_repository),
+):
+    return GetReservationHistoryUseCase(repository, event_repository)
+
+
+def _get_actor_user_id(x_traveler_id: str = Header(default=None)) -> UUID:
+    if not x_traveler_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="X-Traveler-Id header is required",
+        )
+    try:
+        return UUID(x_traveler_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid X-Traveler-Id header format",
+        ) from exc
 
 
 @router.post(
@@ -226,6 +300,126 @@ def preview_reservation_cancellation(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error",
         )
+
+
+@router.post(
+    "/{reservation_id}/modifications/confirm",
+    response_model=ReservationConfirmResponse,
+    status_code=status.HTTP_200_OK,
+)
+def confirm_reservation_modification(
+    reservation_id: str,
+    payload: ReservationModificationConfirmRequest,
+    request: Request,
+    actor_user_id: UUID = Depends(_get_actor_user_id),
+    use_case: ConfirmReservationModificationUseCase = Depends(
+        get_confirm_modification_use_case
+    ),
+):
+    try:
+        reservation_uuid = UUID(reservation_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid reservation ID format",
+        )
+
+    source_ip = request.client.host if request.client else None
+    try:
+        return use_case.execute(
+            reservation_uuid,
+            payload,
+            actor_user_id=actor_user_id,
+            source_ip=source_ip,
+        )
+    except ReservationNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ReservationOwnershipError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except InvalidReservationOperationError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except PropertyNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except PropertyServiceUnavailableError as e:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error",
+        )
+
+
+@router.post(
+    "/{reservation_id}/cancellation/confirm",
+    response_model=ReservationConfirmResponse,
+    status_code=status.HTTP_200_OK,
+)
+def confirm_reservation_cancellation(
+    reservation_id: str,
+    payload: ReservationCancellationConfirmRequest,
+    request: Request,
+    actor_user_id: UUID = Depends(_get_actor_user_id),
+    use_case: ConfirmReservationCancellationUseCase = Depends(
+        get_confirm_cancellation_use_case
+    ),
+):
+    try:
+        reservation_uuid = UUID(reservation_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid reservation ID format",
+        )
+
+    source_ip = request.client.host if request.client else None
+    try:
+        return use_case.execute(
+            reservation_uuid,
+            payload,
+            actor_user_id=actor_user_id,
+            source_ip=source_ip,
+        )
+    except ReservationNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ReservationOwnershipError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except InvalidReservationOperationError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except PropertyNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except PropertyServiceUnavailableError as e:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error",
+        )
+
+
+@router.get(
+    "/{reservation_id}/history",
+    response_model=ReservationHistoryResponse,
+    status_code=status.HTTP_200_OK,
+)
+def get_reservation_history(
+    reservation_id: str,
+    actor_user_id: UUID = Depends(_get_actor_user_id),
+    use_case: GetReservationHistoryUseCase = Depends(get_reservation_history_use_case),
+):
+    try:
+        reservation_uuid = UUID(reservation_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid reservation ID format",
+        )
+
+    try:
+        return use_case.execute(reservation_uuid, actor_user_id=actor_user_id)
+    except ReservationNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ReservationOwnershipError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
 
 @router.get("/{reservation_id}", response_model=ReservationResponse)

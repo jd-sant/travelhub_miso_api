@@ -38,6 +38,11 @@ class ReservationEventResult(str, Enum):
     failed = "failed"
 
 
+class ReservationCommandType(str, Enum):
+    modification_confirm = "modification_confirm"
+    cancellation_confirm = "cancellation_confirm"
+
+
 class ReservationCreateRequest(BaseModel):
     id_traveler: UUID
     id_property: UUID
@@ -95,6 +100,18 @@ class ReservationCancellationPreviewResponse(BaseModel):
     reasons: list[str] = Field(default_factory=list)
 
 
+class ReservationModificationConfirmRequest(BaseModel):
+    idempotency_key: str = Field(min_length=1, max_length=128)
+    check_in_date: datetime
+    check_out_date: datetime
+    number_of_guests: int = Field(ge=1)
+
+
+class ReservationCancellationConfirmRequest(BaseModel):
+    idempotency_key: str = Field(min_length=1, max_length=128)
+    reason: str | None = Field(default=None, max_length=255)
+
+
 class ReservationEventCreateRequest(BaseModel):
     reservation_id: UUID
     event_type: ReservationEventType
@@ -147,6 +164,21 @@ class ReservationCheckStatusResponse(BaseModel):
     status_before: str
     status_after: str
     action_applied: str
+
+
+class ReservationConfirmResponse(BaseModel):
+    reservation: ReservationResponse
+    status_before: str
+    status_after: str
+    action_applied: str
+    idempotency_key: str
+    additional_charge_amount: Decimal = Field(default=Decimal("0.00"), ge=0)
+    refund_amount: Decimal = Field(default=Decimal("0.00"), ge=0)
+
+
+class ReservationHistoryResponse(BaseModel):
+    reservation_id: UUID
+    events: list[ReservationEventResponse]
 
 
 ReservationModificationPreviewResponse.model_rebuild()

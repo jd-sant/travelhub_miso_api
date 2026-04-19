@@ -38,3 +38,19 @@ class ReservationRepository(ABC):
     @abstractmethod
     def update_status(self, id: UUID, status: str) -> Optional[ReservationResponse]:
         pass
+
+    @abstractmethod
+    def apply_updates(
+        self,
+        id: UUID,
+        *,
+        status: str,
+        check_in_date: datetime | None = None,
+        check_out_date: datetime | None = None,
+        number_of_guests: int | None = None,
+        total_price: Decimal | None = None,
+        last_policy_snapshot: str | None = None,
+        cancelled_at: datetime | None = None,
+        cancellation_reason: str | None = None,
+    ) -> Optional[ReservationResponse]:
+        pass

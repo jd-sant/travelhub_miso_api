@@ -531,3 +531,146 @@ class TestReservationEndpoints:
         body = response.json()
         assert body["change_allowed"] is False
         assert any("confirmed" in reason.lower() for reason in body["reasons"])
+
+    def test_confirm_modification_is_idempotent(self, client):
+        traveler_id = str(uuid4())
+        property_id = str(uuid4())
+        room_id = str(uuid4())
+        check_in = (datetime.now(UTC) + timedelta(days=5)).isoformat()
+        check_out = (datetime.now(UTC) + timedelta(days=7)).isoformat()
+
+        payload = {
+            "id_traveler": traveler_id,
+            "id_property": property_id,
+            "id_room": room_id,
+            "check_in_date": check_in,
+            "check_out_date": check_out,
+            "number_of_guests": 2,
+            "currency": "COP",
+        }
+        created = client.post("/api/v1/reservations", json=payload)
+        reservation_id = created.json()["id"]
+
+        client.patch(
+            f"/api/v1/internal/reservations/{reservation_id}/status",
+            json={"status": "confirmed"},
+            headers={"X-Internal-Api-Key": settings.internal_api_key},
+        )
+
+        app.dependency_overrides[get_property_service_client] = lambda: FakePropertyServiceClient()
+        confirm_payload = {
+            "idempotency_key": "idem-mod-1",
+            "check_in_date": (datetime.now(UTC) + timedelta(days=6)).isoformat(),
+            "check_out_date": (datetime.now(UTC) + timedelta(days=9)).isoformat(),
+            "number_of_guests": 3,
+        }
+        try:
+            first = client.post(
+                f"/api/v1/reservations/{reservation_id}/modifications/confirm",
+                json=confirm_payload,
+                headers={"X-Traveler-Id": traveler_id},
+            )
+            second = client.post(
+                f"/api/v1/reservations/{reservation_id}/modifications/confirm",
+                json=confirm_payload,
+                headers={"X-Traveler-Id": traveler_id},
+            )
+        finally:
+            app.dependency_overrides.pop(get_property_service_client, None)
+
+        assert first.status_code == 200
+        assert second.status_code == 200
+        assert first.json() == second.json()
+        assert first.json()["idempotency_key"] == "idem-mod-1"
+
+    def test_confirm_endpoints_enforce_reservation_ownership(self, client):
+        traveler_id = str(uuid4())
+        non_owner_id = str(uuid4())
+        property_id = str(uuid4())
+        room_id = str(uuid4())
+        check_in = (datetime.now(UTC) + timedelta(days=5)).isoformat()
+        check_out = (datetime.now(UTC) + timedelta(days=7)).isoformat()
+
+        payload = {
+            "id_traveler": traveler_id,
+            "id_property": property_id,
+            "id_room": room_id,
+            "check_in_date": check_in,
+            "check_out_date": check_out,
+            "number_of_guests": 2,
+            "currency": "COP",
+        }
+        created = client.post("/api/v1/reservations", json=payload)
+        reservation_id = created.json()["id"]
+
+        client.patch(
+            f"/api/v1/internal/reservations/{reservation_id}/status",
+            json={"status": "confirmed"},
+            headers={"X-Internal-Api-Key": settings.internal_api_key},
+        )
+
+        app.dependency_overrides[get_property_service_client] = lambda: FakePropertyServiceClient()
+        try:
+            response = client.post(
+                f"/api/v1/reservations/{reservation_id}/cancellation/confirm",
+                json={"idempotency_key": "idem-cancel-1", "reason": "user-request"},
+                headers={"X-Traveler-Id": non_owner_id},
+            )
+        finally:
+            app.dependency_overrides.pop(get_property_service_client, None)
+
+        assert response.status_code == 403
+        assert "does not belong" in response.json()["detail"]
+
+    def test_history_returns_confirm_event_with_actor_and_source_ip(self, client):
+        traveler_id = str(uuid4())
+        property_id = str(uuid4())
+        room_id = str(uuid4())
+        check_in = (datetime.now(UTC) + timedelta(days=5)).isoformat()
+        check_out = (datetime.now(UTC) + timedelta(days=7)).isoformat()
+
+        payload = {
+            "id_traveler": traveler_id,
+            "id_property": property_id,
+            "id_room": room_id,
+            "check_in_date": check_in,
+            "check_out_date": check_out,
+            "number_of_guests": 2,
+            "currency": "COP",
+        }
+        created = client.post("/api/v1/reservations", json=payload)
+        reservation_id = created.json()["id"]
+
+        client.patch(
+            f"/api/v1/internal/reservations/{reservation_id}/status",
+            json={"status": "confirmed"},
+            headers={"X-Internal-Api-Key": settings.internal_api_key},
+        )
+
+        app.dependency_overrides[get_property_service_client] = lambda: FakePropertyServiceClient()
+        try:
+            confirm_response = client.post(
+                f"/api/v1/reservations/{reservation_id}/cancellation/confirm",
+                json={"idempotency_key": "idem-cancel-history", "reason": "schedule-change"},
+                headers={"X-Traveler-Id": traveler_id},
+            )
+        finally:
+            app.dependency_overrides.pop(get_property_service_client, None)
+
+        assert confirm_response.status_code == 200
+
+        history_response = client.get(
+            f"/api/v1/reservations/{reservation_id}/history",
+            headers={"X-Traveler-Id": traveler_id},
+        )
+        assert history_response.status_code == 200
+        body = history_response.json()
+        assert body["reservation_id"] == reservation_id
+        event_types = [item["event_type"] for item in body["events"]]
+        assert "cancellation_confirmed" in event_types
+
+        cancellation_event = [
+            item for item in body["events"] if item["event_type"] == "cancellation_confirmed"
+        ][-1]
+        assert cancellation_event["actor_user_id"] == traveler_id
+        assert cancellation_event["source_ip"] is not None

@@ -18,7 +18,11 @@ if str(SRC_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_PATH))
 
 from adapters.models.reservation import Reservation
+from adapters.models.reservation_command_log import ReservationCommandLog
 from adapters.models.reservation_event import ReservationEvent
+from adapters.repositories.reservation_command_log_repository import (
+    SQLModelReservationCommandLogRepository,
+)
 from adapters.repositories.reservation_event_repository import (
     SQLModelReservationEventRepository,
 )
@@ -37,7 +41,7 @@ def session():
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    _ = (Reservation, ReservationEvent)
+    _ = (Reservation, ReservationEvent, ReservationCommandLog)
     SQLModel.metadata.create_all(engine)
     with Session(engine) as session:
         yield session
@@ -66,6 +70,12 @@ def reservation_repository(session: Session):
 def reservation_event_repository(session: Session):
     """Create event repository instance with test session."""
     return SQLModelReservationEventRepository(session)
+
+
+@pytest.fixture
+def reservation_command_log_repository(session: Session):
+    """Create command-log repository instance with test session."""
+    return SQLModelReservationCommandLogRepository(session)
 
 
 @pytest.fixture
