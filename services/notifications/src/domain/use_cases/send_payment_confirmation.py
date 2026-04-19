@@ -78,11 +78,7 @@ class SendPaymentConfirmationUseCase(BaseUseCase[UUID, NotificationResponse]):
                 traveler_id=stored_notification.traveler_id,
                 entity_type="notification",
                 entity_id=str(stored_notification.notification_id),
-                action=(
-                    "notification.payment_confirmation.sent"
-                    if stored_notification.status == NotificationStatus.sent
-                    else "notification.payment_confirmation.failed"
-                ),
+                action=self._audit_action(stored_notification),
                 ip_address=source_ip,
                 payload={
                     "provider_message_id": provider_message_id,
@@ -95,6 +91,11 @@ class SendPaymentConfirmationUseCase(BaseUseCase[UUID, NotificationResponse]):
         return self._to_response(stored_notification)
 
     def _build_body(self, notification: NotificationRecord) -> str:
+        if notification.template_code == "payment_confirmation_v1":
+            return self._build_payment_confirmation_body(notification)
+        return self._build_reservation_event_body(notification)
+
+    def _build_payment_confirmation_body(self, notification: NotificationRecord) -> str:
         payment_summary = notification.payload.get("payment_summary", {})
         lines = [
             f"Hola {notification.recipient_name},",
@@ -113,6 +114,41 @@ class SendPaymentConfirmationUseCase(BaseUseCase[UUID, NotificationResponse]):
         if payment_summary.get("receipt_number"):
             lines.append(f"Recibo: {payment_summary['receipt_number']}")
         return "\n".join(lines)
+
+    def _build_reservation_event_body(self, notification: NotificationRecord) -> str:
+        event = notification.payload.get("event", {})
+        payment = notification.payload.get("payment") or {}
+        refund = notification.payload.get("refund") or {}
+
+        lines = [
+            f"Hola {notification.recipient_name},",
+            "",
+            notification.subject,
+            f"Reserva: {event.get('reservation_id')}",
+        ]
+
+        if payment:
+            lines.append(f"Pago: {payment.get('payment_id')}")
+            lines.append(
+                f"Monto pago: {payment.get('amount_in_cents', 0) / 100:.2f} {payment.get('currency', '')}"
+            )
+            lines.append(f"Estado pago: {payment.get('status')}")
+
+        if refund:
+            lines.append(f"Reembolso: {refund.get('refund_id')}")
+            lines.append(
+                f"Monto reembolso: {refund.get('amount_in_cents', 0) / 100:.2f} {refund.get('currency', '')}"
+            )
+            lines.append(f"Estado reembolso: {refund.get('status')}")
+            if refund.get("reason"):
+                lines.append(f"Motivo: {refund.get('reason')}")
+
+        return "\n".join(lines)
+
+    def _audit_action(self, notification: NotificationRecord) -> str:
+        base = notification.template_code.replace("_v1", "")
+        suffix = "sent" if notification.status == NotificationStatus.sent else "failed"
+        return f"notification.{base}.{suffix}"
 
     def _to_response(self, notification: NotificationRecord) -> NotificationResponse:
         return NotificationResponse(

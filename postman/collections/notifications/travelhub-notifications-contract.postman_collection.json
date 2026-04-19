@@ -28,6 +28,52 @@
         "header": [{"key": "X-Internal-Api-Key", "value": "{{internal_api_key}}"}],
         "url": {"raw": "{{notifications_base_url}}/api/v1/notifications/{{notif_random_id}}", "host": ["{{notifications_base_url}}"], "path": ["api", "v1", "notifications", "{{notif_random_id}}"]}
       }
+    },
+    {
+      "name": "Create Reservation Event Notification",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set('reservation_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+              "pm.collectionVariables.set('traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+              "pm.collectionVariables.set('payment_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+              "pm.collectionVariables.set('refund_id', pm.variables.replaceIn('{{$randomUUID}}'));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('created 201', function () { pm.response.to.have.status(201); });",
+              "const body = pm.response.json();",
+              "pm.test('response includes pending status', function () { pm.expect(body.status).to.eql('pending'); });",
+              "pm.test('response echoes payment id', function () { pm.expect(body.payment_id).to.eql(pm.collectionVariables.get('payment_id')); });",
+              "pm.collectionVariables.set('notification_id', body.notification_id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "X-Internal-Api-Key", "value": "{{internal_api_key}}"}
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reservation_id\": \"{{reservation_id}}\",\n  \"traveler_id\": \"{{traveler_id}}\",\n  \"event_type\": \"refund_succeeded\",\n  \"payment_id\": \"{{payment_id}}\",\n  \"refund_id\": \"{{refund_id}}\",\n  \"source_ip\": \"127.0.0.1\"\n}"
+        },
+        "url": {
+          "raw": "{{notifications_base_url}}/api/v1/internal/reservation-events",
+          "host": ["{{notifications_base_url}}"],
+          "path": ["api", "v1", "internal", "reservation-events"]
+        }
+      }
     }
   ]
 }
