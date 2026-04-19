@@ -15,6 +15,10 @@ class UserRepository(ABC):
         pass
 
     @abstractmethod
+    def get_by_id(self, user_id: UUID) -> Optional[UserResponse]:
+        pass
+
+    @abstractmethod
     def list_all(self) -> list[UserResponse]:
         pass
 

@@ -2,6 +2,25 @@
 
 Microservicio de pagos de TravelHub para el MVP de procesamiento seguro.
 
+## Política de reintentos
+
+La confirmación del pago se publica en la Notificaciones Queue (SQS) vía
+`SqsNotificationDispatcher` cuando `NOTIFICATIONS_QUEUE_URL` está configurado.
+La política de reintentos es compuesta:
+
+- **Outbox (payments)**: `RESERVATION_CONFIRMATION_RETRY_MAX_ATTEMPTS=5` con
+  backoff exponencial (`base * 2^n`, cap 10 min). Protege contra caídas
+  temporales de SQS o del servicio de notifications.
+- **SQS redrive**: `maxReceiveCount=5` (configurado en `modules/messaging`).
+  Si un mensaje falla 5 veces en el worker de notifications, cae a
+  `travelhub-<env>-notifications-dlq`.
+
+## Dispatch modes
+
+- `NOTIFICATIONS_DISPATCH_MODE=sqs` (default si hay `NOTIFICATIONS_QUEUE_URL`)
+- `NOTIFICATIONS_DISPATCH_MODE=http` (fallback legacy al endpoint interno)
+- `NOTIFICATIONS_DISPATCH_MODE=noop` (sin despachar — útil en tests)
+
 ## Responsabilidades
 
 - Recibir solo tokens de pago generados fuera del backend

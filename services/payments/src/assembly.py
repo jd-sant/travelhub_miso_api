@@ -10,6 +10,7 @@ from adapters.repositories.payment_refund_repository import SQLModelPaymentRefun
 from adapters.services.notification_dispatcher import (
     HttpNotificationDispatcher,
     NoOpNotificationDispatcher,
+    SqsNotificationDispatcher,
 )
 from adapters.services.reservation_updater import (
     HttpReservationUpdater,
@@ -77,7 +78,10 @@ def get_stripe_checkout_gateway() -> StripeCheckoutGateway:
 
 
 def get_notification_dispatcher() -> NotificationDispatcher:
-    if settings.notifications_service_url:
+    mode = settings.notifications_dispatch_mode
+    if mode == "sqs":
+        return SqsNotificationDispatcher()
+    if mode == "http":
         return HttpNotificationDispatcher()
     return NoOpNotificationDispatcher()
 

@@ -52,6 +52,10 @@ class SQLModelUserRepository(UserRepository):
         ).first()
         return _to_response(model) if model else None
 
+    def get_by_id(self, user_id: UUID) -> Optional[UserResponse]:
+        model = self.session.get(User, user_id)
+        return _to_response(model) if model else None
+
     def list_all(self) -> list[UserResponse]:
         models = self.session.exec(select(User)).all()
         return [_to_response(m) for m in models]
