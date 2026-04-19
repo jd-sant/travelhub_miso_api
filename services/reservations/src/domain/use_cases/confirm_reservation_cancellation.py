@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from uuid import UUID
 
 from domain.ports.reservation_command_log_repository import (
@@ -42,6 +42,10 @@ class ConfirmReservationCancellationUseCase:
         self.payment_service = payment_service
         self.preview_use_case = preview_use_case
 
+    @staticmethod
+    def _to_cents(amount: Decimal) -> int:
+        return int((amount * Decimal("100")).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+
     def execute(
         self,
         reservation_id: UUID,
@@ -78,7 +82,7 @@ class ConfirmReservationCancellationUseCase:
             try:
                 self.payment_service.request_refund(
                     reservation_id=reservation_id,
-                    amount_in_cents=int(refund_amount),
+                    amount_in_cents=self._to_cents(refund_amount),
                     reason=payload.reason or "reservation_cancellation_refund",
                     idempotency_key=f"{payload.idempotency_key}:refund",
                     source_ip=source_ip,

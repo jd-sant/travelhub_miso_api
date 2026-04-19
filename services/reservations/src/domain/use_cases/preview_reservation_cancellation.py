@@ -21,7 +21,8 @@ class PreviewReservationCancellationUseCase(ReservationPreviewBaseUseCase):
         if reservation.status != "confirmed":
             reasons.append("Reservation must be confirmed")
 
-        eligible_until = reservation.check_in_date - timedelta(
+        normalized_reservation_check_in = self._normalize_datetime(reservation.check_in_date)
+        eligible_until = normalized_reservation_check_in - timedelta(
             hours=policy.minimum_notice_hours
         )
         if datetime.now(UTC).replace(tzinfo=None) > eligible_until:

@@ -1,3 +1,4 @@
+from hmac import compare_digest
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
@@ -14,7 +15,9 @@ router = APIRouter(prefix="/internal", tags=["internal"])
 
 
 def _verify_api_key(x_internal_api_key: str = Header(default=None)) -> None:
-    if x_internal_api_key != settings.internal_api_key:
+    if not x_internal_api_key or not compare_digest(
+        x_internal_api_key.strip(), settings.internal_api_key
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Forbidden",

@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from uuid import UUID
 
 from domain.ports.reservation_command_log_repository import (
@@ -41,6 +41,10 @@ class ConfirmReservationModificationUseCase:
         self.command_log_repository = command_log_repository
         self.payment_service = payment_service
         self.preview_use_case = preview_use_case
+
+    @staticmethod
+    def _to_cents(amount: Decimal) -> int:
+        return int((amount * Decimal("100")).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
     def execute(
         self,
@@ -89,7 +93,7 @@ class ConfirmReservationModificationUseCase:
                 self.payment_service.request_additional_charge(
                     reservation_id=reservation_id,
                     traveler_id=reservation_before.id_traveler,
-                    amount_in_cents=int(additional_charge_amount),
+                    amount_in_cents=self._to_cents(additional_charge_amount),
                     currency=reservation_before.currency,
                     idempotency_key=f"{payload.idempotency_key}:additional-charge",
                     source_ip=source_ip,
@@ -101,7 +105,7 @@ class ConfirmReservationModificationUseCase:
             try:
                 self.payment_service.request_refund(
                     reservation_id=reservation_id,
-                    amount_in_cents=int(refund_amount),
+                    amount_in_cents=self._to_cents(refund_amount),
                     reason="reservation_modification_refund",
                     idempotency_key=f"{payload.idempotency_key}:refund",
                     source_ip=source_ip,

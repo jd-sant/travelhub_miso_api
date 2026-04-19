@@ -1,3 +1,5 @@
+from hmac import compare_digest
+
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, status
 
 from assembly import (
@@ -38,7 +40,9 @@ def create_payment_confirmation(
     use_case: CreatePaymentConfirmationUseCase = Depends(get_create_payment_confirmation_use_case),
     delivery_runner: NotificationDeliveryRunner = Depends(get_notification_delivery_runner),
 ) -> NotificationResponse:
-    if x_internal_api_key != settings.internal_api_key:
+    if not x_internal_api_key or not compare_digest(
+        x_internal_api_key.strip(), settings.internal_api_key
+    ):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
     try:
         notification = use_case.execute(payload)
@@ -71,7 +75,9 @@ def create_reservation_event_notification(
     ),
     delivery_runner: NotificationDeliveryRunner = Depends(get_notification_delivery_runner),
 ) -> NotificationResponse:
-    if x_internal_api_key != settings.internal_api_key:
+    if not x_internal_api_key or not compare_digest(
+        x_internal_api_key.strip(), settings.internal_api_key
+    ):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
 
     notification = use_case.execute(payload)

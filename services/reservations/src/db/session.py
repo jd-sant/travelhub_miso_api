@@ -48,8 +48,12 @@ def create_db_and_tables() -> None:
 def _apply_schema_upgrades() -> None:
     with engine.connect() as conn:
         inspector = inspect(conn)
+        inspection_schema = settings.db_schema if _is_postgres else None
         existing_columns = {
-            column["name"] for column in inspector.get_columns(Reservation.__tablename__)
+            column["name"]
+            for column in inspector.get_columns(
+                Reservation.__tablename__, schema=inspection_schema
+            )
         }
         required_columns = {
             "version": "INTEGER NOT NULL DEFAULT 1",
@@ -58,12 +62,18 @@ def _apply_schema_upgrades() -> None:
             "cancellation_reason": "VARCHAR",
         }
 
+        table_name = (
+            f"{settings.db_schema}.{Reservation.__table__.name}"
+            if _is_postgres
+            else Reservation.__table__.name
+        )
+
         for column_name, column_definition in required_columns.items():
             if column_name in existing_columns:
                 continue
             conn.execute(
                 text(
-                    f"ALTER TABLE {Reservation.__table__.name} "
+                    f"ALTER TABLE {table_name} "
                     f"ADD COLUMN {column_name} {column_definition}"
                 )
             )

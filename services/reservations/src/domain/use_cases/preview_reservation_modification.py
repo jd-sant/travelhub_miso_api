@@ -34,7 +34,8 @@ class PreviewReservationModificationUseCase(ReservationPreviewBaseUseCase):
                 f"Requested guests exceed property capacity of {property_details.max_guests}"
             )
 
-        eligible_until = reservation.check_in_date - timedelta(
+        normalized_reservation_check_in = self._normalize_datetime(reservation.check_in_date)
+        eligible_until = normalized_reservation_check_in - timedelta(
             hours=policy.minimum_notice_hours
         )
         if datetime.now(UTC).replace(tzinfo=None) > eligible_until:
