@@ -82,6 +82,7 @@ services:
       LAMBDA_ARN: ${LAMBDA_ARN:-}
       SCHEDULER_ROLE_ARN: ${SCHEDULER_ROLE_ARN:-}
       API_BASE_URL: ${API_BASE_URL:-}
+      PROPERTIES_SERVICE_URL: ${PROPERTIES_SERVICE_URL:-http://properties:8000}
       RDS_HOSTNAME: postgres
       RDS_USERNAME: travelhub_user
       RDS_PASSWORD: travelhub_pass

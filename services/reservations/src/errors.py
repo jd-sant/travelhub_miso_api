@@ -20,3 +20,15 @@ class ReservationSchedulingError(Exception):
 
 class InvalidReservationStatusError(Exception):
     pass
+
+
+class ReservationPreviewValidationError(Exception):
+    pass
+
+
+class PropertyNotFoundError(Exception):
+    pass
+
+
+class PropertyServiceUnavailableError(Exception):
+    pass

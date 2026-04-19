@@ -27,7 +27,11 @@ class ReservationRepository(ABC):
 
     @abstractmethod
     def check_room_availability(
-        self, id_room: UUID, check_in: datetime, check_out: datetime
+        self,
+        id_room: UUID,
+        check_in: datetime,
+        check_out: datetime,
+        exclude_reservation_id: UUID | None = None,
     ) -> bool:
         pass
 

@@ -144,6 +144,35 @@ class TestReservationRepository:
 
         assert is_available is True
 
+    def test_check_room_availability_can_ignore_same_reservation(
+        self, reservation_repository, traveler_id, property_id, room_id
+    ):
+        """Test that availability can ignore the reservation being previewed."""
+        total_price = Decimal("348.00")
+
+        check_in = datetime.now(UTC) + timedelta(days=5)
+        check_out = check_in + timedelta(days=3)
+        request = ReservationCreateRequest(
+            id_traveler=traveler_id,
+            id_property=property_id,
+            id_room=room_id,
+            check_in_date=check_in,
+            check_out_date=check_out,
+            number_of_guests=2,
+            currency="COP",
+        )
+        created = reservation_repository.add(request, total_price)
+
+        assert (
+            reservation_repository.check_room_availability(
+                room_id,
+                check_in,
+                check_out,
+                exclude_reservation_id=created.id,
+            )
+            is True
+        )
+
     def test_update_status_changes_reservation_status(
         self, reservation_repository, valid_create_request
     ):

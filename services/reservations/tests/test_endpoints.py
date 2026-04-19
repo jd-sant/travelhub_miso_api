@@ -1,7 +1,46 @@
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from uuid import uuid4
 
+from domain.schemas.property_service import (
+    PropertyCancellationPolicyResponse,
+    PropertyDetailResponse,
+)
+from domain.schemas.reservation import CancellationPolicyType
+from entrypoints.api.main import app
+from entrypoints.api.routers.reservations import get_property_service_client
 from core.config import settings
+
+
+class FakePropertyServiceClient:
+    def __init__(
+        self,
+        *,
+        max_guests: int = 12,
+        policy_type: CancellationPolicyType = CancellationPolicyType.full_refund,
+        minimum_notice_hours: int = 24,
+        penalty_percentage: Decimal = Decimal("0.00"),
+    ):
+        self.max_guests = max_guests
+        self.policy_type = policy_type
+        self.minimum_notice_hours = minimum_notice_hours
+        self.penalty_percentage = penalty_percentage
+
+    def get_property(self, property_id):
+        return PropertyDetailResponse(id=property_id, max_guests=self.max_guests)
+
+    def get_cancellation_policy(self, property_id):
+        now = datetime.now(UTC)
+        return PropertyCancellationPolicyResponse(
+            property_id=property_id,
+            policy_type=self.policy_type,
+            minimum_notice_hours=self.minimum_notice_hours,
+            penalty_percentage=self.penalty_percentage,
+            timezone="UTC",
+            is_active=True,
+            created_at=now,
+            updated_at=now,
+        )
 
 
 class TestReservationEndpoints:
@@ -375,3 +414,120 @@ class TestReservationEndpoints:
             data = response.json()
             assert data["total_price"] == expected_price
             assert data["currency"] == currency
+
+    def test_preview_modification_returns_preview(self, client):
+        traveler_id = str(uuid4())
+        property_id = str(uuid4())
+        room_id = str(uuid4())
+        check_in = (datetime.now(UTC) + timedelta(days=5)).isoformat()
+        check_out = (datetime.now(UTC) + timedelta(days=7)).isoformat()
+
+        payload = {
+            "id_traveler": traveler_id,
+            "id_property": property_id,
+            "id_room": room_id,
+            "check_in_date": check_in,
+            "check_out_date": check_out,
+            "number_of_guests": 2,
+            "currency": "COP",
+        }
+        create_response = client.post("/api/v1/reservations", json=payload)
+        reservation_id = create_response.json()["id"]
+
+        client.patch(
+            f"/api/v1/internal/reservations/{reservation_id}/status",
+            json={"status": "confirmed"},
+            headers={"X-Internal-Api-Key": settings.internal_api_key},
+        )
+
+        app.dependency_overrides[get_property_service_client] = lambda: FakePropertyServiceClient()
+        try:
+            response = client.post(
+                f"/api/v1/reservations/{reservation_id}/modifications/preview",
+                json={
+                    "check_in_date": (datetime.now(UTC) + timedelta(days=6)).isoformat(),
+                    "check_out_date": (datetime.now(UTC) + timedelta(days=9)).isoformat(),
+                    "number_of_guests": 3,
+                },
+            )
+        finally:
+            app.dependency_overrides.pop(get_property_service_client, None)
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["change_allowed"] is True
+        assert body["requires_additional_charge"] is True
+        assert body["delta_amount"] == "119.00"
+        assert body["reservation_after_preview"]["number_of_guests"] == 3
+
+    def test_preview_cancellation_returns_preview(self, client):
+        traveler_id = str(uuid4())
+        property_id = str(uuid4())
+        room_id = str(uuid4())
+        check_in = (datetime.now(UTC) + timedelta(days=5)).isoformat()
+        check_out = (datetime.now(UTC) + timedelta(days=7)).isoformat()
+
+        payload = {
+            "id_traveler": traveler_id,
+            "id_property": property_id,
+            "id_room": room_id,
+            "check_in_date": check_in,
+            "check_out_date": check_out,
+            "number_of_guests": 2,
+            "currency": "COP",
+        }
+        create_response = client.post("/api/v1/reservations", json=payload)
+        reservation_id = create_response.json()["id"]
+
+        client.patch(
+            f"/api/v1/internal/reservations/{reservation_id}/status",
+            json={"status": "confirmed"},
+            headers={"X-Internal-Api-Key": settings.internal_api_key},
+        )
+
+        app.dependency_overrides[get_property_service_client] = lambda: FakePropertyServiceClient()
+        try:
+            response = client.post(
+                f"/api/v1/reservations/{reservation_id}/cancellation/preview"
+            )
+        finally:
+            app.dependency_overrides.pop(get_property_service_client, None)
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["change_allowed"] is True
+        assert body["refund_amount"] == "238.00"
+        assert body["penalty_amount"] == "0.00"
+        assert body["refund_type"] == "full_refund"
+
+    def test_preview_cancellation_rejects_unconfirmed_reservation(self, client):
+        traveler_id = str(uuid4())
+        property_id = str(uuid4())
+        room_id = str(uuid4())
+        check_in = (datetime.now(UTC) + timedelta(days=5)).isoformat()
+        check_out = (datetime.now(UTC) + timedelta(days=7)).isoformat()
+
+        payload = {
+            "id_traveler": traveler_id,
+            "id_property": property_id,
+            "id_room": room_id,
+            "check_in_date": check_in,
+            "check_out_date": check_out,
+            "number_of_guests": 2,
+            "currency": "COP",
+        }
+        create_response = client.post("/api/v1/reservations", json=payload)
+        reservation_id = create_response.json()["id"]
+
+        app.dependency_overrides[get_property_service_client] = lambda: FakePropertyServiceClient()
+        try:
+            response = client.post(
+                f"/api/v1/reservations/{reservation_id}/cancellation/preview"
+            )
+        finally:
+            app.dependency_overrides.pop(get_property_service_client, None)
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["change_allowed"] is False
+        assert any("confirmed" in reason.lower() for reason in body["reasons"])

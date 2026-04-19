@@ -38,6 +38,10 @@ class Settings:
         return os.getenv("API_BASE_URL", "")
 
     @property
+    def properties_service_url(self) -> str:
+        return os.getenv("PROPERTIES_SERVICE_URL", "http://localhost:8005")
+
+    @property
     def scheduler_group_name(self) -> str:
         return os.getenv("SCHEDULER_GROUP_NAME", "default")
 

@@ -81,17 +81,23 @@ class SQLModelReservationRepository(ReservationRepository):
         return [_to_response(m) for m in models]
 
     def check_room_availability(
-        self, id_room: UUID, check_in: datetime, check_out: datetime
+        self,
+        id_room: UUID,
+        check_in: datetime,
+        check_out: datetime,
+        exclude_reservation_id: UUID | None = None,
     ) -> bool:
         # Verificar si la habitación tiene reservas activas en el rango de fechas
-        conflicting = self.session.exec(
-            select(Reservation).where(
-                (Reservation.id_room == id_room)
-                & (Reservation.status != "cancelled")
-                & (Reservation.check_in_date < check_out)
-                & (Reservation.check_out_date > check_in)
-            )
-        ).first()
+        query = select(Reservation).where(
+            (Reservation.id_room == id_room)
+            & (Reservation.status != "cancelled")
+            & (Reservation.check_in_date < check_out)
+            & (Reservation.check_out_date > check_in)
+        )
+        if exclude_reservation_id is not None:
+            query = query.where(Reservation.id != exclude_reservation_id)
+
+        conflicting = self.session.exec(query).first()
         return conflicting is None
 
     def update_status(self, id: UUID, status: str) -> Optional[ReservationResponse]:

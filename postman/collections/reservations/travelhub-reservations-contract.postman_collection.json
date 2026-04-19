@@ -14,7 +14,7 @@
     {
       "name": "Create Reservation",
       "event": [
-        {"listen": "prerequest", "script": {"type": "text/javascript", "exec": ["const now = new Date();", "const checkIn = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);", "const checkOut = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);", "pm.collectionVariables.set('res_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));", "pm.collectionVariables.set('res_property_id', pm.variables.replaceIn('{{$randomUUID}}'));", "pm.collectionVariables.set('res_room_id', pm.variables.replaceIn('{{$randomUUID}}'));", "pm.collectionVariables.set('res_check_in', checkIn.toISOString());", "pm.collectionVariables.set('res_check_out', checkOut.toISOString());"]}},
+        {"listen": "prerequest", "script": {"type": "text/javascript", "exec": ["const now = new Date();", "const checkIn = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);", "const checkOut = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);", "pm.collectionVariables.set('res_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));", "pm.collectionVariables.set('res_property_id', '11111111-1111-1111-1111-111111111111');", "pm.collectionVariables.set('res_room_id', pm.variables.replaceIn('{{$randomUUID}}'));", "pm.collectionVariables.set('res_check_in', checkIn.toISOString());", "pm.collectionVariables.set('res_check_out', checkOut.toISOString());"]}},
         {"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('create reservation 201', function () { pm.response.to.have.status(201); });", "const body = pm.response.json();", "pm.test('status pending_payment', function () { pm.expect(body.status).to.eql('pending_payment'); });", "pm.collectionVariables.set('reservation_id', body.id);"]}}
       ],
       "request": {
@@ -33,6 +33,34 @@
       "name": "CheckStatus Cancels Pending",
       "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('checkstatus 200', function () { pm.response.to.have.status(200); });", "const body = pm.response.json();", "pm.test('status_after cancelled', function () { pm.expect(body.status_after).to.eql('cancelled'); });"]}}],
       "request": {"method": "POST", "header": [{"key": "X-Internal-Api-Key", "value": "{{internal_api_key}}"}], "url": {"raw": "{{reservations_base_url}}/api/v1/internal/reservations/{{reservation_id}}/checkstatus", "host": ["{{reservations_base_url}}"], "path": ["api", "v1", "internal", "reservations", "{{reservation_id}}", "checkstatus"]}}
+    },
+    {
+      "name": "Create Confirmed Reservation For Preview",
+      "event": [
+        {"listen": "prerequest", "script": {"type": "text/javascript", "exec": ["const now = new Date();", "const checkIn = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);", "const checkOut = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);", "pm.collectionVariables.set('preview_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));", "pm.collectionVariables.set('preview_property_id', '11111111-1111-1111-1111-111111111111');", "pm.collectionVariables.set('preview_room_id', pm.variables.replaceIn('{{$randomUUID}}'));", "pm.collectionVariables.set('preview_check_in', checkIn.toISOString());", "pm.collectionVariables.set('preview_check_out', checkOut.toISOString());"]}},
+        {"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('create preview reservation 201', function () { pm.response.to.have.status(201); });", "const body = pm.response.json();", "pm.collectionVariables.set('preview_reservation_id', body.id);"]}}
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\n  \"id_traveler\": \"{{preview_traveler_id}}\",\n  \"id_property\": \"{{preview_property_id}}\",\n  \"id_room\": \"{{preview_room_id}}\",\n  \"check_in_date\": \"{{preview_check_in}}\",\n  \"check_out_date\": \"{{preview_check_out}}\",\n  \"number_of_guests\": 2,\n  \"currency\": \"COP\"\n}"},
+        "url": {"raw": "{{reservations_base_url}}/api/v1/reservations", "host": ["{{reservations_base_url}}"], "path": ["api", "v1", "reservations"]}
+      }
+    },
+    {
+      "name": "Confirm Preview Reservation",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('confirm preview reservation 200', function () { pm.response.to.have.status(200); });", "const body = pm.response.json();", "pm.test('preview reservation confirmed', function () { pm.expect(body.status_after).to.eql('confirmed'); });"]}}],
+      "request": {"method": "PATCH", "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Internal-Api-Key", "value": "{{internal_api_key}}"}], "body": {"mode": "raw", "raw": "{\n  \"status\": \"confirmed\"\n}"}, "url": {"raw": "{{reservations_base_url}}/api/v1/internal/reservations/{{preview_reservation_id}}/status", "host": ["{{reservations_base_url}}"], "path": ["api", "v1", "internal", "reservations", "{{preview_reservation_id}}", "status"]}}
+    },
+    {
+      "name": "Preview Modification",
+      "event": [{"listen": "prerequest", "script": {"type": "text/javascript", "exec": ["const now = new Date();", "const checkIn = new Date(now.getTime() + 6 * 24 * 60 * 60 * 1000);", "const checkOut = new Date(now.getTime() + 9 * 24 * 60 * 60 * 1000);", "pm.collectionVariables.set('preview_mod_check_in', checkIn.toISOString());", "pm.collectionVariables.set('preview_mod_check_out', checkOut.toISOString());"]}}, {"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('modification preview 200', function () { pm.response.to.have.status(200); });", "const body = pm.response.json();", "pm.test('modification allowed', function () { pm.expect(body.change_allowed).to.eql(true); });", "pm.test('additional charge required', function () { pm.expect(body.requires_additional_charge).to.eql(true); });", "pm.test('delta amount is 119.00', function () { pm.expect(body.delta_amount).to.eql('119.00'); });"]}}],
+      "request": {"method": "POST", "header": [{"key": "Content-Type", "value": "application/json"}], "body": {"mode": "raw", "raw": "{\n  \"check_in_date\": \"{{preview_mod_check_in}}\",\n  \"check_out_date\": \"{{preview_mod_check_out}}\",\n  \"number_of_guests\": 3\n}"}, "url": {"raw": "{{reservations_base_url}}/api/v1/reservations/{{preview_reservation_id}}/modifications/preview", "host": ["{{reservations_base_url}}"], "path": ["api", "v1", "reservations", "{{preview_reservation_id}}", "modifications", "preview"]}}
+    },
+    {
+      "name": "Preview Cancellation",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('cancellation preview 200', function () { pm.response.to.have.status(200); });", "const body = pm.response.json();", "pm.test('cancellation allowed', function () { pm.expect(body.change_allowed).to.eql(true); });", "pm.test('full refund amount', function () { pm.expect(body.refund_amount).to.eql('238.00'); });", "pm.test('no penalty', function () { pm.expect(body.penalty_amount).to.eql('0.00'); });"]}}],
+      "request": {"method": "POST", "header": [], "url": {"raw": "{{reservations_base_url}}/api/v1/reservations/{{preview_reservation_id}}/cancellation/preview", "host": ["{{reservations_base_url}}"], "path": ["api", "v1", "reservations", "{{preview_reservation_id}}", "cancellation", "preview"]}}
     }
   ]
 }
