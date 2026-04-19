@@ -29,7 +29,7 @@ def get_reservation_repository(session: Session = Depends(get_session)):
 
 @lru_cache
 def get_reservation_scheduler() -> ReservationScheduler:
-    if not settings.reservation_scheduler_enabled:
+    if not settings.reservation_scheduler_enabled or settings.is_local_dev:
         return NoOpReservationScheduler()
 
     try:

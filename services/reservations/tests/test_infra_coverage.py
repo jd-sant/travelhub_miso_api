@@ -178,6 +178,20 @@ def test_settings_validate_scheduler_config(monkeypatch):
     settings.validate_scheduler_config()
 
 
+def test_reservation_scheduler_uses_noop_in_local_dev(monkeypatch):
+    monkeypatch.setenv("ENV", "development")
+    monkeypatch.setenv("RESERVATION_SCHEDULER_ENABLED", "true")
+    monkeypatch.setenv("LAMBDA_ARN", "arn:aws:lambda:us-east-1:123:function:fn")
+    monkeypatch.setenv("SCHEDULER_ROLE_ARN", "arn:aws:iam::123:role/r")
+    monkeypatch.setenv("API_BASE_URL", "https://api.example.com")
+
+    from entrypoints.api.routers.reservations import get_reservation_scheduler
+
+    scheduler = get_reservation_scheduler()
+
+    assert scheduler.__class__.__name__ == "NoOpReservationScheduler"
+
+
 def test_lifespan_invokes_bootstrap_hooks(monkeypatch):
     called = {"db": 0, "validate": 0}
 

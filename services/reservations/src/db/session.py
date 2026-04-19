@@ -1,8 +1,9 @@
 from collections.abc import Generator
 
-from sqlalchemy import event, text
+from sqlalchemy import event, inspect, text
 from sqlmodel import Session, SQLModel, create_engine
 
+from adapters.models import Reservation, ReservationEvent
 from core.config import settings
 
 _is_postgres = settings.database_url.startswith("postgresql")
@@ -32,6 +33,8 @@ if _is_postgres:
 
 
 def create_db_and_tables() -> None:
+    # Keep explicit model references so SQLModel metadata includes all tables.
+    _ = (Reservation, ReservationEvent)
     if _is_postgres:
         with engine.connect() as conn:
             conn.execute(
@@ -39,6 +42,32 @@ def create_db_and_tables() -> None:
             )
             conn.commit()
     SQLModel.metadata.create_all(engine)
+    _apply_schema_upgrades()
+
+
+def _apply_schema_upgrades() -> None:
+    with engine.connect() as conn:
+        inspector = inspect(conn)
+        existing_columns = {
+            column["name"] for column in inspector.get_columns(Reservation.__tablename__)
+        }
+        required_columns = {
+            "version": "INTEGER NOT NULL DEFAULT 1",
+            "last_policy_snapshot": "TEXT",
+            "cancelled_at": "TIMESTAMP",
+            "cancellation_reason": "VARCHAR",
+        }
+
+        for column_name, column_definition in required_columns.items():
+            if column_name in existing_columns:
+                continue
+            conn.execute(
+                text(
+                    f"ALTER TABLE {Reservation.__table__.name} "
+                    f"ADD COLUMN {column_name} {column_definition}"
+                )
+            )
+        conn.commit()
 
 
 def get_session() -> Generator[Session, None, None]:

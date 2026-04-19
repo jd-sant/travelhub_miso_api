@@ -9,6 +9,11 @@ class Settings:
         return [o.strip() for o in raw.split(",") if o.strip()]
 
     @property
+    def is_local_dev(self) -> bool:
+        env = os.getenv("ENV", os.getenv("APP_ENV", "development")).lower()
+        return env in ("development", "dev", "test", "local")
+
+    @property
     def reservation_scheduler_enabled(self) -> bool:
         return os.getenv("RESERVATION_SCHEDULER_ENABLED", "false").lower() == "true"
 
@@ -66,8 +71,7 @@ class Settings:
         if url:
             return url
 
-        env = os.getenv("ENV", os.getenv("APP_ENV", "development")).lower()
-        if env in ("development", "dev", "test", "local"):
+        if self.is_local_dev:
             return os.getenv("SQLITE_DATABASE_URL", "sqlite:///./reservations.db")
 
         return (
@@ -84,8 +88,7 @@ class Settings:
         value = os.getenv("INTERNAL_API_KEY")
         if value:
             return value
-        env = os.getenv("ENV", os.getenv("APP_ENV", "development")).lower()
-        if env not in ("development", "dev", "test"):
+        if not self.is_local_dev:
             raise RuntimeError(
                 "INTERNAL_API_KEY debe estar configurado en entornos de producción."
             )
