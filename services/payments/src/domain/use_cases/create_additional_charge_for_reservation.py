@@ -31,4 +31,5 @@ class CreateAdditionalChargeForReservationUseCase(
                 idempotency_key=payload.idempotency_key,
             ),
             source_ip=source_ip,
+            dispatch_reservation_confirmation=False,
         )

@@ -21,6 +21,7 @@ from domain.use_cases.preview_reservation_modification import (
 )
 from errors import (
     InvalidReservationOperationError,
+    PaymentServiceUnavailableError,
     ReservationNotFoundError,
     ReservationOwnershipError,
 )
@@ -81,24 +82,33 @@ class ConfirmReservationModificationUseCase:
             preview.delta_amount if preview.delta_amount > Decimal("0.00") else Decimal("0.00")
         )
         refund_amount = preview.estimated_refund_amount
+        payment_dispatch_status = "not_required"
 
         if additional_charge_amount > Decimal("0.00"):
-            self.payment_service.request_additional_charge(
-                reservation_id=reservation_id,
-                traveler_id=reservation_before.id_traveler,
-                amount_in_cents=int(additional_charge_amount),
-                currency=reservation_before.currency,
-                idempotency_key=f"{payload.idempotency_key}:additional-charge",
-                source_ip=source_ip,
-            )
+            try:
+                self.payment_service.request_additional_charge(
+                    reservation_id=reservation_id,
+                    traveler_id=reservation_before.id_traveler,
+                    amount_in_cents=int(additional_charge_amount),
+                    currency=reservation_before.currency,
+                    idempotency_key=f"{payload.idempotency_key}:additional-charge",
+                    source_ip=source_ip,
+                )
+                payment_dispatch_status = "additional_charge_requested"
+            except PaymentServiceUnavailableError:
+                payment_dispatch_status = "additional_charge_pending_retry"
         elif refund_amount > Decimal("0.00"):
-            self.payment_service.request_refund(
-                reservation_id=reservation_id,
-                amount_in_cents=int(refund_amount),
-                reason="reservation_modification_refund",
-                idempotency_key=f"{payload.idempotency_key}:refund",
-                source_ip=source_ip,
-            )
+            try:
+                self.payment_service.request_refund(
+                    reservation_id=reservation_id,
+                    amount_in_cents=int(refund_amount),
+                    reason="reservation_modification_refund",
+                    idempotency_key=f"{payload.idempotency_key}:refund",
+                    source_ip=source_ip,
+                )
+                payment_dispatch_status = "refund_requested"
+            except PaymentServiceUnavailableError:
+                payment_dispatch_status = "refund_pending_retry"
 
         if additional_charge_amount > Decimal("0.00"):
             status_after = "modification_pending_payment"
@@ -131,6 +141,7 @@ class ConfirmReservationModificationUseCase:
                 after_payload={
                     **updated.model_dump(mode="json"),
                     "correlation_id": correlation_id,
+                    "payment_dispatch_status": payment_dispatch_status,
                 },
             )
         )

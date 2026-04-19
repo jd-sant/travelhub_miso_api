@@ -21,6 +21,7 @@ from domain.use_cases.preview_reservation_cancellation import (
 )
 from errors import (
     InvalidReservationOperationError,
+    PaymentServiceUnavailableError,
     ReservationNotFoundError,
     ReservationOwnershipError,
 )
@@ -71,15 +72,21 @@ class ConfirmReservationCancellationUseCase:
             )
 
         refund_amount = preview.refund_amount
+        refund_dispatch_status = "not_required"
 
         if refund_amount > Decimal("0.00"):
-            self.payment_service.request_refund(
-                reservation_id=reservation_id,
-                amount_in_cents=int(refund_amount),
-                reason=payload.reason or "reservation_cancellation_refund",
-                idempotency_key=f"{payload.idempotency_key}:refund",
-                source_ip=source_ip,
-            )
+            try:
+                self.payment_service.request_refund(
+                    reservation_id=reservation_id,
+                    amount_in_cents=int(refund_amount),
+                    reason=payload.reason or "reservation_cancellation_refund",
+                    idempotency_key=f"{payload.idempotency_key}:refund",
+                    source_ip=source_ip,
+                )
+                refund_dispatch_status = "requested"
+            except PaymentServiceUnavailableError:
+                # Keep reservation in cancel_requested for retry/callback orchestration.
+                refund_dispatch_status = "pending_retry"
 
         status_after = "cancel_requested" if refund_amount > Decimal("0.00") else "cancelled"
         cancelled_at = datetime.now(UTC).replace(tzinfo=None)
@@ -98,6 +105,7 @@ class ConfirmReservationCancellationUseCase:
         after_payload = updated.model_dump(mode="json")
         after_payload["refund_amount"] = str(refund_amount)
         after_payload["correlation_id"] = correlation_id
+        after_payload["refund_dispatch_status"] = refund_dispatch_status
 
         self.event_repository.add(
             ReservationEventCreateRequest(
