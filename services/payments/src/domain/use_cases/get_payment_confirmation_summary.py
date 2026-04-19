@@ -33,15 +33,21 @@ class GetPaymentConfirmationSummaryUseCase(
             raise PaymentNotFoundError(f"Payment {payment_id} was not found")
 
         checkout = self.checkout_repository.get_session_by_payment_id(payment_id)
+        enrichment = self.enrichment_service.enrich(payment.reservation_id)
+
+        check_in = (checkout.check_in_date if checkout else None) or enrichment.check_in_date
+        check_out = (checkout.check_out_date if checkout else None) or enrichment.check_out_date
+
         breakdown = self.price_calculator.calculate(
             total_in_cents=payment.amount_in_cents,
             currency=payment.currency,
-            check_in=checkout.check_in_date if checkout else None,
-            check_out=checkout.check_out_date if checkout else None,
+            check_in=check_in,
+            check_out=check_out,
         )
-        enrichment = self.enrichment_service.enrich(payment.reservation_id)
 
-        return self._build_response(payment, checkout, breakdown, enrichment)
+        return self._build_response(
+            payment, checkout, breakdown, enrichment, check_in, check_out
+        )
 
     @staticmethod
     def _build_response(
@@ -49,6 +55,8 @@ class GetPaymentConfirmationSummaryUseCase(
         checkout,
         breakdown: PriceBreakdown,
         enrichment,
+        check_in,
+        check_out,
     ) -> PaymentConfirmationSummaryResponse:
         return PaymentConfirmationSummaryResponse(
             payment_id=payment.payment_id,
@@ -59,10 +67,11 @@ class GetPaymentConfirmationSummaryUseCase(
             currency=payment.currency,
             receipt_id=payment.receipt_id,
             receipt_number=payment.receipt_number,
-            property_name=checkout.property_name if checkout else None,
+            property_name=(checkout.property_name if checkout else None)
+            or enrichment.property_name,
             property_address=enrichment.property_address,
-            check_in_date=checkout.check_in_date if checkout else None,
-            check_out_date=checkout.check_out_date if checkout else None,
+            check_in_date=check_in,
+            check_out_date=check_out,
             guests_count=enrichment.guests_count,
             nights=breakdown.nights,
             nightly_rate_in_cents=breakdown.nightly_rate_in_cents,

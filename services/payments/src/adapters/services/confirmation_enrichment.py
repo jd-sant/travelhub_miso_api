@@ -1,16 +1,18 @@
 """Servicio de enriquecimiento best-effort para la confirmación de pago.
 
-Encadena las consultas HTTP a `reservations` (huéspedes + id_property) y a
-`properties` (dirección) para ofrecer al viajero el detalle completo exigido
-por HU022 sin acoplar al use case a los detalles de transporte.
+Encadena las consultas HTTP a `reservations` (huéspedes, id_property, fechas)
+y a `properties` (nombre, dirección) para ofrecer al viajero el detalle
+completo exigido por HU022 sin acoplar al use case a los detalles de transporte.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from uuid import UUID
 
 from adapters.services.reservation_details_client import (
+    PropertyDetails,
     PropertyDetailsClient,
     ReservationDetailsClient,
 )
@@ -19,7 +21,10 @@ from adapters.services.reservation_details_client import (
 @dataclass(frozen=True)
 class ConfirmationEnrichment:
     guests_count: int | None
+    property_name: str | None
     property_address: str | None
+    check_in_date: date | None
+    check_out_date: date | None
 
 
 class ConfirmationEnrichmentService:
@@ -32,8 +37,16 @@ class ConfirmationEnrichmentService:
         self._properties = property_details_client or PropertyDetailsClient()
 
     def enrich(self, reservation_id: UUID) -> ConfirmationEnrichment:
-        guests, property_id = self._reservations.fetch_guests_and_property(reservation_id)
-        address = (
-            self._properties.fetch_address(property_id) if property_id is not None else None
+        reservation = self._reservations.fetch(reservation_id)
+        property_details = (
+            self._properties.fetch(reservation.property_id)
+            if reservation.property_id is not None
+            else PropertyDetails(None, None)
         )
-        return ConfirmationEnrichment(guests_count=guests, property_address=address)
+        return ConfirmationEnrichment(
+            guests_count=reservation.guests_count,
+            property_name=property_details.name,
+            property_address=property_details.address,
+            check_in_date=reservation.check_in_date,
+            check_out_date=reservation.check_out_date,
+        )

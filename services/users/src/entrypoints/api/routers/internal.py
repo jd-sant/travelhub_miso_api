@@ -1,8 +1,11 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 
-from assembly import get_verify_credentials_use_case
+from assembly import get_user_repository, get_verify_credentials_use_case
 from core.config import settings
-from domain.schemas.user import VerifyCredentialsRequest, VerifyCredentialsResponse
+from domain.ports.user_repository import UserRepository
+from domain.schemas.user import UserResponse, VerifyCredentialsRequest, VerifyCredentialsResponse
 from domain.use_cases.verify_credentials import VerifyCredentialsUseCase
 from errors import InvalidCredentialsError
 
@@ -38,3 +41,22 @@ def verify_credentials(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales inválidas",
         )
+
+
+@router.get(
+    "/users/{user_id}",
+    response_model=UserResponse,
+    status_code=status.HTTP_200_OK,
+)
+def get_user_by_id(
+    user_id: UUID,
+    _: None = Depends(_verify_api_key),
+    repository: UserRepository = Depends(get_user_repository),
+) -> UserResponse:
+    user = repository.get_by_id(user_id)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado",
+        )
+    return user
