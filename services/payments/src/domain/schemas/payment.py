@@ -48,6 +48,31 @@ class PaymentRefundCreateRequest(BaseModel):
     idempotency_key: str = Field(min_length=8, max_length=255)
 
 
+class ReservationRefundRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    reservation_id: UUID
+    amount_in_cents: int = Field(gt=0)
+    reason: str = Field(min_length=4, max_length=255)
+    idempotency_key: str = Field(min_length=8, max_length=255)
+
+
+class AdditionalChargeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    reservation_id: UUID
+    traveler_id: UUID
+    amount_in_cents: int = Field(gt=0)
+    currency: str = Field(min_length=3, max_length=3)
+    idempotency_key: str = Field(min_length=8, max_length=255)
+    payment_method_token: str = Field(default="pm_tok_visa_ok", min_length=4, max_length=255)
+
+    @field_validator("currency")
+    @classmethod
+    def uppercase_internal_currency(cls, value: str) -> str:
+        return value.upper()
+
+
 class GatewayChargeResult(BaseModel):
     status: PaymentStatus
     gateway_charge_id: str

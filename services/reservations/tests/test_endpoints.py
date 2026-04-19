@@ -8,7 +8,10 @@ from domain.schemas.property_service import (
 )
 from domain.schemas.reservation import CancellationPolicyType
 from entrypoints.api.main import app
-from entrypoints.api.routers.reservations import get_property_service_client
+from entrypoints.api.routers.reservations import (
+    get_payment_service_client,
+    get_property_service_client,
+)
 from core.config import settings
 
 
@@ -40,6 +43,50 @@ class FakePropertyServiceClient:
             is_active=True,
             created_at=now,
             updated_at=now,
+        )
+
+
+class FakePaymentServiceClient:
+    def __init__(self):
+        self.refund_calls = []
+        self.additional_charge_calls = []
+
+    def request_refund(
+        self,
+        *,
+        reservation_id,
+        amount_in_cents,
+        reason,
+        idempotency_key,
+        source_ip=None,
+    ):
+        self.refund_calls.append(
+            {
+                "reservation_id": str(reservation_id),
+                "amount_in_cents": amount_in_cents,
+                "reason": reason,
+                "idempotency_key": idempotency_key,
+            }
+        )
+
+    def request_additional_charge(
+        self,
+        *,
+        reservation_id,
+        traveler_id,
+        amount_in_cents,
+        currency,
+        idempotency_key,
+        source_ip=None,
+    ):
+        self.additional_charge_calls.append(
+            {
+                "reservation_id": str(reservation_id),
+                "traveler_id": str(traveler_id),
+                "amount_in_cents": amount_in_cents,
+                "currency": currency,
+                "idempotency_key": idempotency_key,
+            }
         )
 
 
@@ -558,6 +605,7 @@ class TestReservationEndpoints:
         )
 
         app.dependency_overrides[get_property_service_client] = lambda: FakePropertyServiceClient()
+        app.dependency_overrides[get_payment_service_client] = lambda: FakePaymentServiceClient()
         confirm_payload = {
             "idempotency_key": "idem-mod-1",
             "check_in_date": (datetime.now(UTC) + timedelta(days=6)).isoformat(),
@@ -577,6 +625,7 @@ class TestReservationEndpoints:
             )
         finally:
             app.dependency_overrides.pop(get_property_service_client, None)
+            app.dependency_overrides.pop(get_payment_service_client, None)
 
         assert first.status_code == 200
         assert second.status_code == 200
@@ -610,6 +659,7 @@ class TestReservationEndpoints:
         )
 
         app.dependency_overrides[get_property_service_client] = lambda: FakePropertyServiceClient()
+        app.dependency_overrides[get_payment_service_client] = lambda: FakePaymentServiceClient()
         try:
             response = client.post(
                 f"/api/v1/reservations/{reservation_id}/cancellation/confirm",
@@ -618,6 +668,7 @@ class TestReservationEndpoints:
             )
         finally:
             app.dependency_overrides.pop(get_property_service_client, None)
+            app.dependency_overrides.pop(get_payment_service_client, None)
 
         assert response.status_code == 403
         assert "does not belong" in response.json()["detail"]
@@ -648,6 +699,7 @@ class TestReservationEndpoints:
         )
 
         app.dependency_overrides[get_property_service_client] = lambda: FakePropertyServiceClient()
+        app.dependency_overrides[get_payment_service_client] = lambda: FakePaymentServiceClient()
         try:
             confirm_response = client.post(
                 f"/api/v1/reservations/{reservation_id}/cancellation/confirm",
@@ -656,6 +708,7 @@ class TestReservationEndpoints:
             )
         finally:
             app.dependency_overrides.pop(get_property_service_client, None)
+            app.dependency_overrides.pop(get_payment_service_client, None)
 
         assert confirm_response.status_code == 200
 
@@ -674,3 +727,83 @@ class TestReservationEndpoints:
         ][-1]
         assert cancellation_event["actor_user_id"] == traveler_id
         assert cancellation_event["source_ip"] is not None
+
+    def test_internal_refund_result_callback_updates_cancel_requested_to_refund_completed(self, client):
+        traveler_id = str(uuid4())
+        property_id = str(uuid4())
+        room_id = str(uuid4())
+
+        create_response = client.post(
+            "/api/v1/reservations",
+            json={
+                "id_traveler": traveler_id,
+                "id_property": property_id,
+                "id_room": room_id,
+                "check_in_date": (datetime.now(UTC) + timedelta(days=5)).isoformat(),
+                "check_out_date": (datetime.now(UTC) + timedelta(days=7)).isoformat(),
+                "number_of_guests": 2,
+                "currency": "COP",
+            },
+        )
+        reservation_id = create_response.json()["id"]
+
+        client.patch(
+            f"/api/v1/internal/reservations/{reservation_id}/status",
+            json={"status": "cancel_requested"},
+            headers={"X-Internal-Api-Key": settings.internal_api_key},
+        )
+
+        callback_response = client.post(
+            f"/api/v1/internal/reservations/{reservation_id}/refund-result",
+            json={
+                "status": "succeeded",
+                "refund_id": str(uuid4()),
+                "amount_in_cents": 50000,
+            },
+            headers={"X-Internal-Api-Key": settings.internal_api_key},
+        )
+
+        assert callback_response.status_code == 200
+        body = callback_response.json()
+        assert body["status_before"] == "cancel_requested"
+        assert body["status_after"] == "refund_completed"
+
+    def test_internal_additional_charge_result_callback_updates_modification_pending(self, client):
+        traveler_id = str(uuid4())
+        property_id = str(uuid4())
+        room_id = str(uuid4())
+
+        create_response = client.post(
+            "/api/v1/reservations",
+            json={
+                "id_traveler": traveler_id,
+                "id_property": property_id,
+                "id_room": room_id,
+                "check_in_date": (datetime.now(UTC) + timedelta(days=5)).isoformat(),
+                "check_out_date": (datetime.now(UTC) + timedelta(days=7)).isoformat(),
+                "number_of_guests": 2,
+                "currency": "COP",
+            },
+        )
+        reservation_id = create_response.json()["id"]
+
+        client.patch(
+            f"/api/v1/internal/reservations/{reservation_id}/status",
+            json={"status": "modification_pending_payment"},
+            headers={"X-Internal-Api-Key": settings.internal_api_key},
+        )
+
+        callback_response = client.post(
+            f"/api/v1/internal/reservations/{reservation_id}/additional-charge-result",
+            json={
+                "status": "succeeded",
+                "payment_id": str(uuid4()),
+                "amount_in_cents": 15000,
+            },
+            headers={"X-Internal-Api-Key": settings.internal_api_key},
+        )
+
+        assert callback_response.status_code == 200
+        body = callback_response.json()
+        assert body["status_before"] == "modification_pending_payment"
+        assert body["status_after"] == "modification_confirmed"

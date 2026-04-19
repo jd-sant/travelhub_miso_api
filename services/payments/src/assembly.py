@@ -26,7 +26,11 @@ from domain.ports.payment_repository import PaymentRepository
 from domain.ports.stripe_checkout_gateway import StripeCheckoutGateway
 from domain.use_cases.create_payment_checkout_session import CreatePaymentCheckoutSessionUseCase
 from domain.use_cases.create_payment_charge import CreatePaymentChargeUseCase
+from domain.use_cases.create_additional_charge_for_reservation import (
+    CreateAdditionalChargeForReservationUseCase,
+)
 from domain.use_cases.create_payment_refund import CreatePaymentRefundUseCase
+from domain.use_cases.create_refund_for_reservation import CreateRefundForReservationUseCase
 from domain.use_cases.finalize_stripe_payment import FinalizeStripePaymentUseCase
 from domain.use_cases.get_payment_confirmation_summary import GetPaymentConfirmationSummaryUseCase
 from domain.use_cases.get_payment import GetPaymentUseCase
@@ -124,6 +128,26 @@ def get_get_payment_refund_use_case(
     return GetPaymentRefundUseCase(refund_repository)
 
 
+def get_create_refund_for_reservation_use_case(
+    payment_repository: PaymentRepository = Depends(get_payment_repository),
+    create_payment_refund_use_case: CreatePaymentRefundUseCase = Depends(
+        get_create_payment_refund_use_case
+    ),
+) -> CreateRefundForReservationUseCase:
+    return CreateRefundForReservationUseCase(
+        payment_repository,
+        create_payment_refund_use_case,
+    )
+
+
+def get_create_additional_charge_for_reservation_use_case(
+    create_payment_charge_use_case: CreatePaymentChargeUseCase = Depends(
+        get_create_payment_charge_use_case
+    ),
+) -> CreateAdditionalChargeForReservationUseCase:
+    return CreateAdditionalChargeForReservationUseCase(create_payment_charge_use_case)
+
+
 def get_get_payment_confirmation_summary_use_case(
     payment_repository: PaymentRepository = Depends(get_payment_repository),
     checkout_repository: PaymentCheckoutRepository = Depends(get_payment_checkout_repository),
@@ -202,9 +226,11 @@ def get_retry_payment_refunds_use_case(
     refund_repository: PaymentRefundRepository = Depends(get_payment_refund_repository),
     payment_repository: PaymentRepository = Depends(get_payment_repository),
     audit_repository: PaymentAuditRepository = Depends(get_payment_audit_repository),
+    reservation_updater: ReservationUpdater = Depends(get_reservation_updater),
 ) -> RetryPaymentRefundsUseCase:
     return RetryPaymentRefundsUseCase(
         refund_repository,
         payment_repository,
         audit_repository,
+        reservation_updater,
     )

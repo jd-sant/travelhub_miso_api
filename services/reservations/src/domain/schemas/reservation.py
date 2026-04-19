@@ -43,6 +43,11 @@ class ReservationCommandType(str, Enum):
     cancellation_confirm = "cancellation_confirm"
 
 
+class FinancialResultStatus(str, Enum):
+    succeeded = "succeeded"
+    failed = "failed"
+
+
 class ReservationCreateRequest(BaseModel):
     id_traveler: UUID
     id_property: UUID
@@ -109,6 +114,20 @@ class ReservationModificationConfirmRequest(BaseModel):
 
 class ReservationCancellationConfirmRequest(BaseModel):
     idempotency_key: str = Field(min_length=1, max_length=128)
+    reason: str | None = Field(default=None, max_length=255)
+
+
+class ReservationRefundResultRequest(BaseModel):
+    status: FinancialResultStatus
+    refund_id: UUID | None = None
+    amount_in_cents: int = Field(ge=0)
+    reason: str | None = Field(default=None, max_length=255)
+
+
+class ReservationAdditionalChargeResultRequest(BaseModel):
+    status: FinancialResultStatus
+    payment_id: UUID | None = None
+    amount_in_cents: int = Field(gt=0)
     reason: str | None = Field(default=None, max_length=255)
 
 

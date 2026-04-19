@@ -6,6 +6,7 @@ from domain.ports.reservation_command_log_repository import (
     ReservationCommandLogRepository,
 )
 from domain.ports.reservation_event_repository import ReservationEventRepository
+from domain.ports.payment_service_client import PaymentServiceClient
 from domain.ports.reservation_repository import ReservationRepository
 from domain.schemas.reservation import (
     ReservationCancellationConfirmRequest,
@@ -31,11 +32,13 @@ class ConfirmReservationCancellationUseCase:
         reservation_repository: ReservationRepository,
         event_repository: ReservationEventRepository,
         command_log_repository: ReservationCommandLogRepository,
+        payment_service: PaymentServiceClient,
         preview_use_case: PreviewReservationCancellationUseCase,
     ):
         self.reservation_repository = reservation_repository
         self.event_repository = event_repository
         self.command_log_repository = command_log_repository
+        self.payment_service = payment_service
         self.preview_use_case = preview_use_case
 
     def execute(
@@ -67,6 +70,16 @@ class ConfirmReservationCancellationUseCase:
             )
 
         refund_amount = preview.refund_amount
+
+        if refund_amount > Decimal("0.00"):
+            self.payment_service.request_refund(
+                reservation_id=reservation_id,
+                amount_in_cents=int(refund_amount),
+                reason=payload.reason or "reservation_cancellation_refund",
+                idempotency_key=f"{payload.idempotency_key}:refund",
+                source_ip=source_ip,
+            )
+
         status_after = "cancel_requested" if refund_amount > Decimal("0.00") else "cancelled"
         cancelled_at = datetime.now(UTC).replace(tzinfo=None)
 

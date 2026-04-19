@@ -42,6 +42,10 @@ class Settings:
         return os.getenv("PROPERTIES_SERVICE_URL", "http://localhost:8005")
 
     @property
+    def payments_service_url(self) -> str:
+        return os.getenv("PAYMENTS_SERVICE_URL", "http://localhost:8003")
+
+    @property
     def scheduler_group_name(self) -> str:
         return os.getenv("SCHEDULER_GROUP_NAME", "default")
 

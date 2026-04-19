@@ -5,6 +5,7 @@ from domain.ports.reservation_command_log_repository import (
     ReservationCommandLogRepository,
 )
 from domain.ports.reservation_event_repository import ReservationEventRepository
+from domain.ports.payment_service_client import PaymentServiceClient
 from domain.ports.reservation_repository import ReservationRepository
 from domain.schemas.reservation import (
     ReservationCommandType,
@@ -31,11 +32,13 @@ class ConfirmReservationModificationUseCase:
         reservation_repository: ReservationRepository,
         event_repository: ReservationEventRepository,
         command_log_repository: ReservationCommandLogRepository,
+        payment_service: PaymentServiceClient,
         preview_use_case: PreviewReservationModificationUseCase,
     ):
         self.reservation_repository = reservation_repository
         self.event_repository = event_repository
         self.command_log_repository = command_log_repository
+        self.payment_service = payment_service
         self.preview_use_case = preview_use_case
 
     def execute(
@@ -77,6 +80,25 @@ class ConfirmReservationModificationUseCase:
             preview.delta_amount if preview.delta_amount > Decimal("0.00") else Decimal("0.00")
         )
         refund_amount = preview.estimated_refund_amount
+
+        if additional_charge_amount > Decimal("0.00"):
+            self.payment_service.request_additional_charge(
+                reservation_id=reservation_id,
+                traveler_id=reservation_before.id_traveler,
+                amount_in_cents=int(additional_charge_amount),
+                currency=reservation_before.currency,
+                idempotency_key=f"{payload.idempotency_key}:additional-charge",
+                source_ip=source_ip,
+            )
+        elif refund_amount > Decimal("0.00"):
+            self.payment_service.request_refund(
+                reservation_id=reservation_id,
+                amount_in_cents=int(refund_amount),
+                reason="reservation_modification_refund",
+                idempotency_key=f"{payload.idempotency_key}:refund",
+                source_ip=source_ip,
+            )
+
         if additional_charge_amount > Decimal("0.00"):
             status_after = "modification_pending_payment"
         elif refund_amount > Decimal("0.00"):

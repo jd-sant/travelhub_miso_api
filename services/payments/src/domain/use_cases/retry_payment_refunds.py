@@ -5,6 +5,7 @@ from core.config import settings
 from domain.ports.payment_audit_repository import PaymentAuditRepository
 from domain.ports.payment_refund_repository import PaymentRefundRepository
 from domain.ports.payment_repository import PaymentRepository
+from domain.ports.notification_dispatcher import ReservationUpdater
 from domain.schemas.audit import PaymentAuditLogRecord
 from domain.schemas.payment import PaymentEventResponse, PaymentRefundRetryResponse
 from domain.use_cases.base import BaseUseCase
@@ -16,10 +17,12 @@ class RetryPaymentRefundsUseCase(BaseUseCase[int, PaymentRefundRetryResponse]):
         refund_repository: PaymentRefundRepository,
         payment_repository: PaymentRepository,
         audit_repository: PaymentAuditRepository,
+        reservation_updater: ReservationUpdater,
     ):
         self.refund_repository = refund_repository
         self.payment_repository = payment_repository
         self.audit_repository = audit_repository
+        self.reservation_updater = reservation_updater
 
     def execute(
         self,
@@ -41,6 +44,13 @@ class RetryPaymentRefundsUseCase(BaseUseCase[int, PaymentRefundRetryResponse]):
                 self.refund_repository.mark_refund_succeeded(
                     refund_id=refund.refund_id,
                     processed_at=now,
+                )
+                self.reservation_updater.notify_refund_result(
+                    reservation_id=refund.reservation_id,
+                    status="succeeded",
+                    amount_in_cents=refund.amount_in_cents,
+                    refund_id=refund.refund_id,
+                    source_ip=source_ip,
                 )
                 self.payment_repository.add_events(
                     refund.payment_id,
@@ -83,6 +93,20 @@ class RetryPaymentRefundsUseCase(BaseUseCase[int, PaymentRefundRetryResponse]):
                     * (2 ** max(0, next_retry_count - 1)),
                 )
                 next_retry_at = now + timedelta(seconds=retry_delay_seconds)
+
+                if should_fail_terminal:
+                    try:
+                        self.reservation_updater.notify_refund_result(
+                            reservation_id=refund.reservation_id,
+                            status="failed",
+                            amount_in_cents=refund.amount_in_cents,
+                            refund_id=refund.refund_id,
+                            source_ip=source_ip,
+                        )
+                    except Exception:
+                        # Callback failure should not mask terminal refund failure.
+                        pass
+
                 self.refund_repository.mark_refund_retry(
                     refund_id=refund.refund_id,
                     next_retry_at=next_retry_at,

@@ -12,6 +12,7 @@ from adapters.repositories.reservation_event_repository import (
     SQLModelReservationEventRepository,
 )
 from adapters.services.property_service_client import HttpPropertyServiceClient
+from adapters.services.payment_service_client import HttpPaymentServiceClient
 from adapters.services.scheduler_service import (
     EventBridgeReservationScheduler,
     NoOpReservationScheduler,
@@ -19,6 +20,7 @@ from adapters.services.scheduler_service import (
 from core.config import settings
 from db.session import get_session
 from domain.ports.property_service_client import PropertyServiceClient
+from domain.ports.payment_service_client import PaymentServiceClient
 from domain.ports.reservation_scheduler import ReservationScheduler
 from domain.schemas.reservation import (
     ReservationCancellationConfirmRequest,
@@ -51,6 +53,7 @@ from errors import (
     InvalidReservationDateError,
     PropertyNotFoundError,
     PropertyServiceUnavailableError,
+    PaymentServiceUnavailableError,
     ReservationSchedulingError,
     ReservationNotFoundError,
     ReservationOwnershipError,
@@ -74,6 +77,10 @@ def get_reservation_command_log_repository(session: Session = Depends(get_sessio
 
 def get_property_service_client() -> PropertyServiceClient:
     return HttpPropertyServiceClient()
+
+
+def get_payment_service_client() -> PaymentServiceClient:
+    return HttpPaymentServiceClient()
 
 
 @lru_cache
@@ -132,6 +139,7 @@ def get_confirm_modification_use_case(
     repository=Depends(get_reservation_repository),
     event_repository=Depends(get_reservation_event_repository),
     command_log_repository=Depends(get_reservation_command_log_repository),
+    payment_client: PaymentServiceClient = Depends(get_payment_service_client),
     preview_use_case: PreviewReservationModificationUseCase = Depends(
         get_preview_modification_use_case
     ),
@@ -140,6 +148,7 @@ def get_confirm_modification_use_case(
         repository,
         event_repository,
         command_log_repository,
+        payment_client,
         preview_use_case,
     )
 
@@ -148,6 +157,7 @@ def get_confirm_cancellation_use_case(
     repository=Depends(get_reservation_repository),
     event_repository=Depends(get_reservation_event_repository),
     command_log_repository=Depends(get_reservation_command_log_repository),
+    payment_client: PaymentServiceClient = Depends(get_payment_service_client),
     preview_use_case: PreviewReservationCancellationUseCase = Depends(
         get_preview_cancellation_use_case
     ),
@@ -156,6 +166,7 @@ def get_confirm_cancellation_use_case(
         repository,
         event_repository,
         command_log_repository,
+        payment_client,
         preview_use_case,
     )
 
@@ -342,6 +353,8 @@ def confirm_reservation_modification(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except PropertyServiceUnavailableError as e:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
+    except PaymentServiceUnavailableError as e:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -388,6 +401,8 @@ def confirm_reservation_cancellation(
     except PropertyNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except PropertyServiceUnavailableError as e:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
+    except PaymentServiceUnavailableError as e:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
     except Exception:
         raise HTTPException(

@@ -1,13 +1,29 @@
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 
 from assembly import (
+    get_create_additional_charge_for_reservation_use_case,
+    get_create_refund_for_reservation_use_case,
     get_retry_payment_refunds_use_case,
     get_retry_reservation_confirmations_use_case,
 )
 from core.config import settings
-from domain.schemas.payment import PaymentRefundRetryResponse, ReservationConfirmationRetryResponse
+from domain.schemas.payment import (
+    AdditionalChargeRequest,
+    PaymentPublicResponse,
+    PaymentRefundPublicResponse,
+    PaymentRefundRetryResponse,
+    ReservationConfirmationRetryResponse,
+    ReservationRefundRequest,
+)
+from domain.use_cases.create_additional_charge_for_reservation import (
+    CreateAdditionalChargeForReservationUseCase,
+)
+from domain.use_cases.create_refund_for_reservation import (
+    CreateRefundForReservationUseCase,
+)
 from domain.use_cases.retry_payment_refunds import RetryPaymentRefundsUseCase
 from domain.use_cases.retry_reservation_confirmations import RetryReservationConfirmationsUseCase
+from errors import InvalidRefundAmountError, PaymentNotFoundError, PaymentRefundNotAllowedError
 
 router = APIRouter(prefix="/internal", tags=["internal"])
 
@@ -53,3 +69,51 @@ def retry_payment_refunds(
     use_case: RetryPaymentRefundsUseCase = Depends(get_retry_payment_refunds_use_case),
 ) -> PaymentRefundRetryResponse:
     return use_case.execute(source_ip=_resolve_source_ip(request))
+
+
+@router.post(
+    "/payments/refunds",
+    response_model=PaymentRefundPublicResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_refund_for_reservation(
+    request: Request,
+    payload: ReservationRefundRequest,
+    _: None = Depends(_verify_api_key),
+    use_case: CreateRefundForReservationUseCase = Depends(
+        get_create_refund_for_reservation_use_case
+    ),
+) -> PaymentRefundPublicResponse:
+    try:
+        return use_case.execute(payload, source_ip=_resolve_source_ip(request))
+    except PaymentNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No se encontro un pago confirmado para la reserva.",
+        )
+    except PaymentRefundNotAllowedError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Solo se permiten reembolsos para pagos confirmados.",
+        )
+    except InvalidRefundAmountError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El monto del reembolso supera el monto del pago original.",
+        )
+
+
+@router.post(
+    "/payments/additional-charges",
+    response_model=PaymentPublicResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_additional_charge_for_reservation(
+    request: Request,
+    payload: AdditionalChargeRequest,
+    _: None = Depends(_verify_api_key),
+    use_case: CreateAdditionalChargeForReservationUseCase = Depends(
+        get_create_additional_charge_for_reservation_use_case
+    ),
+) -> PaymentPublicResponse:
+    return use_case.execute(payload, source_ip=_resolve_source_ip(request))

@@ -141,6 +141,18 @@ class SQLModelPaymentRepository(PaymentRepository):
         ).first()
         return _to_payment_response(model) if model else None
 
+    def find_latest_confirmed_by_reservation_id(
+        self,
+        reservation_id: UUID,
+    ) -> PaymentChargeResponse | None:
+        model = self.session.exec(
+            select(Payment)
+            .where(Payment.reservation_id == reservation_id)
+            .where(Payment.status == PaymentStatus.confirmed.value)
+            .order_by(Payment.created_at.desc())
+        ).first()
+        return _to_payment_response(model) if model else None
+
     def add_events(self, payment_id: UUID, events: list[PaymentEventResponse]) -> None:
         for event in events:
             model = PaymentEvent(

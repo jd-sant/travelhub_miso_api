@@ -96,9 +96,51 @@ class FakeReservationUpdater:
     def __init__(self, should_fail: bool = False):
         self.should_fail = should_fail
         self.calls = []
+        self.refund_result_calls = []
+        self.additional_charge_result_calls = []
 
     def confirm_reservation(self, *, reservation_id, source_ip=None):
         self.calls.append({"reservation_id": reservation_id, "source_ip": source_ip})
+        if self.should_fail:
+            raise RuntimeError("reservations unavailable")
+
+    def notify_refund_result(
+        self,
+        *,
+        reservation_id,
+        status,
+        amount_in_cents,
+        refund_id,
+        source_ip=None,
+    ):
+        self.refund_result_calls.append(
+            {
+                "reservation_id": reservation_id,
+                "status": status,
+                "amount_in_cents": amount_in_cents,
+                "refund_id": refund_id,
+            }
+        )
+        if self.should_fail:
+            raise RuntimeError("reservations unavailable")
+
+    def notify_additional_charge_result(
+        self,
+        *,
+        reservation_id,
+        status,
+        amount_in_cents,
+        payment_id,
+        source_ip=None,
+    ):
+        self.additional_charge_result_calls.append(
+            {
+                "reservation_id": reservation_id,
+                "status": status,
+                "amount_in_cents": amount_in_cents,
+                "payment_id": payment_id,
+            }
+        )
         if self.should_fail:
             raise RuntimeError("reservations unavailable")
 
@@ -860,6 +902,9 @@ def test_get_refund_returns_404_for_unknown_refund(client):
 
 
 def test_retry_payment_refunds_succeeds_pending_refund(client):
+    updater = FakeReservationUpdater()
+    client.app.dependency_overrides[get_reservation_updater] = lambda: updater
+
     payment_response = client.post("/api/v1/payments/charges", json=_payload(), headers=SECURE_HEADERS)
     payment_id = payment_response.json()["payment_id"]
     create_refund = client.post(
@@ -883,6 +928,8 @@ def test_retry_payment_refunds_succeeds_pending_refund(client):
     status_response = client.get(f"/api/v1/payments/refunds/{refund_id}")
     assert status_response.status_code == 200
     assert status_response.json()["status"] == "succeeded"
+    assert len(updater.refund_result_calls) == 1
+    assert updater.refund_result_calls[0]["status"] == "succeeded"
 
 
 def test_retry_payment_refunds_requires_internal_api_key(client):
@@ -933,3 +980,43 @@ def test_retry_payment_refunds_can_reach_terminal_failed(client, test_engine, mo
     final_status = client.get(f"/api/v1/payments/refunds/{refund_id}")
     assert final_status.status_code == 200
     assert final_status.json()["status"] == "failed"
+
+
+def test_internal_create_refund_for_reservation_uses_latest_confirmed_payment(client):
+    payment_response = client.post("/api/v1/payments/charges", json=_payload(), headers=SECURE_HEADERS)
+    reservation_id = payment_response.json()["reservation_id"]
+
+    response = client.post(
+        "/api/v1/internal/payments/refunds",
+        json={
+            "reservation_id": reservation_id,
+            "amount_in_cents": 40000,
+            "reason": "traveler_request",
+            "idempotency_key": f"int-refund-{uuid4()}",
+        },
+        headers={"X-Internal-Api-Key": settings.internal_api_key},
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["reservation_id"] == reservation_id
+    assert body["status"] == "pending"
+
+
+def test_internal_additional_charge_endpoint_creates_charge(client):
+    payload = _payload()
+    response = client.post(
+        "/api/v1/internal/payments/additional-charges",
+        json={
+            "reservation_id": payload["reservation_id"],
+            "traveler_id": payload["traveler_id"],
+            "amount_in_cents": 35000,
+            "currency": payload["currency"],
+            "idempotency_key": f"int-additional-{uuid4()}",
+            "payment_method_token": payload["payment_method_token"],
+        },
+        headers={"X-Internal-Api-Key": settings.internal_api_key},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["status"] in {"confirmed", "failed"}

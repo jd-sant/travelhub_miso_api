@@ -40,3 +40,7 @@ class ReservationOwnershipError(Exception):
 
 class InvalidReservationOperationError(Exception):
     pass
+
+
+class PaymentServiceUnavailableError(Exception):
+    pass
