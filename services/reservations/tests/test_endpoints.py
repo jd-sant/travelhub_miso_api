@@ -791,9 +791,29 @@ class TestReservationEndpoints:
 
         client.patch(
             f"/api/v1/internal/reservations/{reservation_id}/status",
-            json={"status": "modification_pending_payment"},
+            json={"status": "confirmed"},
             headers={"X-Internal-Api-Key": settings.internal_api_key},
         )
+
+        app.dependency_overrides[get_property_service_client] = lambda: FakePropertyServiceClient()
+        app.dependency_overrides[get_payment_service_client] = lambda: FakePaymentServiceClient()
+        try:
+            confirm_response = client.post(
+                f"/api/v1/reservations/{reservation_id}/modifications/confirm",
+                json={
+                    "idempotency_key": "idem-mod-callback-1",
+                    "check_in_date": (datetime.now(UTC) + timedelta(days=6)).isoformat(),
+                    "check_out_date": (datetime.now(UTC) + timedelta(days=9)).isoformat(),
+                    "number_of_guests": 3,
+                },
+                headers={"X-Traveler-Id": traveler_id},
+            )
+        finally:
+            app.dependency_overrides.pop(get_property_service_client, None)
+            app.dependency_overrides.pop(get_payment_service_client, None)
+
+        assert confirm_response.status_code == 200
+        assert confirm_response.json()["status_after"] == "modification_pending_payment"
 
         callback_response = client.post(
             f"/api/v1/internal/reservations/{reservation_id}/additional-charge-result",
