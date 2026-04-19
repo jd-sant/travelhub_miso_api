@@ -17,16 +17,10 @@ class HttpTravelerProfileClient(TravelerProfileSource):
                 headers={"X-Internal-Api-Key": settings.internal_api_key},
                 timeout=5.0,
             )
-        except httpx.HTTPError as exc:
-            raise PaymentConfirmationUnavailableError(
-                "No fue posible consultar la informacion del viajero."
-            ) from exc
-
-        if response.status_code == 404:
-            raise TravelerProfileNotFoundError(
-                f"No se encontro informacion del viajero {traveler_id}."
-            )
-        try:
+            if response.status_code == 404:
+                raise TravelerProfileNotFoundError(
+                    f"No se encontro informacion del viajero {traveler_id}."
+                )
             response.raise_for_status()
         except httpx.HTTPError as exc:
             raise PaymentConfirmationUnavailableError(
@@ -34,7 +28,6 @@ class HttpTravelerProfileClient(TravelerProfileSource):
             ) from exc
 
         traveler = response.json()
-
         return TravelerProfileRecord(
             traveler_id=traveler["id"],
             email=traveler["email"],

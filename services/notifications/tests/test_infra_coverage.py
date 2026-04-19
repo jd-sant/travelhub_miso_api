@@ -54,7 +54,7 @@ class _SuccessUseCase:
 
 
 class _Runner:
-    def run_delivery(self, notification_id, source_ip=None):
+    def run_delivery(self, notification_id, source_ip=None, payment_confirmed_at=None):
         return None
 
 

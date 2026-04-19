@@ -100,6 +100,7 @@ class CreatePaymentConfirmationUseCase(
                 "receipt_id": str(confirmation.receipt_id) if confirmation.receipt_id else None,
                 "receipt_number": confirmation.receipt_number,
                 "property_name": confirmation.property_name,
+                "property_address": confirmation.property_address,
                 "check_in_date": (
                     confirmation.check_in_date.isoformat()
                     if confirmation.check_in_date
@@ -110,6 +111,12 @@ class CreatePaymentConfirmationUseCase(
                     if confirmation.check_out_date
                     else None
                 ),
+                "guests_count": confirmation.guests_count,
+                "nights": confirmation.nights,
+                "nightly_rate_in_cents": confirmation.nightly_rate_in_cents,
+                "taxes_in_cents": confirmation.taxes_in_cents,
+                "total_in_cents": confirmation.total_in_cents or confirmation.amount_in_cents,
+                "cancellation_policy": confirmation.cancellation_policy,
             },
             "recipient": {
                 "email_masked": mask_email(recipient_email),

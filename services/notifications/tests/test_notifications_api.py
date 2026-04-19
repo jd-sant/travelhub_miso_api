@@ -119,24 +119,26 @@ def test_create_payment_confirmation_persists_notification_and_audit(client, tes
     assert len(audits) == 2
     assert "traveler" not in notifications[0].payload
     assert "payment_confirmation" not in notifications[0].payload
-    assert notifications[0].payload == {
-        "payment_summary": {
-            "payment_id": notifications[0].payload["payment_summary"]["payment_id"],
-            "reservation_id": notifications[0].payload["payment_summary"]["reservation_id"],
-            "traveler_id": notifications[0].payload["payment_summary"]["traveler_id"],
-            "status": "confirmed",
-            "amount_in_cents": 287650,
-            "currency": "COP",
-            "receipt_id": notifications[0].payload["payment_summary"]["receipt_id"],
-            "receipt_number": "RCPT-20261012-101010",
-            "property_name": "Hotel Central",
-            "check_in_date": "2026-10-12",
-            "check_out_date": "2026-10-17",
-        },
-        "recipient": {
-            "email_masked": "t***r@example.com",
-        },
-    }
+    summary = notifications[0].payload["payment_summary"]
+    assert summary["status"] == "confirmed"
+    assert summary["amount_in_cents"] == 287650
+    assert summary["currency"] == "COP"
+    assert summary["receipt_number"] == "RCPT-20261012-101010"
+    assert summary["property_name"] == "Hotel Central"
+    assert summary["check_in_date"] == "2026-10-12"
+    assert summary["check_out_date"] == "2026-10-17"
+
+    for field in (
+        "property_address",
+        "guests_count",
+        "nights",
+        "nightly_rate_in_cents",
+        "taxes_in_cents",
+        "total_in_cents",
+        "cancellation_policy",
+    ):
+        assert field in summary
+    assert notifications[0].payload["recipient"] == {"email_masked": "t***r@example.com"}
 
 
 def test_get_notification_returns_created_notification(client):

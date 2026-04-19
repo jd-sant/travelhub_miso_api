@@ -118,9 +118,17 @@ services:
       PAYMENTS_DATA_ENCRYPTION_KEY: ${PAYMENTS_DATA_ENCRYPTION_KEY:-dev-payments-encryption-key-change-me}
       NOTIFICATIONS_SERVICE_URL: http://notifications:8000
       RESERVATIONS_SERVICE_URL: http://reservations:8000
+      PROPERTIES_SERVICE_URL: http://properties:8000
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-}
+      NOTIFICATIONS_DISPATCH_MODE: ${NOTIFICATIONS_DISPATCH_MODE:-}
+      DEFAULT_CANCELLATION_POLICY: ${DEFAULT_CANCELLATION_POLICY:-Cancelacion gratuita hasta 48 horas antes del check-in. Despues se cobra la primera noche.}
     ports:
       - "8003:8000"
     depends_on:
@@ -132,6 +140,7 @@ services:
       context: ./services/notifications
     environment:
       PYTHONPATH: /app/src
+      SERVICE_MODE: api
       RDS_HOSTNAME: postgres
       RDS_USERNAME: travelhub_user
       RDS_PASSWORD: travelhub_pass
@@ -147,8 +156,47 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-noreply@travelhub.com}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      SES_FROM_ADDRESS: ${SES_FROM_ADDRESS:-}
+      SES_REGION: ${SES_REGION:-}
+      NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-}
     ports:
       - "8004:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  notifications-worker:
+    build:
+      context: ./services/notifications
+    environment:
+      PYTHONPATH: /app/src
+      SERVICE_MODE: worker
+      RDS_HOSTNAME: postgres
+      RDS_USERNAME: travelhub_user
+      RDS_PASSWORD: travelhub_pass
+      RDS_DB_NAME: travelhub
+      RDS_PORT: "5432"
+      DB_SCHEMA: notifications_schema
+      DB_ECHO: "False"
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
+      PAYMENTS_SERVICE_URL: http://payments:8000
+      USERS_SERVICE_URL: http://users:8000
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@travelhub.com}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      SES_FROM_ADDRESS: ${SES_FROM_ADDRESS:-}
+      SES_REGION: ${SES_REGION:-}
+      NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-}
     depends_on:
       postgres:
         condition: service_healthy

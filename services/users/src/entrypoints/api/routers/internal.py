@@ -2,16 +2,12 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 
-from assembly import get_get_user_by_id_use_case, get_verify_credentials_use_case
+from assembly import get_user_repository, get_verify_credentials_use_case
 from core.config import settings
-from domain.schemas.user import (
-    UserResponse,
-    VerifyCredentialsRequest,
-    VerifyCredentialsResponse,
-)
-from domain.use_cases.get_user_by_id import GetUserByIdUseCase
+from domain.ports.user_repository import UserRepository
+from domain.schemas.user import UserResponse, VerifyCredentialsRequest, VerifyCredentialsResponse
 from domain.use_cases.verify_credentials import VerifyCredentialsUseCase
-from errors import InvalidCredentialsError, UserNotFoundError
+from errors import InvalidCredentialsError
 
 router = APIRouter(prefix="/internal", tags=["internal"])
 
@@ -55,12 +51,12 @@ def verify_credentials(
 def get_user_by_id(
     user_id: UUID,
     _: None = Depends(_verify_api_key),
-    use_case: GetUserByIdUseCase = Depends(get_get_user_by_id_use_case),
+    repository: UserRepository = Depends(get_user_repository),
 ) -> UserResponse:
-    try:
-        return use_case.execute(user_id)
-    except UserNotFoundError:
+    user = repository.get_by_id(user_id)
+    if user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Usuario no encontrado",
         )
+    return user

@@ -17,10 +17,14 @@ class DeliveryAttemptStatus(str, Enum):
 
 
 class PaymentConfirmationRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     payment_id: UUID
     source_ip: str | None = Field(default=None, max_length=64)
+    payment_confirmed_at: datetime | None = Field(
+        default=None,
+        description="Instante en el que payments marcó el pago como confirmado; usado para medir latencia SLA de 30s.",
+    )
 
 
 class NotificationRecord(BaseModel):
@@ -49,8 +53,15 @@ class PaymentConfirmationSourceRecord(BaseModel):
     receipt_id: UUID | None = None
     receipt_number: str | None = None
     property_name: str | None = None
+    property_address: str | None = None
     check_in_date: date | None = None
     check_out_date: date | None = None
+    guests_count: int | None = None
+    nights: int | None = None
+    nightly_rate_in_cents: int | None = None
+    taxes_in_cents: int | None = None
+    total_in_cents: int | None = None
+    cancellation_policy: str | None = None
 
 
 class TravelerProfileRecord(BaseModel):

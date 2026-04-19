@@ -42,6 +42,7 @@ def create_payment_confirmation(
                 delivery_runner.run_delivery,
                 notification_id=notification.notification_id,
                 source_ip=payload.source_ip,
+                payment_confirmed_at=payload.payment_confirmed_at,
             )
         return notification
     except InvalidPaymentConfirmationError as exc:
