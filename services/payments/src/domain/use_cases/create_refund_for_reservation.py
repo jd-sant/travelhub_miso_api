@@ -24,6 +24,7 @@ class CreateRefundForReservationUseCase(
         self,
         payload: ReservationRefundRequest,
         source_ip: str | None = None,
+        correlation_id: str | None = None,
     ) -> PaymentRefundPublicResponse:
         payment = self.payment_repository.find_latest_confirmed_by_reservation_id(
             payload.reservation_id
@@ -41,4 +42,5 @@ class CreateRefundForReservationUseCase(
                 idempotency_key=payload.idempotency_key,
             ),
             source_ip=source_ip,
+            correlation_id=correlation_id,
         )

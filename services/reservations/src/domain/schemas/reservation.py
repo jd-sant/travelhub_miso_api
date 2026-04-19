@@ -164,6 +164,7 @@ class ReservationResponse(BaseModel):
     total_price: Decimal
     currency: str
     status: str
+    version: int = 1
     created_at: datetime
     updated_at: datetime
 

@@ -48,6 +48,7 @@ class ConfirmReservationCancellationUseCase:
         *,
         actor_user_id: UUID,
         source_ip: str | None,
+        correlation_id: str | None = None,
     ) -> ReservationConfirmResponse:
         cached = self.command_log_repository.get_by_idempotency(
             reservation_id,
@@ -86,6 +87,7 @@ class ConfirmReservationCancellationUseCase:
         updated = self.reservation_repository.apply_updates(
             reservation_id,
             status=status_after,
+            expected_version=reservation_before.version,
             last_policy_snapshot=preview.policy_applied.model_dump_json(),
             cancelled_at=cancelled_at if status_after == "cancelled" else None,
             cancellation_reason=payload.reason,
@@ -95,6 +97,7 @@ class ConfirmReservationCancellationUseCase:
 
         after_payload = updated.model_dump(mode="json")
         after_payload["refund_amount"] = str(refund_amount)
+        after_payload["correlation_id"] = correlation_id
 
         self.event_repository.add(
             ReservationEventCreateRequest(

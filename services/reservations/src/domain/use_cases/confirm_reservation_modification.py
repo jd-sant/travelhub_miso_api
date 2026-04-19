@@ -48,6 +48,7 @@ class ConfirmReservationModificationUseCase:
         *,
         actor_user_id: UUID,
         source_ip: str | None,
+        correlation_id: str | None = None,
     ) -> ReservationConfirmResponse:
         cached = self.command_log_repository.get_by_idempotency(
             reservation_id,
@@ -109,6 +110,7 @@ class ConfirmReservationModificationUseCase:
         updated = self.reservation_repository.apply_updates(
             reservation_id,
             status=status_after,
+            expected_version=reservation_before.version,
             check_in_date=preview.reservation_after_preview.check_in_date,
             check_out_date=preview.reservation_after_preview.check_out_date,
             number_of_guests=preview.reservation_after_preview.number_of_guests,
@@ -126,7 +128,10 @@ class ConfirmReservationModificationUseCase:
                 source_ip=source_ip,
                 result=ReservationEventResult.success,
                 before_payload=reservation_before.model_dump(mode="json"),
-                after_payload=updated.model_dump(mode="json"),
+                after_payload={
+                    **updated.model_dump(mode="json"),
+                    "correlation_id": correlation_id,
+                },
             )
         )
 

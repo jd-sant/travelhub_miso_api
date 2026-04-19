@@ -18,6 +18,7 @@ from adapters.services.scheduler_service import (
     NoOpReservationScheduler,
 )
 from core.config import settings
+from core.telemetry import resolve_correlation_id
 from db.session import get_session
 from domain.ports.property_service_client import PropertyServiceClient
 from domain.ports.payment_service_client import PaymentServiceClient
@@ -57,6 +58,7 @@ from errors import (
     ReservationSchedulingError,
     ReservationNotFoundError,
     ReservationOwnershipError,
+    ReservationConcurrencyError,
     RoomNotAvailableError,
 )
 
@@ -322,6 +324,7 @@ def confirm_reservation_modification(
     reservation_id: str,
     payload: ReservationModificationConfirmRequest,
     request: Request,
+    correlation_id: str = Depends(resolve_correlation_id),
     actor_user_id: UUID = Depends(_get_actor_user_id),
     use_case: ConfirmReservationModificationUseCase = Depends(
         get_confirm_modification_use_case
@@ -342,6 +345,7 @@ def confirm_reservation_modification(
             payload,
             actor_user_id=actor_user_id,
             source_ip=source_ip,
+            correlation_id=correlation_id,
         )
     except ReservationNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
@@ -355,6 +359,11 @@ def confirm_reservation_modification(
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
     except PaymentServiceUnavailableError as e:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
+    except ReservationConcurrencyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"message": str(e), "correlation_id": correlation_id},
+        )
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -371,6 +380,7 @@ def confirm_reservation_cancellation(
     reservation_id: str,
     payload: ReservationCancellationConfirmRequest,
     request: Request,
+    correlation_id: str = Depends(resolve_correlation_id),
     actor_user_id: UUID = Depends(_get_actor_user_id),
     use_case: ConfirmReservationCancellationUseCase = Depends(
         get_confirm_cancellation_use_case
@@ -391,6 +401,7 @@ def confirm_reservation_cancellation(
             payload,
             actor_user_id=actor_user_id,
             source_ip=source_ip,
+            correlation_id=correlation_id,
         )
     except ReservationNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
@@ -404,6 +415,11 @@ def confirm_reservation_cancellation(
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
     except PaymentServiceUnavailableError as e:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
+    except ReservationConcurrencyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"message": str(e), "correlation_id": correlation_id},
+        )
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

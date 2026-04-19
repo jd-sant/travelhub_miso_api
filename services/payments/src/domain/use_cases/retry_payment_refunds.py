@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from core.config import settings
+from core.telemetry import refund_latency_seconds, refund_sla_breach_count
 from domain.ports.payment_audit_repository import PaymentAuditRepository
 from domain.ports.payment_refund_repository import PaymentRefundRepository
 from domain.ports.payment_repository import PaymentRepository
@@ -28,6 +29,7 @@ class RetryPaymentRefundsUseCase(BaseUseCase[int, PaymentRefundRetryResponse]):
         self,
         payload: int | None = None,
         source_ip: str | None = None,
+        correlation_id: str | None = None,
     ) -> PaymentRefundRetryResponse:
         now = datetime.now(timezone.utc)
         limit = payload or settings.refund_retry_batch_size
@@ -79,6 +81,29 @@ class RetryPaymentRefundsUseCase(BaseUseCase[int, PaymentRefundRetryResponse]):
                         payload={
                             "attempt_count": refund.retry_count + 1,
                             "status": "succeeded",
+                            "correlation_id": correlation_id,
+                        },
+                        created_at=now,
+                    )
+                )
+                self.audit_repository.add_log(
+                    PaymentAuditLogRecord(
+                        traveler_id=refund.traveler_id,
+                        payment_id=refund.payment_id,
+                        entity_type="payment_refund",
+                        entity_id=str(refund.refund_id),
+                        action="payment.refund.metrics",
+                        ip_address=source_ip,
+                        payload={
+                            "refund_latency_seconds": refund_latency_seconds(
+                                created_at=refund.created_at,
+                                now=now,
+                            ),
+                            "refund_sla_breach_count": refund_sla_breach_count(
+                                now=now,
+                                sla_deadline_at=refund.sla_deadline_at,
+                            ),
+                            "correlation_id": correlation_id,
                         },
                         created_at=now,
                     )
@@ -151,6 +176,29 @@ class RetryPaymentRefundsUseCase(BaseUseCase[int, PaymentRefundRetryResponse]):
                             "attempt_count": next_retry_count,
                             "error": str(exc),
                             "next_retry_at": next_retry_at.isoformat(),
+                            "correlation_id": correlation_id,
+                        },
+                        created_at=now,
+                    )
+                )
+                self.audit_repository.add_log(
+                    PaymentAuditLogRecord(
+                        traveler_id=refund.traveler_id,
+                        payment_id=refund.payment_id,
+                        entity_type="payment_refund",
+                        entity_id=str(refund.refund_id),
+                        action="payment.refund.metrics",
+                        ip_address=source_ip,
+                        payload={
+                            "refund_latency_seconds": refund_latency_seconds(
+                                created_at=refund.created_at,
+                                now=now,
+                            ),
+                            "refund_sla_breach_count": refund_sla_breach_count(
+                                now=now,
+                                sla_deadline_at=refund.sla_deadline_at,
+                            ),
+                            "correlation_id": correlation_id,
                         },
                         created_at=now,
                     )

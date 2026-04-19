@@ -15,6 +15,7 @@ from assembly import (
     get_list_payment_events_use_case,
 )
 from core.config import settings
+from core.telemetry import resolve_correlation_id
 from domain.schemas.checkout import (
     PaymentCheckoutSessionRequest,
     PaymentCheckoutSessionResponse,
@@ -200,13 +201,18 @@ def create_charge(
 def create_payment_refund(
     request: Request,
     payload: PaymentRefundCreateRequest,
+    correlation_id: str = Depends(resolve_correlation_id),
     x_forwarded_proto: str | None = Header(default=None),
     x_forwarded_for: str | None = Header(default=None),
     use_case: CreatePaymentRefundUseCase = Depends(get_create_payment_refund_use_case),
 ) -> PaymentRefundPublicResponse:
     try:
         _assert_secure_transport(x_forwarded_proto)
-        return use_case.execute(payload, source_ip=_resolve_source_ip(request, x_forwarded_for))
+        return use_case.execute(
+            payload,
+            source_ip=_resolve_source_ip(request, x_forwarded_for),
+            correlation_id=correlation_id,
+        )
     except InsecureTransportError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

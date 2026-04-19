@@ -1,6 +1,6 @@
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from domain.schemas.property_service import (
     PropertyCancellationPolicyResponse,
@@ -12,7 +12,9 @@ from entrypoints.api.routers.reservations import (
     get_payment_service_client,
     get_property_service_client,
 )
+from entrypoints.api.routers.internal import get_reservation_repository
 from core.config import settings
+from errors import ReservationConcurrencyError
 
 
 class FakePropertyServiceClient:
@@ -807,3 +809,53 @@ class TestReservationEndpoints:
         body = callback_response.json()
         assert body["status_before"] == "modification_pending_payment"
         assert body["status_after"] == "modification_confirmed"
+
+    def test_internal_refund_result_returns_409_on_concurrency_conflict(self, client):
+        traveler_id = str(uuid4())
+        reservation_id = client.post(
+            "/api/v1/reservations",
+            json={
+                "id_traveler": traveler_id,
+                "id_property": str(uuid4()),
+                "id_room": str(uuid4()),
+                "check_in_date": (datetime.now(UTC) + timedelta(days=5)).isoformat(),
+                "check_out_date": (datetime.now(UTC) + timedelta(days=7)).isoformat(),
+                "number_of_guests": 2,
+                "currency": "COP",
+            },
+        ).json()["id"]
+
+        class ConflictReservationRepository:
+            def get_by_id(self, _reservation_id):
+                return type(
+                    "R",
+                    (),
+                    {
+                        "id": UUID(reservation_id),
+                        "id_traveler": UUID(traveler_id),
+                        "status": "cancel_requested",
+                        "version": 1,
+                        "model_dump": lambda self, mode="json": {
+                            "id": reservation_id,
+                            "status": "cancel_requested",
+                        },
+                    },
+                )()
+
+            def apply_updates(self, *_args, **_kwargs):
+                raise ReservationConcurrencyError("Reservation version conflict")
+
+        app.dependency_overrides[get_reservation_repository] = (
+            lambda: ConflictReservationRepository()
+        )
+        try:
+            response = client.post(
+                f"/api/v1/internal/reservations/{reservation_id}/refund-result",
+                json={"status": "succeeded", "refund_id": str(uuid4()), "amount_in_cents": 50000},
+                headers={"X-Internal-Api-Key": settings.internal_api_key},
+            )
+        finally:
+            app.dependency_overrides.pop(get_reservation_repository, None)
+
+        assert response.status_code == 409
+        assert response.json()["detail"]["message"] == "Reservation version conflict"

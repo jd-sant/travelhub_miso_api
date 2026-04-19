@@ -3,6 +3,7 @@ from uuid import UUID
 from sqlmodel import Session, select
 
 from adapters.models.reservation_event import ReservationEvent
+from core.security import sanitize_sensitive_data
 from domain.ports.reservation_event_repository import ReservationEventRepository
 from domain.schemas.reservation import (
     ReservationEventCreateRequest,
@@ -35,8 +36,8 @@ class SQLModelReservationEventRepository(ReservationEventRepository):
             actor_user_id=payload.actor_user_id,
             source_ip=payload.source_ip,
             result=payload.result,
-            before_payload=payload.before_payload,
-            after_payload=payload.after_payload,
+            before_payload=sanitize_sensitive_data(payload.before_payload),
+            after_payload=sanitize_sensitive_data(payload.after_payload),
         )
         self.session.add(model)
         self.session.commit()

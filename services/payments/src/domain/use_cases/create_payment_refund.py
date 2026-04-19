@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
+from core.telemetry import refund_latency_seconds, refund_sla_breach_count
 from domain.ports.payment_audit_repository import PaymentAuditRepository
 from domain.ports.payment_refund_repository import PaymentRefundRepository
 from domain.ports.payment_repository import PaymentRepository
@@ -35,6 +36,7 @@ class CreatePaymentRefundUseCase(
         self,
         payload: PaymentRefundCreateRequest,
         source_ip: str | None = None,
+        correlation_id: str | None = None,
     ) -> PaymentRefundPublicResponse:
         existing_refund = self.refund_repository.find_by_idempotency_key(payload.idempotency_key)
         if existing_refund is not None:
@@ -103,6 +105,29 @@ class CreatePaymentRefundUseCase(
                     "currency": stored_refund.currency,
                     "reason": stored_refund.reason,
                     "status": stored_refund.status.value,
+                    "correlation_id": correlation_id,
+                },
+                created_at=now,
+            )
+        )
+        self.audit_repository.add_log(
+            PaymentAuditLogRecord(
+                traveler_id=payment.traveler_id,
+                payment_id=payment.payment_id,
+                entity_type="payment_refund",
+                entity_id=str(stored_refund.refund_id),
+                action="payment.refund.metrics",
+                ip_address=source_ip,
+                payload={
+                    "refund_latency_seconds": refund_latency_seconds(
+                        created_at=stored_refund.created_at,
+                        now=now,
+                    ),
+                    "refund_sla_breach_count": refund_sla_breach_count(
+                        now=now,
+                        sla_deadline_at=stored_refund.sla_deadline_at,
+                    ),
+                    "correlation_id": correlation_id,
                 },
                 created_at=now,
             )

@@ -847,6 +847,34 @@ def test_create_refund_returns_pending_status(client):
     assert body["retry_count"] == 0
 
 
+def test_create_refund_records_correlation_id_and_metrics_audit(client, test_engine):
+    payment_response = client.post("/api/v1/payments/charges", json=_payload(), headers=SECURE_HEADERS)
+    payment_id = payment_response.json()["payment_id"]
+
+    response = client.post(
+        "/api/v1/payments/refunds",
+        json=_refund_payload(payment_id),
+        headers={**SECURE_HEADERS, "X-Correlation-Id": "corr-refund-123"},
+    )
+
+    assert response.status_code == 201
+
+    with Session(test_engine) as session:
+        stored_audit_logs = session.exec(select(PaymentAuditLog)).all()
+
+    requested_log = next(
+        log for log in stored_audit_logs if log.action == "payment.refund.requested"
+    )
+    metrics_log = next(
+        log for log in stored_audit_logs if log.action == "payment.refund.metrics"
+    )
+
+    assert requested_log.payload["correlation_id"] == "corr-refund-123"
+    assert metrics_log.payload["correlation_id"] == "corr-refund-123"
+    assert metrics_log.payload["refund_latency_seconds"] >= 0
+    assert metrics_log.payload["refund_sla_breach_count"] in {0, 1}
+
+
 def test_create_refund_is_idempotent_for_same_key(client):
     payment_response = client.post("/api/v1/payments/charges", json=_payload(), headers=SECURE_HEADERS)
     payment_id = payment_response.json()["payment_id"]

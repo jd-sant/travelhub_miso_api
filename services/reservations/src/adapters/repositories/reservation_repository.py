@@ -9,7 +9,11 @@ from sqlmodel import Session, select
 from adapters.models.reservation import Reservation
 from domain.ports.reservation_repository import ReservationRepository
 from domain.schemas.reservation import ReservationCreateRequest, ReservationResponse
-from errors import ReservationConflictError, RoomNotAvailableError
+from errors import (
+    ReservationConcurrencyError,
+    ReservationConflictError,
+    RoomNotAvailableError,
+)
 
 
 def _to_response(model: Reservation) -> ReservationResponse:
@@ -24,6 +28,7 @@ def _to_response(model: Reservation) -> ReservationResponse:
         total_price=model.total_price,
         currency=model.currency,
         status=model.status,
+        version=model.version,
         created_at=model.created_at,
         updated_at=model.updated_at,
     )
@@ -100,13 +105,22 @@ class SQLModelReservationRepository(ReservationRepository):
         conflicting = self.session.exec(query).first()
         return conflicting is None
 
-    def update_status(self, id: UUID, status: str) -> Optional[ReservationResponse]:
+    def update_status(
+        self,
+        id: UUID,
+        status: str,
+        *,
+        expected_version: int | None = None,
+    ) -> Optional[ReservationResponse]:
         reservation = self.session.exec(
             select(Reservation).where(Reservation.id == id)
         ).first()
         if not reservation:
             return None
+        if expected_version is not None and reservation.version != expected_version:
+            raise ReservationConcurrencyError("Reservation version conflict")
         reservation.status = status
+        reservation.version = (reservation.version or 1) + 1
         reservation.updated_at = datetime.now(UTC)
         self.session.add(reservation)
         self.session.commit()
@@ -118,6 +132,7 @@ class SQLModelReservationRepository(ReservationRepository):
         id: UUID,
         *,
         status: str,
+        expected_version: int | None = None,
         check_in_date: datetime | None = None,
         check_out_date: datetime | None = None,
         number_of_guests: int | None = None,
@@ -131,6 +146,8 @@ class SQLModelReservationRepository(ReservationRepository):
         ).first()
         if not reservation:
             return None
+        if expected_version is not None and reservation.version != expected_version:
+            raise ReservationConcurrencyError("Reservation version conflict")
 
         reservation.status = status
         if check_in_date is not None:

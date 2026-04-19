@@ -44,3 +44,7 @@ class InvalidReservationOperationError(Exception):
 
 class PaymentServiceUnavailableError(Exception):
     pass
+
+
+class ReservationConcurrencyError(Exception):
+    pass

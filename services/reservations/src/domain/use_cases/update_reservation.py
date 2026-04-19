@@ -24,7 +24,11 @@ class UpdateReservationStatusUseCase(BaseUseCase[UUID, ReservationCheckStatusRes
             raise ReservationNotFoundError("Reservation not found")
 
         status_before = reservation.status
-        updated_reservation = self.repository.update_status(reservation_id, normalized_status)
+        updated_reservation = self.repository.update_status(
+            reservation_id,
+            normalized_status,
+            expected_version=reservation.version,
+        )
         if not updated_reservation:
             raise ReservationNotFoundError("Reservation not found")
 

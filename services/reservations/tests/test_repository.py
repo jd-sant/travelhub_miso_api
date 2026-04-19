@@ -5,7 +5,7 @@ from uuid import uuid4
 
 from adapters.repositories.reservation_repository import SQLModelReservationRepository
 from domain.schemas.reservation import ReservationCreateRequest, ReservationResponse
-from errors import RoomNotAvailableError, ReservationConflictError
+from errors import RoomNotAvailableError, ReservationConcurrencyError, ReservationConflictError
 
 
 class TestReservationRepository:
@@ -183,6 +183,18 @@ class TestReservationRepository:
         result = reservation_repository.update_status(created.id, "paid")
 
         assert result.status == "paid"
+
+    def test_apply_updates_raises_concurrency_error_on_version_mismatch(
+        self, reservation_repository, valid_create_request
+    ):
+        created = reservation_repository.add(valid_create_request, Decimal("348.00"))
+
+        with pytest.raises(ReservationConcurrencyError):
+            reservation_repository.apply_updates(
+                created.id,
+                status="confirmed",
+                expected_version=(created.version or 1) + 7,
+            )
 
     def test_add_raises_error_if_room_not_available(
         self, reservation_repository, traveler_id, property_id, room_id
