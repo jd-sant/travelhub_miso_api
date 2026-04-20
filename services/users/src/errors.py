@@ -6,10 +6,6 @@ class InvalidCredentialsError(Exception):
     pass
 
 
-class UserNotFoundError(Exception):
-    pass
-
-
 class InvalidTokenError(Exception):
     pass
 
