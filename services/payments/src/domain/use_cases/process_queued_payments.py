@@ -177,14 +177,14 @@ class ProcessQueuedPaymentsUseCase(
                 },
             )
         except StripeIdempotencyConflictError as exc:
-            self._mark_processing_retry(
+            should_fail_terminal = self._mark_processing_retry(
                 item=item,
                 now=now,
                 error_message=str(exc) or "Duplicate Stripe confirmation attempt.",
                 source_ip=source_ip,
                 attempt_count=attempt_count,
             )
-            session.status = "pending"
+            session.status = "failed" if should_fail_terminal else "pending"
             session.error = str(exc) or "Duplicate Stripe confirmation attempt."
             session.updated_at = now
             self.checkout_repository.update_session(session)
@@ -230,6 +230,19 @@ class ProcessQueuedPaymentsUseCase(
                 processed_at=failed_payment.updated_at,
             )
             return "succeeded"
+        except Exception as exc:  # noqa: BLE001
+            should_fail_terminal = self._mark_processing_retry(
+                item=item,
+                now=now,
+                error_message=str(exc) or "Unexpected Stripe processing error.",
+                source_ip=source_ip,
+                attempt_count=attempt_count,
+            )
+            session.status = "failed" if should_fail_terminal else "pending"
+            session.error = str(exc) or "Unexpected Stripe processing error."
+            session.updated_at = now
+            self.checkout_repository.update_session(session)
+            return "failed"
 
         stripe_status = str(intent.get("status", "processing"))
         session.payment_intent_id = str(intent.get("id"))
@@ -395,7 +408,7 @@ class ProcessQueuedPaymentsUseCase(
         error_message: str,
         source_ip: str | None,
         attempt_count: int | None = None,
-    ) -> None:
+    ) -> bool:
         next_attempt_count = attempt_count or (item.attempt_count + 1)
         should_fail_terminal = next_attempt_count >= item.max_attempts
         retry_delay_seconds = min(
@@ -427,6 +440,67 @@ class ProcessQueuedPaymentsUseCase(
                     "attempt_count": next_attempt_count,
                     "error": error_message,
                     "next_retry_at": next_retry_at.isoformat(),
+                },
+                created_at=now,
+            )
+        )
+        if should_fail_terminal:
+            self._materialize_terminal_processing_failure(
+                item=item,
+                now=now,
+                error_message=error_message,
+                source_ip=source_ip,
+            )
+        return should_fail_terminal
+
+    def _materialize_terminal_processing_failure(
+        self,
+        *,
+        item: PaymentProcessingOutboxRecord,
+        now: datetime,
+        error_message: str,
+        source_ip: str | None,
+    ) -> None:
+        payment = self.payment_repository.get_by_id(item.payment_id)
+        session = self.checkout_repository.get_session(item.checkout_session_id)
+        if payment is None or session is None:
+            return
+
+        failed_payment = apply_gateway_result(
+            payment=payment,
+            gateway_charge_id=payment.gateway_charge_id or session.payment_intent_id,
+            gateway_status=(
+                payment.gateway_status
+                if payment.gateway_status not in {None, "processing"}
+                else "failed"
+            ),
+            status=PaymentStatus.failed,
+            failure_reason=error_message,
+        ).model_copy(update={"updated_at": now})
+        self.payment_repository.save_payment_result(failed_payment)
+        self.payment_repository.add_events(
+            failed_payment.payment_id,
+            build_terminal_events(failed_payment, session),
+        )
+        session.status = "failed"
+        session.error = error_message
+        session.updated_at = now
+        self.checkout_repository.update_session(session)
+        self.audit_repository.add_log(
+            PaymentAuditLogRecord(
+                traveler_id=failed_payment.traveler_id,
+                payment_id=failed_payment.payment_id,
+                checkout_session_id=session.payment_transaction_id,
+                entity_type="payment",
+                entity_id=str(failed_payment.payment_id),
+                action="payment.processing.failed",
+                ip_address=source_ip,
+                payload={
+                    "reservation_id": str(failed_payment.reservation_id),
+                    "status": failed_payment.status.value,
+                    "gateway_status": failed_payment.gateway_status,
+                    "failure_reason": failed_payment.failure_reason,
+                    "terminal_failure": True,
                 },
                 created_at=now,
             )

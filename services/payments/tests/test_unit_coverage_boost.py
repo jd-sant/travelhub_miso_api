@@ -80,7 +80,7 @@ class _PaymentRepo:
     def add_events(self, payment_id, events):
         self.events.append((payment_id, events))
 
-    def list_events(self, _payment_id):
+    def list_events(self, _payment_id, **_kwargs):
         return []
 
     def upsert_reservation_confirmation_outbox_failure(self, **kwargs):
@@ -350,6 +350,139 @@ def test_process_queued_payments_confirms_pending_payment(monkeypatch):
     actions = {log.action for log in audit_repo.logs}
     assert "payment.processing.started" in actions
     assert "payment.processing.confirmed" in actions
+
+
+def test_process_queued_payments_retries_on_unexpected_gateway_error(monkeypatch):
+    session = _session_record()
+    monkeypatch.setattr(
+        "domain.use_cases.process_queued_payments.settings",
+        SimpleNamespace(
+            payment_processing_retry_base_seconds=5,
+            payment_processing_retry_max_backoff_seconds=60,
+            payment_processing_retry_batch_size=10,
+            reservation_confirmation_retry_max_attempts=3,
+        ),
+    )
+    checkout_repo = _CheckoutRepo(session)
+    payment_repo = _PaymentRepo()
+    audit_repo = _AuditRepo()
+    pending_payment = PaymentChargeResponse(
+        payment_id=uuid4(),
+        reservation_id=session.reservation_id,
+        traveler_id=session.traveler_id,
+        provider_code=session.provider_code,
+        status=PaymentStatus.pending,
+        amount_in_cents=session.amount_in_cents,
+        currency=session.currency,
+        gateway_charge_id=None,
+        gateway_status="queued",
+        idempotency_key=session.idempotency_key,
+        request_fingerprint="fp",
+        duplicate_guard_key="dg",
+        request_checksum="cs",
+        payment_method_token_hash="ht",
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
+    )
+    payment_repo.saved.append(pending_payment)
+    session.payment_id = pending_payment.payment_id
+    payment_repo.upsert_payment_processing_outbox(
+        payment_id=pending_payment.payment_id,
+        checkout_session_id=session.payment_transaction_id,
+        source_ip="127.0.0.1",
+        next_retry_at=datetime.now(timezone.utc),
+        max_attempts=3,
+    )
+
+    use_case = ProcessQueuedPaymentsUseCase(
+        payment_repository=payment_repo,
+        checkout_repository=checkout_repo,
+        audit_repository=audit_repo,
+        gateway=_Gateway(err=RuntimeError("stripe timeout")),
+        notification_dispatcher=_NotificationDispatcher(),
+        reservation_updater=_ReservationUpdater(),
+    )
+
+    response = use_case.execute(
+        session.payment_transaction_id,
+        source_ip="127.0.0.1",
+    )
+
+    assert response.processed_count == 1
+    assert response.failed_count == 1
+    assert len(payment_repo.processing_retries) == 1
+    assert checkout_repo.updated.status == "pending"
+    assert checkout_repo.updated.error == "stripe timeout"
+    actions = {log.action for log in audit_repo.logs}
+    assert "payment.processing.retry_scheduled" in actions
+
+
+def test_process_queued_payments_materializes_terminal_failure_on_max_attempts(monkeypatch):
+    session = _session_record()
+    monkeypatch.setattr(
+        "domain.use_cases.process_queued_payments.settings",
+        SimpleNamespace(
+            payment_processing_retry_base_seconds=5,
+            payment_processing_retry_max_backoff_seconds=60,
+            payment_processing_retry_batch_size=10,
+            reservation_confirmation_retry_max_attempts=3,
+        ),
+    )
+    checkout_repo = _CheckoutRepo(session)
+    payment_repo = _PaymentRepo()
+    audit_repo = _AuditRepo()
+    pending_payment = PaymentChargeResponse(
+        payment_id=uuid4(),
+        reservation_id=session.reservation_id,
+        traveler_id=session.traveler_id,
+        provider_code=session.provider_code,
+        status=PaymentStatus.pending,
+        amount_in_cents=session.amount_in_cents,
+        currency=session.currency,
+        gateway_charge_id=None,
+        gateway_status="processing",
+        idempotency_key=session.idempotency_key,
+        request_fingerprint="fp",
+        duplicate_guard_key="dg",
+        request_checksum="cs",
+        payment_method_token_hash="ht",
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
+    )
+    payment_repo.saved.append(pending_payment)
+    session.payment_id = pending_payment.payment_id
+    payment_repo.upsert_payment_processing_outbox(
+        payment_id=pending_payment.payment_id,
+        checkout_session_id=session.payment_transaction_id,
+        source_ip="127.0.0.1",
+        next_retry_at=datetime.now(timezone.utc),
+        max_attempts=1,
+    )
+
+    use_case = ProcessQueuedPaymentsUseCase(
+        payment_repository=payment_repo,
+        checkout_repository=checkout_repo,
+        audit_repository=audit_repo,
+        gateway=_Gateway(err=RuntimeError("stripe timeout")),
+        notification_dispatcher=_NotificationDispatcher(),
+        reservation_updater=_ReservationUpdater(),
+    )
+
+    response = use_case.execute(
+        session.payment_transaction_id,
+        source_ip="127.0.0.1",
+    )
+
+    assert response.processed_count == 1
+    assert response.failed_count == 1
+    assert payment_repo.saved[-1].status == PaymentStatus.failed
+    assert checkout_repo.updated.status == "failed"
+    assert checkout_repo.updated.error == "stripe timeout"
+    assert len(payment_repo.processing_retries) == 1
+    assert payment_repo.processing_retries[-1]["mark_as_failed"] is True
+    actions = {log.action for log in audit_repo.logs}
+    assert "payment.processing.retry_terminal_failed" in actions
+    assert "payment.processing.failed" in actions
 
 
 def test_handle_webhook_verification_and_existing_payment_paths(monkeypatch):

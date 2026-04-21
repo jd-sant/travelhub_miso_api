@@ -232,6 +232,7 @@ def get_payment(
 
 @router.get("/{payment_id}/stream", status_code=status.HTTP_200_OK)
 async def stream_payment_status(
+    request: Request,
     payment_id: UUID,
     get_payment_use_case: GetPaymentUseCase = Depends(get_get_payment_use_case),
     list_events_use_case: ListPaymentEventsUseCase = Depends(get_list_payment_events_use_case),
@@ -247,20 +248,26 @@ async def stream_payment_status(
     async def event_stream():
         last_status: str | None = None
         last_failure_reason: str | None = None
-        seen_event_ids: set[str] = set()
+        last_event_created_at = None
+        last_event_id: UUID | None = None
         while True:
+            if await request.is_disconnected():
+                break
+
             payment = get_payment_use_case.execute(payment_id)
-            events = list_events_use_case.execute(payment_id)
+            events = list_events_use_case.execute(
+                payment_id,
+                after_created_at=last_event_created_at,
+                after_event_id=last_event_id,
+            )
 
             for event in events:
-                event_id = str(event.event_id)
-                if event_id in seen_event_ids:
-                    continue
-                seen_event_ids.add(event_id)
                 yield (
                     "event: payment_event\n"
-                    f"data: {json.dumps({'event_id': event_id, 'event_type': event.event_type, 'payload': event.payload, 'created_at': event.created_at.isoformat()})}\n\n"
+                    f"data: {json.dumps({'event_id': str(event.event_id), 'event_type': event.event_type, 'payload': event.payload, 'created_at': event.created_at.isoformat()})}\n\n"
                 )
+                last_event_created_at = event.created_at
+                last_event_id = event.event_id
 
             current_status = payment.status.value
             if (

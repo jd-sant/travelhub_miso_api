@@ -1,6 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
+from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
@@ -167,7 +168,6 @@ class SQLModelPaymentRepository(PaymentRepository):
             model.receipt_id = payment.receipt_id
             model.receipt_number = payment.receipt_number
             model.updated_at = payment.updated_at
-            model.created_at = payment.created_at
         self.session.add(model)
         try:
             self.session.commit()
@@ -199,11 +199,29 @@ class SQLModelPaymentRepository(PaymentRepository):
             self.session.add(model)
         self.session.commit()
 
-    def list_events(self, payment_id: UUID) -> list[PaymentEventResponse]:
+    def list_events(
+        self,
+        payment_id: UUID,
+        *,
+        after_created_at: datetime | None = None,
+        after_event_id: UUID | None = None,
+    ) -> list[PaymentEventResponse]:
+        statement = select(PaymentEvent).where(PaymentEvent.payment_id == payment_id)
+        if after_created_at is not None:
+            if after_event_id is None:
+                statement = statement.where(PaymentEvent.created_at > after_created_at)
+            else:
+                statement = statement.where(
+                    or_(
+                        PaymentEvent.created_at > after_created_at,
+                        and_(
+                            PaymentEvent.created_at == after_created_at,
+                            PaymentEvent.id > after_event_id,
+                        ),
+                    )
+                )
         models = self.session.exec(
-            select(PaymentEvent)
-            .where(PaymentEvent.payment_id == payment_id)
-            .order_by(PaymentEvent.created_at.asc())
+            statement.order_by(PaymentEvent.created_at.asc(), PaymentEvent.id.asc())
         ).all()
         return [_to_event_response(model) for model in models]
 
@@ -322,6 +340,7 @@ class SQLModelPaymentRepository(PaymentRepository):
             )
         ).first()
 
+        updated_at = datetime.now(next_retry_at.tzinfo)
         if model is None:
             model = PaymentProcessingOutbox(
                 payment_id=payment_id,
@@ -331,8 +350,8 @@ class SQLModelPaymentRepository(PaymentRepository):
                 max_attempts=max_attempts,
                 next_retry_at=next_retry_at,
                 source_ip=source_ip,
-                created_at=next_retry_at,
-                updated_at=next_retry_at,
+                created_at=updated_at,
+                updated_at=updated_at,
             )
             self.session.add(model)
         else:
@@ -341,7 +360,7 @@ class SQLModelPaymentRepository(PaymentRepository):
             model.max_attempts = max_attempts
             model.next_retry_at = next_retry_at
             model.status = "pending"
-            model.updated_at = next_retry_at
+            model.updated_at = updated_at
             self.session.add(model)
         self.session.commit()
 
@@ -416,12 +435,13 @@ class SQLModelPaymentRepository(PaymentRepository):
         model = self.session.get(PaymentProcessingOutbox, outbox_id)
         if model is None:
             return
+        updated_at = datetime.now(next_retry_at.tzinfo)
         model.status = "failed" if mark_as_failed else "pending"
         model.attempt_count = attempt_count
         model.last_error = error_message
         model.next_retry_at = next_retry_at
-        model.last_attempt_at = datetime.now(next_retry_at.tzinfo)
-        model.updated_at = next_retry_at
+        model.last_attempt_at = updated_at
+        model.updated_at = updated_at
         self.session.add(model)
         self.session.commit()
 

@@ -41,7 +41,13 @@ class PaymentRepository(ABC):
         pass
 
     @abstractmethod
-    def list_events(self, payment_id: UUID) -> list[PaymentEventResponse]:
+    def list_events(
+        self,
+        payment_id: UUID,
+        *,
+        after_created_at: datetime | None = None,
+        after_event_id: UUID | None = None,
+    ) -> list[PaymentEventResponse]:
         pass
 
     @abstractmethod
