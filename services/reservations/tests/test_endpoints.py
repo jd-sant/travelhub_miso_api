@@ -34,6 +34,7 @@ class TestReservationEndpoints:
         assert data["currency"] == "COP"
         assert "id" in data
         assert "created_at" in data
+        assert "hold_expires_at" in data
 
     def test_create_reservation_returns_400_if_checkout_before_checkin(self, client):
         """Test that creating reservation fails if checkout is before checkin."""
@@ -124,6 +125,7 @@ class TestReservationEndpoints:
         assert data["id"] == reservation_id
         assert data["id_traveler"] == traveler_id
         assert data["status"] == "pending_payment"
+        assert "hold_expires_at" in data
 
     def test_get_reservation_returns_404_if_not_found(self, client):
         """Test that get returns 404 for nonexistent reservation."""

@@ -37,6 +37,7 @@ class ReservationResponse(BaseModel):
     total_price: Decimal
     currency: str
     status: str
+    hold_expires_at: datetime
     created_at: datetime
     updated_at: datetime
 
@@ -48,6 +49,7 @@ class ReservationSummary(BaseModel):
     currency: str
     check_in_date: datetime
     check_out_date: datetime
+    hold_expires_at: datetime
     created_at: datetime
 
 

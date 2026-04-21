@@ -82,6 +82,7 @@ def create_reservation(
             currency=reservation.currency,
             check_in_date=reservation.check_in_date,
             check_out_date=reservation.check_out_date,
+            hold_expires_at=reservation.hold_expires_at,
             created_at=reservation.created_at,
         )
     except RoomNotAvailableError as e:

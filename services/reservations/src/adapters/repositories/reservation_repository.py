@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Optional
 from uuid import UUID, uuid4
@@ -7,9 +7,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from adapters.models.reservation import Reservation
+from core.config import settings
 from domain.ports.reservation_repository import ReservationRepository
 from domain.schemas.reservation import ReservationCreateRequest, ReservationResponse
 from errors import ReservationConflictError, RoomNotAvailableError
+
+
+def _hold_expires_at(created_at: datetime) -> datetime:
+    return created_at + timedelta(minutes=settings.reservation_scheduler_delay_minutes)
 
 
 def _to_response(model: Reservation) -> ReservationResponse:
@@ -24,6 +29,7 @@ def _to_response(model: Reservation) -> ReservationResponse:
         total_price=model.total_price,
         currency=model.currency,
         status=model.status,
+        hold_expires_at=_hold_expires_at(model.created_at),
         created_at=model.created_at,
         updated_at=model.updated_at,
     )
