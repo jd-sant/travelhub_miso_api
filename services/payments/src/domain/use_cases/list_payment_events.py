@@ -16,12 +16,10 @@ class ListPaymentEventsUseCase(BaseUseCase[UUID, list[PaymentEventResponse]]):
         payment_id: UUID,
         *,
         after_created_at: datetime | None = None,
-        after_event_id: UUID | None = None,
     ) -> list[PaymentEventResponse]:
         if self.repository.get_by_id(payment_id) is None:
             raise PaymentNotFoundError()
         return self.repository.list_events(
             payment_id,
             after_created_at=after_created_at,
-            after_event_id=after_event_id,
         )

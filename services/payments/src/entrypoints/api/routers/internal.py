@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from assembly import (
     get_process_queued_payments_use_case,

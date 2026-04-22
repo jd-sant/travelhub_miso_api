@@ -1,7 +1,6 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
@@ -204,22 +203,10 @@ class SQLModelPaymentRepository(PaymentRepository):
         payment_id: UUID,
         *,
         after_created_at: datetime | None = None,
-        after_event_id: UUID | None = None,
     ) -> list[PaymentEventResponse]:
         statement = select(PaymentEvent).where(PaymentEvent.payment_id == payment_id)
         if after_created_at is not None:
-            if after_event_id is None:
-                statement = statement.where(PaymentEvent.created_at > after_created_at)
-            else:
-                statement = statement.where(
-                    or_(
-                        PaymentEvent.created_at > after_created_at,
-                        and_(
-                            PaymentEvent.created_at == after_created_at,
-                            PaymentEvent.id > after_event_id,
-                        ),
-                    )
-                )
+            statement = statement.where(PaymentEvent.created_at >= after_created_at)
         models = self.session.exec(
             statement.order_by(PaymentEvent.created_at.asc(), PaymentEvent.id.asc())
         ).all()

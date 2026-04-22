@@ -1,5 +1,6 @@
 import asyncio
 import json
+from datetime import datetime
 from uuid import UUID
 
 from fastapi import (
@@ -13,7 +14,10 @@ from fastapi import (
     status,
 )
 from fastapi.responses import StreamingResponse
+from sqlmodel import Session
+from starlette.concurrency import run_in_threadpool
 
+from adapters.repositories.payment_repository import SQLModelPaymentRepository
 from assembly import (
     get_create_payment_checkout_session_use_case,
     get_create_payment_charge_use_case,
@@ -26,6 +30,7 @@ from assembly import (
     get_payment_processing_runner,
 )
 from core.config import settings
+from db.session import engine
 from domain.schemas.checkout import (
     PaymentCheckoutSessionRequest,
     PaymentCheckoutSessionResponse,
@@ -78,6 +83,27 @@ def _resolve_source_ip(
     if request and request.client:
         return request.client.host
     return None
+
+
+def _load_payment_stream_snapshot(
+    payment_id: UUID,
+    *,
+    after_created_at: str | None = None,
+):
+    with Session(engine) as session:
+        repository = SQLModelPaymentRepository(session)
+        get_payment_use_case = GetPaymentUseCase(repository)
+        list_events_use_case = ListPaymentEventsUseCase(repository)
+        payment = get_payment_use_case.execute(payment_id)
+        events = list_events_use_case.execute(
+            payment_id,
+            after_created_at=(
+                datetime.fromisoformat(after_created_at)
+                if after_created_at is not None
+                else None
+            ),
+        )
+        return payment, events
 
 
 @router.get("/config", response_model=PaymentsConfigResponse, status_code=status.HTTP_200_OK)
@@ -234,11 +260,9 @@ def get_payment(
 async def stream_payment_status(
     request: Request,
     payment_id: UUID,
-    get_payment_use_case: GetPaymentUseCase = Depends(get_get_payment_use_case),
-    list_events_use_case: ListPaymentEventsUseCase = Depends(get_list_payment_events_use_case),
 ) -> StreamingResponse:
     try:
-        get_payment_use_case.execute(payment_id)
+        await run_in_threadpool(_load_payment_stream_snapshot, payment_id)
     except PaymentNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -248,26 +272,34 @@ async def stream_payment_status(
     async def event_stream():
         last_status: str | None = None
         last_failure_reason: str | None = None
-        last_event_created_at = None
-        last_event_id: UUID | None = None
+        last_event_created_at: str | None = None
+        seen_event_ids: set[UUID] = set()
         while True:
             if await request.is_disconnected():
                 break
 
-            payment = get_payment_use_case.execute(payment_id)
-            events = list_events_use_case.execute(
+            payment, events = await run_in_threadpool(
+                _load_payment_stream_snapshot,
                 payment_id,
                 after_created_at=last_event_created_at,
-                after_event_id=last_event_id,
             )
 
             for event in events:
+                event_created_at = event.created_at.isoformat()
+                if (
+                    last_event_created_at is not None
+                    and event_created_at == last_event_created_at
+                    and event.event_id in seen_event_ids
+                ):
+                    continue
                 yield (
                     "event: payment_event\n"
                     f"data: {json.dumps({'event_id': str(event.event_id), 'event_type': event.event_type, 'payload': event.payload, 'created_at': event.created_at.isoformat()})}\n\n"
                 )
-                last_event_created_at = event.created_at
-                last_event_id = event.event_id
+                if event_created_at != last_event_created_at:
+                    seen_event_ids = set()
+                    last_event_created_at = event_created_at
+                seen_event_ids.add(event.event_id)
 
             current_status = payment.status.value
             if (

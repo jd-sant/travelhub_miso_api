@@ -46,7 +46,6 @@ class PaymentRepository(ABC):
         payment_id: UUID,
         *,
         after_created_at: datetime | None = None,
-        after_event_id: UUID | None = None,
     ) -> list[PaymentEventResponse]:
         pass
 

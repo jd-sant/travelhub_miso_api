@@ -12,7 +12,6 @@ from domain.ports.payment_repository import PaymentRepository
 from domain.ports.stripe_checkout_gateway import StripeCheckoutGateway
 from domain.schemas.audit import PaymentAuditLogRecord
 from domain.schemas.payment import (
-    PaymentChargeResponse,
     PaymentProcessingOutboxRecord,
     PaymentProcessingRetryResponse,
     PaymentStatus,
