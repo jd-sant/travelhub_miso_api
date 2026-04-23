@@ -22,7 +22,11 @@ class ReservationRepository(ABC):
         pass
 
     @abstractmethod
-    def list_by_traveler(self, id_traveler: UUID) -> list[ReservationResponse]:
+    def list_by_traveler(
+        self,
+        id_traveler: UUID,
+        status_group: str | None = None,
+    ) -> list[ReservationResponse]:
         pass
 
     @abstractmethod

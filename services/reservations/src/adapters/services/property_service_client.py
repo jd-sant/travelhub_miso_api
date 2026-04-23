@@ -29,7 +29,20 @@ class HttpPropertyServiceClient(PropertyServiceClient):
             ) from exc
 
         payload = response.json()
-        return PropertyDetailResponse(id=payload["id"], max_guests=payload["max_guests"])
+        cover_image_url: str | None = None
+        images = payload.get("images", [])
+        for img in images:
+            if img.get("is_cover"):
+                cover_image_url = img.get("url")
+                break
+        if cover_image_url is None and images:
+            cover_image_url = images[0].get("url")
+        return PropertyDetailResponse(
+            id=payload["id"],
+            max_guests=payload["max_guests"],
+            name=payload.get("name", ""),
+            cover_image_url=cover_image_url,
+        )
 
     def get_cancellation_policy(
         self, property_id: UUID

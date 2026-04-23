@@ -1,7 +1,8 @@
 from functools import lru_cache
+from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from sqlmodel import Session
 
 from adapters.repositories.reservation_command_log_repository import (
@@ -486,7 +487,13 @@ def get_reservation(
 )
 def get_reservations_by_user(
     user_id: str,
+    status_group: Optional[str] = Query(
+        default=None,
+        description="Filter group: 'active', 'past', or 'cancelled'",
+        pattern="^(active|past|cancelled)$",
+    ),
     repository: SQLModelReservationRepository = Depends(get_reservation_repository),
+    property_client: PropertyServiceClient = Depends(get_property_service_client),
 ):
     try:
         user_uuid = UUID(user_id)
@@ -496,8 +503,25 @@ def get_reservations_by_user(
             detail="Invalid user ID format",
         )
 
-    reservations = repository.list_by_traveler(user_uuid)
-    return [
-        ReservationWithDetailsResponse(id=reservation.id, reservation=reservation)
-        for reservation in reservations
-    ]
+    reservations = repository.list_by_traveler(user_uuid, status_group=status_group)
+
+    # Enrich with property data (best-effort: failures silently ignored)
+    property_cache: dict[UUID, object] = {}
+    result = []
+    for reservation in reservations:
+        prop_id = reservation.id_property
+        if prop_id not in property_cache:
+            try:
+                property_cache[prop_id] = property_client.get_property(prop_id)
+            except Exception:
+                property_cache[prop_id] = None
+        prop = property_cache[prop_id]
+        result.append(
+            ReservationWithDetailsResponse(
+                id=reservation.id,
+                reservation=reservation,
+                property_name=prop.name if prop else None,
+                property_cover_image_url=prop.cover_image_url if prop else None,
+            )
+        )
+    return result
