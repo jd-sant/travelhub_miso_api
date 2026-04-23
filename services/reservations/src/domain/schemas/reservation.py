@@ -202,5 +202,10 @@ class ReservationHistoryResponse(BaseModel):
     events: list[ReservationEventResponse]
 
 
+class ReservationWithDetailsResponse(BaseModel):
+    id: UUID
+    reservation: ReservationResponse
+
+
 ReservationModificationPreviewResponse.model_rebuild()
 

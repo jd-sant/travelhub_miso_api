@@ -33,6 +33,7 @@ from domain.schemas.reservation import (
     ReservationModificationPreviewRequest,
     ReservationModificationPreviewResponse,
     ReservationResponse,
+    ReservationWithDetailsResponse,
     ReservationSummary,
 )
 from domain.use_cases.confirm_reservation_cancellation import (
@@ -476,3 +477,27 @@ def get_reservation(
             detail="Reservation not found",
         )
     return reservation
+
+
+@router.get(
+    "/users/{user_id}",
+    response_model=list[ReservationWithDetailsResponse],
+    status_code=status.HTTP_200_OK,
+)
+def get_reservations_by_user(
+    user_id: str,
+    repository: SQLModelReservationRepository = Depends(get_reservation_repository),
+):
+    try:
+        user_uuid = UUID(user_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid user ID format",
+        )
+
+    reservations = repository.list_by_traveler(user_uuid)
+    return [
+        ReservationWithDetailsResponse(id=reservation.id, reservation=reservation)
+        for reservation in reservations
+    ]

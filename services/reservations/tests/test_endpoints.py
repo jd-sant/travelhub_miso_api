@@ -231,6 +231,62 @@ class TestReservationEndpoints:
         assert response.status_code == 400
         assert "Invalid reservation ID format" in response.json()["detail"]
 
+    def test_get_reservations_by_user_returns_reservation_ids(self, client):
+        traveler_id = str(uuid4())
+        property_id = str(uuid4())
+        check_in = (datetime.now(UTC) + timedelta(days=5)).isoformat()
+        check_out = (datetime.now(UTC) + timedelta(days=8)).isoformat()
+
+        created_ids: list[str] = []
+        for _ in range(2):
+            payload = {
+                "id_traveler": traveler_id,
+                "id_property": property_id,
+                "id_room": str(uuid4()),
+                "check_in_date": check_in,
+                "check_out_date": check_out,
+                "number_of_guests": 2,
+                "currency": "COP",
+            }
+            response = client.post("/api/v1/reservations", json=payload)
+            assert response.status_code == 201
+            created_ids.append(response.json()["id"])
+
+        response = client.get(f"/api/v1/reservations/users/{traveler_id}")
+
+        assert response.status_code == 200
+        body = response.json()
+        assert len(body) == 2
+        assert [item["id"] for item in body] == created_ids
+        assert all(item["reservation"]["id"] == item["id"] for item in body)
+        assert all(item["reservation"]["id_traveler"] == traveler_id for item in body)
+
+    def test_get_reservations_by_user_returns_empty_array_when_no_reservations(self, client):
+        response = client.get(f"/api/v1/reservations/users/{uuid4()}")
+
+        assert response.status_code == 200
+        assert response.json() == []
+
+    def test_get_reservations_by_user_returns_400_for_invalid_id_format(self, client):
+        response = client.get("/api/v1/reservations/users/not-a-valid-uuid")
+
+        assert response.status_code == 400
+        assert response.json()["detail"] == "Invalid user ID format"
+
+    def test_cancellation_confirm_preflight_allows_traveler_header(self, client):
+        response = client.options(
+            "/api/v1/reservations/0cbd3379-5b04-40b0-a8d2-61b80fba434b/cancellation/confirm",
+            headers={
+                "Origin": "http://localhost:3000",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type, x-traveler-id",
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.headers["access-control-allow-origin"] == "http://localhost:3000"
+        assert "x-traveler-id" in response.headers["access-control-allow-headers"].lower()
+
     def test_checkstatus_cancels_pending_payment_reservation(self, client):
         traveler_id = str(uuid4())
         property_id = str(uuid4())
