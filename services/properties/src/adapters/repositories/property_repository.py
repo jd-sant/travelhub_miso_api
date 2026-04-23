@@ -36,6 +36,8 @@ def _to_response(
             url=img.url,
             alt_text=img.alt_text,
             position=img.position,
+            url_hires=img.url_hires,
+            is_cover=img.is_cover,
         )
         for img in (images or [])
     ]
@@ -46,7 +48,7 @@ def _to_response(
             id=str(rev.id),
             author=rev.author,
             rating=rev.rating,
-            date=rev.date,
+            review_date=rev.review_date,
             comment=rev.comment,
             verified_stay=rev.verified_stay,
         )
@@ -68,6 +70,9 @@ def _to_response(
         bathrooms=model.bathrooms,
         max_guests=model.max_guests,
         amenities=amenities,
+        cancellation_policy=model.cancellation_policy,
+        tax_rate=model.tax_rate,
+        cleaning_fee=model.cleaning_fee,
         status=model.status,
         images=image_list,
         reviews=review_list,
@@ -93,6 +98,8 @@ def _to_list_response(
             url=img.url,
             alt_text=img.alt_text,
             position=img.position,
+            url_hires=img.url_hires,
+            is_cover=img.is_cover,
         )
         for img in (images or [])
     ]
@@ -112,6 +119,9 @@ def _to_list_response(
         bathrooms=model.bathrooms,
         max_guests=model.max_guests,
         amenities=amenities,
+        cancellation_policy=model.cancellation_policy,
+        tax_rate=model.tax_rate,
+        cleaning_fee=model.cleaning_fee,
         status=model.status,
         images=image_list,
     )
