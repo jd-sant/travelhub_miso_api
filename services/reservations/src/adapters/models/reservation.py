@@ -16,5 +16,9 @@ class Reservation(SQLModel, table=True):
     total_price: Decimal = Field(decimal_places=2, max_digits=10)
     currency: str = Field(max_length=3)
     status: str = Field(default="pending_payment")
+    version: int = Field(default=1)
+    last_policy_snapshot: str | None = None
+    cancelled_at: datetime | None = None
+    cancellation_reason: str | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

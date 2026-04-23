@@ -20,6 +20,11 @@
       "name": "Get Property Detail",
       "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('detail returns 200 or 404', function () { pm.expect([200,404]).to.include(pm.response.code); });"]}}],
       "request": {"method": "GET", "header": [], "url": {"raw": "{{properties_base_url}}/api/v1/properties/{{property_id}}", "host": ["{{properties_base_url}}"], "path": ["api", "v1", "properties", "{{property_id}}"]}}
+    },
+    {
+      "name": "Get Cancellation Policy",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('policy 200', function () { pm.response.to.have.status(200); });", "const body = pm.response.json();", "pm.test('policy type present', function () { pm.expect(body.policy_type).to.be.oneOf(['non_refundable', 'partial_refund', 'full_refund']); });"]}}],
+      "request": {"method": "GET", "header": [{"key": "X-Internal-Api-Key", "value": "{{internal_api_key}}"}], "url": {"raw": "{{properties_base_url}}/api/v1/internal/properties/{{property_id}}/cancellation-policy", "host": ["{{properties_base_url}}"], "path": ["api", "v1", "internal", "properties", "{{property_id}}", "cancellation-policy"]}}
     }
   ],
   "variable": [

@@ -28,6 +28,18 @@ class PaymentCheckoutSessionNotFoundError(Exception):
     pass
 
 
+class PaymentRefundNotFoundError(Exception):
+    pass
+
+
+class PaymentRefundNotAllowedError(Exception):
+    pass
+
+
+class InvalidRefundAmountError(Exception):
+    pass
+
+
 class StripeConfigurationError(Exception):
     pass
 

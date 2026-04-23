@@ -8,31 +8,385 @@
   "item": [
     {
       "name": "Health - Payments",
-      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('health 200', function () { pm.response.to.have.status(200); });"]}}],
-      "request": {"method": "GET", "header": [], "url": {"raw": "{{payments_base_url}}/health", "host": ["{{payments_base_url}}"], "path": ["health"]}}
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('health 200', function () { pm.response.to.have.status(200); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{payments_base_url}}/health",
+          "host": [
+            "{{payments_base_url}}"
+          ],
+          "path": [
+            "health"
+          ]
+        }
+      }
     },
     {
       "name": "Get Config",
-      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('config 200', function () { pm.response.to.have.status(200); });", "const body = pm.response.json();", "pm.test('provider exists', function () { pm.expect(body.provider).to.be.a('string'); });"]}}],
-      "request": {"method": "GET", "header": [], "url": {"raw": "{{payments_base_url}}/api/v1/payments/config", "host": ["{{payments_base_url}}"], "path": ["api", "v1", "payments", "config"]}}
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('config 200', function () { pm.response.to.have.status(200); });",
+              "const body = pm.response.json();",
+              "pm.test('provider exists', function () { pm.expect(body.provider).to.be.a('string'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{payments_base_url}}/api/v1/payments/config",
+          "host": [
+            "{{payments_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "payments",
+            "config"
+          ]
+        }
+      }
     },
     {
       "name": "Create Charge Failed",
       "event": [
-        {"listen": "prerequest", "script": {"type": "text/javascript", "exec": ["pm.collectionVariables.set('pay_reservation_id', pm.variables.replaceIn('{{$randomUUID}}'));", "pm.collectionVariables.set('pay_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));", "pm.collectionVariables.set('pay_idempotency_key', `contract-pay-${Date.now()}`);"]}},
-        {"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('charge failed 201', function () { pm.response.to.have.status(201); });", "const body = pm.response.json();", "pm.test('status failed', function () { pm.expect(body.status).to.eql('failed'); });", "pm.collectionVariables.set('payment_id', body.payment_id);"]}}
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set('pay_reservation_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+              "pm.collectionVariables.set('pay_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+              "pm.collectionVariables.set('pay_idempotency_key', `contract-pay-${Date.now()}`);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('charge failed 201', function () { pm.response.to.have.status(201); });",
+              "const body = pm.response.json();",
+              "pm.test('status failed', function () { pm.expect(body.status).to.eql('failed'); });",
+              "pm.collectionVariables.set('payment_id', body.payment_id);"
+            ]
+          }
+        }
       ],
       "request": {
         "method": "POST",
-        "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Forwarded-Proto", "value": "https"}],
-        "body": {"mode": "raw", "raw": "{\n  \"reservation_id\": \"{{pay_reservation_id}}\",\n  \"traveler_id\": \"{{pay_traveler_id}}\",\n  \"payment_method_token\": \"pm_fail_card_declined\",\n  \"amount_in_cents\": 200000,\n  \"currency\": \"COP\",\n  \"idempotency_key\": \"{{pay_idempotency_key}}\"\n}"},
-        "url": {"raw": "{{payments_base_url}}/api/v1/payments/charges", "host": ["{{payments_base_url}}"], "path": ["api", "v1", "payments", "charges"]}
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Forwarded-Proto",
+            "value": "https"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reservation_id\": \"{{pay_reservation_id}}\",\n  \"traveler_id\": \"{{pay_traveler_id}}\",\n  \"payment_method_token\": \"pm_fail_card_declined\",\n  \"amount_in_cents\": 200000,\n  \"currency\": \"COP\",\n  \"idempotency_key\": \"{{pay_idempotency_key}}\"\n}"
+        },
+        "url": {
+          "raw": "{{payments_base_url}}/api/v1/payments/charges",
+          "host": [
+            "{{payments_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "payments",
+            "charges"
+          ]
+        }
       }
     },
     {
       "name": "Get Payment By Id",
-      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('get payment 200', function () { pm.response.to.have.status(200); });"]}}],
-      "request": {"method": "GET", "header": [], "url": {"raw": "{{payments_base_url}}/api/v1/payments/{{payment_id}}", "host": ["{{payments_base_url}}"], "path": ["api", "v1", "payments", "{{payment_id}}"]}}
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('get payment 200', function () { pm.response.to.have.status(200); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{payments_base_url}}/api/v1/payments/{{payment_id}}",
+          "host": [
+            "{{payments_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "payments",
+            "{{payment_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Create Refund Not Allowed For Failed Payment",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set('refund_idempotency_key', `contract-refund-${Date.now()}`);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('refund rejected 409', function () { pm.response.to.have.status(409); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Forwarded-Proto",
+            "value": "https"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"payment_id\": \"{{payment_id}}\",\n  \"amount_in_cents\": 50000,\n  \"reason\": \"traveler_request\",\n  \"idempotency_key\": \"{{refund_idempotency_key}}\"\n}"
+        },
+        "url": {
+          "raw": "{{payments_base_url}}/api/v1/payments/refunds",
+          "host": [
+            "{{payments_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "payments",
+            "refunds"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Create Charge Success",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set('refund_reservation_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+              "pm.collectionVariables.set('refund_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+              "pm.collectionVariables.set('refund_payment_idempotency_key', `contract-refund-payment-${Date.now()}`);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('charge success 201', function () { pm.response.to.have.status(201); });",
+              "const body = pm.response.json();",
+              "pm.test('status confirmed', function () { pm.expect(body.status).to.eql('confirmed'); });",
+              "pm.collectionVariables.set('confirmed_payment_id', body.payment_id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Forwarded-Proto",
+            "value": "https"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reservation_id\": \"{{refund_reservation_id}}\",\n  \"traveler_id\": \"{{refund_traveler_id}}\",\n  \"payment_method_token\": \"pm_tok_visa_ok\",\n  \"amount_in_cents\": 220000,\n  \"currency\": \"COP\",\n  \"idempotency_key\": \"{{refund_payment_idempotency_key}}\"\n}"
+        },
+        "url": {
+          "raw": "{{payments_base_url}}/api/v1/payments/charges",
+          "host": [
+            "{{payments_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "payments",
+            "charges"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Create Refund Pending",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set('refund_idempotency_key_2', `contract-refund-ok-${Date.now()}`);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('refund created 201', function () { pm.response.to.have.status(201); });",
+              "const body = pm.response.json();",
+              "pm.test('refund pending', function () { pm.expect(body.status).to.eql('pending'); });",
+              "pm.collectionVariables.set('refund_id', body.refund_id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Forwarded-Proto",
+            "value": "https"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"payment_id\": \"{{confirmed_payment_id}}\",\n  \"amount_in_cents\": 50000,\n  \"reason\": \"traveler_request\",\n  \"idempotency_key\": \"{{refund_idempotency_key_2}}\"\n}"
+        },
+        "url": {
+          "raw": "{{payments_base_url}}/api/v1/payments/refunds",
+          "host": [
+            "{{payments_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "payments",
+            "refunds"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Retry Refunds Internal",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('retry refunds 200', function () { pm.response.to.have.status(200); });",
+              "const body = pm.response.json();",
+              "pm.test('processed >= 1', function () { pm.expect(body.processed_count).to.be.at.least(1); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Internal-Api-Key",
+            "value": "{{INTERNAL_API_KEY}}"
+          }
+        ],
+        "url": {
+          "raw": "{{payments_base_url}}/api/v1/internal/payments/refunds/retry",
+          "host": [
+            "{{payments_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "internal",
+            "payments",
+            "refunds",
+            "retry"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get Refund By Id",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('get refund 200', function () { pm.response.to.have.status(200); });",
+              "const body = pm.response.json();",
+              "pm.test('refund succeeded', function () { pm.expect(['pending', 'succeeded', 'failed']).to.include(body.status); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{payments_base_url}}/api/v1/payments/refunds/{{refund_id}}",
+          "host": [
+            "{{payments_base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "payments",
+            "refunds",
+            "{{refund_id}}"
+          ]
+        }
+      }
     }
   ]
 }

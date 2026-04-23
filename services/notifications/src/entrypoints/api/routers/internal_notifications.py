@@ -1,7 +1,10 @@
+from hmac import compare_digest
+
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, status
 
 from assembly import (
     get_create_payment_confirmation_use_case,
+    get_create_reservation_event_notification_use_case,
     get_notification_delivery_runner,
 )
 from core.config import settings
@@ -10,6 +13,10 @@ from domain.schemas.notification import (
     NotificationResponse,
     NotificationStatus,
     PaymentConfirmationRequest,
+    ReservationEventNotificationRequest,
+)
+from domain.use_cases.create_reservation_event_notification import (
+    CreateReservationEventNotificationUseCase,
 )
 from domain.use_cases.create_payment_confirmation import CreatePaymentConfirmationUseCase
 from errors import (
@@ -33,7 +40,9 @@ def create_payment_confirmation(
     use_case: CreatePaymentConfirmationUseCase = Depends(get_create_payment_confirmation_use_case),
     delivery_runner: NotificationDeliveryRunner = Depends(get_notification_delivery_runner),
 ) -> NotificationResponse:
-    if x_internal_api_key != settings.internal_api_key:
+    if not x_internal_api_key or not compare_digest(
+        x_internal_api_key.strip(), settings.internal_api_key
+    ):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
     try:
         notification = use_case.execute(payload)
@@ -51,3 +60,32 @@ def create_payment_confirmation(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
     except PaymentConfirmationUnavailableError as exc:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
+
+
+@router.post(
+    "/reservation-events",
+    response_model=NotificationResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_reservation_event_notification(
+    payload: ReservationEventNotificationRequest,
+    background_tasks: BackgroundTasks,
+    x_internal_api_key: str | None = Header(default=None),
+    use_case: CreateReservationEventNotificationUseCase = Depends(
+        get_create_reservation_event_notification_use_case
+    ),
+    delivery_runner: NotificationDeliveryRunner = Depends(get_notification_delivery_runner),
+) -> NotificationResponse:
+    if not x_internal_api_key or not compare_digest(
+        x_internal_api_key.strip(), settings.internal_api_key
+    ):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+
+    notification = use_case.execute(payload)
+    if notification.status != NotificationStatus.sent:
+        background_tasks.add_task(
+            delivery_runner.run_delivery,
+            notification_id=notification.notification_id,
+            source_ip=payload.source_ip,
+        )
+    return notification

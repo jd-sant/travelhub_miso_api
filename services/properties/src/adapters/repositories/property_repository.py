@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlmodel import Session, select
 
 from adapters.models.property import Property
+from adapters.models.property_cancellation_policy import PropertyCancellationPolicy
 from adapters.models.property_image import PropertyImage
 from adapters.models.property_review import PropertyReview
 from domain.ports.property_repository import PropertyRepository
@@ -13,6 +14,10 @@ from domain.schemas.property import (
     PropertyImage as PropertyImageSchema,
     PropertyReview as PropertyReviewSchema,
     PropertyListResponse,
+)
+from domain.schemas.property_policy import (
+    PropertyCancellationPolicyResponse,
+    CancellationPolicyType,
 )
 
 
@@ -127,6 +132,19 @@ def _to_list_response(
     )
 
 
+def _to_policy_response(model: PropertyCancellationPolicy) -> PropertyCancellationPolicyResponse:
+    return PropertyCancellationPolicyResponse(
+        property_id=model.property_id,
+        policy_type=CancellationPolicyType(model.policy_type),
+        minimum_notice_hours=model.minimum_notice_hours,
+        penalty_percentage=float(model.penalty_percentage),
+        timezone=model.timezone,
+        is_active=model.is_active,
+        created_at=model.created_at,
+        updated_at=model.updated_at,
+    )
+
+
 class SQLModelPropertyRepository(PropertyRepository):
     def __init__(self, session: Session):
         self.session = session
@@ -169,3 +187,13 @@ class SQLModelPropertyRepository(PropertyRepository):
             result.append(_to_list_response(model, images))
         
         return result
+
+    def get_cancellation_policy(
+        self, property_id: UUID
+    ) -> Optional[PropertyCancellationPolicyResponse]:
+        model = self.session.exec(
+            select(PropertyCancellationPolicy)
+            .where(PropertyCancellationPolicy.property_id == property_id)
+            .where(PropertyCancellationPolicy.is_active.is_(True))
+        ).first()
+        return _to_policy_response(model) if model else None

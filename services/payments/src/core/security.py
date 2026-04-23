@@ -26,6 +26,7 @@ _SENSITIVE_KEYS = {
     "stripe_secret_key",
     "token",
     "x-internal-api-key",
+    "x_internal_api_key",
 }
 _PAN_CANDIDATE_RE = re.compile(r"(?:\d[ -]?){13,19}")
 

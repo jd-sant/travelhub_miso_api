@@ -15,6 +15,7 @@ Archivos listos para probar el MVP de `payments` desde Postman y validar los cri
 - `collections/properties/travelhub-properties-contract.postman_collection.json`
 - `collections/search/travelhub-search-contract.postman_collection.json`
 - `e2e/payments-reservations/travelhub-payments-reservations-e2e.postman_collection.json`
+- `e2e/reservation-modification-cancellation-refunds/reservation_modification_cancellation_refunds.postman_collection.json`
 - `e2e/reservation-payment-failure-checkstatus/travelhub-reservation-payment-failure-checkstatus-e2e.postman_collection.json`
 - `e2e/reservations-checkstatus/reservations_checkstatus.postman_collection.json`
 - `e2e/search-p95/search_p95.postman_collection.json`
@@ -135,6 +136,23 @@ newman run postman/e2e/reservation-payment-failure-checkstatus/travelhub-reserva
   -e postman/environments/travelhub-payments-reservations-local.postman_environment.json \
   --reporters cli,json \
   --reporter-json-export postman/reports/reservation-payment-failure-checkstatus/newman-failure-checkstatus-results.json
+```
+
+## Coleccion E2E HU Modificacion + Cancelacion + Refunds (Newman)
+
+`e2e/reservation-modification-cancellation-refunds/reservation_modification_cancellation_refunds.postman_collection.json`
+
+Valida los flujos completos de la HU:
+
+1. Cancelacion de reserva con pago confirmado y transicion final a `refund_completed`.
+2. Modificacion con delta negativo, refund iniciado y transicion final a `modification_confirmed`.
+
+Ejecucion sugerida con Newman:
+
+```bash
+newman run postman/e2e/reservation-modification-cancellation-refunds/reservation_modification_cancellation_refunds.postman_collection.json \
+  -e postman/environments/travelhub-payments-reservations-local.postman_environment.json \
+  --reporters cli
 ```
 
 ## Coleccion E2E Reservations CheckStatus (Newman)

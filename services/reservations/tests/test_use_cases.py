@@ -148,6 +148,29 @@ class TestCreateReservationUseCase:
         expected_price = Decimal("116.00")
         assert result.total_price == expected_price
 
+    def test_execute_handles_timezone_aware_datetimes(
+        self, create_reservation_use_case, traveler_id, property_id, room_id
+    ):
+        """Test that Zulu/aware datetimes from API clients are normalized correctly."""
+        check_in = datetime.now(UTC) + timedelta(days=5)
+        check_out = check_in + timedelta(days=2)
+
+        request = ReservationCreateRequest(
+            id_traveler=traveler_id,
+            id_property=property_id,
+            id_room=room_id,
+            check_in_date=check_in,
+            check_out_date=check_out,
+            number_of_guests=2,
+            currency="USD",
+        )
+
+        result = create_reservation_use_case.execute(request)
+
+        assert result.status == "pending_payment"
+        assert result.check_in_date.tzinfo is None
+        assert result.check_out_date.tzinfo is None
+
     def test_execute_checks_room_availability(
         self, create_reservation_use_case, reservation_repository, valid_create_request
     ):
