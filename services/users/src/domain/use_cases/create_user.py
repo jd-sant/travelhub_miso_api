@@ -12,8 +12,14 @@ class CreateUserUseCase(BaseUseCase[UserCreateRequest, UserResponse]):
     def execute(self, payload: UserCreateRequest) -> UserResponse:
         existing = self.repository.get_by_email(str(payload.email))
         if existing is not None:
-            raise UserConflictError("El correo electrónico ya existe")
+            raise UserConflictError("El correo electronico ya existe")
 
         user = self.repository.add(payload)
-        self.repository.assign_role(user.id, UserRole.TRAVELER)
+        requested_role = (payload.role or "").strip().lower()
+        role = (
+            UserRole.HOTEL
+            if requested_role in {"hotel", "hotel_partner"} or payload.hotel_name
+            else UserRole.TRAVELER
+        )
+        self.repository.assign_role(user.id, role)
         return user

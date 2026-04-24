@@ -45,6 +45,7 @@ def test_create_hotel_partner_with_hotel_name(client, test_engine):
         "password": "passwordHotel123",
         "full_name": "Carlos Hotel Manager",
         "hotel_name": "Grand Hotel",
+        "role": "hotel_partner",
         "status": 1,
     }
 
@@ -69,7 +70,7 @@ def test_create_hotel_partner_with_hotel_name(client, test_engine):
         ).all()
         assert len(user_roles) == 1
         role_name = user_roles[0][1].name
-        assert role_name == "traveler"
+        assert role_name == "hotel"
 
 
 def test_create_user_defaults_to_traveler_role(client, test_engine):

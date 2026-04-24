@@ -9,7 +9,7 @@ class Notification(SQLModel, table=True):
     id: UUID = Field(primary_key=True, index=True)
     traveler_id: UUID = Field(index=True)
     reservation_id: UUID = Field(index=True)
-    payment_id: UUID = Field(index=True)
+    payment_id: UUID | None = Field(default=None, index=True)
     channel: str = Field(max_length=32, index=True)
     template_code: str = Field(max_length=64, index=True)
     status: str = Field(max_length=32, index=True)

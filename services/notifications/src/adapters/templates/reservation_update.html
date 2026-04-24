@@ -1,0 +1,14 @@
+<html>
+  <body style="font-family: Arial, sans-serif; color: #0f172a;">
+    <h2>Hola {{ recipient_name }},</h2>
+    <p>Tu reserva <strong>{{ reservation_id }}</strong> fue {{ status }} por el hotel.</p>
+    <p><strong>Motivo:</strong> {{ reason }}</p>
+    {% if refund_requested %}
+    <p>El sistema inició automaticamente el proceso de reembolso.</p>
+    {% if refund_amount %}
+    <p><strong>Monto estimado del reembolso:</strong> {{ refund_amount }}</p>
+    {% endif %}
+    {% endif %}
+    <p>Si necesitas ayuda adicional, por favor revisa tu panel de reservas o contacta al hotel.</p>
+  </body>
+</html>

@@ -45,3 +45,7 @@ class StripePaymentFailureError(Exception):
 
 class StripeIdempotencyConflictError(Exception):
     pass
+
+
+class RefundNotAvailableError(Exception):
+    pass

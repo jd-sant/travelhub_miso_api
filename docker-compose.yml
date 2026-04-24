@@ -90,6 +90,9 @@ services:
       DB_SCHEMA: reservations_schema
       DB_ECHO: "False"
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-travelhub-jwt-secret-change-in-prod}
+      PAYMENTS_SERVICE_URL: http://payments:8000
+      NOTIFICATIONS_SERVICE_URL: http://notifications:8000
     ports:
       - "8002:8000"
     depends_on:

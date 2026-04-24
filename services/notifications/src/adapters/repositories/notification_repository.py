@@ -76,3 +76,17 @@ class SQLModelNotificationRepository(NotificationRepository):
             select(Notification).where(Notification.payment_id == payment_id)
         ).first()
         return _to_record(model) if model else None
+
+    def get_by_reservation_and_template(
+        self,
+        *,
+        reservation_id: UUID,
+        template_code: str,
+    ) -> NotificationRecord | None:
+        model = self.session.exec(
+            select(Notification)
+            .where(Notification.reservation_id == reservation_id)
+            .where(Notification.template_code == template_code)
+            .order_by(Notification.created_at.desc())
+        ).first()
+        return _to_record(model) if model else None

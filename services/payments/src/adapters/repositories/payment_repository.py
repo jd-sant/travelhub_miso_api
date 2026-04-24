@@ -7,6 +7,7 @@ from sqlmodel import Session, select
 from adapters.models.payment import Payment
 from adapters.models.payment_event import PaymentEvent
 from adapters.models.payment_processing_outbox import PaymentProcessingOutbox
+from adapters.models.payment_refund import PaymentRefund
 from adapters.models.payment_reservation_confirmation_outbox import (
     PaymentReservationConfirmationOutbox,
 )
@@ -16,6 +17,8 @@ from domain.schemas.payment import (
     PaymentEventResponse,
     PaymentProcessingOutboxRecord,
     PaymentProcessingOutboxStatus,
+    RefundStatus,
+    ReservationRefundResponse,
     PaymentStatus,
     ReservationConfirmationOutboxRecord,
     ReservationConfirmationOutboxStatus,
@@ -92,6 +95,20 @@ def _to_processing_outbox_response(
         last_error=model.last_error,
         last_attempt_at=model.last_attempt_at,
         processed_at=model.processed_at,
+        created_at=model.created_at,
+        updated_at=model.updated_at,
+    )
+
+
+def _to_refund_response(model: PaymentRefund) -> ReservationRefundResponse:
+    return ReservationRefundResponse(
+        refund_id=model.id,
+        payment_id=model.payment_id,
+        reservation_id=model.reservation_id,
+        amount_in_cents=model.amount_in_cents,
+        currency=model.currency,
+        status=RefundStatus(model.status),
+        gateway_refund_id=model.gateway_refund_id,
         created_at=model.created_at,
         updated_at=model.updated_at,
     )
@@ -439,3 +456,55 @@ class SQLModelPaymentRepository(PaymentRepository):
             .where(PaymentProcessingOutbox.next_retry_at <= now)
         ).all()
         return len(models)
+
+    def find_latest_confirmed_by_reservation(
+        self,
+        reservation_id: UUID,
+    ) -> PaymentChargeResponse | None:
+        model = self.session.exec(
+            select(Payment)
+            .where(Payment.reservation_id == reservation_id)
+            .where(Payment.status == PaymentStatus.confirmed.value)
+            .order_by(Payment.updated_at.desc())
+        ).first()
+        return _to_payment_response(model) if model else None
+
+    def get_refund_by_reservation(
+        self,
+        reservation_id: UUID,
+    ) -> ReservationRefundResponse | None:
+        model = self.session.exec(
+            select(PaymentRefund).where(PaymentRefund.reservation_id == reservation_id)
+        ).first()
+        return _to_refund_response(model) if model else None
+
+    def save_refund(
+        self,
+        refund: ReservationRefundResponse,
+    ) -> ReservationRefundResponse:
+        model = self.session.get(PaymentRefund, refund.refund_id)
+        if model is None:
+            model = PaymentRefund(
+                id=refund.refund_id,
+                payment_id=refund.payment_id,
+                reservation_id=refund.reservation_id,
+                amount_in_cents=refund.amount_in_cents,
+                currency=refund.currency,
+                status=refund.status.value,
+                gateway_refund_id=refund.gateway_refund_id,
+                reason="reservation_cancellation",
+                created_at=refund.created_at,
+                updated_at=refund.updated_at,
+            )
+        else:
+            model.payment_id = refund.payment_id
+            model.reservation_id = refund.reservation_id
+            model.amount_in_cents = refund.amount_in_cents
+            model.currency = refund.currency
+            model.status = refund.status.value
+            model.gateway_refund_id = refund.gateway_refund_id
+            model.updated_at = refund.updated_at
+        self.session.add(model)
+        self.session.commit()
+        self.session.refresh(model)
+        return _to_refund_response(model)

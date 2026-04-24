@@ -27,11 +27,21 @@ class PaymentConfirmationRequest(BaseModel):
     )
 
 
+class ReservationUpdateRequest(BaseModel):
+    traveler_id: UUID
+    reservation_id: UUID
+    status: str = Field(min_length=3, max_length=32)
+    reason: str = Field(min_length=3, max_length=500)
+    source_ip: str | None = Field(default=None, max_length=64)
+    refund_requested: bool = False
+    refund_amount_in_cents: int | None = None
+
+
 class NotificationRecord(BaseModel):
     notification_id: UUID
     traveler_id: UUID
     reservation_id: UUID
-    payment_id: UUID
+    payment_id: UUID | None = None
     channel: str
     template_code: str
     status: NotificationStatus
@@ -96,7 +106,7 @@ class NotificationResponse(BaseModel):
     status: NotificationStatus
     recipient_email: str
     subject: str
-    payment_id: UUID
+    payment_id: UUID | None = None
     reservation_id: UUID
     created_at: datetime
     updated_at: datetime
