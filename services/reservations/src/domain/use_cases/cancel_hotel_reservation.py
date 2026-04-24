@@ -11,6 +11,18 @@ from domain.schemas.reservation import (
 from domain.use_cases.base import BaseUseCase
 from errors import ReservationNotFoundError, ReservationStateConflictError
 
+MAX_CANCELLATION_REASON_LENGTH = 500
+
+
+def _build_cancellation_reason(
+    reason: ReservationCancellationReason,
+    note: str | None,
+) -> str:
+    normalized_reason = reason.value
+    if note and reason == ReservationCancellationReason.other:
+        normalized_reason = f"{normalized_reason}: {note.strip()}"
+    return normalized_reason[:MAX_CANCELLATION_REASON_LENGTH].strip()
+
 
 class CancelHotelReservationUseCase(
     BaseUseCase[
@@ -49,9 +61,7 @@ class CancelHotelReservationUseCase(
         if updated is None:
             raise ReservationNotFoundError("Reservation not found")
 
-        normalized_reason = reason.value
-        if note and reason == ReservationCancellationReason.other:
-            normalized_reason = f"{normalized_reason}: {note.strip()}"
+        normalized_reason = _build_cancellation_reason(reason, note)
 
         self.repository.add_change(
             ReservationChangeRecord(

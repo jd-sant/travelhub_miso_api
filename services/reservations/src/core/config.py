@@ -4,8 +4,19 @@ from functools import lru_cache
 
 class Settings:
     @property
+    def environment(self) -> str:
+        return os.getenv("ENV", os.getenv("APP_ENV", "development")).lower()
+
+    @property
     def jwt_secret_key(self) -> str:
-        return os.getenv("JWT_SECRET_KEY", "travelhub-jwt-secret-change-in-prod")
+        value = os.getenv("JWT_SECRET_KEY")
+        if value:
+            return value
+        if self.environment not in ("development", "dev", "test", "local"):
+            raise RuntimeError(
+                "JWT_SECRET_KEY debe estar configurado en entornos de producción."
+            )
+        return "travelhub-jwt-secret-change-in-prod"
 
     @property
     def jwt_algorithm(self) -> str:
@@ -74,8 +85,7 @@ class Settings:
         if url:
             return url
 
-        env = os.getenv("ENV", os.getenv("APP_ENV", "development")).lower()
-        if env in ("development", "dev", "test", "local"):
+        if self.environment in ("development", "dev", "test", "local"):
             return os.getenv("SQLITE_DATABASE_URL", "sqlite:///./reservations.db")
 
         return (
@@ -92,8 +102,7 @@ class Settings:
         value = os.getenv("INTERNAL_API_KEY")
         if value:
             return value
-        env = os.getenv("ENV", os.getenv("APP_ENV", "development")).lower()
-        if env not in ("development", "dev", "test"):
+        if self.environment not in ("development", "dev", "test"):
             raise RuntimeError(
                 "INTERNAL_API_KEY debe estar configurado en entornos de producción."
             )
@@ -108,7 +117,6 @@ class Settings:
         return os.getenv("NOTIFICATIONS_SERVICE_URL", "http://notifications:8000").rstrip("/")
 
     def validate_scheduler_config(self) -> None:
-        """Validate scheduler configuration if enabled. Raises RuntimeError if validation fails."""
         if not self.reservation_scheduler_enabled:
             return
 

@@ -160,5 +160,6 @@ class ReservationRefundResponse(BaseModel):
     currency: str
     status: RefundStatus
     gateway_refund_id: str | None = None
+    reason: str = Field(min_length=3, max_length=255)
     created_at: datetime
     updated_at: datetime

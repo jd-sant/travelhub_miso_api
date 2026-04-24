@@ -25,6 +25,9 @@ class NoOpReservationNotificationDispatcher(ReservationNotificationDispatcher):
 
 
 class HttpReservationNotificationDispatcher(ReservationNotificationDispatcher):
+    def __init__(self):
+        self._client = httpx.Client(timeout=5.0)
+
     def dispatch_reservation_update(
         self,
         *,
@@ -38,7 +41,7 @@ class HttpReservationNotificationDispatcher(ReservationNotificationDispatcher):
     ) -> None:
         if not settings.notifications_service_url:
             return None
-        response = httpx.post(
+        response = self._client.post(
             f"{settings.notifications_service_url}/api/v1/internal/reservation-updates",
             json={
                 "traveler_id": str(traveler_id),
@@ -50,7 +53,6 @@ class HttpReservationNotificationDispatcher(ReservationNotificationDispatcher):
                 "refund_amount_in_cents": refund_amount_in_cents,
             },
             headers={"X-Internal-Api-Key": settings.internal_api_key},
-            timeout=5.0,
         )
         response.raise_for_status()
 
@@ -67,6 +69,9 @@ class NoOpReservationRefundDispatcher(ReservationRefundDispatcher):
 
 
 class HttpReservationRefundDispatcher(ReservationRefundDispatcher):
+    def __init__(self):
+        self._client = httpx.Client(timeout=10.0)
+
     def request_refund(
         self,
         *,
@@ -76,15 +81,14 @@ class HttpReservationRefundDispatcher(ReservationRefundDispatcher):
     ) -> dict | None:
         if not settings.payments_service_url:
             return None
-        response = httpx.post(
+        response = self._client.post(
             f"{settings.payments_service_url}/api/v1/internal/refunds",
             json={
                 "reservation_id": str(reservation_id),
-                "reason": cancellation_reason,
+                "reason": cancellation_reason[:255],
                 "source_ip": source_ip,
             },
             headers={"X-Internal-Api-Key": settings.internal_api_key},
-            timeout=10.0,
         )
         response.raise_for_status()
         return response.json()

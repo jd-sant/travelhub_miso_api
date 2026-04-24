@@ -109,6 +109,7 @@ def _to_refund_response(model: PaymentRefund) -> ReservationRefundResponse:
         currency=model.currency,
         status=RefundStatus(model.status),
         gateway_refund_id=model.gateway_refund_id,
+        reason=model.reason,
         created_at=model.created_at,
         updated_at=model.updated_at,
     )
@@ -492,7 +493,7 @@ class SQLModelPaymentRepository(PaymentRepository):
                 currency=refund.currency,
                 status=refund.status.value,
                 gateway_refund_id=refund.gateway_refund_id,
-                reason="reservation_cancellation",
+                reason=refund.reason,
                 created_at=refund.created_at,
                 updated_at=refund.updated_at,
             )
@@ -503,6 +504,7 @@ class SQLModelPaymentRepository(PaymentRepository):
             model.currency = refund.currency
             model.status = refund.status.value
             model.gateway_refund_id = refund.gateway_refund_id
+            model.reason = refund.reason
             model.updated_at = refund.updated_at
         self.session.add(model)
         self.session.commit()

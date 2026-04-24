@@ -65,6 +65,7 @@ class CreateReservationRefundUseCase(
             currency=payment.currency,
             status=RefundStatus.succeeded,
             gateway_refund_id=str(gateway_refund.get("id")) if gateway_refund.get("id") else None,
+            reason=payload.reason,
             created_at=now,
             updated_at=now,
         )

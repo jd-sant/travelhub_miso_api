@@ -496,3 +496,34 @@ class TestReservationEndpoints:
         )
 
         assert response.status_code == 409
+
+    def test_hotel_endpoints_return_401_for_invalid_token(self, client):
+        response = client.get(
+            f"/api/v1/hotel/reservations?propertyId={uuid4()}",
+            headers={"Authorization": "Bearer invalid-token"},
+        )
+
+        assert response.status_code == 401
+        assert response.json()["detail"] == "Token de autenticación inválido"
+
+    def test_hotel_cancel_reason_is_truncated_for_long_other_note(self, client):
+        payload = {
+            "id_traveler": str(uuid4()),
+            "id_property": str(uuid4()),
+            "id_room": str(uuid4()),
+            "check_in_date": (datetime.now(UTC) + timedelta(days=5)).isoformat(),
+            "check_out_date": (datetime.now(UTC) + timedelta(days=8)).isoformat(),
+            "number_of_guests": 2,
+            "currency": "COP",
+        }
+        created = client.post("/api/v1/reservations", json=payload)
+        reservation_id = created.json()["id"]
+
+        response = client.post(
+            f"/api/v1/hotel/reservations/{reservation_id}/cancel",
+            json={"reason": "other", "note": "x" * 500},
+            headers={"Authorization": f"Bearer {self._hotel_token()}"},
+        )
+
+        assert response.status_code == 200
+        assert len(response.json()["reason"]) <= 500

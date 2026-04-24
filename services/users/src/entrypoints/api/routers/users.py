@@ -6,7 +6,7 @@ from core.roles import UserRole
 from domain.schemas.user import UserCreateRequest, UserResponse
 from domain.use_cases.create_user import CreateUserUseCase
 from domain.use_cases.list_users import ListUsersUseCase
-from errors import UserConflictError
+from errors import InvalidUserRoleError, UserConflictError
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -22,6 +22,11 @@ def create_user(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="El correo electrónico ya existe",
+        )
+    except InvalidUserRoleError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
         )
 
 

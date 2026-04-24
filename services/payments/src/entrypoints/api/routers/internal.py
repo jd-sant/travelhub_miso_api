@@ -68,7 +68,7 @@ def retry_payment_processing(
 @router.post(
     "/refunds",
     response_model=ReservationRefundResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=status.HTTP_200_OK,
 )
 def create_reservation_refund(
     request: Request,

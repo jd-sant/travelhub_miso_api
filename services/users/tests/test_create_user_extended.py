@@ -112,3 +112,19 @@ def test_create_user_without_full_name_returns_422(client):
     assert response.status_code == 422
     errors = response.json()["detail"]
     assert any("full_name" in str(error) for error in errors)
+
+
+def test_create_user_with_invalid_role_returns_422(client):
+    payload = {
+        "email": "invalid-role@example.com",
+        "phone": "3001234567",
+        "password": "miPasswordSegura123",
+        "full_name": "Rol Invalido",
+        "role": "hote",
+        "status": 1,
+    }
+
+    response = client.post("/api/v1/users", json=payload)
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "El rol solicitado no es válido"
