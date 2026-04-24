@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from core.config import settings
@@ -8,14 +8,21 @@ from core.security import (
     build_request_checksum,
     hash_token,
 )
+from domain.ports.notification_dispatcher import (
+    NotificationDispatcher,
+    ReservationUpdater,
+)
 from domain.ports.payment_audit_repository import PaymentAuditRepository
 from domain.ports.payment_checkout_repository import PaymentCheckoutRepository
-from domain.ports.notification_dispatcher import NotificationDispatcher, ReservationUpdater
 from domain.ports.payment_repository import PaymentRepository
 from domain.ports.stripe_checkout_gateway import StripeCheckoutGateway
 from domain.schemas.audit import PaymentAuditLogRecord
 from domain.schemas.checkout import PaymentCheckoutSessionRecord
-from domain.schemas.payment import PaymentChargeResponse, PaymentEventResponse, PaymentStatus
+from domain.schemas.payment import PaymentChargeResponse, PaymentStatus
+from domain.services.payment_materializer import (
+    apply_gateway_result,
+    build_terminal_events,
+)
 from domain.use_cases.base import BaseUseCase
 from errors import StripeWebhookVerificationError
 
@@ -58,8 +65,13 @@ class HandleStripeWebhookUseCase(BaseUseCase[tuple[bytes, str], None]):
         if session is None:
             return
 
-        existing_payment = self.payment_repository.find_by_gateway_charge_id(payment_intent_id)
-        if existing_payment is not None:
+        existing_payment = self.payment_repository.find_by_gateway_charge_id(
+            payment_intent_id
+        )
+        if existing_payment is None and session.payment_id is not None:
+            existing_payment = self.payment_repository.get_by_id(session.payment_id)
+
+        if existing_payment is not None and existing_payment.status != PaymentStatus.pending:
             session.payment_id = existing_payment.payment_id
             session.status = existing_payment.status.value
             session.updated_at = datetime.now(timezone.utc)
@@ -67,12 +79,9 @@ class HandleStripeWebhookUseCase(BaseUseCase[tuple[bytes, str], None]):
             return
 
         if event_type == "payment_intent.succeeded":
-            payment = self._materialize_payment(
-                session=session,
-                gateway_status="succeeded",
-                status=PaymentStatus.confirmed,
-                failure_reason=None,
-            )
+            failure_reason = None
+            target_status = PaymentStatus.confirmed
+            gateway_status = "succeeded"
         elif event_type == "payment_intent.payment_failed":
             error = obj.get("last_payment_error", {}) if isinstance(obj, dict) else {}
             failure_reason = (
@@ -80,19 +89,32 @@ class HandleStripeWebhookUseCase(BaseUseCase[tuple[bytes, str], None]):
                 if isinstance(error, dict) and isinstance(error.get("decline_code"), str)
                 else "card_declined"
             )
-            payment = self._materialize_payment(
-                session=session,
-                gateway_status="failed",
-                status=PaymentStatus.failed,
-                failure_reason=failure_reason,
-            )
+            target_status = PaymentStatus.failed
+            gateway_status = "failed"
         else:
             return
+
+        payment = (
+            apply_gateway_result(
+                payment=existing_payment,
+                gateway_charge_id=payment_intent_id,
+                gateway_status=gateway_status,
+                status=target_status,
+                failure_reason=failure_reason,
+            )
+            if existing_payment is not None
+            else self._materialize_payment(
+                session=session,
+                gateway_status=gateway_status,
+                status=target_status,
+                failure_reason=failure_reason,
+            )
+        )
 
         stored_payment = self.payment_repository.save_payment_result(payment)
         self.payment_repository.add_events(
             stored_payment.payment_id,
-            self._build_events(stored_payment, session),
+            build_terminal_events(stored_payment, session),
         )
         self.audit_repository.add_log(
             PaymentAuditLogRecord(
@@ -122,11 +144,22 @@ class HandleStripeWebhookUseCase(BaseUseCase[tuple[bytes, str], None]):
                 source_ip=source_ip,
             )
             self._dispatch_notification_request(stored_payment.payment_id, source_ip)
-        session.payment_id = stored_payment.payment_id
+
+        if session.payment_id is None:
+            session.payment_id = stored_payment.payment_id
         session.status = stored_payment.status.value
         session.error = stored_payment.failure_reason
         session.updated_at = datetime.now(timezone.utc)
         self.checkout_repository.update_session(session)
+
+        processing_outbox = self.payment_repository.get_payment_processing_outbox(
+            payment_id=stored_payment.payment_id
+        )
+        if processing_outbox is not None:
+            self.payment_repository.mark_payment_processing_outbox_succeeded(
+                outbox_id=processing_outbox.outbox_id,
+                processed_at=datetime.now(timezone.utc),
+            )
 
     def _materialize_payment(
         self,
@@ -137,7 +170,11 @@ class HandleStripeWebhookUseCase(BaseUseCase[tuple[bytes, str], None]):
         failure_reason: str | None,
     ) -> PaymentChargeResponse:
         now = datetime.now(timezone.utc)
-        token_reference = session.confirmation_token_id or session.payment_intent_id or str(session.payment_transaction_id)
+        token_reference = (
+            session.confirmation_token_id
+            or session.payment_intent_id
+            or str(session.payment_transaction_id)
+        )
         token_hash = hash_token(token_reference)
         request_fingerprint = build_payment_fingerprint(
             reservation_id=str(session.reservation_id),
@@ -164,7 +201,7 @@ class HandleStripeWebhookUseCase(BaseUseCase[tuple[bytes, str], None]):
             settings.payment_integrity_secret,
         )
         payment = PaymentChargeResponse(
-            payment_id=uuid4(),
+            payment_id=session.payment_id or uuid4(),
             reservation_id=session.reservation_id,
             traveler_id=session.traveler_id,
             provider_code=session.provider_code,
@@ -188,49 +225,6 @@ class HandleStripeWebhookUseCase(BaseUseCase[tuple[bytes, str], None]):
             payment.receipt_id = uuid4()
             payment.receipt_number = now.strftime("RCPT-%Y%m%d-%H%M%S")
         return payment
-
-    def _build_events(
-        self,
-        payment: PaymentChargeResponse,
-        session: PaymentCheckoutSessionRecord | None = None,
-    ) -> list[PaymentEventResponse]:
-        now = datetime.now(timezone.utc)
-        payload = {
-            "payment_id": str(payment.payment_id),
-            "reservation_id": str(payment.reservation_id),
-            "traveler_id": str(payment.traveler_id),
-            "amount_in_cents": payment.amount_in_cents,
-            "currency": payment.currency,
-            "gateway_charge_id": payment.gateway_charge_id,
-            "receipt_id": str(payment.receipt_id) if payment.receipt_id else None,
-            "receipt_number": payment.receipt_number,
-            "status": payment.status.value,
-            "failure_reason": payment.failure_reason,
-            "property_name": session.property_name if session else None,
-            "check_in_date": session.check_in_date.isoformat() if session and session.check_in_date else None,
-            "check_out_date": session.check_out_date.isoformat() if session and session.check_out_date else None,
-        }
-        event_types = (
-            [
-                "payment.succeeded",
-                "reservation.confirmation.requested",
-                "notification.payment_confirmation.requested",
-                "inventory.update.requested",
-                "receipt.generated",
-            ]
-            if payment.status == PaymentStatus.confirmed
-            else ["payment.failed"]
-        )
-        return [
-            PaymentEventResponse(
-                event_id=uuid4(),
-                payment_id=payment.payment_id,
-                event_type=event_type,
-                payload=payload,
-                created_at=now,
-            )
-            for event_type in event_types
-        ]
 
     def _dispatch_notification_request(
         self,
