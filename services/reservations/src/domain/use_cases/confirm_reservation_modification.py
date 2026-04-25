@@ -136,7 +136,7 @@ class ConfirmReservationModificationUseCase:
             "total_price": str(pending_modification["total_price"]),
         }
 
-        apply_changes_now = additional_charge_amount <= Decimal("0.00")
+        apply_changes_now = additional_charge_amount <= Decimal("0.00") or refund_amount > Decimal("0.00")
 
         updated = self.reservation_repository.apply_updates(
             reservation_id,
@@ -173,7 +173,7 @@ class ConfirmReservationModificationUseCase:
                     "payment_dispatch_status": payment_dispatch_status,
                     "pending_modification": (
                         pending_modification_payload
-                        if additional_charge_amount > Decimal("0.00")
+                        if additional_charge_amount > Decimal("0.00") or refund_amount > Decimal("0.00")
                         else None
                     ),
                 },
