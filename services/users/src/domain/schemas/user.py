@@ -40,3 +40,17 @@ class VerifyCredentialsResponse(BaseModel):
     email: str
     status: int
     roles: list[str]
+
+
+class UserSummary(BaseModel):
+    id: UUID
+    full_name: str
+    email: str
+
+
+class UserSearchByNameRequest(BaseModel):
+    query: str = Field(min_length=1, max_length=100)
+
+
+class UserBatchByIdsRequest(BaseModel):
+    ids: list[UUID]

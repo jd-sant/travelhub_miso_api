@@ -2,7 +2,12 @@ from abc import ABC, abstractmethod
 from typing import Optional
 from uuid import UUID
 
-from domain.schemas.user import UserCreateRequest, UserCredentialsData, UserResponse
+from domain.schemas.user import (
+    UserCreateRequest,
+    UserCredentialsData,
+    UserResponse,
+    UserSummary,
+)
 
 
 class UserRepository(ABC):
@@ -30,4 +35,12 @@ class UserRepository(ABC):
 
     @abstractmethod
     def assign_role(self, user_id: UUID, role_name: str) -> None:
+        pass
+
+    @abstractmethod
+    def search_by_name(self, query: str, limit: int = 50) -> list[UserSummary]:
+        pass
+
+    @abstractmethod
+    def list_by_ids(self, ids: list[UUID]) -> list[UserSummary]:
         pass
