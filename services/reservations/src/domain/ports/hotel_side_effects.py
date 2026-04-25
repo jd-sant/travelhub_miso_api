@@ -13,7 +13,6 @@ class ReservationNotificationDispatcher(ABC):
         reason: str,
         source_ip: str | None = None,
         refund_requested: bool = False,
-        refund_amount_in_cents: int | None = None,
     ) -> None:
         raise NotImplementedError
 
@@ -26,5 +25,5 @@ class ReservationRefundDispatcher(ABC):
         reservation_id: UUID,
         cancellation_reason: str,
         source_ip: str | None = None,
-    ) -> dict | None:
+    ) -> None:
         raise NotImplementedError

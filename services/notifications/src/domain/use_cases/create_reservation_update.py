@@ -65,7 +65,6 @@ class CreateReservationUpdateUseCase(
                     "status": payload.status,
                     "reason": payload.reason,
                     "refund_requested": payload.refund_requested,
-                    "refund_amount_in_cents": payload.refund_amount_in_cents,
                 },
                 "recipient": {
                     "email_masked": mask_email(traveler.email),

@@ -176,3 +176,91 @@ def test_sqs_consumer_procesa_mensaje_y_lo_elimina(monkeypatch):
         QueueUrl="https://sqs/test-queue",
         ReceiptHandle="handle-1",
     )
+
+
+def test_sqs_consumer_procesa_reservation_update(monkeypatch):
+    """El consumer parsea event_type=reservation_update y dispara los use cases correctos."""
+    import adapters.services.sqs_notification_consumer as module
+    from adapters.services.sqs_notification_consumer import SqsNotificationConsumer
+
+    sqs_client = MagicMock()
+    sqs_client.receive_message.return_value = {
+        "Messages": [
+            {
+                "MessageId": "m2",
+                "ReceiptHandle": "handle-2",
+                "Body": json.dumps(
+                    {
+                        "event_type": "reservation_update",
+                        "traveler_id": str(uuid4()),
+                        "reservation_id": str(uuid4()),
+                        "status": "cancelled",
+                        "reason": "maintenance",
+                        "source_ip": "10.0.0.5",
+                        "refund_requested": True,
+                    }
+                ),
+            }
+        ]
+    }
+
+    created_notification = MagicMock(notification_id=uuid4())
+    created_notification.status.__eq__ = lambda self, other: False  # not sent
+
+    class StubCreateReservationUpdate:
+        called_with = None
+
+        def __init__(self, *args, **kwargs): ...
+
+        def execute(self, request):
+            StubCreateReservationUpdate.called_with = request
+            return created_notification
+
+    class StubSendUseCase:
+        executed = False
+
+        def __init__(self, *args, **kwargs): ...
+
+        def execute(self, notification_id, **kwargs):
+            StubSendUseCase.executed = True
+
+    # Stub para que un eventual fallback de payment_confirmation sea visible si se invoca por error
+    class StubCreatePaymentConfirmation:
+        invoked = False
+
+        def __init__(self, *args, **kwargs): ...
+
+        def execute(self, request):
+            StubCreatePaymentConfirmation.invoked = True
+            return created_notification
+
+    monkeypatch.setattr(module, "CreateReservationUpdateUseCase", StubCreateReservationUpdate)
+    monkeypatch.setattr(module, "CreatePaymentConfirmationUseCase", StubCreatePaymentConfirmation)
+    monkeypatch.setattr(module, "SendPaymentConfirmationUseCase", StubSendUseCase)
+    monkeypatch.setattr(
+        module,
+        "Session",
+        lambda engine: MagicMock(__enter__=lambda s: s, __exit__=lambda *a: None),
+    )
+    monkeypatch.setattr(module, "HttpPaymentConfirmationClient", lambda: MagicMock())
+    monkeypatch.setattr(module, "HttpTravelerProfileClient", lambda: MagicMock())
+    monkeypatch.setattr(module, "SQLModelNotificationRepository", lambda s: MagicMock())
+    monkeypatch.setattr(module, "SQLModelDeliveryAttemptRepository", lambda s: MagicMock())
+    monkeypatch.setattr(module, "SQLModelNotificationAuditRepository", lambda s: MagicMock())
+
+    consumer = SqsNotificationConsumer(
+        email_sender=MagicMock(),
+        client=sqs_client,
+        queue_url="https://sqs/test-queue",
+    )
+    consumer._poll_once()
+
+    assert StubCreateReservationUpdate.called_with is not None
+    assert StubCreateReservationUpdate.called_with.status == "cancelled"
+    assert StubCreateReservationUpdate.called_with.refund_requested is True
+    assert StubSendUseCase.executed is True
+    assert StubCreatePaymentConfirmation.invoked is False
+    sqs_client.delete_message.assert_called_once_with(
+        QueueUrl="https://sqs/test-queue",
+        ReceiptHandle="handle-2",
+    )

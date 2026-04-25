@@ -4,10 +4,7 @@
     <p>Tu reserva <strong>{{ reservation_id }}</strong> fue {{ status }} por el hotel.</p>
     <p><strong>Motivo:</strong> {{ reason }}</p>
     {% if refund_requested %}
-    <p>El sistema inici&oacute; autom&aacute;ticamente el proceso de reembolso.</p>
-    {% if refund_amount %}
-    <p><strong>Monto estimado del reembolso:</strong> {{ refund_amount }}</p>
-    {% endif %}
+    <p>El sistema inici&oacute; autom&aacute;ticamente el proceso de reembolso. Recibir&aacute;s el monto en tu m&eacute;todo de pago original en los pr&oacute;ximos d&iacute;as h&aacute;biles.</p>
     {% endif %}
     <p>Si necesitas ayuda adicional, por favor revisa tu panel de reservas o contacta al hotel.</p>
   </body>

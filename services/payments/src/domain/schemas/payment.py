@@ -163,6 +163,8 @@ class ReservationConfirmationRetryResponse(BaseModel):
 
 
 class ReservationRefundRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
     reservation_id: UUID
     reason: str = Field(min_length=3, max_length=255)
     source_ip: str | None = Field(default=None, max_length=64)

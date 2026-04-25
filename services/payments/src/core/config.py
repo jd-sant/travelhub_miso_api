@@ -200,6 +200,23 @@ class Settings:
         return os.getenv("NOTIFICATIONS_QUEUE_URL", "").strip()
 
     @property
+    def payments_queue_url(self) -> str:
+        return os.getenv("PAYMENTS_QUEUE_URL", "").strip()
+
+    @property
+    def service_mode(self) -> str:
+        """api | worker. Controla el CMD del contenedor."""
+        return os.getenv("SERVICE_MODE", "api").strip().lower()
+
+    @property
+    def sqs_poll_wait_seconds(self) -> int:
+        return int(os.getenv("SQS_POLL_WAIT_SECONDS", "20"))
+
+    @property
+    def sqs_max_messages(self) -> int:
+        return int(os.getenv("SQS_MAX_MESSAGES", "10"))
+
+    @property
     def notifications_dispatch_mode(self) -> str:
         """sqs (default cuando hay queue url) | http (fallback legacy) | noop."""
         explicit = os.getenv("NOTIFICATIONS_DISPATCH_MODE", "").strip().lower()

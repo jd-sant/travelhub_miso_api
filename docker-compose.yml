@@ -100,6 +100,8 @@ services:
       PROPERTIES_SERVICE_URL: http://properties:8000
       PAYMENTS_SERVICE_URL: http://payments:8000
       NOTIFICATIONS_SERVICE_URL: http://notifications:8000
+      NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-}
+      PAYMENTS_QUEUE_URL: ${PAYMENTS_QUEUE_URL:-}
     ports:
       - "8002:8000"
     depends_on:
@@ -138,9 +140,40 @@ services:
       AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
       NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-}
       NOTIFICATIONS_DISPATCH_MODE: ${NOTIFICATIONS_DISPATCH_MODE:-}
+      PAYMENTS_QUEUE_URL: ${PAYMENTS_QUEUE_URL:-}
       DEFAULT_CANCELLATION_POLICY: ${DEFAULT_CANCELLATION_POLICY:-Cancelacion gratuita hasta 48 horas antes del check-in. Despues se cobra la primera noche.}
     ports:
       - "8003:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  payments-worker:
+    build:
+      context: ./services/payments
+    environment:
+      PYTHONPATH: /app/src
+      SERVICE_MODE: worker
+      RDS_HOSTNAME: postgres
+      RDS_USERNAME: travelhub_user
+      RDS_PASSWORD: travelhub_pass
+      RDS_DB_NAME: travelhub
+      RDS_PORT: "5432"
+      DB_SCHEMA: payments_schema
+      DB_ECHO: "False"
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-fake_stripe}
+      PAYMENTS_COMPLIANCE_MODE: ${PAYMENTS_COMPLIANCE_MODE:-false}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
+      PAYMENT_INTEGRITY_SECRET: ${PAYMENT_INTEGRITY_SECRET:-travelhub-payments-secret-change-in-prod}
+      PAYMENTS_DATA_ENCRYPTION_KEY: ${PAYMENTS_DATA_ENCRYPTION_KEY:-dev-payments-encryption-key-change-me}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      PAYMENTS_QUEUE_URL: ${PAYMENTS_QUEUE_URL:-}
     depends_on:
       postgres:
         condition: service_healthy

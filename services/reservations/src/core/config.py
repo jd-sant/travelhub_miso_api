@@ -124,6 +124,14 @@ class Settings:
     def notifications_service_url(self) -> str:
         return os.getenv("NOTIFICATIONS_SERVICE_URL", "http://notifications:8000").rstrip("/")
 
+    @property
+    def notifications_queue_url(self) -> str:
+        return os.getenv("NOTIFICATIONS_QUEUE_URL", "").strip()
+
+    @property
+    def payments_queue_url(self) -> str:
+        return os.getenv("PAYMENTS_QUEUE_URL", "").strip()
+
     def validate_scheduler_config(self) -> None:
         if not self.reservation_scheduler_enabled:
             return

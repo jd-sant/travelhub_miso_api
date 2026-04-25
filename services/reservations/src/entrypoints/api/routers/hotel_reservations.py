@@ -6,10 +6,10 @@ from sqlmodel import Session
 
 from adapters.repositories.reservation_repository import SQLModelReservationRepository
 from adapters.services.hotel_side_effects import (
-    HttpReservationNotificationDispatcher,
-    HttpReservationRefundDispatcher,
     NoOpReservationNotificationDispatcher,
     NoOpReservationRefundDispatcher,
+    SqsReservationNotificationDispatcher,
+    SqsReservationRefundDispatcher,
 )
 from core.auth import AuthenticatedUser, get_current_hotel_user
 from core.config import settings
@@ -58,15 +58,15 @@ def get_cancel_hotel_reservation_use_case(
 
 @lru_cache
 def get_reservation_notification_dispatcher() -> ReservationNotificationDispatcher:
-    if settings.notifications_service_url:
-        return HttpReservationNotificationDispatcher()
+    if settings.notifications_queue_url:
+        return SqsReservationNotificationDispatcher()
     return NoOpReservationNotificationDispatcher()
 
 
 @lru_cache
 def get_reservation_refund_dispatcher() -> ReservationRefundDispatcher:
-    if settings.payments_service_url:
-        return HttpReservationRefundDispatcher()
+    if settings.payments_queue_url:
+        return SqsReservationRefundDispatcher()
     return NoOpReservationRefundDispatcher()
 
 
@@ -91,7 +91,6 @@ def _dispatch_post_confirmation_effects(
         reason=reason,
         source_ip=source_ip,
         refund_requested=False,
-        refund_amount_in_cents=None,
     )
 
 
@@ -105,15 +104,12 @@ def _dispatch_post_cancellation_effects(
     reason: str,
     refund_requested: bool,
 ) -> None:
-    refund_amount = None
     if refund_requested:
-        refund_response = refund_dispatcher.request_refund(
+        refund_dispatcher.request_refund(
             reservation_id=reservation_id,
             cancellation_reason=reason,
             source_ip=source_ip,
         )
-        if refund_response:
-            refund_amount = refund_response.get("amount_in_cents")
 
     notification_dispatcher.dispatch_reservation_update(
         traveler_id=traveler_id,
@@ -122,7 +118,6 @@ def _dispatch_post_cancellation_effects(
         reason=reason,
         source_ip=source_ip,
         refund_requested=refund_requested,
-        refund_amount_in_cents=refund_amount,
     )
 
 

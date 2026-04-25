@@ -1,8 +1,9 @@
-"""Consumer SQS que procesa eventos de confirmación de pago.
+"""Consumer SQS que procesa eventos de notificación.
 
-Alinea el flujo con el diagrama VC-004: el mensaje publicado por el servicio
-`payments` en la Notificaciones Queue es consumido aquí, se crea la notificación
-y se despacha el email (SES/SMTP según configuración del assembly).
+Alinea el flujo con el diagrama VC-004: los mensajes publicados por los servicios
+`payments` (event_type=payment_confirmation) y `reservations` (event_type=reservation_update)
+en la Notifications Queue son consumidos aquí; se crea la notificación y se
+despacha el email (SES/SMTP según configuración del assembly).
 """
 
 from __future__ import annotations
@@ -24,8 +25,13 @@ from adapters.services.traveler_profile_client import HttpTravelerProfileClient
 from core.config import settings
 from db.session import engine
 from domain.ports.email_sender import EmailSender
-from domain.schemas.notification import NotificationStatus, PaymentConfirmationRequest
+from domain.schemas.notification import (
+    NotificationStatus,
+    PaymentConfirmationRequest,
+    ReservationUpdateRequest,
+)
 from domain.use_cases.create_payment_confirmation import CreatePaymentConfirmationUseCase
+from domain.use_cases.create_reservation_update import CreateReservationUpdateUseCase
 from domain.use_cases.send_payment_confirmation import SendPaymentConfirmationUseCase
 
 logger = logging.getLogger(__name__)
@@ -94,10 +100,14 @@ class SqsNotificationConsumer:
             raise
 
         event_type = body.get("event_type", "payment_confirmation")
-        if event_type != "payment_confirmation":
+        if event_type == "payment_confirmation":
+            self._handle_payment_confirmation(body)
+        elif event_type == "reservation_update":
+            self._handle_reservation_update(body)
+        else:
             logger.warning("sqs_unknown_event_type", extra={"event_type": event_type})
-            return
 
+    def _handle_payment_confirmation(self, body: dict[str, Any]) -> None:
         request = PaymentConfirmationRequest(**body)
         with Session(engine) as session:
             create_use_case = CreatePaymentConfirmationUseCase(
@@ -121,4 +131,28 @@ class SqsNotificationConsumer:
                 notification.notification_id,
                 source_ip=request.source_ip,
                 payment_confirmed_at=request.payment_confirmed_at,
+            )
+
+    def _handle_reservation_update(self, body: dict[str, Any]) -> None:
+        request = ReservationUpdateRequest(**body)
+        with Session(engine) as session:
+            create_use_case = CreateReservationUpdateUseCase(
+                notification_repository=SQLModelNotificationRepository(session),
+                audit_repository=SQLModelNotificationAuditRepository(session),
+                traveler_profile_source=HttpTravelerProfileClient(),
+            )
+            notification = create_use_case.execute(request)
+
+            if notification.status == NotificationStatus.sent:
+                return
+
+            send_use_case = SendPaymentConfirmationUseCase(
+                notification_repository=SQLModelNotificationRepository(session),
+                delivery_attempt_repository=SQLModelDeliveryAttemptRepository(session),
+                audit_repository=SQLModelNotificationAuditRepository(session),
+                email_sender=self._email_sender,
+            )
+            send_use_case.execute(
+                notification.notification_id,
+                source_ip=request.source_ip,
             )

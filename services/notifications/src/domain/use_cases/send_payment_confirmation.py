@@ -138,22 +138,15 @@ class SendPaymentConfirmationUseCase(BaseUseCase[UUID, NotificationResponse]):
                 status="confirmada",
                 reason=summary.get("reason"),
                 refund_requested=False,
-                refund_amount=None,
             )
         if notification.template_code == "reservation_cancelled_v1":
             summary = notification.payload.get("reservation_update", {})
-            refund_amount = summary.get("refund_amount_in_cents")
             return _env.get_template("reservation_update.html").render(
                 recipient_name=notification.recipient_name,
                 reservation_id=summary.get("reservation_id"),
                 status="cancelada",
                 reason=summary.get("reason"),
                 refund_requested=summary.get("refund_requested", False),
-                refund_amount=(
-                    f"{refund_amount / 100:.2f}"
-                    if isinstance(refund_amount, int)
-                    else None
-                ),
             )
 
         summary = notification.payload.get("payment_summary", {})

@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from assembly import (
-    get_create_reservation_refund_use_case,
     get_payment_repository,
     get_process_queued_payments_use_case,
     get_retry_reservation_confirmations_use_case,
@@ -14,13 +13,9 @@ from domain.schemas.payment import (
     PaymentsByReservationsRequest,
     PaymentsByReservationsResponse,
     ReservationConfirmationRetryResponse,
-    ReservationRefundRequest,
-    ReservationRefundResponse,
 )
-from domain.use_cases.create_reservation_refund import CreateReservationRefundUseCase
 from domain.use_cases.process_queued_payments import ProcessQueuedPaymentsUseCase
 from domain.use_cases.retry_reservation_confirmations import RetryReservationConfirmationsUseCase
-from errors import PaymentNotFoundError, RefundNotAvailableError
 
 router = APIRouter(prefix="/internal", tags=["internal"])
 
@@ -97,26 +92,3 @@ def list_payments_by_reservations(
     )
 
 
-@router.post(
-    "/refunds",
-    response_model=ReservationRefundResponse,
-    status_code=status.HTTP_200_OK,
-)
-def create_reservation_refund(
-    request: Request,
-    payload: ReservationRefundRequest,
-    _: None = Depends(_verify_api_key),
-    use_case: CreateReservationRefundUseCase = Depends(
-        get_create_reservation_refund_use_case
-    ),
-) -> ReservationRefundResponse:
-    try:
-        return use_case.execute(
-            payload.model_copy(
-                update={"source_ip": payload.source_ip or _resolve_source_ip(request)}
-            )
-        )
-    except PaymentNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
-    except RefundNotAvailableError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
