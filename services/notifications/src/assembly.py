@@ -24,6 +24,7 @@ from domain.use_cases.create_reservation_event_notification import (
     CreateReservationEventNotificationUseCase,
 )
 from domain.use_cases.create_payment_confirmation import CreatePaymentConfirmationUseCase
+from domain.use_cases.create_reservation_update import CreateReservationUpdateUseCase
 from domain.use_cases.get_notification import GetNotificationUseCase
 from domain.use_cases.send_payment_confirmation import SendPaymentConfirmationUseCase
 from errors import PaymentConfirmationUnavailableError
@@ -85,6 +86,18 @@ def get_create_payment_confirmation_use_case(
         notification_repository,
         audit_repository,
         payment_confirmation_source,
+        traveler_profile_source,
+    )
+
+
+def get_create_reservation_update_use_case(
+    notification_repository: NotificationRepository = Depends(get_notification_repository),
+    audit_repository: NotificationAuditRepository = Depends(get_notification_audit_repository),
+    traveler_profile_source: TravelerProfileSource = Depends(get_traveler_profile_source),
+) -> CreateReservationUpdateUseCase:
+    return CreateReservationUpdateUseCase(
+        notification_repository,
+        audit_repository,
         traveler_profile_source,
     )
 

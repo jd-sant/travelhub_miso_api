@@ -7,6 +7,9 @@ from adapters.gateways.stripe_checkout_gateway import StripeSdkCheckoutGateway
 from adapters.repositories.payment_checkout_repository import SQLModelPaymentCheckoutRepository
 from adapters.repositories.payment_audit_repository import SQLModelPaymentAuditRepository
 from adapters.repositories.payment_repository import SQLModelPaymentRepository
+from adapters.services.in_process_payment_processing_runner import (
+    InProcessPaymentProcessingRunner,
+)
 from adapters.repositories.payment_refund_repository import SQLModelPaymentRefundRepository
 from adapters.services.notification_dispatcher import (
     HttpNotificationDispatcher,
@@ -18,11 +21,12 @@ from adapters.services.reservation_updater import (
     NoOpReservationUpdater,
 )
 from core.config import settings
-from db.session import get_session
+from db.session import engine, get_session
 from domain.ports.payment_audit_repository import PaymentAuditRepository
 from domain.ports.payment_checkout_repository import PaymentCheckoutRepository
 from domain.ports.payment_gateway import PaymentGateway
 from domain.ports.notification_dispatcher import NotificationDispatcher, ReservationUpdater
+from domain.ports.payment_processing_runner import PaymentProcessingRunner
 from domain.ports.payment_refund_repository import PaymentRefundRepository
 from domain.ports.payment_repository import PaymentRepository
 from domain.ports.refund_gateway import RefundGateway
@@ -41,6 +45,8 @@ from domain.use_cases.get_payment_checkout_session import GetPaymentCheckoutSess
 from domain.use_cases.get_payment_refund import GetPaymentRefundUseCase
 from domain.use_cases.handle_stripe_webhook import HandleStripeWebhookUseCase
 from domain.use_cases.list_payment_events import ListPaymentEventsUseCase
+from domain.use_cases.create_reservation_refund import CreateReservationRefundUseCase
+from domain.use_cases.process_queued_payments import ProcessQueuedPaymentsUseCase
 from domain.use_cases.retry_payment_refunds import RetryPaymentRefundsUseCase
 from domain.use_cases.retry_reservation_confirmations import RetryReservationConfirmationsUseCase
 
@@ -178,21 +184,52 @@ def get_create_payment_checkout_session_use_case(
     return CreatePaymentCheckoutSessionUseCase(repository, audit_repository)
 
 
+def get_process_queued_payments_use_case(
+    payment_repository: PaymentRepository = Depends(get_payment_repository),
+    checkout_repository: PaymentCheckoutRepository = Depends(
+        get_payment_checkout_repository
+    ),
+    audit_repository: PaymentAuditRepository = Depends(get_payment_audit_repository),
+    gateway: StripeCheckoutGateway = Depends(get_stripe_checkout_gateway),
+    notification_dispatcher: NotificationDispatcher = Depends(
+        get_notification_dispatcher
+    ),
+    reservation_updater: ReservationUpdater = Depends(get_reservation_updater),
+) -> ProcessQueuedPaymentsUseCase:
+    return ProcessQueuedPaymentsUseCase(
+        payment_repository=payment_repository,
+        checkout_repository=checkout_repository,
+        audit_repository=audit_repository,
+        gateway=gateway,
+        notification_dispatcher=notification_dispatcher,
+        reservation_updater=reservation_updater,
+    )
+
+
+def get_payment_processing_runner(
+    gateway: StripeCheckoutGateway = Depends(get_stripe_checkout_gateway),
+    notification_dispatcher: NotificationDispatcher = Depends(
+        get_notification_dispatcher
+    ),
+    reservation_updater: ReservationUpdater = Depends(get_reservation_updater),
+) -> PaymentProcessingRunner:
+    return InProcessPaymentProcessingRunner(
+        session_factory=lambda: Session(engine),
+        gateway=gateway,
+        notification_dispatcher=notification_dispatcher,
+        reservation_updater=reservation_updater,
+    )
+
+
 def get_finalize_stripe_payment_use_case(
     checkout_repository: PaymentCheckoutRepository = Depends(get_payment_checkout_repository),
     payment_repository: PaymentRepository = Depends(get_payment_repository),
     audit_repository: PaymentAuditRepository = Depends(get_payment_audit_repository),
-    gateway: StripeCheckoutGateway = Depends(get_stripe_checkout_gateway),
-    notification_dispatcher: NotificationDispatcher = Depends(get_notification_dispatcher),
-    reservation_updater: ReservationUpdater = Depends(get_reservation_updater),
 ) -> FinalizeStripePaymentUseCase:
     return FinalizeStripePaymentUseCase(
         checkout_repository,
         payment_repository,
         audit_repository,
-        gateway,
-        notification_dispatcher,
-        reservation_updater,
     )
 
 
@@ -217,6 +254,18 @@ def get_handle_stripe_webhook_use_case(
         gateway,
         notification_dispatcher,
         reservation_updater,
+    )
+
+
+def get_create_reservation_refund_use_case(
+    repository: PaymentRepository = Depends(get_payment_repository),
+    audit_repository: PaymentAuditRepository = Depends(get_payment_audit_repository),
+    gateway: StripeCheckoutGateway = Depends(get_stripe_checkout_gateway),
+) -> CreateReservationRefundUseCase:
+    return CreateReservationRefundUseCase(
+        repository=repository,
+        audit_repository=audit_repository,
+        gateway=gateway,
     )
 
 

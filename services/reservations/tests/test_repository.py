@@ -26,6 +26,7 @@ class TestReservationRepository:
         assert result.status == "pending_payment"
         assert result.total_price == total_price
         assert result.currency == "COP"
+        assert result.hold_expires_at > result.created_at
 
     def test_get_by_id_returns_reservation(
         self, reservation_repository, valid_create_request
@@ -39,6 +40,7 @@ class TestReservationRepository:
         assert retrieved is not None
         assert retrieved.id == created.id
         assert retrieved.id_traveler == created.id_traveler
+        assert retrieved.hold_expires_at == created.hold_expires_at
 
     def test_get_by_id_returns_none_for_nonexistent_reservation(
         self, reservation_repository

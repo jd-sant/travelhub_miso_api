@@ -23,8 +23,8 @@ class Payment(SQLModel, table=True):
     duplicate_guard_key: str = Field(index=True)
     request_checksum: str
     idempotency_key: str = Field(index=True)
-    gateway_charge_id: str = Field(index=True)
-    gateway_status: str
+    gateway_charge_id: str | None = Field(default=None, index=True)
+    gateway_status: str | None = None
     failure_reason: str | None = None
     card_brand: str | None = None
     card_last4: str | None = None

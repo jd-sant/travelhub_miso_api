@@ -2,15 +2,16 @@ from hmac import compare_digest
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
-from sqlmodel import Session
 
 from adapters.repositories.reservation_event_repository import (
     SQLModelReservationEventRepository,
 )
-from adapters.repositories.reservation_repository import SQLModelReservationRepository
+from assembly import (
+    get_check_reservation_status_use_case,
+    get_update_reservation_status_use_case,
+)
 from core.config import settings
 from core.telemetry import resolve_correlation_id
-from db.session import get_session
 from domain.schemas.reservation import (
     ReservationAdditionalChargeResultRequest,
     ReservationCheckStatusResponse,
@@ -145,6 +146,7 @@ def update_reservation_status(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         )
+
     except ReservationConcurrencyError as e:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

@@ -4,6 +4,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, 
 
 from assembly import (
     get_create_payment_confirmation_use_case,
+    get_create_reservation_update_use_case,
     get_create_reservation_event_notification_use_case,
     get_notification_delivery_runner,
 )
@@ -13,12 +14,14 @@ from domain.schemas.notification import (
     NotificationResponse,
     NotificationStatus,
     PaymentConfirmationRequest,
+    ReservationUpdateRequest,
     ReservationEventNotificationRequest,
 )
 from domain.use_cases.create_reservation_event_notification import (
     CreateReservationEventNotificationUseCase,
 )
 from domain.use_cases.create_payment_confirmation import CreatePaymentConfirmationUseCase
+from domain.use_cases.create_reservation_update import CreateReservationUpdateUseCase
 from errors import (
     InvalidPaymentConfirmationError,
     PaymentConfirmationUnavailableError,
@@ -56,6 +59,38 @@ def create_payment_confirmation(
         return notification
     except InvalidPaymentConfirmationError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+    except TravelerProfileNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    except PaymentConfirmationUnavailableError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
+
+
+@router.post(
+    "/reservation-updates",
+    response_model=NotificationResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_reservation_update(
+    payload: ReservationUpdateRequest,
+    background_tasks: BackgroundTasks,
+    x_internal_api_key: str | None = Header(default=None),
+    use_case: CreateReservationUpdateUseCase = Depends(
+        get_create_reservation_update_use_case
+    ),
+    delivery_runner: NotificationDeliveryRunner = Depends(get_notification_delivery_runner),
+) -> NotificationResponse:
+    if x_internal_api_key != settings.internal_api_key:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    try:
+        notification = use_case.execute(payload)
+        if notification.status != NotificationStatus.sent:
+            background_tasks.add_task(
+                delivery_runner.run_delivery,
+                notification_id=notification.notification_id,
+                source_ip=payload.source_ip,
+                payment_confirmed_at=None,
+            )
+        return notification
     except TravelerProfileNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
     except PaymentConfirmationUnavailableError as exc:

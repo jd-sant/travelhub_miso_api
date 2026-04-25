@@ -106,6 +106,22 @@ class Settings:
         return "dev-internal-key-change-me"
 
     @property
+    def demo_seed_enabled(self) -> bool:
+        return os.getenv("DEMO_SEED_ENABLED", "false").lower() == "true"
+
+    @property
+    def demo_hotel_emails(self) -> set[str]:
+        raw = os.getenv(
+            "DEMO_HOTEL_EMAILS",
+            "hotel-a@travelhub.demo,hotel-b@travelhub.demo",
+        )
+        return {item.strip().lower() for item in raw.split(",") if item.strip()}
+
+    @property
+    def demo_otp_code(self) -> str:
+        return os.getenv("DEMO_OTP_CODE", "000000")
+
+    @property
     def smtp_host(self) -> str:
         return os.getenv("SMTP_HOST", "")
 

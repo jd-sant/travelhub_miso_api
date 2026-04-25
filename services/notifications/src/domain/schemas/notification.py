@@ -35,6 +35,16 @@ class PaymentConfirmationRequest(BaseModel):
     )
 
 
+class ReservationUpdateRequest(BaseModel):
+    traveler_id: UUID
+    reservation_id: UUID
+    status: str = Field(min_length=3, max_length=32)
+    reason: str = Field(min_length=3, max_length=500)
+    source_ip: str | None = Field(default=None, max_length=64)
+    refund_requested: bool = False
+    refund_amount_in_cents: int | None = None
+
+
 class ReservationEventNotificationRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

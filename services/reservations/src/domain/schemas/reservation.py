@@ -10,6 +10,14 @@ class ReservationStatus(str, Enum):
     pending_payment = "pending_payment"
     confirmed = "confirmed"
     cancelled = "cancelled"
+    completed = "completed"
+
+
+class ReservationCancellationReason(str, Enum):
+    maintenance = "maintenance"
+    overbooking = "overbooking"
+    hotel_policy = "hotel_policy"
+    other = "other"
     modification_pending_payment = "modification_pending_payment"
     modification_confirmed = "modification_confirmed"
     additional_charge_failed = "additional_charge_failed"
@@ -61,6 +69,31 @@ class ReservationCreateRequest(BaseModel):
 
 class ReservationStatusUpdateRequest(BaseModel):
     status: ReservationStatus
+
+
+class HotelReservationListItem(BaseModel):
+    id: UUID
+    id_traveler: UUID
+    id_property: UUID
+    id_room: UUID
+    check_in_date: datetime
+    check_out_date: datetime
+    number_of_guests: int
+    total_price: Decimal
+    currency: str
+    status: str
+    hold_expires_at: datetime
+    created_at: datetime
+    updated_at: datetime
+
+
+class HotelReservationConfirmationRequest(BaseModel):
+    reason: str | None = Field(default=None, max_length=255)
+
+
+class HotelReservationCancellationRequest(BaseModel):
+    reason: ReservationCancellationReason
+    note: str | None = Field(default=None, max_length=500)
 
 
 class ReservationPriceBreakdown(BaseModel):
@@ -165,6 +198,7 @@ class ReservationResponse(BaseModel):
     total_price: Decimal
     currency: str
     status: str
+    hold_expires_at: datetime
     version: int = 1
     created_at: datetime
     updated_at: datetime
@@ -177,6 +211,7 @@ class ReservationSummary(BaseModel):
     currency: str
     check_in_date: datetime
     check_out_date: datetime
+    hold_expires_at: datetime
     created_at: datetime
 
 
@@ -186,6 +221,73 @@ class ReservationCheckStatusResponse(BaseModel):
     status_after: str
     action_applied: str
 
+
+class HostReservationItem(BaseModel):
+    id: UUID
+    reservation_number: str
+    id_property: UUID
+    id_room: UUID
+    id_traveler: UUID
+    guest_full_name: str | None = None
+    room_type: str | None = None
+    check_in_date: datetime
+    check_out_date: datetime
+    number_of_guests: int
+    total_price: Decimal
+    currency: str
+    status: str
+    created_at: datetime
+
+
+class HostReservationsPage(BaseModel):
+    items: list[HostReservationItem]
+    total: int
+    page: int
+    page_size: int
+
+
+class HostMetrics(BaseModel):
+    active_reservations: int
+    occupancy_rate: float
+    revenue_amount: Decimal
+    revenue_currency: str | None = None
+    available_currencies: list[str] = []
+    average_daily_rate: Decimal
+    total_nights: int
+
+
+class HostRevenueBucket(BaseModel):
+    bucket: datetime
+    revenue: Decimal
+    reservations: int
+
+
+class HostRevenueTrends(BaseModel):
+    granularity: str
+    currency: str | None = None
+    available_currencies: list[str] = []
+    buckets: list[HostRevenueBucket]
+
+
+class HotelReservationActionResponse(BaseModel):
+    reservation: ReservationResponse
+    status_before: str
+    status_after: str
+    action_applied: str
+    reason: str
+    refund_requested: bool = False
+
+
+class ReservationChangeRecord(BaseModel):
+    id: UUID
+    reservation_id: UUID
+    action: str
+    previous_status: str
+    new_status: str
+    reason: str
+    actor_user_id: UUID | None = None
+    source_ip: str | None = None
+    created_at: datetime
 
 class ReservationConfirmResponse(BaseModel):
     reservation: ReservationResponse

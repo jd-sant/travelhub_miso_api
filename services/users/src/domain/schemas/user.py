@@ -10,6 +10,7 @@ class UserCreateRequest(BaseModel):
     password: str = Field(min_length=8)
     full_name: str = Field(min_length=2, max_length=100)
     hotel_name: Optional[str] = Field(default=None, max_length=100)
+    role: Optional[str] = Field(default=None, max_length=32)
     status: int = Field(default=1, ge=0, le=1)
 
 
@@ -40,3 +41,17 @@ class VerifyCredentialsResponse(BaseModel):
     email: str
     status: int
     roles: list[str]
+
+
+class UserSummary(BaseModel):
+    id: UUID
+    full_name: str
+    email: str
+
+
+class UserSearchByNameRequest(BaseModel):
+    query: str = Field(min_length=1, max_length=100)
+
+
+class UserBatchByIdsRequest(BaseModel):
+    ids: list[UUID]

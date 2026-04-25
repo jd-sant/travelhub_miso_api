@@ -6,12 +6,42 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class PaymentStatus(str, Enum):
+    pending = "pending"
     confirmed = "confirmed"
+    failed = "failed"
+
+
+class PaymentByReservation(BaseModel):
+    reservation_id: UUID
+    amount_in_cents: int
+    currency: str
+
+
+class PaymentsByReservationsRequest(BaseModel):
+    reservation_ids: list[UUID] = Field(default_factory=list)
+    status: PaymentStatus = PaymentStatus.confirmed
+
+
+class PaymentsByReservationsResponse(BaseModel):
+    items: list[PaymentByReservation] = Field(default_factory=list)
+    available_currencies: list[str] = Field(default_factory=list)
+
+
+class RefundStatus(str, Enum):
+    pending = "pending"
+    succeeded = "succeeded"
     failed = "failed"
 
 
 class ReservationConfirmationOutboxStatus(str, Enum):
     pending = "pending"
+    succeeded = "succeeded"
+    failed = "failed"
+
+
+class PaymentProcessingOutboxStatus(str, Enum):
+    pending = "pending"
+    processing = "processing"
     succeeded = "succeeded"
     failed = "failed"
 
@@ -90,8 +120,8 @@ class PaymentChargeResponse(BaseModel):
     status: PaymentStatus
     amount_in_cents: int
     currency: str
-    gateway_charge_id: str
-    gateway_status: str
+    gateway_charge_id: str | None = None
+    gateway_status: str | None = None
     idempotency_key: str
     request_fingerprint: str
     duplicate_guard_key: str
@@ -121,7 +151,7 @@ class PaymentPublicResponse(BaseModel):
     status: PaymentStatus
     amount_in_cents: int
     currency: str
-    gateway_charge_id: str
+    gateway_charge_id: str | None = None
     receipt_id: UUID | None = None
     receipt_number: str | None = None
     failure_reason: str | None = None
@@ -181,11 +211,53 @@ class ReservationConfirmationOutboxRecord(BaseModel):
     updated_at: datetime
 
 
+class PaymentProcessingOutboxRecord(BaseModel):
+    outbox_id: UUID
+    payment_id: UUID
+    checkout_session_id: UUID
+    status: PaymentProcessingOutboxStatus
+    attempt_count: int
+    max_attempts: int
+    next_retry_at: datetime
+    source_ip: str | None = None
+    last_error: str | None = None
+    last_attempt_at: datetime | None = None
+    processed_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class PaymentProcessingRetryResponse(BaseModel):
+    processed_count: int
+    succeeded_count: int
+    failed_count: int
+    pending_count: int
+
+
 class ReservationConfirmationRetryResponse(BaseModel):
     processed_count: int
     succeeded_count: int
     failed_count: int
     pending_count: int
+
+
+class ReservationRefundRequest(BaseModel):
+    reservation_id: UUID
+    reason: str = Field(min_length=3, max_length=255)
+    source_ip: str | None = Field(default=None, max_length=64)
+
+
+class ReservationRefundResponse(BaseModel):
+    refund_id: UUID
+    payment_id: UUID
+    reservation_id: UUID
+    amount_in_cents: int
+    currency: str
+    status: RefundStatus
+    gateway_refund_id: str | None = None
+    reason: str = Field(min_length=3, max_length=255)
+    created_at: datetime
+    updated_at: datetime
 
 
 class PaymentRefundRetryResponse(BaseModel):

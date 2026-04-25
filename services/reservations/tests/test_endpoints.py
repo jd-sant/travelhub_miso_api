@@ -1,6 +1,8 @@
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 from decimal import Decimal
 from uuid import UUID, uuid4
+
+import jwt
 
 from domain.schemas.property_service import (
     PropertyCancellationPolicyResponse,
@@ -124,6 +126,7 @@ class TestReservationEndpoints:
         assert data["currency"] == "COP"
         assert "id" in data
         assert "created_at" in data
+        assert "hold_expires_at" in data
 
     def test_create_reservation_returns_400_if_checkout_before_checkin(self, client):
         """Test that creating reservation fails if checkout is before checkin."""
@@ -214,6 +217,7 @@ class TestReservationEndpoints:
         assert data["id"] == reservation_id
         assert data["id_traveler"] == traveler_id
         assert data["status"] == "pending_payment"
+        assert "hold_expires_at" in data
 
     def test_get_reservation_returns_404_if_not_found(self, client):
         """Test that get returns 404 for nonexistent reservation."""
@@ -595,6 +599,154 @@ class TestReservationEndpoints:
             data = response.json()
             assert data["total_price"] == expected_price
             assert data["currency"] == currency
+
+    def _hotel_token(self) -> str:
+        now = datetime.now(timezone.utc)
+        payload = {
+            "sub": str(uuid4()),
+            "email": "hotel@example.com",
+            "role": "hotel",
+            "iat": now,
+            "exp": now + timedelta(minutes=30),
+            "jti": str(uuid4()),
+        }
+        return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
+
+    def test_hotel_can_list_property_reservations(self, client):
+        payload = {
+            "id_traveler": str(uuid4()),
+            "id_property": str(uuid4()),
+            "id_room": str(uuid4()),
+            "check_in_date": (datetime.now(UTC) + timedelta(days=5)).isoformat(),
+            "check_out_date": (datetime.now(UTC) + timedelta(days=8)).isoformat(),
+            "number_of_guests": 2,
+            "currency": "COP",
+        }
+        created = client.post("/api/v1/reservations", json=payload)
+        assert created.status_code == 201
+
+        response = client.get(
+            f"/api/v1/hotel/reservations?propertyId={payload['id_property']}",
+            headers={"Authorization": f"Bearer {self._hotel_token()}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["id_property"] == payload["id_property"]
+
+    def test_hotel_can_confirm_pending_reservation(self, client):
+        payload = {
+            "id_traveler": str(uuid4()),
+            "id_property": str(uuid4()),
+            "id_room": str(uuid4()),
+            "check_in_date": (datetime.now(UTC) + timedelta(days=5)).isoformat(),
+            "check_out_date": (datetime.now(UTC) + timedelta(days=8)).isoformat(),
+            "number_of_guests": 2,
+            "currency": "COP",
+        }
+        created = client.post("/api/v1/reservations", json=payload)
+        reservation_id = created.json()["id"]
+
+        response = client.post(
+            f"/api/v1/hotel/reservations/{reservation_id}/confirm",
+            json={"reason": "confirmacion manual"},
+            headers={"Authorization": f"Bearer {self._hotel_token()}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status_before"] == "pending_payment"
+        assert data["status_after"] == "confirmed"
+        assert data["action_applied"] == "confirmed"
+        assert data["refund_requested"] is False
+
+    def test_hotel_can_cancel_confirmed_reservation(self, client):
+        payload = {
+            "id_traveler": str(uuid4()),
+            "id_property": str(uuid4()),
+            "id_room": str(uuid4()),
+            "check_in_date": (datetime.now(UTC) + timedelta(days=5)).isoformat(),
+            "check_out_date": (datetime.now(UTC) + timedelta(days=8)).isoformat(),
+            "number_of_guests": 2,
+            "currency": "COP",
+        }
+        created = client.post("/api/v1/reservations", json=payload)
+        reservation_id = created.json()["id"]
+        client.post(
+            f"/api/v1/hotel/reservations/{reservation_id}/confirm",
+            json={"reason": "confirmacion manual"},
+            headers={"Authorization": f"Bearer {self._hotel_token()}"},
+        )
+
+        response = client.post(
+            f"/api/v1/hotel/reservations/{reservation_id}/cancel",
+            json={"reason": "maintenance"},
+            headers={"Authorization": f"Bearer {self._hotel_token()}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status_before"] == "confirmed"
+        assert data["status_after"] == "cancelled"
+        assert data["refund_requested"] is True
+
+    def test_hotel_cannot_confirm_cancelled_reservation(self, client):
+        payload = {
+            "id_traveler": str(uuid4()),
+            "id_property": str(uuid4()),
+            "id_room": str(uuid4()),
+            "check_in_date": (datetime.now(UTC) + timedelta(days=5)).isoformat(),
+            "check_out_date": (datetime.now(UTC) + timedelta(days=8)).isoformat(),
+            "number_of_guests": 2,
+            "currency": "COP",
+        }
+        created = client.post("/api/v1/reservations", json=payload)
+        reservation_id = created.json()["id"]
+        client.post(
+            f"/api/v1/hotel/reservations/{reservation_id}/cancel",
+            json={"reason": "maintenance"},
+            headers={"Authorization": f"Bearer {self._hotel_token()}"},
+        )
+
+        response = client.post(
+            f"/api/v1/hotel/reservations/{reservation_id}/confirm",
+            json={"reason": "confirmacion manual"},
+            headers={"Authorization": f"Bearer {self._hotel_token()}"},
+        )
+
+        assert response.status_code == 409
+
+    def test_hotel_endpoints_return_401_for_invalid_token(self, client):
+        response = client.get(
+            f"/api/v1/hotel/reservations?propertyId={uuid4()}",
+            headers={"Authorization": "Bearer invalid-token"},
+        )
+
+        assert response.status_code == 401
+        assert response.json()["detail"] == "Token inválido"
+
+    def test_hotel_cancel_reason_is_truncated_for_long_other_note(self, client):
+        payload = {
+            "id_traveler": str(uuid4()),
+            "id_property": str(uuid4()),
+            "id_room": str(uuid4()),
+            "check_in_date": (datetime.now(UTC) + timedelta(days=5)).isoformat(),
+            "check_out_date": (datetime.now(UTC) + timedelta(days=8)).isoformat(),
+            "number_of_guests": 2,
+            "currency": "COP",
+        }
+        created = client.post("/api/v1/reservations", json=payload)
+        reservation_id = created.json()["id"]
+
+        response = client.post(
+            f"/api/v1/hotel/reservations/{reservation_id}/cancel",
+            json={"reason": "other", "note": "x" * 500},
+            headers={"Authorization": f"Bearer {self._hotel_token()}"},
+        )
+
+        assert response.status_code == 200
+        assert len(response.json()["reason"]) <= 500
 
     def test_preview_modification_returns_preview(self, client):
         traveler_id = str(uuid4())

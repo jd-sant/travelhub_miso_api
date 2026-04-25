@@ -16,10 +16,15 @@ BEACHFRONT_PENTHOUSE_ID = UUID("22222222-2222-2222-2222-222222222222")
 ALPINE_LODGE_ID = UUID("33333333-3333-3333-3333-333333333333")
 TROPICAL_VILLA_ID = UUID("44444444-4444-4444-4444-444444444444")
 
+# Demo hotel owner IDs — must match user IDs seeded in the users service.
+DEMO_HOTEL_A_OWNER_ID = UUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+DEMO_HOTEL_B_OWNER_ID = UUID("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+
 
 PROPERTIES_DATA = [
     {
         "id": RENAISSANCE_ESTATE_ID,
+        "id_owner": DEMO_HOTEL_A_OWNER_ID,
         "name": "Mansión Renacentista & Viñedo Privado",
         "description": "Experimenta la elegancia atemporal de esta mansión renacentista del siglo XVIII, ubicada en el corazón de un viñedo en funcionamiento con vistas panorámicas justo fuera de Florencia. La villa ha sido meticulosamente restaurada combinando carácter histórico con lujo ultramoderno. Esta propiedad histórica cuenta con 4 dormitorios de lujo con baños privados, cada uno decorado con muebles de época y comodidades modernas.",
         "location": "Fiesole, Florencia",
@@ -59,6 +64,7 @@ PROPERTIES_DATA = [
     },
     {
         "id": BEACHFRONT_PENTHOUSE_ID,
+        "id_owner": DEMO_HOTEL_A_OWNER_ID,
         "name": "Penthouse Moderno Frente a la Playa",
         "description": "Penthouse contemporáneo impresionante con acceso directo a la playa y vistas panorámicas del océano. Esta propiedad ultramoderna cuenta con ventanas del piso al techo, diseño minimalista y tecnología de última generación. Despierta con el sonido de las olas mientras disfrutas de tu café matutino en la amplia terraza.",
         "location": "Playa Miami, Florida",
@@ -98,6 +104,7 @@ PROPERTIES_DATA = [
     },
     {
         "id": ALPINE_LODGE_ID,
+        "id_owner": DEMO_HOTEL_B_OWNER_ID,
         "name": "Refugio Alpino de Montaña",
         "description": "Acogedor refugio de lujo en montaña rodeado de paisaje alpino prístino y picos nevados. Retiro perfecto para senderismo, esquí, o simplemente relajarse junto a la chimenea. Esta propiedad increíble está rodeada de vistas alpinas exuberantes y ofrece acceso directo a actividades de montaña.",
         "location": "Chamonix, Alpes Franceses",
@@ -137,6 +144,7 @@ PROPERTIES_DATA = [
     },
     {
         "id": TROPICAL_VILLA_ID,
+        "id_owner": DEMO_HOTEL_B_OWNER_ID,
         "name": "Villa Paraíso Tropical",
         "description": "Villa de playa exótica con acceso directo a playas de arena blanca y aguas turquesas. Esta propiedad increíble está rodeada de exuberantes jardines tropicales, palmeras y flores exóticas. Despierta con los sonidos de la naturaleza y disfruta de la escapada tropical perfecta.",
         "location": "Bora Bora, Polinesia Francesa",
@@ -190,6 +198,7 @@ def seed_properties_if_empty(session: Session) -> None:
         for prop_data in PROPERTIES_DATA:
             property_obj = Property(
                 id=prop_data["id"],
+                id_owner=prop_data.get("id_owner"),
                 name=prop_data["name"],
                 description=prop_data["description"],
                 location=prop_data["location"],

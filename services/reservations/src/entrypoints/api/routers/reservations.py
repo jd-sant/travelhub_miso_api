@@ -1,10 +1,10 @@
-from functools import lru_cache
+from datetime import datetime
+from typing import Literal
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Query, Request, status
 from sqlmodel import Session
-
 from adapters.repositories.reservation_command_log_repository import (
     SQLModelReservationCommandLogRepository,
 )
@@ -14,10 +14,14 @@ from adapters.repositories.reservation_event_repository import (
 )
 from adapters.services.property_service_client import HttpPropertyServiceClient
 from adapters.services.payment_service_client import HttpPaymentServiceClient
-from adapters.services.scheduler_service import (
-    EventBridgeReservationScheduler,
-    NoOpReservationScheduler,
+from assembly import (
+    get_compute_host_metrics_use_case,
+    get_compute_revenue_trends_use_case,
+    get_create_reservation_use_case,
+    get_list_host_reservations_use_case,
+    get_reservation_repository,
 )
+from core.auth import AuthenticatedUser, get_current_hotel_user
 from core.config import settings
 from core.telemetry import resolve_correlation_id
 from db.session import get_session
@@ -25,6 +29,9 @@ from domain.ports.property_service_client import PropertyServiceClient
 from domain.ports.payment_service_client import PaymentServiceClient
 from domain.ports.reservation_scheduler import ReservationScheduler
 from domain.schemas.reservation import (
+    HostMetrics,
+    HostReservationsPage,
+    HostRevenueTrends,
     ReservationCancellationConfirmRequest,
     ReservationCancellationPreviewResponse,
     ReservationConfirmResponse,
@@ -37,6 +44,10 @@ from domain.schemas.reservation import (
     ReservationWithDetailsResponse,
     ReservationSummary,
 )
+from domain.use_cases.compute_host_metrics import (
+    ComputeHostMetricsUseCase,
+    ComputeRevenueTrendsUseCase,
+)
 from domain.use_cases.confirm_reservation_cancellation import (
     ConfirmReservationCancellationUseCase,
 )
@@ -44,6 +55,7 @@ from domain.use_cases.confirm_reservation_modification import (
     ConfirmReservationModificationUseCase,
 )
 from domain.use_cases.create_reservation import CreateReservationUseCase
+from domain.use_cases.list_host_reservations import ListHostReservationsUseCase
 from domain.use_cases.get_reservation_history import GetReservationHistoryUseCase
 from domain.use_cases.preview_reservation_cancellation import (
     PreviewReservationCancellationUseCase,
@@ -62,6 +74,7 @@ from errors import (
     ReservationOwnershipError,
     ReservationConcurrencyError,
     RoomNotAvailableError,
+    ServiceUnavailableError,
 )
 
 router = APIRouter()
@@ -225,6 +238,7 @@ def create_reservation(
             currency=reservation.currency,
             check_in_date=reservation.check_in_date,
             check_out_date=reservation.check_out_date,
+            hold_expires_at=reservation.hold_expires_at,
             created_at=reservation.created_at,
         )
     except RoomNotAvailableError as e:
@@ -246,6 +260,87 @@ def create_reservation(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error",
+        )
+
+
+@router.get("/host/me/metrics", response_model=HostMetrics)
+def get_host_metrics(
+    start_date: datetime | None = Query(default=None),
+    end_date: datetime | None = Query(default=None),
+    currency: str | None = Query(default=None),
+    user: AuthenticatedUser = Depends(get_current_hotel_user),
+    use_case: ComputeHostMetricsUseCase = Depends(get_compute_host_metrics_use_case),
+):
+    try:
+        return use_case.execute(
+            owner_id=user.id,
+            start_date=start_date,
+            end_date=end_date,
+            currency=currency,
+        )
+    except ServiceUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
+        )
+
+
+@router.get("/host/me/revenue-trends", response_model=HostRevenueTrends)
+def get_host_revenue_trends(
+    start_date: datetime | None = Query(default=None),
+    end_date: datetime | None = Query(default=None),
+    granularity: Literal["day", "week", "month"] = Query(default="week"),
+    currency: str | None = Query(default=None),
+    user: AuthenticatedUser = Depends(get_current_hotel_user),
+    use_case: ComputeRevenueTrendsUseCase = Depends(
+        get_compute_revenue_trends_use_case
+    ),
+):
+    try:
+        return use_case.execute(
+            owner_id=user.id,
+            start_date=start_date,
+            end_date=end_date,
+            granularity=granularity,
+            currency=currency,
+        )
+    except ServiceUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
+        )
+
+
+@router.get("/host/me", response_model=HostReservationsPage)
+def list_host_reservations(
+    status_param: list[str] | None = Query(default=None, alias="status"),
+    start_date: datetime | None = Query(default=None),
+    end_date: datetime | None = Query(default=None),
+    guest_name: str | None = Query(default=None),
+    sort_by: Literal["check_in_date", "created_at", "total_price"] = Query(
+        default="check_in_date"
+    ),
+    sort_dir: Literal["asc", "desc"] = Query(default="desc"),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=10, ge=1, le=100),
+    user: AuthenticatedUser = Depends(get_current_hotel_user),
+    use_case: ListHostReservationsUseCase = Depends(get_list_host_reservations_use_case),
+):
+    """Listado paginado de reservas filtrado por las propiedades del hotel autenticado."""
+    try:
+        return use_case.execute(
+            owner_id=user.id,
+            statuses=status_param,
+            start_date=start_date,
+            end_date=end_date,
+            guest_name=guest_name,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+            page=page,
+            page_size=page_size,
+        )
+    except ServiceUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
         )
 
 

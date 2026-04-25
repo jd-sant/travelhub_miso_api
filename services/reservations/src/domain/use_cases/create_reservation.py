@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
+from adapters.services.properties_client import PropertiesServiceClient
 from domain.ports.reservation_repository import ReservationRepository
 from domain.ports.reservation_scheduler import ReservationScheduler
 from domain.schemas.reservation import ReservationCreateRequest, ReservationResponse
@@ -19,10 +20,12 @@ class CreateReservationUseCase(BaseUseCase[ReservationCreateRequest, Reservation
         self,
         repository: ReservationRepository,
         scheduler: ReservationScheduler | None = None,
+        properties_client: PropertiesServiceClient | None = None,
         property_client: PropertyServiceClient | None = None,
     ):
         self.repository = repository
         self.scheduler = scheduler
+        self.properties_client = properties_client
         self.property_client = property_client
 
     def execute(self, payload: ReservationCreateRequest) -> ReservationResponse:
@@ -95,7 +98,9 @@ class CreateReservationUseCase(BaseUseCase[ReservationCreateRequest, Reservation
         self, id_property: UUID, currency: str, check_in: datetime, check_out: datetime, number_of_guests: int
     ) -> Decimal:
         """
-        Calculate total price including local taxes based on country
+        Calculate total price including local taxes based on country.
+        Uses the property's real price_per_night when the properties client is
+        available; otherwise falls back to a flat base rate.
         Formula: price_per_night × guests × nights × (1 + tax_rate)
        Supports: COP, USD, ARS, CLP, PEN, MXN
         """

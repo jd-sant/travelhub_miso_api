@@ -12,6 +12,9 @@ from sqlmodel.pool import StaticPool
 
 # Forzar SQLite en pruebas antes de importar el módulo de la app.
 os.environ["DATABASE_URL"] = "sqlite://"
+os.environ["NOTIFICATIONS_SERVICE_URL"] = ""
+os.environ["PAYMENTS_SERVICE_URL"] = ""
+os.environ["JWT_SECRET_KEY"] = "test-secret-key"
 
 SRC_PATH = Path(__file__).resolve().parents[1] / "src"
 if str(SRC_PATH) not in sys.path:

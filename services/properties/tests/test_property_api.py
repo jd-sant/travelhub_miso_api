@@ -4,7 +4,12 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from db.seed import RENAISSANCE_ESTATE_ID, BEACHFRONT_PENTHOUSE_ID
+from db.seed import (
+    BEACHFRONT_PENTHOUSE_ID,
+    DEMO_HOTEL_A_OWNER_ID,
+    DEMO_HOTEL_B_OWNER_ID,
+    RENAISSANCE_ESTATE_ID,
+)
 
 
 def test_list_properties_endpoint_success(client: TestClient):
@@ -98,3 +103,48 @@ def test_health_check(client: TestClient):
 
     assert response.status_code == 200
     assert response.json() == {"status": "healthy"}
+
+
+def test_list_properties_filter_by_owner(client: TestClient):
+    """GET /api/v1/properties?owner_id=... returns only that owner's properties."""
+    response = client.get(f"/api/v1/properties?owner_id={DEMO_HOTEL_A_OWNER_ID}")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 2
+    owner_strs = {item["id_owner"] for item in data}
+    assert owner_strs == {str(DEMO_HOTEL_A_OWNER_ID)}
+
+
+def test_list_properties_filter_by_owner_isolation(client: TestClient):
+    """Different owners see disjoint property sets."""
+    response_a = client.get(f"/api/v1/properties?owner_id={DEMO_HOTEL_A_OWNER_ID}")
+    response_b = client.get(f"/api/v1/properties?owner_id={DEMO_HOTEL_B_OWNER_ID}")
+
+    ids_a = {item["id"] for item in response_a.json()}
+    ids_b = {item["id"] for item in response_b.json()}
+
+    assert ids_a and ids_b
+    assert ids_a.isdisjoint(ids_b)
+
+
+def test_list_properties_filter_by_unknown_owner(client: TestClient):
+    """A random owner_id matches no seeded property."""
+    response = client.get(f"/api/v1/properties?owner_id={uuid4()}")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_list_properties_includes_id_owner_in_payload(client: TestClient):
+    """Default listing exposes the id_owner of each property."""
+    response = client.get("/api/v1/properties")
+
+    assert response.status_code == 200
+    data = response.json()
+    for item in data:
+        assert "id_owner" in item
+    assert {item["id_owner"] for item in data} == {
+        str(DEMO_HOTEL_A_OWNER_ID),
+        str(DEMO_HOTEL_B_OWNER_ID),
+    }
