@@ -55,6 +55,7 @@ def _to_response(
 
     return PropertyResponse(
         id=model.id,
+        id_owner=model.id_owner,
         name=model.name,
         description=model.description,
         location=model.location,
@@ -99,6 +100,7 @@ def _to_list_response(
 
     return PropertyListResponse(
         id=model.id,
+        id_owner=model.id_owner,
         name=model.name,
         description=model.description,
         location=model.location,
@@ -144,18 +146,22 @@ class SQLModelPropertyRepository(PropertyRepository):
 
         return _to_response(model, images, reviews)
 
-    def list_all(self) -> list[PropertyListResponse]:
-        """List all properties with their images"""
-        models = self.session.exec(select(Property)).all()
-        
+    def list_all(
+        self, owner_id: UUID | None = None
+    ) -> list[PropertyListResponse]:
+        """List properties with their images, optionally filtered by owner."""
+        statement = select(Property)
+        if owner_id is not None:
+            statement = statement.where(Property.id_owner == owner_id)
+        models = self.session.exec(statement).all()
+
         result = []
         for model in models:
-            # Load related images for each property
             images = self.session.exec(
                 select(PropertyImage)
                 .where(PropertyImage.property_id == model.id)
                 .order_by(PropertyImage.position)
             ).all()
             result.append(_to_list_response(model, images))
-        
+
         return result

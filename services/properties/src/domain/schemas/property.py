@@ -21,6 +21,7 @@ class PropertyReview(BaseModel):
 
 class PropertyResponse(BaseModel):
     id: UUID
+    id_owner: UUID | None = None
     name: str
     description: str
     location: str
@@ -42,6 +43,7 @@ class PropertyResponse(BaseModel):
 class PropertyListResponse(BaseModel):
     """Simplified property response for listing"""
     id: UUID
+    id_owner: UUID | None = None
     name: str
     description: str
     location: str
