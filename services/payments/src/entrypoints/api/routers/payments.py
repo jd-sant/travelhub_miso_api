@@ -21,16 +21,19 @@ from adapters.repositories.payment_repository import SQLModelPaymentRepository
 from assembly import (
     get_create_payment_checkout_session_use_case,
     get_create_payment_charge_use_case,
+    get_create_payment_refund_use_case,
     get_finalize_stripe_payment_use_case,
     get_get_payment_confirmation_summary_use_case,
     get_get_payment_use_case,
     get_get_payment_checkout_session_use_case,
+    get_get_payment_refund_use_case,
     get_handle_stripe_webhook_use_case,
     get_list_payment_events_use_case,
     get_payment_processing_runner,
 )
 from core.config import settings
 from db.session import engine
+from core.telemetry import resolve_correlation_id
 from domain.schemas.checkout import (
     PaymentCheckoutSessionRequest,
     PaymentCheckoutSessionResponse,
@@ -44,23 +47,29 @@ from domain.schemas.payment import (
     PaymentChargeRequest,
     PaymentEventResponse,
     PaymentPublicResponse,
-    PaymentStatus,
+    PaymentRefundCreateRequest,
+    PaymentRefundPublicResponse,
 )
 from domain.ports.payment_processing_runner import PaymentProcessingRunner
 from domain.use_cases.create_payment_checkout_session import CreatePaymentCheckoutSessionUseCase
 from domain.use_cases.create_payment_charge import CreatePaymentChargeUseCase
+from domain.use_cases.create_payment_refund import CreatePaymentRefundUseCase
 from domain.use_cases.finalize_stripe_payment import FinalizeStripePaymentUseCase
 from domain.use_cases.get_payment_confirmation_summary import GetPaymentConfirmationSummaryUseCase
 from domain.use_cases.get_payment import GetPaymentUseCase
 from domain.use_cases.get_payment_checkout_session import GetPaymentCheckoutSessionUseCase
+from domain.use_cases.get_payment_refund import GetPaymentRefundUseCase
 from domain.use_cases.handle_stripe_webhook import HandleStripeWebhookUseCase
 from domain.use_cases.list_payment_events import ListPaymentEventsUseCase
 from errors import (
     DuplicatePaymentError,
     InsecureTransportError,
+    InvalidRefundAmountError,
     InvalidChecksumError,
     PaymentCheckoutSessionNotFoundError,
     PaymentNotFoundError,
+    PaymentRefundNotAllowedError,
+    PaymentRefundNotFoundError,
     StripeConfigurationError,
     StripeWebhookVerificationError,
     UnsupportedPaymentOperationError,
@@ -239,6 +248,58 @@ def create_charge(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),
+        )
+
+
+@router.post("/refunds", response_model=PaymentRefundPublicResponse, status_code=status.HTTP_201_CREATED)
+def create_payment_refund(
+    request: Request,
+    payload: PaymentRefundCreateRequest,
+    correlation_id: str = Depends(resolve_correlation_id),
+    x_forwarded_proto: str | None = Header(default=None),
+    x_forwarded_for: str | None = Header(default=None),
+    use_case: CreatePaymentRefundUseCase = Depends(get_create_payment_refund_use_case),
+) -> PaymentRefundPublicResponse:
+    try:
+        _assert_secure_transport(x_forwarded_proto)
+        return use_case.execute(
+            payload,
+            source_ip=_resolve_source_ip(request, x_forwarded_for),
+            correlation_id=correlation_id,
+        )
+    except InsecureTransportError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        )
+    except PaymentNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Pago no encontrado.",
+        )
+    except PaymentRefundNotAllowedError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Solo se permiten reembolsos para pagos confirmados.",
+        )
+    except InvalidRefundAmountError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El monto del reembolso supera el monto del pago original.",
+        )
+
+
+@router.get("/refunds/{refund_id}", response_model=PaymentRefundPublicResponse, status_code=status.HTTP_200_OK)
+def get_payment_refund(
+    refund_id: UUID,
+    use_case: GetPaymentRefundUseCase = Depends(get_get_payment_refund_use_case),
+) -> PaymentRefundPublicResponse:
+    try:
+        return use_case.execute(refund_id)
+    except PaymentRefundNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Reembolso no encontrado.",
         )
 
 

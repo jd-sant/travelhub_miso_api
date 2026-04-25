@@ -8,7 +8,7 @@ from sqlmodel import Session, select
 from adapters.models.payment import Payment
 from adapters.models.payment_event import PaymentEvent
 from adapters.models.payment_processing_outbox import PaymentProcessingOutbox
-from adapters.models.payment_refund import PaymentRefund
+from adapters.models.payment_refund import PaymentRefund, ReservationRefund
 from adapters.models.payment_reservation_confirmation_outbox import (
     PaymentReservationConfirmationOutbox,
 )
@@ -202,6 +202,18 @@ class SQLModelPaymentRepository(PaymentRepository):
     def find_by_gateway_charge_id(self, gateway_charge_id: str) -> PaymentChargeResponse | None:
         model = self.session.exec(
             select(Payment).where(Payment.gateway_charge_id == gateway_charge_id)
+        ).first()
+        return _to_payment_response(model) if model else None
+
+    def find_latest_confirmed_by_reservation_id(
+        self,
+        reservation_id: UUID,
+    ) -> PaymentChargeResponse | None:
+        model = self.session.exec(
+            select(Payment)
+            .where(Payment.reservation_id == reservation_id)
+            .where(Payment.status == PaymentStatus.confirmed.value)
+            .order_by(Payment.created_at.desc())
         ).first()
         return _to_payment_response(model) if model else None
 
@@ -505,7 +517,7 @@ class SQLModelPaymentRepository(PaymentRepository):
         reservation_id: UUID,
     ) -> ReservationRefundResponse | None:
         model = self.session.exec(
-            select(PaymentRefund).where(PaymentRefund.reservation_id == reservation_id)
+            select(ReservationRefund).where(ReservationRefund.reservation_id == reservation_id)
         ).first()
         return _to_refund_response(model) if model else None
 
@@ -513,9 +525,9 @@ class SQLModelPaymentRepository(PaymentRepository):
         self,
         refund: ReservationRefundResponse,
     ) -> ReservationRefundResponse:
-        model = self.session.get(PaymentRefund, refund.refund_id)
+        model = self.session.get(ReservationRefund, refund.refund_id)
         if model is None:
-            model = PaymentRefund(
+            model = ReservationRefund(
                 id=refund.refund_id,
                 payment_id=refund.payment_id,
                 reservation_id=refund.reservation_id,

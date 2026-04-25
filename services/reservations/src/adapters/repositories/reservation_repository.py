@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import update, asc
 from sqlmodel import Session, select
 
 from adapters.models.reservation_change import ReservationChange
@@ -17,7 +18,7 @@ from domain.schemas.reservation import (
     ReservationCreateRequest,
     ReservationResponse,
 )
-from errors import ReservationConflictError, RoomNotAvailableError
+from errors import ReservationConcurrencyError, ReservationConflictError, RoomNotAvailableError
 
 
 _SORTABLE_COLUMNS = {
@@ -50,6 +51,7 @@ def _to_response(model: Reservation) -> ReservationResponse:
         currency=model.currency,
         status=model.status,
         hold_expires_at=_hold_expires_at(model.created_at),
+        version=model.version,
         created_at=model.created_at,
         updated_at=model.updated_at,
     )
@@ -68,9 +70,20 @@ def _to_hotel_item(model: Reservation) -> HotelReservationListItem:
         currency=model.currency,
         status=model.status,
         hold_expires_at=_hold_expires_at(model.created_at),
+        version=model.version,
         created_at=model.created_at,
         updated_at=model.updated_at,
     )
+
+
+_CANCELLED_STATUSES = frozenset({
+    "cancelled",
+    "cancel_requested",
+    "refund_pending",
+    "refund_completed",
+    "refund_failed",
+    "additional_charge_failed",
+})
 
 
 class SQLModelReservationRepository(ReservationRepository):
@@ -118,10 +131,30 @@ class SQLModelReservationRepository(ReservationRepository):
         ).first()
         return _to_response(model) if model else None
 
-    def list_by_traveler(self, id_traveler: UUID) -> list[ReservationResponse]:
-        models = self.session.exec(
-            select(Reservation).where(Reservation.id_traveler == id_traveler)
-        ).all()
+    def list_by_traveler(
+        self,
+        id_traveler: UUID,
+        status_group: str | None = None,
+    ) -> list[ReservationResponse]:
+        query = (
+            select(Reservation)
+            .where(Reservation.id_traveler == id_traveler)
+            .order_by(asc(Reservation.check_in_date))
+        )
+        now = datetime.now(UTC)
+        if status_group == "active":
+            query = query.where(
+                Reservation.status.notin_(_CANCELLED_STATUSES),
+                Reservation.check_out_date >= now,
+            )
+        elif status_group == "past":
+            query = query.where(
+                Reservation.status.notin_(_CANCELLED_STATUSES),
+                Reservation.check_out_date < now,
+            )
+        elif status_group == "cancelled":
+            query = query.where(Reservation.status.in_(_CANCELLED_STATUSES))
+        models = self.session.exec(query).all()
         return [_to_response(m) for m in models]
 
     def list_by_property(
@@ -139,31 +172,115 @@ class SQLModelReservationRepository(ReservationRepository):
         return [_to_hotel_item(model) for model in models]
 
     def check_room_availability(
-        self, id_room: UUID, check_in: datetime, check_out: datetime
+        self,
+        id_room: UUID,
+        check_in: datetime,
+        check_out: datetime,
+        exclude_reservation_id: UUID | None = None,
     ) -> bool:
         # Verificar si la habitación tiene reservas activas en el rango de fechas
-        conflicting = self.session.exec(
-            select(Reservation).where(
-                (Reservation.id_room == id_room)
-                & (Reservation.status != "cancelled")
-                & (Reservation.check_in_date < check_out)
-                & (Reservation.check_out_date > check_in)
-            )
-        ).first()
+        query = select(Reservation).where(
+            (Reservation.id_room == id_room)
+            & (Reservation.status != "cancelled")
+            & (Reservation.check_in_date < check_out)
+            & (Reservation.check_out_date > check_in)
+        )
+        if exclude_reservation_id is not None:
+            query = query.where(Reservation.id != exclude_reservation_id)
+
+        conflicting = self.session.exec(query).first()
         return conflicting is None
 
-    def update_status(self, id: UUID, status: str) -> Optional[ReservationResponse]:
+    def update_status(
+        self,
+        id: UUID,
+        status: str,
+        *,
+        expected_version: int | None = None,
+    ) -> Optional[ReservationResponse]:
+        where_clause = Reservation.id == id
+        if expected_version is not None:
+            where_clause = where_clause & (Reservation.version == expected_version)
+
+        result = self.session.exec(
+            update(Reservation)
+            .where(where_clause)
+            .values(
+                status=status,
+                version=Reservation.version + 1,
+                updated_at=datetime.now(UTC),
+            )
+        )
+
+        if result.rowcount == 0:
+            exists = self.session.exec(
+                select(Reservation.id).where(Reservation.id == id)
+            ).first()
+            if not exists:
+                return None
+            raise ReservationConcurrencyError("Reservation version conflict")
+
+        self.session.commit()
         reservation = self.session.exec(
             select(Reservation).where(Reservation.id == id)
         ).first()
-        if not reservation:
-            return None
-        reservation.status = status
-        reservation.updated_at = datetime.now(UTC)
-        self.session.add(reservation)
+        return _to_response(reservation) if reservation else None
+
+    def apply_updates(
+        self,
+        id: UUID,
+        *,
+        status: str,
+        expected_version: int | None = None,
+        check_in_date: datetime | None = None,
+        check_out_date: datetime | None = None,
+        number_of_guests: int | None = None,
+        total_price: Decimal | None = None,
+        last_policy_snapshot: str | None = None,
+        cancelled_at: datetime | None = None,
+        cancellation_reason: str | None = None,
+    ) -> Optional[ReservationResponse]:
+        where_clause = Reservation.id == id
+        if expected_version is not None:
+            where_clause = where_clause & (Reservation.version == expected_version)
+
+        update_values = {
+            "status": status,
+            "version": Reservation.version + 1,
+            "updated_at": datetime.now(UTC),
+        }
+        if check_in_date is not None:
+            update_values["check_in_date"] = check_in_date
+        if check_out_date is not None:
+            update_values["check_out_date"] = check_out_date
+        if number_of_guests is not None:
+            update_values["number_of_guests"] = number_of_guests
+        if total_price is not None:
+            update_values["total_price"] = total_price
+        if last_policy_snapshot is not None:
+            update_values["last_policy_snapshot"] = last_policy_snapshot
+        if cancelled_at is not None:
+            update_values["cancelled_at"] = cancelled_at
+        if cancellation_reason is not None:
+            update_values["cancellation_reason"] = cancellation_reason
+
+        result = self.session.exec(
+            update(Reservation).where(where_clause).values(**update_values)
+        )
+
+        if result.rowcount == 0:
+            exists = self.session.exec(
+                select(Reservation.id).where(Reservation.id == id)
+            ).first()
+            if not exists:
+                return None
+            raise ReservationConcurrencyError("Reservation version conflict")
+
         self.session.commit()
-        self.session.refresh(reservation)
-        return _to_response(reservation)
+        reservation = self.session.exec(
+            select(Reservation).where(Reservation.id == id)
+        ).first()
+        return _to_response(reservation) if reservation else None
 
     def list_by_properties(
         self,

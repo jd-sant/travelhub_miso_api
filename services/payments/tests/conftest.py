@@ -97,6 +97,8 @@ class FakeReservationUpdater:
     def __init__(self, should_fail: bool = False):
         self.should_fail = should_fail
         self.calls: list[dict] = []
+        self.refund_result_calls: list[dict] = []
+        self.additional_charge_result_calls: list[dict] = []
 
     def confirm_reservation(self, *, reservation_id, source_ip=None):
         self.calls.append(
@@ -104,6 +106,41 @@ class FakeReservationUpdater:
         )
         if self.should_fail:
             raise RuntimeError("reservations unavailable")
+
+    def notify_refund_result(
+        self, *, reservation_id, status, amount_in_cents, refund_id, source_ip=None
+    ):
+        self.refund_result_calls.append(
+            {
+                "reservation_id": reservation_id,
+                "status": status,
+                "amount_in_cents": amount_in_cents,
+                "refund_id": refund_id,
+                "source_ip": source_ip,
+            }
+        )
+        if self.should_fail:
+            raise RuntimeError("reservations unavailable")
+
+    def notify_additional_charge_result(
+        self, *, reservation_id, status, amount_in_cents, payment_id, source_ip=None
+    ):
+        self.additional_charge_result_calls.append(
+            {
+                "reservation_id": reservation_id,
+                "status": status,
+                "amount_in_cents": amount_in_cents,
+                "payment_id": payment_id,
+                "source_ip": source_ip,
+            }
+        )
+        if self.should_fail:
+            raise RuntimeError("reservations unavailable")
+
+
+class FailingRefundGateway:
+    def process_refund(self, *, reason: str) -> None:
+        raise RuntimeError(f"refund gateway unavailable: {reason}")
 
 
 # --- Payload builders ------------------------------------------------------

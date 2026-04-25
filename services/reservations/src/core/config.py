@@ -28,6 +28,11 @@ class Settings:
         return [o.strip() for o in raw.split(",") if o.strip()]
 
     @property
+    def is_local_dev(self) -> bool:
+        env = os.getenv("ENV", os.getenv("APP_ENV", "development")).lower()
+        return env in ("development", "dev", "test", "local")
+
+    @property
     def reservation_scheduler_enabled(self) -> bool:
         return os.getenv("RESERVATION_SCHEDULER_ENABLED", "false").lower() == "true"
 
@@ -50,6 +55,14 @@ class Settings:
     @property
     def api_base_url(self) -> str:
         return os.getenv("API_BASE_URL", "")
+
+    @property
+    def properties_service_url(self) -> str:
+        return os.getenv("PROPERTIES_SERVICE_URL", "http://localhost:8005")
+
+    @property
+    def payments_service_url(self) -> str:
+        return os.getenv("PAYMENTS_SERVICE_URL", "http://localhost:8003")
 
     @property
     def scheduler_group_name(self) -> str:
@@ -110,7 +123,7 @@ class Settings:
         value = os.getenv("INTERNAL_API_KEY")
         if value:
             return value
-        if self.environment not in ("development", "dev", "test"):
+        if not self.is_local_dev:
             raise RuntimeError(
                 "INTERNAL_API_KEY debe estar configurado en entornos de producción."
             )

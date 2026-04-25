@@ -30,9 +30,11 @@ def test_encrypt_sensitive_value_roundtrip() -> None:
 def test_sanitize_sensitive_data_redacts_known_financial_fields() -> None:
     payload = {
         "confirmation_token_id": "ctoken_123",
+        "x-internal-api-key": "top-secret",
         "nested": {
             "payment_method_token": "pm_123",
             "card_number": "4242424242424242",
+            "x_internal_api_key": "top-secret-2",
         },
     }
 
@@ -40,9 +42,11 @@ def test_sanitize_sensitive_data_redacts_known_financial_fields() -> None:
 
     assert sanitized == {
         "confirmation_token_id": "[REDACTED]",
+        "x-internal-api-key": "[REDACTED]",
         "nested": {
             "payment_method_token": "[REDACTED]",
             "card_number": "[REDACTED]",
+            "x_internal_api_key": "[REDACTED]",
         },
     }
 

@@ -1,10 +1,11 @@
 """Database initialization utilities for properties service"""
-import os
 import json
+from datetime import date
 from uuid import UUID
 from sqlmodel import Session, select
 
 from adapters.models.property import Property
+from adapters.models.property_cancellation_policy import PropertyCancellationPolicy
 from adapters.models.property_image import PropertyImage
 from adapters.models.property_review import PropertyReview
 
@@ -46,16 +47,19 @@ PROPERTIES_DATA = [
             "Sistema Domótico Inteligente",
             "Bodega de Vinos"
         ],
+        "cancellation_policy": "Cancelación gratuita hasta 7 días antes del check-in. Cancelación al 50% entre 3 y 7 días. Sin reembolso con menos de 3 días.",
+        "tax_rate": 0.19,
+        "cleaning_fee": 120.0,
         "images": [
-            ("1", "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80", "Vista Principal Mansión Renacentista", 0),
-            ("2", "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&q=80", "Dormitorio", 1),
-            ("3", "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80", "Baño", 2),
-            ("4", "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=80", "Comedor", 3),
-            ("5", "https://images.unsplash.com/photo-1493857671505-72967e2e2760?w=800&q=80", "Sala de Estar", 4),
+            ("1", "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80", "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1920&q=90", "Vista Principal Mansión Renacentista", 0, True),
+            ("2", "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&q=80", "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=1920&q=90", "Dormitorio", 1, False),
+            ("3", "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80", "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=1920&q=90", "Baño", 2, False),
+            ("4", "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=80", "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1920&q=90", "Comedor", 3, False),
+            ("5", "https://images.unsplash.com/photo-1493857671505-72967e2e2760?w=800&q=80", "https://images.unsplash.com/photo-1493857671505-72967e2e2760?w=1920&q=90", "Sala de Estar", 4, False),
         ],
         "reviews": [
-            ("María González", 5, "Septiembre 2024", "¡Fue lo mejor de mis vacaciones! Propiedad increíble con atención excepcional a los detalles. ¡Altamente recomendado!"),
-            ("Carlos Rodríguez", 5, "Agosto 2024", "Ubicación hermosa y servicio excepcional. El anfitrión fue increíblemente atento. ¡Definitivamente volveremos!"),
+            ("María González", 5, date(2024, 9, 15), "¡Fue lo mejor de mis vacaciones! Propiedad increíble con atención excepcional a los detalles. ¡Altamente recomendado!"),
+            ("Carlos Rodríguez", 5, date(2024, 8, 20), "Ubicación hermosa y servicio excepcional. El anfitrión fue increíblemente atento. ¡Definitivamente volveremos!"),
         ],
     },
     {
@@ -83,16 +87,19 @@ PROPERTIES_DATA = [
             "Servicio de Conserjería",
             "Terraza en Azotea"
         ],
+        "cancellation_policy": "Cancelación gratuita hasta 14 días antes del check-in. Sin reembolso con menos de 14 días.",
+        "tax_rate": 0.13,
+        "cleaning_fee": 200.0,
         "images": [
-            ("1", "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=800&q=80", "Vista Frente a la Playa", 0),
-            ("2", "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80", "Dormitorio Principal", 1),
-            ("3", "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80", "Baño Moderno", 2),
-            ("4", "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=80", "Sala de Estar", 3),
-            ("5", "https://images.unsplash.com/photo-1512453694671-cf5310a1d7f8?w=800&q=80", "Vista Terraza", 4),
+            ("1", "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=800&q=80", "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=1920&q=90", "Vista Frente a la Playa", 0, True),
+            ("2", "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80", "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=1920&q=90", "Dormitorio Principal", 1, False),
+            ("3", "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80", "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=1920&q=90", "Baño Moderno", 2, False),
+            ("4", "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=80", "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1920&q=90", "Sala de Estar", 3, False),
+            ("5", "https://images.unsplash.com/photo-1512453694671-cf5310a1d7f8?w=800&q=80", "https://images.unsplash.com/photo-1512453694671-cf5310a1d7f8?w=1920&q=90", "Vista Terraza", 4, False),
         ],
         "reviews": [
-            ("Ana Martínez", 5, "Septiembre 2024", "¡Lo mejor de mis vacaciones! Propiedad asombrosa con atención increíble. ¡Altamente recomendado!"),
-            ("Juan Pérez", 5, "Agosto 2024", "Ubicación espectacular y servicio excepcional. El anfitrión se enforzó mucho para hacernos sentir bienvenido. ¡Volveremos!"),
+            ("Ana Martínez", 5, date(2024, 9, 10), "¡Lo mejor de mis vacaciones! Propiedad asombrosa con atención increíble. ¡Altamente recomendado!"),
+            ("Juan Pérez", 5, date(2024, 8, 5), "Ubicación espectacular y servicio excepcional. El anfitrión se enforzó mucho para hacernos sentir bienvenido. ¡Volveremos!"),
         ],
     },
     {
@@ -120,16 +127,19 @@ PROPERTIES_DATA = [
             "Bodega de Vinos",
             "Biblioteca"
         ],
+        "cancellation_policy": "Cancelación gratuita hasta 21 días antes del check-in. Cancelación al 50% entre 10 y 21 días. Sin reembolso con menos de 10 días.",
+        "tax_rate": 0.20,
+        "cleaning_fee": 150.0,
         "images": [
-            ("1", "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80", "Exterior Refugio Montaña", 0),
-            ("2", "https://images.unsplash.com/photo-1571508601155-8a95d1df991c?w=800&q=80", "Sala de Estar Acogedora", 1),
-            ("3", "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80", "Baño de Lujo", 2),
-            ("4", "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80", "Área de Comedor", 3),
-            ("5", "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&q=80", "Vista a la Montaña", 4),
+            ("1", "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80", "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=90", "Exterior Refugio Montaña", 0, True),
+            ("2", "https://images.unsplash.com/photo-1571508601155-8a95d1df991c?w=800&q=80", "https://images.unsplash.com/photo-1571508601155-8a95d1df991c?w=1920&q=90", "Sala de Estar Acogedora", 1, False),
+            ("3", "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80", "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=1920&q=90", "Baño de Lujo", 2, False),
+            ("4", "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80", "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=90", "Área de Comedor", 3, False),
+            ("5", "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&q=80", "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=1920&q=90", "Vista a la Montaña", 4, False),
         ],
         "reviews": [
-            ("Elena Gómez", 5, "Julio 2024", "¡Retiro montañoso perfecto! Las vistas de la chimenea son absolutamente impresionantes. Perfecto para escapada invernal."),
-            ("Diego López", 5, "Junio 2024", "Mejor experiencia esquí entrada/salida que he tenido. El refugio es acogedor y el servicio impecable."),
+            ("Elena Gómez", 5, date(2024, 7, 10), "¡Retiro montañoso perfecto! Las vistas de la chimenea son absolutamente impresionantes. Perfecto para escapada invernal."),
+            ("Diego López", 5, date(2024, 6, 5), "Mejor experiencia esquí entrada/salida que he tenido. El refugio es acogedor y el servicio impecable."),
         ],
     },
     {
@@ -157,16 +167,19 @@ PROPERTIES_DATA = [
             "Pabellón Aéreo",
             "Acceso Esnórquel"
         ],
+        "cancellation_policy": "No reembolsable. Política estricta de cancelación.",
+        "tax_rate": 0.0,
+        "cleaning_fee": 180.0,
         "images": [
-            ("1", "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80", "Playa Tropical", 0),
-            ("2", "https://images.unsplash.com/photo-1615529162887-a4521ea3dffb?w=800&q=80", "Bungaló Dormitorio", 1),
-            ("3", "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80", "Baño Exterior", 2),
-            ("4", "https://images.unsplash.com/photo-1576610616656-d3aa5d1f4534?w=800&q=80", "Piscina Infinita", 3),
-            ("5", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80", "Vista Atardecer", 4),
+            ("1", "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80", "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=90", "Playa Tropical", 0, True),
+            ("2", "https://images.unsplash.com/photo-1615529162887-a4521ea3dffb?w=800&q=80", "https://images.unsplash.com/photo-1615529162887-a4521ea3dffb?w=1920&q=90", "Bungaló Dormitorio", 1, False),
+            ("3", "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800&q=80", "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=1920&q=90", "Baño Exterior", 2, False),
+            ("4", "https://images.unsplash.com/photo-1576610616656-d3aa5d1f4534?w=800&q=80", "https://images.unsplash.com/photo-1576610616656-d3aa5d1f4534?w=1920&q=90", "Piscina Infinita", 3, False),
+            ("5", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1920&q=90", "Vista Atardecer", 4, False),
         ],
         "reviews": [
-            ("Sofía Rodríguez", 5, "Septiembre 2024", "¡Paraíso encontrado! Esta villa superó todas mis expectativas. ¡El acceso a la playa es increíble!"),
-            ("Miguel Fernández", 5, "Agosto 2024", "¡Mejores vacaciones de mi vida! El entorno tropical y comodidades son de clase mundial. ¡Definitivamente volvemos!"),
+            ("Sofía Rodríguez", 5, date(2024, 9, 1), "¡Paraíso encontrado! Esta villa superó todas mis expectativas. ¡El acceso a la playa es increíble!"),
+            ("Miguel Fernández", 5, date(2024, 8, 1), "¡Mejores vacaciones de mi vida! El entorno tropical y comodidades son de clase mundial. ¡Definitivamente volvemos!"),
         ],
     },
 ]
@@ -177,6 +190,7 @@ def seed_properties_if_empty(session: Session) -> None:
     # Check if properties already exist
     existing = session.exec(select(Property).limit(1)).first()
     if existing:
+        seed_property_policies_if_missing(session)
         return
 
     try:
@@ -198,20 +212,27 @@ def seed_properties_if_empty(session: Session) -> None:
                 bathrooms=prop_data["bathrooms"],
                 max_guests=prop_data["max_guests"],
                 amenities=json.dumps(prop_data["amenities"]),
+                cancellation_policy=prop_data["cancellation_policy"],
+                tax_rate=prop_data["tax_rate"],
+                cleaning_fee=prop_data["cleaning_fee"],
                 status=1,
             )
             session.add(property_obj)
 
         session.commit()
 
+        seed_property_policies_if_missing(session)
+
         # Add images
         for prop_data in PROPERTIES_DATA:
-            for img_id, url, alt_text, position in prop_data["images"]:
+            for img_id, url, url_hires, alt_text, position, is_cover in prop_data["images"]:
                 image = PropertyImage(
                     property_id=prop_data["id"],
                     url=url,
+                    url_hires=url_hires,
                     alt_text=alt_text,
                     position=position,
+                    is_cover=is_cover,
                 )
                 session.add(image)
 
@@ -219,12 +240,12 @@ def seed_properties_if_empty(session: Session) -> None:
 
         # Add reviews
         for prop_data in PROPERTIES_DATA:
-            for author, rating, date, comment in prop_data["reviews"]:
+            for author, rating, review_date, comment in prop_data["reviews"]:
                 review = PropertyReview(
                     property_id=prop_data["id"],
                     author=author,
                     rating=rating,
-                    date=date,
+                    review_date=review_date,
                     comment=comment,
                     verified_stay=True,
                 )
@@ -235,3 +256,54 @@ def seed_properties_if_empty(session: Session) -> None:
     except Exception as e:
         session.rollback()
         raise
+
+
+def seed_property_policies_if_missing(session: Session) -> None:
+    existing_policy = session.exec(select(PropertyCancellationPolicy).limit(1)).first()
+    if existing_policy:
+        return
+
+    policies = [
+        {
+            "property_id": RENAISSANCE_ESTATE_ID,
+            "policy_type": "full_refund",
+            "minimum_notice_hours": 48,
+            "penalty_percentage": 0,
+            "timezone": "Europe/Rome",
+        },
+        {
+            "property_id": BEACHFRONT_PENTHOUSE_ID,
+            "policy_type": "partial_refund",
+            "minimum_notice_hours": 24,
+            "penalty_percentage": 25,
+            "timezone": "America/New_York",
+        },
+        {
+            "property_id": ALPINE_LODGE_ID,
+            "policy_type": "non_refundable",
+            "minimum_notice_hours": 72,
+            "penalty_percentage": 100,
+            "timezone": "Europe/Paris",
+        },
+        {
+            "property_id": TROPICAL_VILLA_ID,
+            "policy_type": "full_refund",
+            "minimum_notice_hours": 24,
+            "penalty_percentage": 0,
+            "timezone": "Pacific/Tahiti",
+        },
+    ]
+
+    for policy_data in policies:
+        session.add(
+            PropertyCancellationPolicy(
+                property_id=policy_data["property_id"],
+                policy_type=policy_data["policy_type"],
+                minimum_notice_hours=policy_data["minimum_notice_hours"],
+                penalty_percentage=policy_data["penalty_percentage"],
+                timezone=policy_data["timezone"],
+                is_active=True,
+            )
+        )
+
+    session.commit()

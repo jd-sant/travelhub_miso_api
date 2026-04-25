@@ -16,6 +16,14 @@ class DeliveryAttemptStatus(str, Enum):
     failed = "failed"
 
 
+class ReservationNotificationType(str, Enum):
+    modification_confirmed = "modification_confirmed"
+    cancellation_confirmed = "cancellation_confirmed"
+    refund_initiated = "refund_initiated"
+    refund_succeeded = "refund_succeeded"
+    refund_failed = "refund_failed"
+
+
 class PaymentConfirmationRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
@@ -35,6 +43,19 @@ class ReservationUpdateRequest(BaseModel):
     source_ip: str | None = Field(default=None, max_length=64)
     refund_requested: bool = False
     refund_amount_in_cents: int | None = None
+
+
+class ReservationEventNotificationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    reservation_id: UUID
+    traveler_id: UUID
+    event_type: ReservationNotificationType
+    payment_id: UUID | None = None
+    refund_id: UUID | None = None
+    traveler_email: str | None = Field(default=None, max_length=320)
+    traveler_name: str | None = Field(default=None, max_length=160)
+    source_ip: str | None = Field(default=None, max_length=64)
 
 
 class NotificationRecord(BaseModel):
@@ -72,6 +93,25 @@ class PaymentConfirmationSourceRecord(BaseModel):
     taxes_in_cents: int | None = None
     total_in_cents: int | None = None
     cancellation_policy: str | None = None
+
+
+class PaymentPublicSourceRecord(BaseModel):
+    payment_id: UUID
+    reservation_id: UUID
+    status: str
+    amount_in_cents: int = Field(gt=0)
+    currency: str = Field(min_length=3, max_length=3)
+    receipt_number: str | None = None
+
+
+class RefundPublicSourceRecord(BaseModel):
+    refund_id: UUID
+    payment_id: UUID
+    reservation_id: UUID
+    status: str
+    amount_in_cents: int = Field(gt=0)
+    currency: str = Field(min_length=3, max_length=3)
+    reason: str
 
 
 class TravelerProfileRecord(BaseModel):

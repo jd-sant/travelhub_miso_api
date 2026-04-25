@@ -22,3 +22,6 @@ class Property(SQLModel, table=True):
     max_guests: int = Field(default=0, ge=0)
     amenities: str = Field(default="[]")
     status: int = Field(default=1, ge=0, le=1)
+    cancellation_policy: str = Field(default="")
+    tax_rate: float = Field(default=0.0, ge=0.0)
+    cleaning_fee: float = Field(default=0.0, ge=0.0)

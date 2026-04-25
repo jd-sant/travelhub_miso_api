@@ -52,11 +52,18 @@ def test_get_renaissance_estate(client: TestClient):
     assert len(data["images"]) == 5
     assert data["images"][0]["position"] == 0
     assert data["images"][0]["url"] == "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80"
+    assert data["images"][0]["url_hires"] == "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1920&q=90"
+    assert data["images"][0]["is_cover"] is True
     
     # Check reviews (should have 2)
     assert len(data["reviews"]) == 2
     assert data["reviews"][0]["author"] == "María González"
     assert data["reviews"][0]["rating"] == 5
+    
+    # Check new pricing/policy fields
+    assert data["cancellation_policy"] != ""
+    assert data["tax_rate"] == 0.19
+    assert data["cleaning_fee"] == 120.0
 
 
 def test_get_beachfront_penthouse(client: TestClient):

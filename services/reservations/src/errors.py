@@ -32,3 +32,31 @@ class ReservationStateConflictError(Exception):
 
 class ReservationAuthorizationError(Exception):
     pass
+
+
+class ReservationPreviewValidationError(Exception):
+    pass
+
+
+class PropertyNotFoundError(Exception):
+    pass
+
+
+class PropertyServiceUnavailableError(Exception):
+    pass
+
+
+class ReservationOwnershipError(Exception):
+    pass
+
+
+class InvalidReservationOperationError(Exception):
+    pass
+
+
+class PaymentServiceUnavailableError(Exception):
+    pass
+
+
+class ReservationConcurrencyError(Exception):
+    pass

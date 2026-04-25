@@ -184,6 +184,79 @@ class SendPaymentConfirmationUseCase(BaseUseCase[UUID, NotificationResponse]):
             ),
         }
         return _env.get_template("payment_confirmation.html").render(**context)
+    
+    def _build_body(self, notification: NotificationRecord) -> str:
+        if notification.template_code == "payment_confirmation_v1":
+            return self._build_payment_confirmation_body(notification)
+        return self._build_reservation_event_body(notification)
+
+    def _build_payment_confirmation_body(self, notification: NotificationRecord) -> str:
+        payment_summary = notification.payload.get("payment_summary", {})
+        lines = [
+            f"Hola {notification.recipient_name},",
+            "",
+            "Tu pago fue confirmado exitosamente.",
+            f"Reserva: {payment_summary.get('reservation_id')}",
+            f"Pago: {payment_summary.get('payment_id')}",
+            f"Monto: {payment_summary.get('amount_in_cents', 0) / 100:.2f} {payment_summary.get('currency', '')}",
+        ]
+        if payment_summary.get("property_name"):
+            lines.append(f"Propiedad: {payment_summary['property_name']}")
+        if payment_summary.get("check_in_date") and payment_summary.get("check_out_date"):
+            lines.append(
+                f"Fechas: {payment_summary['check_in_date']} - {payment_summary['check_out_date']}"
+            )
+        if payment_summary.get("receipt_number"):
+            lines.append(f"Recibo: {payment_summary['receipt_number']}")
+        return "\n".join(lines)
+
+    def _build_reservation_event_body(self, notification: NotificationRecord) -> str:
+        event = notification.payload.get("event", {})
+        payment = notification.payload.get("payment") or {}
+        refund = notification.payload.get("refund") or {}
+
+        lines = [
+            f"Hola {notification.recipient_name},",
+            "",
+            notification.subject,
+            f"Reserva: {event.get('reservation_id')}",
+        ]
+
+        if payment:
+            lines.append(f"Pago: {payment.get('payment_id')}")
+            lines.append(
+                f"Monto pago: {payment.get('amount_in_cents', 0) / 100:.2f} {payment.get('currency', '')}"
+            )
+            lines.append(f"Estado pago: {payment.get('status')}")
+
+        if refund:
+            lines.append(f"Reembolso: {refund.get('refund_id')}")
+            lines.append(
+                f"Monto reembolso: {refund.get('amount_in_cents', 0) / 100:.2f} {refund.get('currency', '')}"
+            )
+            lines.append(f"Estado reembolso: {refund.get('status')}")
+            if refund.get("reason"):
+                lines.append(f"Motivo: {refund.get('reason')}")
+
+        return "\n".join(lines)
+
+    def _audit_action(self, notification: NotificationRecord) -> str:
+        base = notification.template_code.replace("_v1", "")
+        suffix = "sent" if notification.status == NotificationStatus.sent else "failed"
+        return f"notification.{base}.{suffix}"
+
+    def _resolve_audit_action(self, notification: NotificationRecord) -> str:
+        prefix = {
+            "payment_confirmation_v1": "notification.payment_confirmation",
+            "reservation_confirmed_v1": "notification.reservation_confirmed",
+            "reservation_cancelled_v1": "notification.reservation_cancelled",
+        }.get(notification.template_code, "notification.delivery")
+        suffix = (
+            "sent"
+            if notification.status == NotificationStatus.sent
+            else "failed"
+        )
+        return f"{prefix}.{suffix}"
 
     def _resolve_audit_action(self, notification: NotificationRecord) -> str:
         prefix = {

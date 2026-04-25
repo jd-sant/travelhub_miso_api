@@ -251,6 +251,41 @@ class Settings:
         return value
 
     @property
+    def refund_retry_base_seconds(self) -> int:
+        value = int(os.getenv("REFUND_RETRY_BASE_SECONDS", "30"))
+        if value <= 0:
+            raise RuntimeError("REFUND_RETRY_BASE_SECONDS debe ser mayor a 0.")
+        return value
+
+    @property
+    def refund_retry_max_backoff_seconds(self) -> int:
+        value = int(os.getenv("REFUND_RETRY_MAX_BACKOFF_SECONDS", "600"))
+        if value <= 0:
+            raise RuntimeError("REFUND_RETRY_MAX_BACKOFF_SECONDS debe ser mayor a 0.")
+        return value
+
+    @property
+    def refund_retry_max_attempts(self) -> int:
+        value = int(os.getenv("REFUND_RETRY_MAX_ATTEMPTS", "5"))
+        if value <= 0:
+            raise RuntimeError("REFUND_RETRY_MAX_ATTEMPTS debe ser mayor a 0.")
+        return value
+
+    @property
+    def refund_retry_batch_size(self) -> int:
+        value = int(os.getenv("REFUND_RETRY_BATCH_SIZE", "50"))
+        if value <= 0:
+            raise RuntimeError("REFUND_RETRY_BATCH_SIZE debe ser mayor a 0.")
+        return value
+
+    @property
+    def refund_sla_minutes(self) -> int:
+        value = int(os.getenv("REFUND_SLA_MINUTES", "60"))
+        if value <= 0:
+            raise RuntimeError("REFUND_SLA_MINUTES debe ser mayor a 0.")
+        return value
+
+    @property
     def internal_api_key(self) -> str:
         value = os.getenv("INTERNAL_API_KEY")
         if value:

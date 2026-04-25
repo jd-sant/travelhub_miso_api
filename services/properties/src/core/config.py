@@ -4,6 +4,22 @@ from functools import lru_cache
 
 class Settings:
     @property
+    def is_local_dev(self) -> bool:
+        env = os.getenv("ENV", os.getenv("APP_ENV", "development")).lower()
+        return env in ("development", "dev", "test", "local")
+
+    @property
+    def internal_api_key(self) -> str:
+        value = os.getenv("INTERNAL_API_KEY")
+        if value:
+            return value
+        if not self.is_local_dev:
+            raise RuntimeError(
+                "INTERNAL_API_KEY debe estar configurado en entornos de producción."
+            )
+        return "dev-internal-key-change-me"
+
+    @property
     def rds_hostname(self) -> str:
         return os.getenv("RDS_HOSTNAME", "localhost")
 

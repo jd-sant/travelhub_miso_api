@@ -39,6 +39,13 @@ class PaymentRepository(ABC):
         pass
 
     @abstractmethod
+    def find_latest_confirmed_by_reservation_id(
+        self,
+        reservation_id: UUID,
+    ) -> PaymentChargeResponse | None:
+        pass
+
+    @abstractmethod
     def add_events(self, payment_id: UUID, events: list[PaymentEventResponse]) -> None:
         pass
 

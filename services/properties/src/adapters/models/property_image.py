@@ -12,4 +12,6 @@ class PropertyImage(SQLModel, table=True):
     url: str
     alt_text: str | None = None
     position: int = Field(default=0, ge=0)
+    url_hires: str | None = None
+    is_cover: bool = Field(default=False)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

@@ -1,5 +1,8 @@
+import os
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from types import SimpleNamespace
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from sqlmodel import Session, select
 
@@ -8,6 +11,7 @@ from adapters.models.payment_checkout_session import PaymentCheckoutSession
 from adapters.models.payment import Payment
 from adapters.models.payment_event import PaymentEvent
 from adapters.models.payment_processing_outbox import PaymentProcessingOutbox
+from adapters.models.payment_refund import PaymentRefund
 from adapters.models.payment_reservation_confirmation_outbox import (
     PaymentReservationConfirmationOutbox,
 )
@@ -17,6 +21,7 @@ from adapters.services.in_process_payment_processing_runner import (
 from assembly import (
     get_notification_dispatcher,
     get_payment_processing_runner,
+    get_refund_gateway,
     get_reservation_updater,
     get_stripe_checkout_gateway,
 )
@@ -25,6 +30,7 @@ from core.security import build_request_checksum, hash_token
 from entrypoints.api.routers import payments as payments_router
 
 from .conftest import (
+    FailingRefundGateway,
     FakeNotificationDispatcher,
     FakeReservationUpdater,
     FakeStripeCheckoutGateway,
@@ -32,6 +38,15 @@ from .conftest import (
     build_charge_payload as _payload,
     build_checkout_payload as _checkout_payload,
 )
+
+
+def _refund_payload(payment_id: str, *, reason: str = "traveler_request") -> dict:
+    return {
+        "payment_id": payment_id,
+        "amount_in_cents": 50000,
+        "reason": reason,
+        "idempotency_key": f"refund-{uuid4()}",
+    }
 
 
 def test_create_payment_success_generates_receipt_and_events(client, test_engine):
@@ -652,3 +667,224 @@ def test_finalize_stripe_payment_returns_failed_response_for_insufficient_funds(
     assert stored_payment is not None
     assert stored_payment.status == "failed"
     assert stored_payment.failure_reason == "insufficient_funds"
+
+
+def test_create_refund_returns_pending_status(client):
+    payment_response = client.post("/api/v1/payments/charges", json=_payload(), headers=SECURE_HEADERS)
+    payment_id = payment_response.json()["payment_id"]
+
+    response = client.post(
+        "/api/v1/payments/refunds",
+        json=_refund_payload(payment_id),
+        headers=SECURE_HEADERS,
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["payment_id"] == payment_id
+    assert body["status"] == "pending"
+    assert body["retry_count"] == 0
+
+
+def test_create_refund_records_correlation_id_and_metrics_audit(client, test_engine):
+    payment_response = client.post("/api/v1/payments/charges", json=_payload(), headers=SECURE_HEADERS)
+    payment_id = payment_response.json()["payment_id"]
+
+    response = client.post(
+        "/api/v1/payments/refunds",
+        json=_refund_payload(payment_id),
+        headers={**SECURE_HEADERS, "X-Correlation-Id": "corr-refund-123"},
+    )
+
+    assert response.status_code == 201
+
+    with Session(test_engine) as session:
+        stored_audit_logs = session.exec(select(PaymentAuditLog)).all()
+
+    requested_log = next(
+        log for log in stored_audit_logs if log.action == "payment.refund.requested"
+    )
+    metrics_log = next(
+        log for log in stored_audit_logs if log.action == "payment.refund.metrics"
+    )
+
+    assert requested_log.payload["correlation_id"] == "corr-refund-123"
+    assert metrics_log.payload["correlation_id"] == "corr-refund-123"
+    assert metrics_log.payload["refund_latency_seconds"] >= 0
+    assert metrics_log.payload["refund_sla_breach_count"] in {0, 1}
+
+
+def test_create_refund_is_idempotent_for_same_key(client):
+    payment_response = client.post("/api/v1/payments/charges", json=_payload(), headers=SECURE_HEADERS)
+    payment_id = payment_response.json()["payment_id"]
+    payload = _refund_payload(payment_id)
+
+    first_response = client.post("/api/v1/payments/refunds", json=payload, headers=SECURE_HEADERS)
+    second_response = client.post("/api/v1/payments/refunds", json=payload, headers=SECURE_HEADERS)
+
+    assert first_response.status_code == 201
+    assert second_response.status_code == 201
+    assert first_response.json()["refund_id"] == second_response.json()["refund_id"]
+
+
+def test_create_refund_rejects_failed_payment(client):
+    failed_payment = client.post(
+        "/api/v1/payments/charges",
+        json=_payload(token="pm_fail_card_declined"),
+        headers=SECURE_HEADERS,
+    )
+    payment_id = failed_payment.json()["payment_id"]
+
+    response = client.post(
+        "/api/v1/payments/refunds",
+        json=_refund_payload(payment_id),
+        headers=SECURE_HEADERS,
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Solo se permiten reembolsos para pagos confirmados."
+
+
+def test_get_refund_returns_created_refund(client):
+    payment_response = client.post("/api/v1/payments/charges", json=_payload(), headers=SECURE_HEADERS)
+    payment_id = payment_response.json()["payment_id"]
+    create_refund = client.post(
+        "/api/v1/payments/refunds",
+        json=_refund_payload(payment_id),
+        headers=SECURE_HEADERS,
+    )
+    refund_id = create_refund.json()["refund_id"]
+
+    response = client.get(f"/api/v1/payments/refunds/{refund_id}")
+
+    assert response.status_code == 200
+    assert response.json()["refund_id"] == refund_id
+
+
+def test_get_refund_returns_404_for_unknown_refund(client):
+    response = client.get(f"/api/v1/payments/refunds/{uuid4()}")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Reembolso no encontrado."}
+
+
+def test_retry_payment_refunds_succeeds_pending_refund(client):
+    updater = FakeReservationUpdater()
+    client.app.dependency_overrides[get_reservation_updater] = lambda: updater
+
+    payment_response = client.post("/api/v1/payments/charges", json=_payload(), headers=SECURE_HEADERS)
+    payment_id = payment_response.json()["payment_id"]
+    create_refund = client.post(
+        "/api/v1/payments/refunds",
+        json=_refund_payload(payment_id),
+        headers=SECURE_HEADERS,
+    )
+    refund_id = create_refund.json()["refund_id"]
+
+    retry_response = client.post(
+        "/api/v1/internal/payments/refunds/retry",
+        headers={"X-Internal-Api-Key": settings.internal_api_key},
+    )
+
+    assert retry_response.status_code == 200
+    retry_body = retry_response.json()
+    assert retry_body["processed_count"] == 1
+    assert retry_body["succeeded_count"] == 1
+    assert retry_body["failed_count"] == 0
+
+    status_response = client.get(f"/api/v1/payments/refunds/{refund_id}")
+    assert status_response.status_code == 200
+    assert status_response.json()["status"] == "succeeded"
+    assert len(updater.refund_result_calls) == 1
+    assert updater.refund_result_calls[0]["status"] == "succeeded"
+
+
+def test_retry_payment_refunds_requires_internal_api_key(client):
+    response = client.post(
+        "/api/v1/internal/payments/refunds/retry",
+        headers={"X-Internal-Api-Key": "invalid-key"},
+    )
+
+    assert response.status_code == 403
+
+
+def test_retry_payment_refunds_can_reach_terminal_failed(client, test_engine, monkeypatch):
+    monkeypatch.setenv("REFUND_RETRY_MAX_ATTEMPTS", "2")
+    monkeypatch.setenv("REFUND_RETRY_BASE_SECONDS", "1")
+    client.app.dependency_overrides[get_refund_gateway] = lambda: FailingRefundGateway()
+    payment_response = client.post("/api/v1/payments/charges", json=_payload(), headers=SECURE_HEADERS)
+    payment_id = payment_response.json()["payment_id"]
+
+    create_refund = client.post(
+        "/api/v1/payments/refunds",
+        json=_refund_payload(payment_id, reason="manual_refund_retry"),
+        headers=SECURE_HEADERS,
+    )
+    refund_id = create_refund.json()["refund_id"]
+
+    first_retry = client.post(
+        "/api/v1/internal/payments/refunds/retry",
+        headers={"X-Internal-Api-Key": settings.internal_api_key},
+    )
+
+    assert first_retry.status_code == 200
+    assert first_retry.json()["failed_count"] == 1
+
+    with Session(test_engine) as session:
+        stored_refund = session.get(PaymentRefund, UUID(refund_id))
+        assert stored_refund is not None
+        stored_refund.next_retry_at = datetime.now(timezone.utc) - timedelta(seconds=1)
+        session.add(stored_refund)
+        session.commit()
+
+    second_retry = client.post(
+        "/api/v1/internal/payments/refunds/retry",
+        headers={"X-Internal-Api-Key": settings.internal_api_key},
+    )
+
+    assert second_retry.status_code == 200
+    assert second_retry.json()["failed_count"] == 1
+
+    final_status = client.get(f"/api/v1/payments/refunds/{refund_id}")
+    assert final_status.status_code == 200
+    assert final_status.json()["status"] == "failed"
+
+
+def test_internal_create_refund_for_reservation_uses_latest_confirmed_payment(client):
+    payment_response = client.post("/api/v1/payments/charges", json=_payload(), headers=SECURE_HEADERS)
+    reservation_id = payment_response.json()["reservation_id"]
+
+    response = client.post(
+        "/api/v1/internal/payments/refunds",
+        json={
+            "reservation_id": reservation_id,
+            "amount_in_cents": 40000,
+            "reason": "traveler_request",
+            "idempotency_key": f"int-refund-{uuid4()}",
+        },
+        headers={"X-Internal-Api-Key": settings.internal_api_key},
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["reservation_id"] == reservation_id
+    assert body["status"] == "pending"
+
+
+def test_internal_additional_charge_endpoint_creates_charge(client):
+    payload = _payload()
+    response = client.post(
+        "/api/v1/internal/payments/additional-charges",
+        json={
+            "reservation_id": payload["reservation_id"],
+            "traveler_id": payload["traveler_id"],
+            "amount_in_cents": 35000,
+            "currency": payload["currency"],
+            "idempotency_key": f"int-additional-{uuid4()}",
+            "payment_method_token": payload["payment_method_token"],
+        },
+        headers={"X-Internal-Api-Key": settings.internal_api_key},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["status"] in {"confirmed", "failed"}

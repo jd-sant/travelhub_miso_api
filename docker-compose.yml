@@ -86,6 +86,8 @@ services:
       LAMBDA_ARN: ${LAMBDA_ARN:-}
       SCHEDULER_ROLE_ARN: ${SCHEDULER_ROLE_ARN:-}
       API_BASE_URL: ${API_BASE_URL:-}
+      PROPERTIES_SERVICE_URL: ${PROPERTIES_SERVICE_URL:-http://properties:8000}
+      PAYMENTS_SERVICE_URL: ${PAYMENTS_SERVICE_URL:-http://payments:8000}
       RDS_HOSTNAME: postgres
       RDS_USERNAME: travelhub_user
       RDS_PASSWORD: travelhub_pass
@@ -224,6 +226,7 @@ services:
       RDS_PORT: "5432"
       DB_SCHEMA: properties_schema
       DB_ECHO: "False"
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
     ports:
       - "8005:8000"
     depends_on:

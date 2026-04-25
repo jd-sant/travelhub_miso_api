@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlmodel import Session, select
 
 from adapters.models.property import Property
+from adapters.models.property_cancellation_policy import PropertyCancellationPolicy
 from adapters.models.property_image import PropertyImage
 from adapters.models.property_review import PropertyReview
 from domain.ports.property_repository import PropertyRepository
@@ -13,6 +14,10 @@ from domain.schemas.property import (
     PropertyImage as PropertyImageSchema,
     PropertyReview as PropertyReviewSchema,
     PropertyListResponse,
+)
+from domain.schemas.property_policy import (
+    PropertyCancellationPolicyResponse,
+    CancellationPolicyType,
 )
 
 
@@ -36,6 +41,8 @@ def _to_response(
             url=img.url,
             alt_text=img.alt_text,
             position=img.position,
+            url_hires=img.url_hires,
+            is_cover=img.is_cover,
         )
         for img in (images or [])
     ]
@@ -46,7 +53,7 @@ def _to_response(
             id=str(rev.id),
             author=rev.author,
             rating=rev.rating,
-            date=rev.date,
+            review_date=rev.review_date,
             comment=rev.comment,
             verified_stay=rev.verified_stay,
         )
@@ -69,6 +76,9 @@ def _to_response(
         bathrooms=model.bathrooms,
         max_guests=model.max_guests,
         amenities=amenities,
+        cancellation_policy=model.cancellation_policy,
+        tax_rate=model.tax_rate,
+        cleaning_fee=model.cleaning_fee,
         status=model.status,
         images=image_list,
         reviews=review_list,
@@ -94,6 +104,8 @@ def _to_list_response(
             url=img.url,
             alt_text=img.alt_text,
             position=img.position,
+            url_hires=img.url_hires,
+            is_cover=img.is_cover,
         )
         for img in (images or [])
     ]
@@ -114,8 +126,24 @@ def _to_list_response(
         bathrooms=model.bathrooms,
         max_guests=model.max_guests,
         amenities=amenities,
+        cancellation_policy=model.cancellation_policy,
+        tax_rate=model.tax_rate,
+        cleaning_fee=model.cleaning_fee,
         status=model.status,
         images=image_list,
+    )
+
+
+def _to_policy_response(model: PropertyCancellationPolicy) -> PropertyCancellationPolicyResponse:
+    return PropertyCancellationPolicyResponse(
+        property_id=model.property_id,
+        policy_type=CancellationPolicyType(model.policy_type),
+        minimum_notice_hours=model.minimum_notice_hours,
+        penalty_percentage=model.penalty_percentage,
+        timezone=model.timezone,
+        is_active=model.is_active,
+        created_at=model.created_at,
+        updated_at=model.updated_at,
     )
 
 
@@ -165,3 +193,13 @@ class SQLModelPropertyRepository(PropertyRepository):
             result.append(_to_list_response(model, images))
 
         return result
+
+    def get_cancellation_policy(
+        self, property_id: UUID
+    ) -> Optional[PropertyCancellationPolicyResponse]:
+        model = self.session.exec(
+            select(PropertyCancellationPolicy)
+            .where(PropertyCancellationPolicy.property_id == property_id)
+            .where(PropertyCancellationPolicy.is_active.is_(True))
+        ).first()
+        return _to_policy_response(model) if model else None

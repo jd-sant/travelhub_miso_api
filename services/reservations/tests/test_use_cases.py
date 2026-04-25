@@ -22,8 +22,8 @@ class TestCreateReservationUseCase:
         assert result.id is not None
         assert result.id_traveler == valid_create_request.id_traveler
         assert result.status == "pending_payment"
-        # 3 noches * 100 * (1 + 0.19 de impuesto para COP) = 357.00
-        expected_price = Decimal("357.00")
+        # 3 noches * 2 huéspedes * 100 * (1 + 0.19 de impuesto para COP) = 714.00
+        expected_price = Decimal("714.00")
         assert result.total_price == expected_price
 
     def test_execute_validates_dates(self, create_reservation_use_case):
@@ -92,24 +92,24 @@ class TestCreateReservationUseCase:
         """Test that correct tax rates are applied for different currencies."""
         check_in = datetime.now(UTC) + timedelta(days=5)
         check_out = check_in + timedelta(days=2)  # 2 noches
-        base_price = Decimal(100) * 2  # 200
+        base_price = Decimal(100) * 2 * 2  # 2 huéspedes * 2 noches * 100 = 400
 
         tax_rates = {
-            "COP": Decimal("0.19"),  # 200 * 1.19 = 238.00
-            "USD": Decimal("0.08"),  # 200 * 1.08 = 216.00
-            "ARS": Decimal("0.21"),  # 200 * 1.21 = 242.00
-            "CLP": Decimal("0.19"),  # 200 * 1.19 = 238.00
-            "PEN": Decimal("0.18"),  # 200 * 1.18 = 236.00
-            "MXN": Decimal("0.16"),  # 200 * 1.16 = 232.00
+            "COP": Decimal("0.19"),  # 400 * 1.19 = 476.00
+            "USD": Decimal("0.08"),  # 400 * 1.08 = 432.00
+            "ARS": Decimal("0.21"),  # 400 * 1.21 = 484.00
+            "CLP": Decimal("0.19"),  # 400 * 1.19 = 476.00
+            "PEN": Decimal("0.18"),  # 400 * 1.18 = 472.00
+            "MXN": Decimal("0.16"),  # 400 * 1.16 = 464.00
         }
 
         expected_prices = {
-            "COP": Decimal("238.00"),
-            "USD": Decimal("216.00"),
-            "ARS": Decimal("242.00"),
-            "CLP": Decimal("238.00"),
-            "PEN": Decimal("236.00"),
-            "MXN": Decimal("232.00"),
+            "COP": Decimal("476.00"),
+            "USD": Decimal("432.00"),
+            "ARS": Decimal("484.00"),
+            "CLP": Decimal("476.00"),
+            "PEN": Decimal("472.00"),
+            "MXN": Decimal("464.00"),
         }
 
         for currency, expected_price in expected_prices.items():
@@ -144,9 +144,32 @@ class TestCreateReservationUseCase:
 
         result = create_reservation_use_case.execute(request)
 
-        # 100 * (1 + 0.16) = 116.00
-        expected_price = Decimal("116.00")
+        # 2 huéspedes * 1 noche * 100 * (1 + 0.16) = 232.00
+        expected_price = Decimal("232.00")
         assert result.total_price == expected_price
+
+    def test_execute_handles_timezone_aware_datetimes(
+        self, create_reservation_use_case, traveler_id, property_id, room_id
+    ):
+        """Test that Zulu/aware datetimes from API clients are normalized correctly."""
+        check_in = datetime.now(UTC) + timedelta(days=5)
+        check_out = check_in + timedelta(days=2)
+
+        request = ReservationCreateRequest(
+            id_traveler=traveler_id,
+            id_property=property_id,
+            id_room=room_id,
+            check_in_date=check_in,
+            check_out_date=check_out,
+            number_of_guests=2,
+            currency="USD",
+        )
+
+        result = create_reservation_use_case.execute(request)
+
+        assert result.status == "pending_payment"
+        assert result.check_in_date.tzinfo is None
+        assert result.check_out_date.tzinfo is None
 
     def test_execute_checks_room_availability(
         self, create_reservation_use_case, reservation_repository, valid_create_request

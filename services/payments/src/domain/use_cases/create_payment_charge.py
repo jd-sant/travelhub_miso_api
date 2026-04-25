@@ -46,6 +46,8 @@ class CreatePaymentChargeUseCase(BaseUseCase[PaymentChargeRequest, PaymentPublic
         self,
         payload: PaymentChargeRequest,
         source_ip: str | None = None,
+        *,
+        dispatch_reservation_confirmation: bool = True,
     ) -> PaymentPublicResponse:
         now = datetime.now(timezone.utc)
         canonical_payload = self._canonical_payload(payload)
@@ -166,7 +168,10 @@ class CreatePaymentChargeUseCase(BaseUseCase[PaymentChargeRequest, PaymentPublic
                 created_at=now,
             )
         )
-        if stored_payment.status == PaymentStatus.confirmed:
+        if (
+            stored_payment.status == PaymentStatus.confirmed
+            and dispatch_reservation_confirmation
+        ):
             self._dispatch_reservation_confirmation_request(
                 reservation_id=stored_payment.reservation_id,
                 payment_id=stored_payment.payment_id,

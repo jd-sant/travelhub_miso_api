@@ -9,6 +9,7 @@ from adapters.services.in_process_notification_delivery_runner import (
 )
 from adapters.services.log_email_sender import LogEmailSender
 from adapters.services.payment_confirmation_client import HttpPaymentConfirmationClient
+from adapters.services.payment_event_client import HttpPaymentEventClient
 from core.config import settings
 from db.session import engine, get_session
 from domain.ports.delivery_attempt_repository import DeliveryAttemptRepository
@@ -17,7 +18,11 @@ from domain.ports.notification_audit_repository import NotificationAuditReposito
 from domain.ports.notification_delivery_runner import NotificationDeliveryRunner
 from domain.ports.notification_repository import NotificationRepository
 from domain.ports.payment_confirmation_source import PaymentConfirmationSource
+from domain.ports.payment_event_source import PaymentEventSource
 from domain.ports.traveler_profile_source import TravelerProfileSource
+from domain.use_cases.create_reservation_event_notification import (
+    CreateReservationEventNotificationUseCase,
+)
 from domain.use_cases.create_payment_confirmation import CreatePaymentConfirmationUseCase
 from domain.use_cases.create_reservation_update import CreateReservationUpdateUseCase
 from domain.use_cases.get_notification import GetNotificationUseCase
@@ -67,6 +72,10 @@ def get_traveler_profile_source() -> TravelerProfileSource:
     return HttpTravelerProfileClient()
 
 
+def get_payment_event_source() -> PaymentEventSource:
+    return HttpPaymentEventClient()
+
+
 def get_create_payment_confirmation_use_case(
     notification_repository: NotificationRepository = Depends(get_notification_repository),
     audit_repository: NotificationAuditRepository = Depends(get_notification_audit_repository),
@@ -90,6 +99,20 @@ def get_create_reservation_update_use_case(
         notification_repository,
         audit_repository,
         traveler_profile_source,
+    )
+
+
+def get_create_reservation_event_notification_use_case(
+    notification_repository: NotificationRepository = Depends(get_notification_repository),
+    audit_repository: NotificationAuditRepository = Depends(get_notification_audit_repository),
+    traveler_profile_source: TravelerProfileSource = Depends(get_traveler_profile_source),
+    payment_event_source: PaymentEventSource = Depends(get_payment_event_source),
+) -> CreateReservationEventNotificationUseCase:
+    return CreateReservationEventNotificationUseCase(
+        notification_repository,
+        audit_repository,
+        traveler_profile_source,
+        payment_event_source,
     )
 
 
