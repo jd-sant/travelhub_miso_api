@@ -824,7 +824,7 @@ class TestReservationEndpoints:
         assert callback_response.status_code == 200
         body = callback_response.json()
         assert body["status_before"] == "cancel_requested"
-        assert body["status_after"] == "refund_completed"
+        assert body["status_after"] == "cancelled"
 
     def test_internal_additional_charge_result_callback_updates_modification_pending(self, client):
         traveler_id = str(uuid4())

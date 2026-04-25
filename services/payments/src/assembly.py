@@ -1,6 +1,7 @@
 from fastapi import Depends
 from sqlmodel import Session
 
+from adapters.gateways.refund_gateway import DefaultRefundGateway
 from adapters.gateways.stripe_gateway import FakeStripePaymentGateway, UnsupportedDirectChargeGateway
 from adapters.gateways.stripe_checkout_gateway import StripeSdkCheckoutGateway
 from adapters.repositories.payment_checkout_repository import SQLModelPaymentCheckoutRepository
@@ -24,6 +25,7 @@ from domain.ports.payment_gateway import PaymentGateway
 from domain.ports.notification_dispatcher import NotificationDispatcher, ReservationUpdater
 from domain.ports.payment_refund_repository import PaymentRefundRepository
 from domain.ports.payment_repository import PaymentRepository
+from domain.ports.refund_gateway import RefundGateway
 from domain.ports.stripe_checkout_gateway import StripeCheckoutGateway
 from domain.use_cases.create_payment_checkout_session import CreatePaymentCheckoutSessionUseCase
 from domain.use_cases.create_payment_charge import CreatePaymentChargeUseCase
@@ -90,6 +92,10 @@ def get_reservation_updater() -> ReservationUpdater:
     if settings.reservations_service_url:
         return HttpReservationUpdater()
     return NoOpReservationUpdater()
+
+
+def get_refund_gateway() -> RefundGateway:
+    return DefaultRefundGateway()
 
 
 def get_create_payment_charge_use_case(
@@ -231,10 +237,12 @@ def get_retry_payment_refunds_use_case(
     payment_repository: PaymentRepository = Depends(get_payment_repository),
     audit_repository: PaymentAuditRepository = Depends(get_payment_audit_repository),
     reservation_updater: ReservationUpdater = Depends(get_reservation_updater),
+    refund_gateway: RefundGateway = Depends(get_refund_gateway),
 ) -> RetryPaymentRefundsUseCase:
     return RetryPaymentRefundsUseCase(
         refund_repository,
         payment_repository,
         audit_repository,
         reservation_updater,
+        refund_gateway,
     )

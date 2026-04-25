@@ -1,6 +1,8 @@
 from decimal import ROUND_HALF_UP, Decimal
 from uuid import UUID
 
+from sqlalchemy.exc import IntegrityError
+
 from domain.ports.reservation_command_log_repository import (
     ReservationCommandLogRepository,
 )
@@ -187,10 +189,20 @@ class ConfirmReservationModificationUseCase:
             additional_charge_amount=additional_charge_amount,
             refund_amount=refund_amount,
         )
-        self.command_log_repository.add(
-            reservation_id,
-            ReservationCommandType.modification_confirm,
-            payload.idempotency_key,
-            response.model_dump(mode="json"),
-        )
+        try:
+            self.command_log_repository.add(
+                reservation_id,
+                ReservationCommandType.modification_confirm,
+                payload.idempotency_key,
+                response.model_dump(mode="json"),
+            )
+        except IntegrityError:
+            cached = self.command_log_repository.get_by_idempotency(
+                reservation_id,
+                ReservationCommandType.modification_confirm,
+                payload.idempotency_key,
+            )
+            if cached:
+                return ReservationConfirmResponse.model_validate(cached)
+            raise
         return response

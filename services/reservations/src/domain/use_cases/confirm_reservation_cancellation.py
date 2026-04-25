@@ -2,6 +2,8 @@ from datetime import UTC, datetime
 from decimal import ROUND_HALF_UP, Decimal
 from uuid import UUID
 
+from sqlalchemy.exc import IntegrityError
+
 from domain.ports.reservation_command_log_repository import (
     ReservationCommandLogRepository,
 )
@@ -78,20 +80,6 @@ class ConfirmReservationCancellationUseCase:
         refund_amount = preview.refund_amount
         refund_dispatch_status = "not_required"
 
-        if refund_amount > Decimal("0.00"):
-            try:
-                self.payment_service.request_refund(
-                    reservation_id=reservation_id,
-                    amount_in_cents=self._to_cents(refund_amount),
-                    reason=payload.reason or "reservation_cancellation_refund",
-                    idempotency_key=f"{payload.idempotency_key}:refund",
-                    source_ip=source_ip,
-                )
-                refund_dispatch_status = "requested"
-            except PaymentServiceUnavailableError:
-                # Keep reservation in cancel_requested for retry/callback orchestration.
-                refund_dispatch_status = "pending_retry"
-
         status_after = "cancel_requested" if refund_amount > Decimal("0.00") else "cancelled"
         cancelled_at = datetime.now(UTC).replace(tzinfo=None)
 
@@ -105,6 +93,20 @@ class ConfirmReservationCancellationUseCase:
         )
         if not updated:
             raise ReservationNotFoundError("Reservation not found")
+
+        if refund_amount > Decimal("0.00"):
+            try:
+                self.payment_service.request_refund(
+                    reservation_id=reservation_id,
+                    amount_in_cents=self._to_cents(refund_amount),
+                    reason=payload.reason or "reservation_cancellation_refund",
+                    idempotency_key=f"{payload.idempotency_key}:refund",
+                    source_ip=source_ip,
+                )
+                refund_dispatch_status = "requested"
+            except PaymentServiceUnavailableError:
+                # Keep reservation in cancel_requested for retry/callback orchestration.
+                refund_dispatch_status = "pending_retry"
 
         after_payload = updated.model_dump(mode="json")
         after_payload["refund_amount"] = str(refund_amount)
@@ -132,10 +134,20 @@ class ConfirmReservationCancellationUseCase:
             additional_charge_amount=Decimal("0.00"),
             refund_amount=refund_amount,
         )
-        self.command_log_repository.add(
-            reservation_id,
-            ReservationCommandType.cancellation_confirm,
-            payload.idempotency_key,
-            response.model_dump(mode="json"),
-        )
+        try:
+            self.command_log_repository.add(
+                reservation_id,
+                ReservationCommandType.cancellation_confirm,
+                payload.idempotency_key,
+                response.model_dump(mode="json"),
+            )
+        except IntegrityError:
+            cached = self.command_log_repository.get_by_idempotency(
+                reservation_id,
+                ReservationCommandType.cancellation_confirm,
+                payload.idempotency_key,
+            )
+            if cached:
+                return ReservationConfirmResponse.model_validate(cached)
+            raise
         return response
