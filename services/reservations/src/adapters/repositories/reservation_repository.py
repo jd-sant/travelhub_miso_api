@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Optional
 from uuid import UUID, uuid4
 
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
@@ -11,6 +12,19 @@ from core.config import settings
 from domain.ports.reservation_repository import ReservationRepository
 from domain.schemas.reservation import ReservationCreateRequest, ReservationResponse
 from errors import ReservationConflictError, RoomNotAvailableError
+
+
+_SORTABLE_COLUMNS = {
+    "check_in_date": Reservation.check_in_date,
+    "created_at": Reservation.created_at,
+    "total_price": Reservation.total_price,
+}
+
+
+def _strip_tz(value):
+    if value is None:
+        return None
+    return value.replace(tzinfo=None) if value.tzinfo else value
 
 
 def _hold_expires_at(created_at: datetime) -> datetime:
@@ -112,3 +126,100 @@ class SQLModelReservationRepository(ReservationRepository):
         self.session.commit()
         self.session.refresh(reservation)
         return _to_response(reservation)
+
+    def list_by_properties(
+        self,
+        property_ids: list[UUID],
+        *,
+        statuses: list[str] | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        guest_ids: list[UUID] | None = None,
+        sort_by: str = "check_in_date",
+        sort_dir: str = "desc",
+        page: int = 1,
+        page_size: int = 10,
+    ) -> tuple[list[ReservationResponse], int]:
+        if not property_ids:
+            return [], 0
+
+        column = _SORTABLE_COLUMNS.get(sort_by, Reservation.check_in_date)
+        order_clause = column.asc() if sort_dir == "asc" else column.desc()
+
+        base = select(Reservation).where(Reservation.id_property.in_(property_ids))
+        if statuses:
+            base = base.where(Reservation.status.in_(statuses))
+        if start_date is not None:
+            base = base.where(Reservation.check_out_date >= start_date)
+        if end_date is not None:
+            base = base.where(Reservation.check_in_date <= end_date)
+        if guest_ids:
+            base = base.where(Reservation.id_traveler.in_(guest_ids))
+
+        total = len(self.session.exec(base).all())
+        offset = max(page - 1, 0) * page_size
+        paged = base.order_by(order_clause).offset(offset).limit(page_size)
+        items = [_to_response(m) for m in self.session.exec(paged).all()]
+        return items, total
+
+    def list_confirmed_ids_by_properties(
+        self,
+        property_ids: list[UUID],
+        *,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ) -> list[UUID]:
+        if not property_ids:
+            return []
+        statement = select(Reservation.id).where(
+            Reservation.id_property.in_(property_ids),
+            Reservation.status == "confirmed",
+        )
+        if start_date is not None:
+            statement = statement.where(Reservation.check_out_date >= start_date)
+        if end_date is not None:
+            statement = statement.where(Reservation.check_in_date <= end_date)
+        return list(self.session.exec(statement).all())
+
+    def operational_metrics_for_properties(
+        self,
+        property_ids: list[UUID],
+        *,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ) -> dict:
+        if not property_ids:
+            return {"active_reservations": 0, "total_nights": 0}
+
+        now_naive = datetime.now(UTC).replace(tzinfo=None)
+        active_stmt = select(func.count()).select_from(Reservation).where(
+            Reservation.id_property.in_(property_ids),
+            Reservation.status == "confirmed",
+            Reservation.check_out_date >= now_naive,
+        )
+        active = self.session.exec(active_stmt).one()
+        if isinstance(active, tuple):
+            active = active[0]
+
+        start_naive = _strip_tz(start_date)
+        end_naive = _strip_tz(end_date)
+        nights_stmt = select(Reservation.check_in_date, Reservation.check_out_date).where(
+            Reservation.id_property.in_(property_ids),
+            Reservation.status == "confirmed",
+        )
+        if start_naive is not None:
+            nights_stmt = nights_stmt.where(Reservation.check_out_date >= start_naive)
+        if end_naive is not None:
+            nights_stmt = nights_stmt.where(Reservation.check_in_date <= end_naive)
+
+        total_nights = 0
+        for check_in, check_out in self.session.exec(nights_stmt).all():
+            check_in = _strip_tz(check_in)
+            check_out = _strip_tz(check_out)
+            window_start = max(check_in, start_naive) if start_naive else check_in
+            window_end = min(check_out, end_naive) if end_naive else check_out
+            delta = (window_end - window_start).days
+            if delta > 0:
+                total_nights += delta
+
+        return {"active_reservations": int(active or 0), "total_nights": total_nights}

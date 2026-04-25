@@ -1,11 +1,12 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
-from sqlmodel import Session
 
-from adapters.repositories.reservation_repository import SQLModelReservationRepository
+from assembly import (
+    get_check_reservation_status_use_case,
+    get_update_reservation_status_use_case,
+)
 from core.config import settings
-from db.session import get_session
 from domain.schemas.reservation import (
     ReservationCheckStatusResponse,
     ReservationStatusUpdateRequest,
@@ -15,22 +16,6 @@ from domain.use_cases.update_reservation import UpdateReservationStatusUseCase
 from errors import InvalidReservationStatusError, ReservationNotFoundError
 
 router = APIRouter(prefix="/internal", tags=["internal"])
-
-
-def get_reservation_repository(session: Session = Depends(get_session)):
-    return SQLModelReservationRepository(session)
-
-
-def get_update_reservation_status_use_case(
-    repository=Depends(get_reservation_repository),
-):
-    return UpdateReservationStatusUseCase(repository)
-
-
-def get_check_reservation_status_use_case(
-    updater=Depends(get_update_reservation_status_use_case),
-):
-    return CheckReservationStatusUseCase(updater)
 
 
 def _verify_api_key(x_internal_api_key: str = Header(default=None)) -> None:
