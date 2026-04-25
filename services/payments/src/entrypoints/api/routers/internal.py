@@ -1,14 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from assembly import (
+    get_aggregate_payments_use_case,
     get_process_queued_payments_use_case,
     get_retry_reservation_confirmations_use_case,
 )
 from core.config import settings
 from domain.schemas.payment import (
+    PaymentAggregateRequest,
+    PaymentAggregateResponse,
     PaymentProcessingRetryResponse,
     ReservationConfirmationRetryResponse,
 )
+from domain.use_cases.aggregate_payments import AggregatePaymentsUseCase
 from domain.use_cases.process_queued_payments import ProcessQueuedPaymentsUseCase
 from domain.use_cases.retry_reservation_confirmations import RetryReservationConfirmationsUseCase
 
@@ -58,3 +62,22 @@ def retry_payment_processing(
     ),
 ) -> PaymentProcessingRetryResponse:
     return use_case.execute(source_ip=_resolve_source_ip(request))
+
+
+@router.post(
+    "/payments/aggregate",
+    response_model=PaymentAggregateResponse,
+    status_code=status.HTTP_200_OK,
+)
+def aggregate_payments(
+    payload: PaymentAggregateRequest,
+    _: None = Depends(_verify_api_key),
+    use_case: AggregatePaymentsUseCase = Depends(get_aggregate_payments_use_case),
+) -> PaymentAggregateResponse:
+    return use_case.execute(
+        payload.reservation_ids,
+        status=payload.status,
+        start_date=payload.start_date,
+        end_date=payload.end_date,
+        granularity=payload.granularity,
+    )

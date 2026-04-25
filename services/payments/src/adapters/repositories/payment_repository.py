@@ -12,6 +12,8 @@ from adapters.models.payment_reservation_confirmation_outbox import (
 )
 from domain.ports.payment_repository import PaymentRepository
 from domain.schemas.payment import (
+    PaymentAggregateBucket,
+    PaymentAggregateResponse,
     PaymentChargeResponse,
     PaymentEventResponse,
     PaymentProcessingOutboxRecord,
@@ -439,3 +441,77 @@ class SQLModelPaymentRepository(PaymentRepository):
             .where(PaymentProcessingOutbox.next_retry_at <= now)
         ).all()
         return len(models)
+
+    def aggregate_by_reservations(
+        self,
+        reservation_ids: list[UUID],
+        *,
+        status: PaymentStatus = PaymentStatus.confirmed,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        granularity: str | None = None,
+    ) -> PaymentAggregateResponse:
+        if not reservation_ids:
+            return PaymentAggregateResponse(
+                total_amount_cents=0, currency=None, count=0, buckets=[]
+            )
+
+        statement = select(Payment).where(
+            Payment.reservation_id.in_(reservation_ids),
+            Payment.status == status.value,
+        )
+        if start_date is not None:
+            statement = statement.where(Payment.created_at >= start_date)
+        if end_date is not None:
+            statement = statement.where(Payment.created_at <= end_date)
+
+        rows = list(self.session.exec(statement).all())
+        if not rows:
+            return PaymentAggregateResponse(
+                total_amount_cents=0, currency=None, count=0, buckets=[]
+            )
+
+        total_amount = sum(r.amount_in_cents for r in rows)
+        currencies = {r.currency for r in rows if r.currency}
+        currency = next(iter(currencies)) if len(currencies) == 1 else None
+
+        buckets: list[PaymentAggregateBucket] = []
+        if granularity:
+            grouped: dict[datetime, dict[str, int]] = {}
+            for row in rows:
+                key = _truncate(row.created_at, granularity)
+                entry = grouped.setdefault(key, {"amount_cents": 0, "count": 0})
+                entry["amount_cents"] += row.amount_in_cents
+                entry["count"] += 1
+            buckets = [
+                PaymentAggregateBucket(
+                    bucket=key,
+                    amount_cents=val["amount_cents"],
+                    count=val["count"],
+                )
+                for key, val in sorted(grouped.items())
+            ]
+
+        return PaymentAggregateResponse(
+            total_amount_cents=total_amount,
+            currency=currency,
+            count=len(rows),
+            buckets=buckets,
+        )
+
+
+def _truncate(moment: datetime, granularity: str) -> datetime:
+    if granularity == "day":
+        return moment.replace(hour=0, minute=0, second=0, microsecond=0)
+    if granularity == "week":
+        start_of_day = moment.replace(hour=0, minute=0, second=0, microsecond=0)
+        return start_of_day - _td(days=start_of_day.weekday())
+    if granularity == "month":
+        return moment.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    return moment
+
+
+def _td(*, days: int):
+    from datetime import timedelta
+
+    return timedelta(days=days)

@@ -27,6 +27,7 @@ from domain.ports.notification_dispatcher import NotificationDispatcher, Reserva
 from domain.ports.payment_processing_runner import PaymentProcessingRunner
 from domain.ports.payment_repository import PaymentRepository
 from domain.ports.stripe_checkout_gateway import StripeCheckoutGateway
+from domain.use_cases.aggregate_payments import AggregatePaymentsUseCase
 from domain.use_cases.create_payment_checkout_session import CreatePaymentCheckoutSessionUseCase
 from domain.use_cases.create_payment_charge import CreatePaymentChargeUseCase
 from domain.use_cases.finalize_stripe_payment import FinalizeStripePaymentUseCase
@@ -102,6 +103,12 @@ def get_get_payment_use_case(
     repository: PaymentRepository = Depends(get_payment_repository),
 ) -> GetPaymentUseCase:
     return GetPaymentUseCase(repository)
+
+
+def get_aggregate_payments_use_case(
+    repository: PaymentRepository = Depends(get_payment_repository),
+) -> AggregatePaymentsUseCase:
+    return AggregatePaymentsUseCase(repository)
 
 
 def get_get_payment_confirmation_summary_use_case(
