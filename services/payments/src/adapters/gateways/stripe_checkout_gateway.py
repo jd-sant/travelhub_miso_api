@@ -55,6 +55,22 @@ class StripeSdkCheckoutGateway(StripeCheckoutGateway):
         )
         return dict(event)
 
+    def create_refund(
+        self,
+        *,
+        payment_intent_id: str,
+        amount_in_cents: int,
+        reason: str,
+        metadata: dict[str, str],
+    ) -> dict:
+        refund = self._stripe.Refund.create(
+            payment_intent=payment_intent_id,
+            amount=amount_in_cents,
+            reason="requested_by_customer",
+            metadata={**metadata, "cancellation_reason": reason},
+        )
+        return dict(refund)
+
     def _extract_card_error_payload(self, exc) -> dict[str, str | None]:
         payload: dict[str, str | None] = {
             "code": None,

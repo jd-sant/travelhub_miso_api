@@ -99,6 +99,7 @@ services:
       USERS_SERVICE_URL: http://users:8000
       PROPERTIES_SERVICE_URL: http://properties:8000
       PAYMENTS_SERVICE_URL: http://payments:8000
+      NOTIFICATIONS_SERVICE_URL: http://notifications:8000
     ports:
       - "8002:8000"
     depends_on:

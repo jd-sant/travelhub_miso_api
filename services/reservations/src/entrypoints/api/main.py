@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from db.session import create_db_and_tables
 from core.config import settings
 from entrypoints.api.routers.internal import router as internal_router
+from entrypoints.api.routers.hotel_reservations import router as hotel_router
 from entrypoints.api.routers.reservations import router
 
 @asynccontextmanager
@@ -26,6 +27,7 @@ app.add_middleware(
 )
 
 app.include_router(router, prefix="/api/v1/reservations", tags=["reservations"])
+app.include_router(hotel_router, prefix="/api/v1", tags=["hotel-reservations"])
 app.include_router(internal_router, prefix="/api/v1", tags=["internal"])
 
 

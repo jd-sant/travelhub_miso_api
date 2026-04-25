@@ -20,3 +20,12 @@ class NotificationRepository(ABC):
     @abstractmethod
     def get_by_payment_id(self, payment_id: UUID) -> NotificationRecord | None:
         raise NotImplementedError
+
+    @abstractmethod
+    def get_by_reservation_and_template(
+        self,
+        *,
+        reservation_id: UUID,
+        template_code: str,
+    ) -> NotificationRecord | None:
+        raise NotImplementedError

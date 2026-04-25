@@ -4,6 +4,25 @@ from functools import lru_cache
 
 class Settings:
     @property
+    def environment(self) -> str:
+        return os.getenv("ENV", os.getenv("APP_ENV", "development")).lower()
+
+    @property
+    def jwt_secret_key(self) -> str:
+        value = os.getenv("JWT_SECRET_KEY")
+        if value:
+            return value
+        if self.environment not in ("development", "dev", "test", "local"):
+            raise RuntimeError(
+                "JWT_SECRET_KEY debe estar configurado en entornos de producción."
+            )
+        return "travelhub-jwt-secret-change-in-prod"
+
+    @property
+    def jwt_algorithm(self) -> str:
+        return os.getenv("JWT_ALGORITHM", "HS256")
+
+    @property
     def allowed_cors_origins(self) -> list[str]:
         raw = os.getenv("ALLOWED_CORS_ORIGIN", "http://localhost:3000,http://127.0.0.1:3000")
         return [o.strip() for o in raw.split(",") if o.strip()]
@@ -66,8 +85,7 @@ class Settings:
         if url:
             return url
 
-        env = os.getenv("ENV", os.getenv("APP_ENV", "development")).lower()
-        if env in ("development", "dev", "test", "local"):
+        if self.environment in ("development", "dev", "test", "local"):
             return os.getenv("SQLITE_DATABASE_URL", "sqlite:///./reservations.db")
 
         return (
@@ -80,47 +98,33 @@ class Settings:
         return os.getenv("DB_ECHO", "False").lower() == "true"
 
     @property
-    def jwt_secret_key(self) -> str:
-        value = os.getenv("JWT_SECRET_KEY")
-        if value:
-            return value
-        env = os.getenv("ENV", os.getenv("APP_ENV", "development")).lower()
-        if env not in ("development", "dev", "test"):
-            raise RuntimeError(
-                "JWT_SECRET_KEY debe estar configurado en entornos de producción."
-            )
-        return "dev-jwt-secret-change-me"
-
-    @property
-    def jwt_algorithm(self) -> str:
-        return os.getenv("JWT_ALGORITHM", "HS256")
-
-    @property
     def properties_service_url(self) -> str:
-        return os.getenv("PROPERTIES_SERVICE_URL", "http://localhost:8005")
-
-    @property
-    def payments_service_url(self) -> str:
-        return os.getenv("PAYMENTS_SERVICE_URL", "http://localhost:8003")
+        return os.getenv("PROPERTIES_SERVICE_URL", "http://localhost:8005").rstrip("/")
 
     @property
     def users_service_url(self) -> str:
-        return os.getenv("USERS_SERVICE_URL", "http://localhost:8000")
+        return os.getenv("USERS_SERVICE_URL", "http://localhost:8000").rstrip("/")
 
     @property
     def internal_api_key(self) -> str:
         value = os.getenv("INTERNAL_API_KEY")
         if value:
             return value
-        env = os.getenv("ENV", os.getenv("APP_ENV", "development")).lower()
-        if env not in ("development", "dev", "test"):
+        if self.environment not in ("development", "dev", "test"):
             raise RuntimeError(
                 "INTERNAL_API_KEY debe estar configurado en entornos de producción."
             )
         return "dev-internal-key-change-me"
 
+    @property
+    def payments_service_url(self) -> str:
+        return os.getenv("PAYMENTS_SERVICE_URL", "http://payments:8000").rstrip("/")
+
+    @property
+    def notifications_service_url(self) -> str:
+        return os.getenv("NOTIFICATIONS_SERVICE_URL", "http://notifications:8000").rstrip("/")
+
     def validate_scheduler_config(self) -> None:
-        """Validate scheduler configuration if enabled. Raises RuntimeError if validation fails."""
         if not self.reservation_scheduler_enabled:
             return
 

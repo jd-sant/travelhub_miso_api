@@ -27,6 +27,12 @@ class PaymentsByReservationsResponse(BaseModel):
     available_currencies: list[str] = Field(default_factory=list)
 
 
+class RefundStatus(str, Enum):
+    pending = "pending"
+    succeeded = "succeeded"
+    failed = "failed"
+
+
 class ReservationConfirmationOutboxStatus(str, Enum):
     pending = "pending"
     succeeded = "succeeded"
@@ -154,3 +160,22 @@ class ReservationConfirmationRetryResponse(BaseModel):
     succeeded_count: int
     failed_count: int
     pending_count: int
+
+
+class ReservationRefundRequest(BaseModel):
+    reservation_id: UUID
+    reason: str = Field(min_length=3, max_length=255)
+    source_ip: str | None = Field(default=None, max_length=64)
+
+
+class ReservationRefundResponse(BaseModel):
+    refund_id: UUID
+    payment_id: UUID
+    reservation_id: UUID
+    amount_in_cents: int
+    currency: str
+    status: RefundStatus
+    gateway_refund_id: str | None = None
+    reason: str = Field(min_length=3, max_length=255)
+    created_at: datetime
+    updated_at: datetime

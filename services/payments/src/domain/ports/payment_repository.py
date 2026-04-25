@@ -8,6 +8,7 @@ from domain.schemas.payment import (
     PaymentProcessingOutboxRecord,
     PaymentStatus,
     ReservationConfirmationOutboxRecord,
+    ReservationRefundResponse,
 )
 
 
@@ -167,4 +168,25 @@ class PaymentRepository(ABC):
 
     @abstractmethod
     def count_payment_processing_outbox_pending(self, *, now: datetime) -> int:
+        pass
+
+    @abstractmethod
+    def find_latest_confirmed_by_reservation(
+        self,
+        reservation_id: UUID,
+    ) -> PaymentChargeResponse | None:
+        pass
+
+    @abstractmethod
+    def get_refund_by_reservation(
+        self,
+        reservation_id: UUID,
+    ) -> ReservationRefundResponse | None:
+        pass
+
+    @abstractmethod
+    def save_refund(
+        self,
+        refund: ReservationRefundResponse,
+    ) -> ReservationRefundResponse:
         pass

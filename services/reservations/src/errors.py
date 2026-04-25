@@ -24,3 +24,11 @@ class InvalidReservationStatusError(Exception):
 
 class ServiceUnavailableError(Exception):
     pass
+
+
+class ReservationStateConflictError(Exception):
+    pass
+
+
+class ReservationAuthorizationError(Exception):
+    pass

@@ -7,10 +7,16 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
+from adapters.models.reservation_change import ReservationChange
 from adapters.models.reservation import Reservation
 from core.config import settings
 from domain.ports.reservation_repository import ReservationRepository
-from domain.schemas.reservation import ReservationCreateRequest, ReservationResponse
+from domain.schemas.reservation import (
+    HotelReservationListItem,
+    ReservationChangeRecord,
+    ReservationCreateRequest,
+    ReservationResponse,
+)
 from errors import ReservationConflictError, RoomNotAvailableError
 
 
@@ -33,6 +39,24 @@ def _hold_expires_at(created_at: datetime) -> datetime:
 
 def _to_response(model: Reservation) -> ReservationResponse:
     return ReservationResponse(
+        id=model.id,
+        id_traveler=model.id_traveler,
+        id_property=model.id_property,
+        id_room=model.id_room,
+        check_in_date=model.check_in_date,
+        check_out_date=model.check_out_date,
+        number_of_guests=model.number_of_guests,
+        total_price=model.total_price,
+        currency=model.currency,
+        status=model.status,
+        hold_expires_at=_hold_expires_at(model.created_at),
+        created_at=model.created_at,
+        updated_at=model.updated_at,
+    )
+
+
+def _to_hotel_item(model: Reservation) -> HotelReservationListItem:
+    return HotelReservationListItem(
         id=model.id,
         id_traveler=model.id_traveler,
         id_property=model.id_property,
@@ -100,6 +124,20 @@ class SQLModelReservationRepository(ReservationRepository):
         ).all()
         return [_to_response(m) for m in models]
 
+    def list_by_property(
+        self,
+        id_property: UUID,
+        *,
+        status: str | None = None,
+    ) -> list[HotelReservationListItem]:
+        statement = select(Reservation).where(Reservation.id_property == id_property)
+        if status is not None:
+            statement = statement.where(Reservation.status == status)
+        models = self.session.exec(
+            statement.order_by(Reservation.created_at.desc())
+        ).all()
+        return [_to_hotel_item(model) for model in models]
+
     def check_room_availability(
         self, id_room: UUID, check_in: datetime, check_out: datetime
     ) -> bool:
@@ -146,21 +184,28 @@ class SQLModelReservationRepository(ReservationRepository):
         column = _SORTABLE_COLUMNS.get(sort_by, Reservation.check_in_date)
         order_clause = column.asc() if sort_dir == "asc" else column.desc()
 
+        start_naive = _strip_tz(start_date)
+        end_naive = _strip_tz(end_date)
+
         base = select(Reservation).where(Reservation.id_property.in_(property_ids))
         if statuses:
             base = base.where(Reservation.status.in_(statuses))
-        if start_date is not None:
-            base = base.where(Reservation.check_out_date >= start_date)
-        if end_date is not None:
-            base = base.where(Reservation.check_in_date <= end_date)
+        if start_naive is not None:
+            base = base.where(Reservation.check_out_date >= start_naive)
+        if end_naive is not None:
+            base = base.where(Reservation.check_in_date <= end_naive)
         if guest_ids:
             base = base.where(Reservation.id_traveler.in_(guest_ids))
 
-        total = len(self.session.exec(base).all())
+        count_stmt = select(func.count()).select_from(base.subquery())
+        total = self.session.exec(count_stmt).one()
+        if isinstance(total, tuple):
+            total = total[0]
+
         offset = max(page - 1, 0) * page_size
         paged = base.order_by(order_clause).offset(offset).limit(page_size)
         items = [_to_response(m) for m in self.session.exec(paged).all()]
-        return items, total
+        return items, int(total or 0)
 
     def list_confirmed_ids_by_properties(
         self,
@@ -171,14 +216,16 @@ class SQLModelReservationRepository(ReservationRepository):
     ) -> list[UUID]:
         if not property_ids:
             return []
+        start_naive = _strip_tz(start_date)
+        end_naive = _strip_tz(end_date)
         statement = select(Reservation.id).where(
             Reservation.id_property.in_(property_ids),
             Reservation.status == "confirmed",
         )
-        if start_date is not None:
-            statement = statement.where(Reservation.check_out_date >= start_date)
-        if end_date is not None:
-            statement = statement.where(Reservation.check_in_date <= end_date)
+        if start_naive is not None:
+            statement = statement.where(Reservation.check_out_date >= start_naive)
+        if end_naive is not None:
+            statement = statement.where(Reservation.check_in_date <= end_naive)
         return list(self.session.exec(statement).all())
 
     def list_confirmed_with_check_in_by_properties(
@@ -190,14 +237,16 @@ class SQLModelReservationRepository(ReservationRepository):
     ) -> list[tuple[UUID, datetime]]:
         if not property_ids:
             return []
+        start_naive = _strip_tz(start_date)
+        end_naive = _strip_tz(end_date)
         statement = select(Reservation.id, Reservation.check_in_date).where(
             Reservation.id_property.in_(property_ids),
             Reservation.status == "confirmed",
         )
-        if start_date is not None:
-            statement = statement.where(Reservation.check_out_date >= start_date)
-        if end_date is not None:
-            statement = statement.where(Reservation.check_in_date <= end_date)
+        if start_naive is not None:
+            statement = statement.where(Reservation.check_out_date >= start_naive)
+        if end_naive is not None:
+            statement = statement.where(Reservation.check_in_date <= end_naive)
         return [(rid, ci) for rid, ci in self.session.exec(statement).all()]
 
     def operational_metrics_for_properties(
@@ -242,3 +291,30 @@ class SQLModelReservationRepository(ReservationRepository):
                 total_nights += delta
 
         return {"active_reservations": int(active or 0), "total_nights": total_nights}
+
+    def add_change(self, payload: ReservationChangeRecord) -> ReservationChangeRecord:
+        model = ReservationChange(
+            id=payload.id,
+            reservation_id=payload.reservation_id,
+            action=payload.action,
+            previous_status=payload.previous_status,
+            new_status=payload.new_status,
+            reason=payload.reason,
+            actor_user_id=payload.actor_user_id,
+            source_ip=payload.source_ip,
+            created_at=payload.created_at,
+        )
+        self.session.add(model)
+        self.session.commit()
+        self.session.refresh(model)
+        return ReservationChangeRecord(
+            id=model.id,
+            reservation_id=model.reservation_id,
+            action=model.action,
+            previous_status=model.previous_status,
+            new_status=model.new_status,
+            reason=model.reason,
+            actor_user_id=model.actor_user_id,
+            source_ip=model.source_ip,
+            created_at=model.created_at,
+        )

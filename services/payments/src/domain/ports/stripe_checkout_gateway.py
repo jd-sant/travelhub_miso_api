@@ -17,3 +17,14 @@ class StripeCheckoutGateway(ABC):
     @abstractmethod
     def construct_event(self, *, payload: bytes, signature: str) -> dict:
         pass
+
+    @abstractmethod
+    def create_refund(
+        self,
+        *,
+        payment_intent_id: str,
+        amount_in_cents: int,
+        reason: str,
+        metadata: dict[str, str],
+    ) -> dict:
+        pass
