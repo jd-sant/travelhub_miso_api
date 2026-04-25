@@ -80,6 +80,34 @@ class Settings:
         return os.getenv("DB_ECHO", "False").lower() == "true"
 
     @property
+    def jwt_secret_key(self) -> str:
+        value = os.getenv("JWT_SECRET_KEY")
+        if value:
+            return value
+        env = os.getenv("ENV", os.getenv("APP_ENV", "development")).lower()
+        if env not in ("development", "dev", "test"):
+            raise RuntimeError(
+                "JWT_SECRET_KEY debe estar configurado en entornos de producción."
+            )
+        return "dev-jwt-secret-change-me"
+
+    @property
+    def jwt_algorithm(self) -> str:
+        return os.getenv("JWT_ALGORITHM", "HS256")
+
+    @property
+    def properties_service_url(self) -> str:
+        return os.getenv("PROPERTIES_SERVICE_URL", "http://localhost:8005")
+
+    @property
+    def payments_service_url(self) -> str:
+        return os.getenv("PAYMENTS_SERVICE_URL", "http://localhost:8003")
+
+    @property
+    def users_service_url(self) -> str:
+        return os.getenv("USERS_SERVICE_URL", "http://localhost:8000")
+
+    @property
     def internal_api_key(self) -> str:
         value = os.getenv("INTERNAL_API_KEY")
         if value:

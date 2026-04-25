@@ -20,3 +20,7 @@ class ReservationSchedulingError(Exception):
 
 class InvalidReservationStatusError(Exception):
     pass
+
+
+class ServiceUnavailableError(Exception):
+    pass
