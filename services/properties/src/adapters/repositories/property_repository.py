@@ -137,7 +137,7 @@ def _to_policy_response(model: PropertyCancellationPolicy) -> PropertyCancellati
         property_id=model.property_id,
         policy_type=CancellationPolicyType(model.policy_type),
         minimum_notice_hours=model.minimum_notice_hours,
-        penalty_percentage=float(model.penalty_percentage),
+        penalty_percentage=model.penalty_percentage,
         timezone=model.timezone,
         is_active=model.is_active,
         created_at=model.created_at,

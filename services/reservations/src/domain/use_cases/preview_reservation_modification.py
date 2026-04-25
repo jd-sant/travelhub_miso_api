@@ -55,6 +55,8 @@ class PreviewReservationModificationUseCase(ReservationPreviewBaseUseCase):
             reservation.currency,
             normalized_check_in,
             normalized_check_out,
+            payload.number_of_guests,
+            reservation.id_property,
         )
         price_after = self._build_price_breakdown(price_after_total, reservation.currency)
         delta_amount = (price_after_total - reservation.total_price).quantize(

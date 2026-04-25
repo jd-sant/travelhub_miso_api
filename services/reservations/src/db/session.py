@@ -62,6 +62,8 @@ def create_db_and_tables() -> None:
 
 
 def _apply_schema_upgrades() -> None:
+    # This service uses runtime DDL for backward-compatible columns while Alembic is not adopted.
+    # Keep this list append-only and idempotent.
     with engine.connect() as conn:
         schema_name = _validated_schema_name() if _is_postgres else None
         inspector = inspect(conn)

@@ -1,3 +1,4 @@
+from decimal import Decimal
 from uuid import UUID
 
 import httpx
@@ -29,7 +30,11 @@ class HttpPropertyServiceClient(PropertyServiceClient):
             ) from exc
 
         payload = response.json()
-        return PropertyDetailResponse(id=payload["id"], max_guests=payload["max_guests"])
+        return PropertyDetailResponse(
+            id=payload["id"],
+            max_guests=payload["max_guests"],
+            price_per_night=Decimal(str(payload.get("price_per_night", 0))),
+        )
 
     def get_cancellation_policy(
         self, property_id: UUID

@@ -1,5 +1,6 @@
 from uuid import UUID
 
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from adapters.models.reservation_command_log import ReservationCommandLog
@@ -41,4 +42,8 @@ class SQLModelReservationCommandLogRepository(ReservationCommandLogRepository):
             response_payload=response_payload,
         )
         self.session.add(model)
-        self.session.commit()
+        try:
+            self.session.commit()
+        except IntegrityError:
+            self.session.rollback()
+            raise

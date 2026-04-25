@@ -1,6 +1,8 @@
 from decimal import ROUND_HALF_UP, Decimal
 from uuid import UUID
 
+from sqlalchemy.exc import IntegrityError
+
 from domain.ports.reservation_command_log_repository import (
     ReservationCommandLogRepository,
 )
@@ -88,6 +90,46 @@ class ConfirmReservationModificationUseCase:
         refund_amount = preview.estimated_refund_amount
         payment_dispatch_status = "not_required"
 
+        status_after = "modification_pending_payment" if additional_charge_amount > Decimal("0.00") else (
+            "refund_pending" if refund_amount > Decimal("0.00") else "modification_confirmed"
+        )
+
+        pending_modification = {
+            "check_in_date": preview.reservation_after_preview.check_in_date,
+            "check_out_date": preview.reservation_after_preview.check_out_date,
+            "number_of_guests": preview.reservation_after_preview.number_of_guests,
+            "total_price": preview.reservation_after_preview.total_price,
+        }
+        pending_modification_payload = {
+            "check_in_date": pending_modification["check_in_date"].isoformat(),
+            "check_out_date": pending_modification["check_out_date"].isoformat(),
+            "number_of_guests": pending_modification["number_of_guests"],
+            "total_price": str(pending_modification["total_price"]),
+        }
+
+        apply_changes_now = additional_charge_amount <= Decimal("0.00") or refund_amount > Decimal("0.00")
+
+        updated = self.reservation_repository.apply_updates(
+            reservation_id,
+            status=status_after,
+            expected_version=reservation_before.version,
+            check_in_date=(
+                pending_modification["check_in_date"] if apply_changes_now else None
+            ),
+            check_out_date=(
+                pending_modification["check_out_date"] if apply_changes_now else None
+            ),
+            number_of_guests=(
+                pending_modification["number_of_guests"] if apply_changes_now else None
+            ),
+            total_price=(
+                pending_modification["total_price"] if apply_changes_now else None
+            ),
+            last_policy_snapshot=preview.policy_applied.model_dump_json(),
+        )
+        if not updated:
+            raise ReservationNotFoundError("Reservation not found")
+
         if additional_charge_amount > Decimal("0.00"):
             try:
                 self.payment_service.request_additional_charge(
@@ -114,49 +156,6 @@ class ConfirmReservationModificationUseCase:
             except PaymentServiceUnavailableError:
                 payment_dispatch_status = "refund_pending_retry"
 
-        if additional_charge_amount > Decimal("0.00"):
-            status_after = "modification_pending_payment"
-        elif refund_amount > Decimal("0.00"):
-            status_after = "refund_pending"
-        else:
-            status_after = "modification_confirmed"
-
-        pending_modification = {
-            "check_in_date": preview.reservation_after_preview.check_in_date,
-            "check_out_date": preview.reservation_after_preview.check_out_date,
-            "number_of_guests": preview.reservation_after_preview.number_of_guests,
-            "total_price": preview.reservation_after_preview.total_price,
-        }
-        pending_modification_payload = {
-            "check_in_date": pending_modification["check_in_date"].isoformat(),
-            "check_out_date": pending_modification["check_out_date"].isoformat(),
-            "number_of_guests": pending_modification["number_of_guests"],
-            "total_price": str(pending_modification["total_price"]),
-        }
-
-        apply_changes_now = additional_charge_amount <= Decimal("0.00")
-
-        updated = self.reservation_repository.apply_updates(
-            reservation_id,
-            status=status_after,
-            expected_version=reservation_before.version,
-            check_in_date=(
-                pending_modification["check_in_date"] if apply_changes_now else None
-            ),
-            check_out_date=(
-                pending_modification["check_out_date"] if apply_changes_now else None
-            ),
-            number_of_guests=(
-                pending_modification["number_of_guests"] if apply_changes_now else None
-            ),
-            total_price=(
-                pending_modification["total_price"] if apply_changes_now else None
-            ),
-            last_policy_snapshot=preview.policy_applied.model_dump_json(),
-        )
-        if not updated:
-            raise ReservationNotFoundError("Reservation not found")
-
         self.event_repository.add(
             ReservationEventCreateRequest(
                 reservation_id=reservation_id,
@@ -171,7 +170,7 @@ class ConfirmReservationModificationUseCase:
                     "payment_dispatch_status": payment_dispatch_status,
                     "pending_modification": (
                         pending_modification_payload
-                        if additional_charge_amount > Decimal("0.00")
+                        if additional_charge_amount > Decimal("0.00") or refund_amount > Decimal("0.00")
                         else None
                     ),
                 },
@@ -187,10 +186,20 @@ class ConfirmReservationModificationUseCase:
             additional_charge_amount=additional_charge_amount,
             refund_amount=refund_amount,
         )
-        self.command_log_repository.add(
-            reservation_id,
-            ReservationCommandType.modification_confirm,
-            payload.idempotency_key,
-            response.model_dump(mode="json"),
-        )
+        try:
+            self.command_log_repository.add(
+                reservation_id,
+                ReservationCommandType.modification_confirm,
+                payload.idempotency_key,
+                response.model_dump(mode="json"),
+            )
+        except IntegrityError:
+            cached = self.command_log_repository.get_by_idempotency(
+                reservation_id,
+                ReservationCommandType.modification_confirm,
+                payload.idempotency_key,
+            )
+            if cached:
+                return ReservationConfirmResponse.model_validate(cached)
+            raise
         return response

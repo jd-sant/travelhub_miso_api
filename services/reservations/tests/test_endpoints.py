@@ -22,17 +22,19 @@ class FakePropertyServiceClient:
         self,
         *,
         max_guests: int = 12,
+        price_per_night: int = 100,
         policy_type: CancellationPolicyType = CancellationPolicyType.full_refund,
         minimum_notice_hours: int = 24,
         penalty_percentage: Decimal = Decimal("0.00"),
     ):
         self.max_guests = max_guests
+        self.price_per_night = price_per_night
         self.policy_type = policy_type
         self.minimum_notice_hours = minimum_notice_hours
         self.penalty_percentage = penalty_percentage
 
     def get_property(self, property_id):
-        return PropertyDetailResponse(id=property_id, max_guests=self.max_guests)
+        return PropertyDetailResponse(id=property_id, max_guests=self.max_guests, price_per_night=Decimal(self.price_per_night))
 
     def get_cancellation_policy(self, property_id):
         now = datetime.now(UTC)
@@ -118,7 +120,7 @@ class TestReservationEndpoints:
         assert response.status_code == 201
         data = response.json()
         assert data["status"] == "pending_payment"
-        assert data["total_price"] == "357.00"  # 3 noches * 100 * 1.19
+        assert data["total_price"] == "714.00"  # 3 noches * 2 huéspedes * 100 * 1.19
         assert data["currency"] == "COP"
         assert "id" in data
         assert "created_at" in data
@@ -491,12 +493,12 @@ class TestReservationEndpoints:
     def test_create_reservation_with_different_currencies(self, client):
         """Test creating reservations with different currencies."""
         currencies_and_expected_prices = {
-            "COP": "357.00",  # 3 noches * 100 * 1.19
-            "USD": "324.00",  # 3 noches * 100 * 1.08
-            "ARS": "363.00",  # 3 noches * 100 * 1.21
-            "CLP": "357.00",  # 3 noches * 100 * 1.19
-            "PEN": "354.00",  # 3 noches * 100 * 1.18
-            "MXN": "348.00",  # 3 noches * 100 * 1.16
+            "COP": "714.00",  # 3 noches * 2 huéspedes * 100 * 1.19
+            "USD": "648.00",  # 3 noches * 2 huéspedes * 100 * 1.08
+            "ARS": "726.00",  # 3 noches * 2 huéspedes * 100 * 1.21
+            "CLP": "714.00",  # 3 noches * 2 huéspedes * 100 * 1.19
+            "PEN": "708.00",  # 3 noches * 2 huéspedes * 100 * 1.18
+            "MXN": "696.00",  # 3 noches * 2 huéspedes * 100 * 1.16
         }
 
         check_in = (datetime.now(UTC) + timedelta(days=5)).isoformat()
@@ -562,7 +564,7 @@ class TestReservationEndpoints:
         body = response.json()
         assert body["change_allowed"] is True
         assert body["requires_additional_charge"] is True
-        assert body["delta_amount"] == "119.00"
+        assert body["delta_amount"] == "595.00"
         assert body["reservation_after_preview"]["number_of_guests"] == 3
 
     def test_preview_cancellation_returns_preview(self, client):
@@ -601,7 +603,7 @@ class TestReservationEndpoints:
         assert response.status_code == 200
         body = response.json()
         assert body["change_allowed"] is True
-        assert body["refund_amount"] == "238.00"
+        assert body["refund_amount"] == "476.00"
         assert body["penalty_amount"] == "0.00"
         assert body["refund_type"] == "full_refund"
 
@@ -824,7 +826,7 @@ class TestReservationEndpoints:
         assert callback_response.status_code == 200
         body = callback_response.json()
         assert body["status_before"] == "cancel_requested"
-        assert body["status_after"] == "refund_completed"
+        assert body["status_after"] == "cancelled"
 
     def test_internal_additional_charge_result_callback_updates_modification_pending(self, client):
         traveler_id = str(uuid4())

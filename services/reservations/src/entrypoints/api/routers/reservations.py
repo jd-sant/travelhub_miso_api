@@ -110,8 +110,9 @@ def get_reservation_scheduler() -> ReservationScheduler:
 def get_create_reservation_use_case(
     repository=Depends(get_reservation_repository),
     scheduler: ReservationScheduler = Depends(get_reservation_scheduler),
+    property_client: PropertyServiceClient = Depends(get_property_service_client),
 ):
-    return CreateReservationUseCase(repository, scheduler)
+    return CreateReservationUseCase(repository, scheduler, property_client)
 
 
 def get_preview_modification_use_case(
