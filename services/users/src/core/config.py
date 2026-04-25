@@ -59,9 +59,7 @@ class Settings:
 
     @property
     def demo_seed_enabled(self) -> bool:
-        env = os.getenv("ENV", os.getenv("APP_ENV", "development")).lower()
-        default = "true" if env in ("development", "dev", "local") else "false"
-        return os.getenv("DEMO_SEED_ENABLED", default).lower() == "true"
+        return os.getenv("DEMO_SEED_ENABLED", "false").lower() == "true"
 
     @property
     def internal_api_key(self) -> str:
