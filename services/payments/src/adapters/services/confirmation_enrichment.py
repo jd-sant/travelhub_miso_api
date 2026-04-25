@@ -15,6 +15,7 @@ from adapters.services.reservation_details_client import (
     PropertyDetails,
     PropertyDetailsClient,
     ReservationDetailsClient,
+    ReservationPriceBreakdown,
 )
 
 
@@ -25,6 +26,7 @@ class ConfirmationEnrichment:
     property_address: str | None
     check_in_date: date | None
     check_out_date: date | None
+    price_breakdown: ReservationPriceBreakdown | None = None
 
 
 class ConfirmationEnrichmentService:
@@ -49,4 +51,5 @@ class ConfirmationEnrichmentService:
             property_address=property_details.address,
             check_in_date=reservation.check_in_date,
             check_out_date=reservation.check_out_date,
+            price_breakdown=reservation.price_breakdown,
         )

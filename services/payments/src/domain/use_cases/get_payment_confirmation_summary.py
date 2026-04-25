@@ -38,15 +38,38 @@ class GetPaymentConfirmationSummaryUseCase(
         check_in = (checkout.check_in_date if checkout else None) or enrichment.check_in_date
         check_out = (checkout.check_out_date if checkout else None) or enrichment.check_out_date
 
-        breakdown = self.price_calculator.calculate(
-            total_in_cents=payment.amount_in_cents,
-            currency=payment.currency,
-            check_in=check_in,
-            check_out=check_out,
-        )
+        canonical = enrichment.price_breakdown
+        if canonical is not None:
+            breakdown = PriceBreakdown(
+                total_in_cents=canonical.total_in_cents or payment.amount_in_cents,
+                taxes_in_cents=canonical.taxes_in_cents,
+                nights=canonical.nights or None,
+                nightly_rate_in_cents=canonical.nightly_rate_in_cents or None,
+            )
+            accommodation = canonical.accommodation_in_cents
+            cleaning = canonical.cleaning_fee_in_cents
+            service = canonical.service_fee_in_cents
+        else:
+            breakdown = self.price_calculator.calculate(
+                total_in_cents=payment.amount_in_cents,
+                currency=payment.currency,
+                check_in=check_in,
+                check_out=check_out,
+            )
+            accommodation = None
+            cleaning = None
+            service = None
 
         return self._build_response(
-            payment, checkout, breakdown, enrichment, check_in, check_out
+            payment,
+            checkout,
+            breakdown,
+            enrichment,
+            check_in,
+            check_out,
+            accommodation_in_cents=accommodation,
+            cleaning_fee_in_cents=cleaning,
+            service_fee_in_cents=service,
         )
 
     @staticmethod
@@ -57,6 +80,10 @@ class GetPaymentConfirmationSummaryUseCase(
         enrichment,
         check_in,
         check_out,
+        *,
+        accommodation_in_cents: int | None = None,
+        cleaning_fee_in_cents: int | None = None,
+        service_fee_in_cents: int | None = None,
     ) -> PaymentConfirmationSummaryResponse:
         return PaymentConfirmationSummaryResponse(
             payment_id=payment.payment_id,
@@ -77,5 +104,8 @@ class GetPaymentConfirmationSummaryUseCase(
             nightly_rate_in_cents=breakdown.nightly_rate_in_cents,
             taxes_in_cents=breakdown.taxes_in_cents,
             total_in_cents=breakdown.total_in_cents,
+            accommodation_in_cents=accommodation_in_cents,
+            cleaning_fee_in_cents=cleaning_fee_in_cents,
+            service_fee_in_cents=service_fee_in_cents,
             cancellation_policy=settings.default_cancellation_policy,
         )

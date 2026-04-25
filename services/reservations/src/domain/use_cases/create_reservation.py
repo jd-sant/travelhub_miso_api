@@ -1,8 +1,10 @@
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
 from adapters.services.properties_client import PropertiesServiceClient
+from core.config import settings
 from domain.ports.reservation_repository import ReservationRepository
 from domain.ports.reservation_scheduler import ReservationScheduler
 from domain.schemas.reservation import ReservationCreateRequest, ReservationResponse
@@ -13,6 +15,25 @@ from errors import (
     ReservationSchedulingError,
     RoomNotAvailableError,
 )
+
+
+@dataclass(frozen=True)
+class ComputedBreakdown:
+    accommodation_in_cents: int
+    cleaning_fee_in_cents: int
+    service_fee_in_cents: int
+    taxes_in_cents: int
+    nights: int
+    nightly_rate_in_cents: int
+
+    @property
+    def total_in_cents(self) -> int:
+        return (
+            self.accommodation_in_cents
+            + self.cleaning_fee_in_cents
+            + self.service_fee_in_cents
+            + self.taxes_in_cents
+        )
 
 
 class CreateReservationUseCase(BaseUseCase[ReservationCreateRequest, ReservationResponse]):
@@ -57,13 +78,15 @@ class CreateReservationUseCase(BaseUseCase[ReservationCreateRequest, Reservation
                 f"Room {normalized_payload.id_room} is not available for the selected dates"
             )
 
-        # Calcular el precio total con impuestos
-        total_price = self._calculate_price_with_taxes(
+        # Calcular el desglose canónico de precio
+        breakdown = self._calculate_breakdown(
             normalized_payload.id_property,
-            normalized_payload.currency,
             normalized_payload.check_in_date,
             normalized_payload.check_out_date,
             normalized_payload.number_of_guests,
+        )
+        total_price = (Decimal(breakdown.total_in_cents) / Decimal(100)).quantize(
+            Decimal("0.01")
         )
 
         if self.scheduler is not None:
@@ -77,7 +100,10 @@ class CreateReservationUseCase(BaseUseCase[ReservationCreateRequest, Reservation
         # Crear la reserva con el precio calculado
         try:
             reservation = self.repository.add(
-                normalized_payload, total_price, reservation_id=reservation_id
+                normalized_payload,
+                total_price,
+                reservation_id=reservation_id,
+                breakdown=breakdown,
             )
         except Exception:
             if self.scheduler is not None:
@@ -94,40 +120,72 @@ class CreateReservationUseCase(BaseUseCase[ReservationCreateRequest, Reservation
             return value
         return value.astimezone(UTC).replace(tzinfo=None)
 
-    def _calculate_price_with_taxes(
-        self, id_property: UUID, currency: str, check_in: datetime, check_out: datetime, number_of_guests: int
-    ) -> Decimal:
+    def _calculate_breakdown(
+        self,
+        id_property: UUID,
+        check_in: datetime,
+        check_out: datetime,
+        guests: int,
+    ) -> ComputedBreakdown:
         """
-        Calculate total price including local taxes based on country.
-        Uses the property's real price_per_night when the properties client is
-        available; otherwise falls back to a flat base rate.
-        Formula: price_per_night × guests × nights × (1 + tax_rate)
-       Supports: COP, USD, ARS, CLP, PEN, MXN
+        Construye el desglose canónico de precio:
+            accommodation = price_per_night x nights x guests
+            service_fee   = round(accommodation x service_fee_rate)
+            subtotal      = accommodation + cleaning_fee + service_fee
+            taxes         = round(subtotal x property.tax_rate)
+            total         = subtotal + taxes
+        Cuando la propiedad no está disponible se usan defaults razonables
+        para que la reserva pueda crearse en entornos sin properties.
         """
-        tax_rates = {
-            "COP": Decimal("0.19"),
-            "USD": Decimal("0.08"),
-            "ARS": Decimal("0.21"),
-            "CLP": Decimal("0.19"),
-            "PEN": Decimal("0.18"),
-            "MXN": Decimal("0.16"),
-        }
+        nights = max(1, (check_out - check_in).days)
+        guests = max(1, guests)
+        price_per_night, cleaning_fee, tax_rate = self._fetch_property_pricing(
+            id_property
+        )
+        service_fee_rate = Decimal(settings.service_fee_rate)
 
-        price_per_night = self._get_property_price(id_property)
+        accommodation_cents = int(
+            (price_per_night * nights * guests * 100).to_integral_value()
+        )
+        cleaning_cents = int((cleaning_fee * 100).to_integral_value())
+        service_cents = int(
+            (Decimal(accommodation_cents) * service_fee_rate).to_integral_value()
+        )
+        subtotal_cents = accommodation_cents + cleaning_cents + service_cents
+        taxes_cents = int(
+            (Decimal(subtotal_cents) * tax_rate).to_integral_value()
+        )
+        nightly_rate_cents = (
+            accommodation_cents // nights if nights > 0 else accommodation_cents
+        )
 
-        num_nights = (check_out - check_in).days
-        base_price = price_per_night * number_of_guests * num_nights
+        return ComputedBreakdown(
+            accommodation_in_cents=accommodation_cents,
+            cleaning_fee_in_cents=cleaning_cents,
+            service_fee_in_cents=service_cents,
+            taxes_in_cents=taxes_cents,
+            nights=nights,
+            nightly_rate_in_cents=nightly_rate_cents,
+        )
 
-        tax_rate = tax_rates.get(currency, Decimal("0.16"))
-        total = base_price * (1 + tax_rate)
-
-        return total.quantize(Decimal("0.01"))
-
-    def _get_property_price(self, property_id: UUID) -> Decimal:
+    def _fetch_property_pricing(
+        self, property_id: UUID
+    ) -> tuple[Decimal, Decimal, Decimal]:
+        import logging
+        logger = logging.getLogger(__name__)
+        if not self.property_client:
+            logger.warning("property_pricing_no_client", extra={"property_id": str(property_id)})
+            return (Decimal(100), Decimal(0), Decimal("0.16"))
         try:
-            if self.property_client:
-                property_details = self.property_client.get_property(property_id)
-                return property_details.price_per_night
-        except Exception:
-            pass
-        return Decimal(100)
+            details = self.property_client.get_property(property_id)
+            return (
+                details.price_per_night,
+                details.cleaning_fee,
+                details.tax_rate,
+            )
+        except Exception as exc:
+            logger.warning(
+                "property_pricing_fetch_failed",
+                extra={"property_id": str(property_id), "error": str(exc)},
+            )
+            return (Decimal(100), Decimal(0), Decimal("0.16"))
