@@ -4,6 +4,7 @@ from uuid import uuid4
 from core.config import settings
 from core.telemetry import refund_latency_seconds, refund_sla_breach_count
 from domain.ports.payment_audit_repository import PaymentAuditRepository
+from domain.ports.refund_gateway import RefundGateway
 from domain.ports.payment_refund_repository import PaymentRefundRepository
 from domain.ports.payment_repository import PaymentRepository
 from domain.ports.notification_dispatcher import ReservationUpdater
@@ -19,11 +20,13 @@ class RetryPaymentRefundsUseCase(BaseUseCase[int, PaymentRefundRetryResponse]):
         payment_repository: PaymentRepository,
         audit_repository: PaymentAuditRepository,
         reservation_updater: ReservationUpdater,
+        refund_gateway: RefundGateway,
     ):
         self.refund_repository = refund_repository
         self.payment_repository = payment_repository
         self.audit_repository = audit_repository
         self.reservation_updater = reservation_updater
+        self.refund_gateway = refund_gateway
 
     def execute(
         self,
@@ -42,7 +45,7 @@ class RetryPaymentRefundsUseCase(BaseUseCase[int, PaymentRefundRetryResponse]):
         for refund in refunds:
             processed_count += 1
             try:
-                self._process_refund_or_raise(refund.reason)
+                self.refund_gateway.process_refund(reason=refund.reason)
                 self.refund_repository.mark_refund_succeeded(
                     refund_id=refund.refund_id,
                     processed_at=now,
@@ -212,7 +215,3 @@ class RetryPaymentRefundsUseCase(BaseUseCase[int, PaymentRefundRetryResponse]):
             failed_count=failed_count,
             pending_count=pending_count,
         )
-
-    def _process_refund_or_raise(self, reason: str) -> None:
-        if "force-fail" in reason.lower():
-            raise RuntimeError("Refund gateway unavailable")

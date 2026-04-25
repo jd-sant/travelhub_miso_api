@@ -20,6 +20,7 @@ from adapters.models.payment_reservation_confirmation_outbox import (
 )
 from assembly import (
     get_notification_dispatcher,
+    get_refund_gateway,
     get_reservation_updater,
     get_stripe_checkout_gateway,
 )
@@ -143,6 +144,12 @@ class FakeReservationUpdater:
         )
         if self.should_fail:
             raise RuntimeError("reservations unavailable")
+
+
+class FailingRefundGateway:
+    def process_refund(self, *, reason: str) -> None:
+        _ = reason
+        raise RuntimeError("Refund gateway unavailable")
 
 
 def _build_app(test_engine):
@@ -972,12 +979,13 @@ def test_retry_payment_refunds_requires_internal_api_key(client):
 def test_retry_payment_refunds_can_reach_terminal_failed(client, test_engine, monkeypatch):
     monkeypatch.setenv("REFUND_RETRY_MAX_ATTEMPTS", "2")
     monkeypatch.setenv("REFUND_RETRY_BASE_SECONDS", "1")
+    client.app.dependency_overrides[get_refund_gateway] = lambda: FailingRefundGateway()
     payment_response = client.post("/api/v1/payments/charges", json=_payload(), headers=SECURE_HEADERS)
     payment_id = payment_response.json()["payment_id"]
 
     create_refund = client.post(
         "/api/v1/payments/refunds",
-        json=_refund_payload(payment_id, reason="force-fail-refund"),
+        json=_refund_payload(payment_id, reason="manual_refund_retry"),
         headers=SECURE_HEADERS,
     )
     refund_id = create_refund.json()["refund_id"]

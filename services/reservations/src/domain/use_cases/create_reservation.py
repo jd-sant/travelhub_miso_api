@@ -6,6 +6,7 @@ from domain.ports.reservation_repository import ReservationRepository
 from domain.ports.reservation_scheduler import ReservationScheduler
 from domain.schemas.reservation import ReservationCreateRequest, ReservationResponse
 from domain.use_cases.base import BaseUseCase
+from domain.ports.property_service_client import PropertyServiceClient
 from errors import (
     InvalidReservationDateError,
     ReservationSchedulingError,
@@ -18,9 +19,11 @@ class CreateReservationUseCase(BaseUseCase[ReservationCreateRequest, Reservation
         self,
         repository: ReservationRepository,
         scheduler: ReservationScheduler | None = None,
+        property_client: PropertyServiceClient | None = None,
     ):
         self.repository = repository
         self.scheduler = scheduler
+        self.property_client = property_client
 
     def execute(self, payload: ReservationCreateRequest) -> ReservationResponse:
         reservation_id = uuid4()
@@ -57,6 +60,7 @@ class CreateReservationUseCase(BaseUseCase[ReservationCreateRequest, Reservation
             normalized_payload.currency,
             normalized_payload.check_in_date,
             normalized_payload.check_out_date,
+            normalized_payload.number_of_guests,
         )
 
         if self.scheduler is not None:
@@ -88,30 +92,37 @@ class CreateReservationUseCase(BaseUseCase[ReservationCreateRequest, Reservation
         return value.astimezone(UTC).replace(tzinfo=None)
 
     def _calculate_price_with_taxes(
-        self, id_property: UUID, currency: str, check_in: datetime, check_out: datetime
+        self, id_property: UUID, currency: str, check_in: datetime, check_out: datetime, number_of_guests: int
     ) -> Decimal:
         """
         Calculate total price including local taxes based on country
-        Supports: COP, USD, ARS, CLP, PEN, MXN
+        Formula: price_per_night × guests × nights × (1 + tax_rate)
+       Supports: COP, USD, ARS, CLP, PEN, MXN
         """
-        # TODO: usar id_property para consultar la tarifa real por noche
-        # desde el servicio de propiedades cuando ese endpoint este disponible.
-        # Tarifas de impuestos por país (normalmente vendrían de un servicio externo)
         tax_rates = {
-            "COP": Decimal("0.19"),  # Colombia 19%
-            "USD": Decimal("0.08"),  # Estados Unidos 8%
-            "ARS": Decimal("0.21"),  # Argentina 21%
-            "CLP": Decimal("0.19"),  # Chile 19%
-            "PEN": Decimal("0.18"),  # Perú 18%
-            "MXN": Decimal("0.16"),  # México 16%
+            "COP": Decimal("0.19"),
+            "USD": Decimal("0.08"),
+            "ARS": Decimal("0.21"),
+            "CLP": Decimal("0.19"),
+            "PEN": Decimal("0.18"),
+            "MXN": Decimal("0.16"),
         }
 
-        # Cálculo base: 100 por noche (simplificado; vendría de la tarifa real de la habitación)
-        num_nights = (check_out - check_in).days
-        base_price = Decimal(100) * num_nights
+        price_per_night = self._get_property_price(id_property)
 
-        # Aplicar impuesto
+        num_nights = (check_out - check_in).days
+        base_price = price_per_night * number_of_guests * num_nights
+
         tax_rate = tax_rates.get(currency, Decimal("0.16"))
         total = base_price * (1 + tax_rate)
 
         return total.quantize(Decimal("0.01"))
+
+    def _get_property_price(self, property_id: UUID) -> Decimal:
+        try:
+            if self.property_client:
+                property_details = self.property_client.get_property(property_id)
+                return property_details.price_per_night
+        except Exception:
+            pass
+        return Decimal(100)

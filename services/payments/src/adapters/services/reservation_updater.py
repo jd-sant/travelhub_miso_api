@@ -1,9 +1,13 @@
 from uuid import UUID
+import logging
 
 import httpx
 
 from core.config import settings
 from domain.ports.notification_dispatcher import ReservationUpdater
+
+
+logger = logging.getLogger(__name__)
 
 
 class NoOpReservationUpdater(ReservationUpdater):
@@ -46,6 +50,10 @@ class HttpReservationUpdater(ReservationUpdater):
         source_ip: str | None = None,
     ) -> None:
         if not settings.reservations_service_url:
+            logger.warning(
+                "Skipping reservation confirmation callback because RESERVATIONS_SERVICE_URL is empty",
+                extra={"reservation_id": str(reservation_id)},
+            )
             return None
 
         url = (
@@ -72,6 +80,10 @@ class HttpReservationUpdater(ReservationUpdater):
         source_ip: str | None = None,
     ) -> None:
         if not settings.reservations_service_url:
+            logger.warning(
+                "Skipping refund callback because RESERVATIONS_SERVICE_URL is empty",
+                extra={"reservation_id": str(reservation_id), "status": status},
+            )
             return None
 
         url = (
@@ -102,6 +114,10 @@ class HttpReservationUpdater(ReservationUpdater):
         source_ip: str | None = None,
     ) -> None:
         if not settings.reservations_service_url:
+            logger.warning(
+                "Skipping additional charge callback because RESERVATIONS_SERVICE_URL is empty",
+                extra={"reservation_id": str(reservation_id), "status": status},
+            )
             return None
 
         url = (

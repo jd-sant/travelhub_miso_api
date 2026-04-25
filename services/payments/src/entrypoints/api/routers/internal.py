@@ -5,11 +5,13 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from assembly import (
     get_create_additional_charge_for_reservation_use_case,
     get_create_refund_for_reservation_use_case,
+    get_reservation_updater,
     get_retry_payment_refunds_use_case,
     get_retry_reservation_confirmations_use_case,
 )
 from core.config import settings
 from core.telemetry import resolve_correlation_id
+from domain.ports.notification_dispatcher import ReservationUpdater
 from domain.schemas.payment import (
     AdditionalChargeRequest,
     PaymentPublicResponse,
@@ -91,13 +93,25 @@ def create_refund_for_reservation(
     use_case: CreateRefundForReservationUseCase = Depends(
         get_create_refund_for_reservation_use_case
     ),
+    reservation_updater: ReservationUpdater = Depends(get_reservation_updater),
 ) -> PaymentRefundPublicResponse:
     try:
-        return use_case.execute(
+        refund = use_case.execute(
             payload,
             source_ip=_resolve_source_ip(request),
             correlation_id=correlation_id,
         )
+
+        if settings.app_env in ("development", "dev", "test"):
+            reservation_updater.notify_refund_result(
+                reservation_id=refund.reservation_id,
+                status="succeeded",
+                amount_in_cents=refund.amount_in_cents,
+                refund_id=refund.refund_id,
+                source_ip=_resolve_source_ip(request),
+            )
+
+        return refund
     except PaymentNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
