@@ -121,11 +121,7 @@ class SendPaymentConfirmationUseCase(BaseUseCase[UUID, NotificationResponse]):
                 traveler_id=stored_notification.traveler_id,
                 entity_type="notification",
                 entity_id=str(stored_notification.notification_id),
-                action=(
-                    "notification.payment_confirmation.sent"
-                    if stored_notification.status == NotificationStatus.sent
-                    else "notification.payment_confirmation.failed"
-                ),
+                action=self._resolve_audit_action(stored_notification),
                 ip_address=source_ip,
                 payload=audit_payload,
                 created_at=stored_notification.updated_at,
@@ -134,6 +130,32 @@ class SendPaymentConfirmationUseCase(BaseUseCase[UUID, NotificationResponse]):
         return self._to_response(stored_notification)
 
     def _render(self, notification: NotificationRecord) -> str:
+        if notification.template_code == "reservation_confirmed_v1":
+            summary = notification.payload.get("reservation_update", {})
+            return _env.get_template("reservation_update.html").render(
+                recipient_name=notification.recipient_name,
+                reservation_id=summary.get("reservation_id"),
+                status="confirmada",
+                reason=summary.get("reason"),
+                refund_requested=False,
+                refund_amount=None,
+            )
+        if notification.template_code == "reservation_cancelled_v1":
+            summary = notification.payload.get("reservation_update", {})
+            refund_amount = summary.get("refund_amount_in_cents")
+            return _env.get_template("reservation_update.html").render(
+                recipient_name=notification.recipient_name,
+                reservation_id=summary.get("reservation_id"),
+                status="cancelada",
+                reason=summary.get("reason"),
+                refund_requested=summary.get("refund_requested", False),
+                refund_amount=(
+                    f"{refund_amount / 100:.2f}"
+                    if isinstance(refund_amount, int)
+                    else None
+                ),
+            )
+
         summary = notification.payload.get("payment_summary", {})
         currency = summary.get("currency", "")
 
@@ -162,6 +184,19 @@ class SendPaymentConfirmationUseCase(BaseUseCase[UUID, NotificationResponse]):
             ),
         }
         return _env.get_template("payment_confirmation.html").render(**context)
+
+    def _resolve_audit_action(self, notification: NotificationRecord) -> str:
+        prefix = {
+            "payment_confirmation_v1": "notification.payment_confirmation",
+            "reservation_confirmed_v1": "notification.reservation_confirmed",
+            "reservation_cancelled_v1": "notification.reservation_cancelled",
+        }.get(notification.template_code, "notification.delivery")
+        suffix = (
+            "sent"
+            if notification.status == NotificationStatus.sent
+            else "failed"
+        )
+        return f"{prefix}.{suffix}"
 
     def _to_response(self, notification: NotificationRecord) -> NotificationResponse:
         return NotificationResponse(

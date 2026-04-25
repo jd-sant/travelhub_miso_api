@@ -35,6 +35,7 @@ from domain.use_cases.get_payment import GetPaymentUseCase
 from domain.use_cases.get_payment_checkout_session import GetPaymentCheckoutSessionUseCase
 from domain.use_cases.handle_stripe_webhook import HandleStripeWebhookUseCase
 from domain.use_cases.list_payment_events import ListPaymentEventsUseCase
+from domain.use_cases.create_reservation_refund import CreateReservationRefundUseCase
 from domain.use_cases.process_queued_payments import ProcessQueuedPaymentsUseCase
 from domain.use_cases.retry_reservation_confirmations import RetryReservationConfirmationsUseCase
 
@@ -194,6 +195,18 @@ def get_handle_stripe_webhook_use_case(
         gateway,
         notification_dispatcher,
         reservation_updater,
+    )
+
+
+def get_create_reservation_refund_use_case(
+    repository: PaymentRepository = Depends(get_payment_repository),
+    audit_repository: PaymentAuditRepository = Depends(get_payment_audit_repository),
+    gateway: StripeCheckoutGateway = Depends(get_stripe_checkout_gateway),
+) -> CreateReservationRefundUseCase:
+    return CreateReservationRefundUseCase(
+        repository=repository,
+        audit_repository=audit_repository,
+        gateway=gateway,
     )
 
 

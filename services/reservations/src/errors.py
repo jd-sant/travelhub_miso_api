@@ -20,3 +20,19 @@ class ReservationSchedulingError(Exception):
 
 class InvalidReservationStatusError(Exception):
     pass
+
+
+class ReservationStateConflictError(Exception):
+    pass
+
+
+class ReservationAuthorizationError(Exception):
+    pass
+
+
+class TokenExpiredError(Exception):
+    pass
+
+
+class InvalidTokenError(Exception):
+    pass

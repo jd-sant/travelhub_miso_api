@@ -6,10 +6,16 @@ from uuid import UUID, uuid4
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
+from adapters.models.reservation_change import ReservationChange
 from adapters.models.reservation import Reservation
 from core.config import settings
 from domain.ports.reservation_repository import ReservationRepository
-from domain.schemas.reservation import ReservationCreateRequest, ReservationResponse
+from domain.schemas.reservation import (
+    HotelReservationListItem,
+    ReservationChangeRecord,
+    ReservationCreateRequest,
+    ReservationResponse,
+)
 from errors import ReservationConflictError, RoomNotAvailableError
 
 
@@ -19,6 +25,24 @@ def _hold_expires_at(created_at: datetime) -> datetime:
 
 def _to_response(model: Reservation) -> ReservationResponse:
     return ReservationResponse(
+        id=model.id,
+        id_traveler=model.id_traveler,
+        id_property=model.id_property,
+        id_room=model.id_room,
+        check_in_date=model.check_in_date,
+        check_out_date=model.check_out_date,
+        number_of_guests=model.number_of_guests,
+        total_price=model.total_price,
+        currency=model.currency,
+        status=model.status,
+        hold_expires_at=_hold_expires_at(model.created_at),
+        created_at=model.created_at,
+        updated_at=model.updated_at,
+    )
+
+
+def _to_hotel_item(model: Reservation) -> HotelReservationListItem:
+    return HotelReservationListItem(
         id=model.id,
         id_traveler=model.id_traveler,
         id_property=model.id_property,
@@ -86,6 +110,20 @@ class SQLModelReservationRepository(ReservationRepository):
         ).all()
         return [_to_response(m) for m in models]
 
+    def list_by_property(
+        self,
+        id_property: UUID,
+        *,
+        status: str | None = None,
+    ) -> list[HotelReservationListItem]:
+        statement = select(Reservation).where(Reservation.id_property == id_property)
+        if status is not None:
+            statement = statement.where(Reservation.status == status)
+        models = self.session.exec(
+            statement.order_by(Reservation.created_at.desc())
+        ).all()
+        return [_to_hotel_item(model) for model in models]
+
     def check_room_availability(
         self, id_room: UUID, check_in: datetime, check_out: datetime
     ) -> bool:
@@ -112,3 +150,30 @@ class SQLModelReservationRepository(ReservationRepository):
         self.session.commit()
         self.session.refresh(reservation)
         return _to_response(reservation)
+
+    def add_change(self, payload: ReservationChangeRecord) -> ReservationChangeRecord:
+        model = ReservationChange(
+            id=payload.id,
+            reservation_id=payload.reservation_id,
+            action=payload.action,
+            previous_status=payload.previous_status,
+            new_status=payload.new_status,
+            reason=payload.reason,
+            actor_user_id=payload.actor_user_id,
+            source_ip=payload.source_ip,
+            created_at=payload.created_at,
+        )
+        self.session.add(model)
+        self.session.commit()
+        self.session.refresh(model)
+        return ReservationChangeRecord(
+            id=model.id,
+            reservation_id=model.reservation_id,
+            action=model.action,
+            previous_status=model.previous_status,
+            new_status=model.new_status,
+            reason=model.reason,
+            actor_user_id=model.actor_user_id,
+            source_ip=model.source_ip,
+            created_at=model.created_at,
+        )
