@@ -13,10 +13,16 @@ from assembly import (
     get_retry_payment_refunds_use_case
 )
 from core.config import settings
+from core.telemetry import resolve_correlation_id
+from domain.ports.notification_dispatcher import ReservationUpdater
 from domain.ports.payment_repository import PaymentRepository
 from domain.schemas.payment import (
+    AdditionalChargeRequest,
     PaymentByReservation,
     PaymentProcessingRetryResponse,
+    PaymentPublicResponse,
+    PaymentRefundPublicResponse,
+    PaymentRefundRetryResponse,
     PaymentsByReservationsRequest,
     PaymentsByReservationsResponse,
     ReservationConfirmationRetryResponse,

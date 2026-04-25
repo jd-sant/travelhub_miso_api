@@ -11,6 +11,13 @@ class ReservationStatus(str, Enum):
     confirmed = "confirmed"
     cancelled = "cancelled"
     completed = "completed"
+    cancel_requested = "cancel_requested"
+    refund_pending = "refund_pending"
+    refund_completed = "refund_completed"
+    refund_failed = "refund_failed"
+    modification_pending_payment = "modification_pending_payment"
+    modification_confirmed = "modification_confirmed"
+    additional_charge_failed = "additional_charge_failed"
 
 
 class ReservationCancellationReason(str, Enum):
@@ -18,13 +25,6 @@ class ReservationCancellationReason(str, Enum):
     overbooking = "overbooking"
     hotel_policy = "hotel_policy"
     other = "other"
-    modification_pending_payment = "modification_pending_payment"
-    modification_confirmed = "modification_confirmed"
-    additional_charge_failed = "additional_charge_failed"
-    cancel_requested = "cancel_requested"
-    refund_pending = "refund_pending"
-    refund_completed = "refund_completed"
-    refund_failed = "refund_failed"
 
 
 class CancellationPolicyType(str, Enum):

@@ -2,16 +2,19 @@ from hmac import compare_digest
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
+from sqlmodel import Session
 
 from adapters.repositories.reservation_event_repository import (
     SQLModelReservationEventRepository,
 )
 from assembly import (
     get_check_reservation_status_use_case,
+    get_reservation_repository,
     get_update_reservation_status_use_case,
 )
 from core.config import settings
 from core.telemetry import resolve_correlation_id
+from db.session import get_session
 from domain.schemas.reservation import (
     ReservationAdditionalChargeResultRequest,
     ReservationCheckStatusResponse,
@@ -34,24 +37,8 @@ from errors import (
 router = APIRouter(prefix="/internal", tags=["internal"])
 
 
-def get_reservation_repository(session: Session = Depends(get_session)):
-    return SQLModelReservationRepository(session)
-
-
 def get_reservation_event_repository(session: Session = Depends(get_session)):
     return SQLModelReservationEventRepository(session)
-
-
-def get_update_reservation_status_use_case(
-    repository=Depends(get_reservation_repository),
-):
-    return UpdateReservationStatusUseCase(repository)
-
-
-def get_check_reservation_status_use_case(
-    updater=Depends(get_update_reservation_status_use_case),
-):
-    return CheckReservationStatusUseCase(updater)
 
 
 def get_apply_refund_result_use_case(

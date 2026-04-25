@@ -51,6 +51,7 @@ def _to_response(model: Reservation) -> ReservationResponse:
         currency=model.currency,
         status=model.status,
         hold_expires_at=_hold_expires_at(model.created_at),
+        version=model.version,
         created_at=model.created_at,
         updated_at=model.updated_at,
     )

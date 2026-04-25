@@ -30,6 +30,7 @@ from core.security import build_request_checksum, hash_token
 from entrypoints.api.routers import payments as payments_router
 
 from .conftest import (
+    FailingRefundGateway,
     FakeNotificationDispatcher,
     FakeReservationUpdater,
     FakeStripeCheckoutGateway,

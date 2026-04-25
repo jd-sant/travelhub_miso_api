@@ -1,10 +1,11 @@
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
+from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 
-class PaymentRefund(SQLModel, table=True):
+class ReservationRefund(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
     payment_id: UUID = Field(index=True)
     reservation_id: UUID = Field(index=True, unique=True)
@@ -15,11 +16,6 @@ class PaymentRefund(SQLModel, table=True):
     reason: str = Field(max_length=255)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), index=True)
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), index=True)
-from datetime import datetime, timezone
-from uuid import UUID, uuid4
-
-from sqlalchemy import UniqueConstraint
-from sqlmodel import Field, SQLModel
 
 
 class PaymentRefund(SQLModel, table=True):

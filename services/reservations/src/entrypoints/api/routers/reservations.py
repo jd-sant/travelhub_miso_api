@@ -1,9 +1,10 @@
 from datetime import datetime
+from functools import lru_cache
 from typing import Literal
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Query, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from sqlmodel import Session
 from adapters.repositories.reservation_command_log_repository import (
     SQLModelReservationCommandLogRepository,
@@ -14,6 +15,10 @@ from adapters.repositories.reservation_event_repository import (
 )
 from adapters.services.property_service_client import HttpPropertyServiceClient
 from adapters.services.payment_service_client import HttpPaymentServiceClient
+from adapters.services.scheduler_service import (
+    EventBridgeReservationScheduler,
+    NoOpReservationScheduler,
+)
 from assembly import (
     get_compute_host_metrics_use_case,
     get_compute_revenue_trends_use_case,
