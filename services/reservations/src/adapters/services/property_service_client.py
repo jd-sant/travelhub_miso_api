@@ -30,10 +30,17 @@ class HttpPropertyServiceClient(PropertyServiceClient):
             ) from exc
 
         payload = response.json()
+        images = payload.get("images") or []
+        cover = next(
+            (img.get("url") for img in images if img.get("is_cover")),
+            (images[0].get("url") if images else None),
+        )
         return PropertyDetailResponse(
             id=payload["id"],
             max_guests=payload["max_guests"],
             price_per_night=Decimal(str(payload.get("price_per_night", 0))),
+            name=payload.get("name"),
+            cover_image_url=cover,
         )
 
     def get_cancellation_policy(

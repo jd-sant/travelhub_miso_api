@@ -11,6 +11,8 @@ class PropertyDetailResponse(BaseModel):
     id: UUID
     max_guests: int = Field(ge=0)
     price_per_night: Decimal
+    name: str | None = None
+    cover_image_url: str | None = None
 
 
 class PropertyCancellationPolicyResponse(BaseModel):
