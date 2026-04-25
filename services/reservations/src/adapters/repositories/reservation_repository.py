@@ -4,7 +4,7 @@ from typing import Optional
 from uuid import UUID, uuid4
 
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import update
+from sqlalchemy import update, asc
 from sqlmodel import Session, select
 
 from adapters.models.reservation import Reservation
@@ -33,6 +33,16 @@ def _to_response(model: Reservation) -> ReservationResponse:
         created_at=model.created_at,
         updated_at=model.updated_at,
     )
+
+
+_CANCELLED_STATUSES = frozenset({
+    "cancelled",
+    "cancel_requested",
+    "refund_pending",
+    "refund_completed",
+    "refund_failed",
+    "additional_charge_failed",
+})
 
 
 class SQLModelReservationRepository(ReservationRepository):
@@ -80,10 +90,30 @@ class SQLModelReservationRepository(ReservationRepository):
         ).first()
         return _to_response(model) if model else None
 
-    def list_by_traveler(self, id_traveler: UUID) -> list[ReservationResponse]:
-        models = self.session.exec(
-            select(Reservation).where(Reservation.id_traveler == id_traveler)
-        ).all()
+    def list_by_traveler(
+        self,
+        id_traveler: UUID,
+        status_group: str | None = None,
+    ) -> list[ReservationResponse]:
+        query = (
+            select(Reservation)
+            .where(Reservation.id_traveler == id_traveler)
+            .order_by(asc(Reservation.check_in_date))
+        )
+        now = datetime.now(UTC)
+        if status_group == "active":
+            query = query.where(
+                Reservation.status.notin_(_CANCELLED_STATUSES),
+                Reservation.check_out_date >= now,
+            )
+        elif status_group == "past":
+            query = query.where(
+                Reservation.status.notin_(_CANCELLED_STATUSES),
+                Reservation.check_out_date < now,
+            )
+        elif status_group == "cancelled":
+            query = query.where(Reservation.status.in_(_CANCELLED_STATUSES))
+        models = self.session.exec(query).all()
         return [_to_response(m) for m in models]
 
     def check_room_availability(

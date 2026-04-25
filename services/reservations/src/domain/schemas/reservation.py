@@ -205,6 +205,8 @@ class ReservationHistoryResponse(BaseModel):
 class ReservationWithDetailsResponse(BaseModel):
     id: UUID
     reservation: ReservationResponse
+    property_name: str | None = None
+    property_cover_image_url: str | None = None
 
 
 ReservationModificationPreviewResponse.model_rebuild()

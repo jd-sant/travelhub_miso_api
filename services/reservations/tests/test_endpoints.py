@@ -259,9 +259,83 @@ class TestReservationEndpoints:
         assert response.status_code == 200
         body = response.json()
         assert len(body) == 2
-        assert [item["id"] for item in body] == created_ids
-        assert all(item["reservation"]["id"] == item["id"] for item in body)
         assert all(item["reservation"]["id_traveler"] == traveler_id for item in body)
+        # New enriched fields present
+        assert all("property_name" in item for item in body)
+        assert all("property_cover_image_url" in item for item in body)
+
+    def test_get_reservations_by_user_sorted_by_check_in_asc(self, client):
+        """Reservations should be ordered by check_in_date ascending (próximas primero)."""
+        traveler_id = str(uuid4())
+        property_id = str(uuid4())
+        now = datetime.now(UTC)
+
+        # Create two reservations with different check-in dates (later one first)
+        for days_ahead in [10, 3]:
+            payload = {
+                "id_traveler": traveler_id,
+                "id_property": property_id,
+                "id_room": str(uuid4()),
+                "check_in_date": (now + timedelta(days=days_ahead)).isoformat(),
+                "check_out_date": (now + timedelta(days=days_ahead + 2)).isoformat(),
+                "number_of_guests": 1,
+                "currency": "USD",
+            }
+            client.post("/api/v1/reservations", json=payload)
+
+        response = client.get(f"/api/v1/reservations/users/{traveler_id}")
+        assert response.status_code == 200
+        body = response.json()
+        assert len(body) == 2
+        first_check_in = body[0]["reservation"]["check_in_date"]
+        second_check_in = body[1]["reservation"]["check_in_date"]
+        assert first_check_in < second_check_in
+
+    def test_get_reservations_by_user_filter_cancelled(self, client):
+        """status_group=cancelled returns only cancelled reservations."""
+        traveler_id = str(uuid4())
+        property_id = str(uuid4())
+        now = datetime.now(UTC)
+
+        # Create two reservations
+        reservation_ids = []
+        for i in range(2):
+            payload = {
+                "id_traveler": traveler_id,
+                "id_property": property_id,
+                "id_room": str(uuid4()),
+                "check_in_date": (now + timedelta(days=5 + i)).isoformat(),
+                "check_out_date": (now + timedelta(days=7 + i)).isoformat(),
+                "number_of_guests": 1,
+                "currency": "USD",
+            }
+            resp = client.post("/api/v1/reservations", json=payload)
+            reservation_ids.append(resp.json()["id"])
+
+        # Cancel the first reservation via internal endpoint
+        client.patch(
+            f"/api/v1/internal/reservations/{reservation_ids[0]}/status",
+            json={"status": "cancelled"},
+            headers={"X-Internal-Api-Key": settings.internal_api_key},
+        )
+
+        # Filter by cancelled
+        response = client.get(
+            f"/api/v1/reservations/users/{traveler_id}?status_group=cancelled"
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert len(body) == 1
+        assert body[0]["id"] == reservation_ids[0]
+
+        # Filter by active — should return the non-cancelled one
+        response = client.get(
+            f"/api/v1/reservations/users/{traveler_id}?status_group=active"
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert len(body) == 1
+        assert body[0]["id"] == reservation_ids[1]
 
     def test_get_reservations_by_user_returns_empty_array_when_no_reservations(self, client):
         response = client.get(f"/api/v1/reservations/users/{uuid4()}")
