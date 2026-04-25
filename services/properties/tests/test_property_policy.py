@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 from adapters.repositories.property_repository import SQLModelPropertyRepository
+from core.config import settings
 from db.seed import BEACHFRONT_PENTHOUSE_ID, RENAISSANCE_ESTATE_ID
 
 
@@ -25,7 +26,7 @@ def test_repository_returns_none_for_unknown_property_policy(session):
 def test_internal_policy_endpoint_returns_policy(client):
     response = client.get(
         f"/api/v1/internal/properties/{BEACHFRONT_PENTHOUSE_ID}/cancellation-policy",
-        headers={"X-Internal-Api-Key": "dev-internal-key-change-me"},
+        headers={"X-Internal-Api-Key": settings.internal_api_key},
     )
 
     assert response.status_code == 200

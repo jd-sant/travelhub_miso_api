@@ -1,5 +1,5 @@
 from uuid import UUID, uuid4
-from datetime import UTC, datetime
+from datetime import UTC, datetime, date as date_type
 
 from sqlmodel import Field, SQLModel
 
@@ -13,5 +13,5 @@ class PropertyReview(SQLModel, table=True):
     rating: int = Field(ge=1, le=5)
     comment: str
     verified_stay: bool = Field(default=True)
-    date: str
+    review_date: date_type
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
