@@ -30,6 +30,7 @@ services:
       DB_SCHEMA: users_schema
       DB_ECHO: "False"
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
+      DEMO_SEED_ENABLED: ${DEMO_SEED_ENABLED:-false}
     ports:
       - "8000:8000"
     depends_on:
@@ -57,6 +58,9 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-noreply@travelhub.com}
+      DEMO_SEED_ENABLED: ${DEMO_SEED_ENABLED:-false}
+      DEMO_HOTEL_EMAILS: ${DEMO_HOTEL_EMAILS:-}
+      DEMO_OTP_CODE: ${DEMO_OTP_CODE:-}
     ports:
       - "8001:8000"
     depends_on:
@@ -89,7 +93,12 @@ services:
       RDS_PORT: "5432"
       DB_SCHEMA: reservations_schema
       DB_ECHO: "False"
+      DATABASE_URL: postgresql://travelhub_user:travelhub_pass@postgres:5432/travelhub
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-travelhub-jwt-secret-change-in-prod}
+      USERS_SERVICE_URL: http://users:8000
+      PROPERTIES_SERVICE_URL: http://properties:8000
+      PAYMENTS_SERVICE_URL: http://payments:8000
     ports:
       - "8002:8000"
     depends_on:
