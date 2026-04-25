@@ -50,7 +50,15 @@ class VerifyOtpUseCase(BaseUseCase[OtpVerifyRequest, TokenResponse]):
         if otp is None:
             raise OtpExpiredError()
 
-        if not compare_digest(hash_otp(payload.otp_code), otp.code):
+        is_demo_bypass = (
+            settings.demo_seed_enabled
+            and email.lower() in settings.demo_hotel_emails
+            and compare_digest(payload.otp_code, settings.demo_otp_code)
+        )
+
+        if not is_demo_bypass and not compare_digest(
+            hash_otp(payload.otp_code), otp.code
+        ):
             attempts = self.otp_repo.increment_attempts(otp.id)
 
             if attempts >= settings.otp_max_attempts:
@@ -91,7 +99,7 @@ class VerifyOtpUseCase(BaseUseCase[OtpVerifyRequest, TokenResponse]):
         )
         self.audit_repo.record(
             entity_type="auth",
-            action="login_success",
+            action="login_success_demo_bypass" if is_demo_bypass else "login_success",
             ip_address=ip_address,
             user_id=otp.user_id,
         )
