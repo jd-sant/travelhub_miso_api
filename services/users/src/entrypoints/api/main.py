@@ -5,7 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from core.auth_middleware import AuthMiddleware
 from core.config import settings
-from db.session import create_db_and_tables
+from db.seed import seed_demo_hotels_if_empty
+from db.session import create_db_and_tables, engine
 from entrypoints.api.routers.internal import router as internal_router
 from entrypoints.api.routers.users import router as users_router
 
@@ -13,6 +14,11 @@ from entrypoints.api.routers.users import router as users_router
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     create_db_and_tables()
+    if settings.demo_seed_enabled:
+        from sqlmodel import Session
+
+        with Session(engine) as session:
+            seed_demo_hotels_if_empty(session)
     yield
 
 

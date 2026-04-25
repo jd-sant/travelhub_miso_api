@@ -58,6 +58,12 @@ class Settings:
         return os.getenv("JWT_ALGORITHM", "HS256")
 
     @property
+    def demo_seed_enabled(self) -> bool:
+        env = os.getenv("ENV", os.getenv("APP_ENV", "development")).lower()
+        default = "true" if env in ("development", "dev", "local") else "false"
+        return os.getenv("DEMO_SEED_ENABLED", default).lower() == "true"
+
+    @property
     def internal_api_key(self) -> str:
         value = os.getenv("INTERNAL_API_KEY")
         if value:
