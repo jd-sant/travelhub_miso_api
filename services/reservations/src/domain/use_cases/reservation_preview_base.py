@@ -67,7 +67,7 @@ class ReservationPreviewBaseUseCase:
         return value.astimezone(UTC).replace(tzinfo=None)
 
     def _calculate_price_with_taxes(
-        self, currency: str, check_in: datetime, check_out: datetime
+        self, currency: str, check_in: datetime, check_out: datetime, number_of_guests: int, property_id: UUID | None = None
     ) -> Decimal:
         tax_rates = {
             "COP": Decimal("0.19"),
@@ -78,11 +78,22 @@ class ReservationPreviewBaseUseCase:
             "MXN": Decimal("0.16"),
         }
 
+        price_per_night = self._get_property_price(property_id) if property_id else Decimal(100)
+
         num_nights = (check_out - check_in).days
-        base_price = Decimal(100) * num_nights
+        base_price = price_per_night * number_of_guests * num_nights
         tax_rate = tax_rates.get(currency, Decimal("0.16"))
         total = base_price * (1 + tax_rate)
         return total.quantize(Decimal("0.01"))
+
+    def _get_property_price(self, property_id: UUID | None) -> Decimal:
+        try:
+            if property_id and self.property_client:
+                property_details = self.property_client.get_property(property_id)
+                return property_details.price_per_night
+        except Exception:
+            pass
+        return Decimal(100)
 
     def _record_event(
         self,

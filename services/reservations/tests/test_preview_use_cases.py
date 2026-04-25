@@ -27,17 +27,19 @@ class FakePropertyServiceClient:
         self,
         *,
         max_guests: int = 12,
+        price_per_night: int = 100,
         policy_type: CancellationPolicyType = CancellationPolicyType.full_refund,
         minimum_notice_hours: int = 24,
         penalty_percentage: Decimal = Decimal("0.00"),
     ):
         self.max_guests = max_guests
+        self.price_per_night = price_per_night
         self.policy_type = policy_type
         self.minimum_notice_hours = minimum_notice_hours
         self.penalty_percentage = penalty_percentage
 
     def get_property(self, property_id: UUID) -> PropertyDetailResponse:
-        return PropertyDetailResponse(id=property_id, max_guests=self.max_guests)
+        return PropertyDetailResponse(id=property_id, max_guests=self.max_guests, price_per_night=Decimal(self.price_per_night))
 
     def get_cancellation_policy(
         self, property_id: UUID
@@ -76,7 +78,7 @@ def _create_confirmed_reservation(
             number_of_guests=2,
             currency=currency,
         ),
-        Decimal("238.00") if nights == 2 and currency == "COP" else Decimal("357.00"),
+        Decimal("476.00") if nights == 2 and currency == "COP" else Decimal("714.00"),
     )
     reservation_repository.update_status(created.id, "confirmed")
     return created, check_in, check_out
@@ -111,9 +113,9 @@ class TestPreviewReservationModificationUseCase:
 
         assert result.change_allowed is True
         assert result.requires_additional_charge is True
-        assert result.delta_amount == Decimal("119.00")
+        assert result.delta_amount == Decimal("595.00")
         assert result.estimated_refund_amount == Decimal("0.00")
-        assert result.price_after.total_price == Decimal("357.00")
+        assert result.price_after.total_price == Decimal("1071.00")
         assert result.reservation_after_preview.number_of_guests == 3
         assert result.reasons == []
 
@@ -178,7 +180,7 @@ class TestPreviewReservationCancellationUseCase:
 
         assert result.change_allowed is True
         assert result.refund_type == CancellationPolicyType.full_refund
-        assert result.refund_amount == Decimal("238.00")
+        assert result.refund_amount == Decimal("476.00")
         assert result.penalty_amount == Decimal("0.00")
         assert result.reasons == []
 
@@ -213,5 +215,5 @@ class TestPreviewReservationCancellationUseCase:
 
         assert result.change_allowed is False
         assert result.refund_amount == Decimal("0.00")
-        assert result.penalty_amount == Decimal("238.00")
+        assert result.penalty_amount == Decimal("476.00")
         assert any("window" in reason.lower() for reason in result.reasons)
