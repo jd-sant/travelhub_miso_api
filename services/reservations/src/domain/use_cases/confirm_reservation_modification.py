@@ -90,38 +90,9 @@ class ConfirmReservationModificationUseCase:
         refund_amount = preview.estimated_refund_amount
         payment_dispatch_status = "not_required"
 
-        if additional_charge_amount > Decimal("0.00"):
-            try:
-                self.payment_service.request_additional_charge(
-                    reservation_id=reservation_id,
-                    traveler_id=reservation_before.id_traveler,
-                    amount_in_cents=self._to_cents(additional_charge_amount),
-                    currency=reservation_before.currency,
-                    idempotency_key=f"{payload.idempotency_key}:additional-charge",
-                    source_ip=source_ip,
-                )
-                payment_dispatch_status = "additional_charge_requested"
-            except PaymentServiceUnavailableError:
-                payment_dispatch_status = "additional_charge_pending_retry"
-        elif refund_amount > Decimal("0.00"):
-            try:
-                self.payment_service.request_refund(
-                    reservation_id=reservation_id,
-                    amount_in_cents=self._to_cents(refund_amount),
-                    reason="reservation_modification_refund",
-                    idempotency_key=f"{payload.idempotency_key}:refund",
-                    source_ip=source_ip,
-                )
-                payment_dispatch_status = "refund_requested"
-            except PaymentServiceUnavailableError:
-                payment_dispatch_status = "refund_pending_retry"
-
-        if additional_charge_amount > Decimal("0.00"):
-            status_after = "modification_pending_payment"
-        elif refund_amount > Decimal("0.00"):
-            status_after = "refund_pending"
-        else:
-            status_after = "modification_confirmed"
+        status_after = "modification_pending_payment" if additional_charge_amount > Decimal("0.00") else (
+            "refund_pending" if refund_amount > Decimal("0.00") else "modification_confirmed"
+        )
 
         pending_modification = {
             "check_in_date": preview.reservation_after_preview.check_in_date,
@@ -158,6 +129,32 @@ class ConfirmReservationModificationUseCase:
         )
         if not updated:
             raise ReservationNotFoundError("Reservation not found")
+
+        if additional_charge_amount > Decimal("0.00"):
+            try:
+                self.payment_service.request_additional_charge(
+                    reservation_id=reservation_id,
+                    traveler_id=reservation_before.id_traveler,
+                    amount_in_cents=self._to_cents(additional_charge_amount),
+                    currency=reservation_before.currency,
+                    idempotency_key=f"{payload.idempotency_key}:additional-charge",
+                    source_ip=source_ip,
+                )
+                payment_dispatch_status = "additional_charge_requested"
+            except PaymentServiceUnavailableError:
+                payment_dispatch_status = "additional_charge_pending_retry"
+        elif refund_amount > Decimal("0.00"):
+            try:
+                self.payment_service.request_refund(
+                    reservation_id=reservation_id,
+                    amount_in_cents=self._to_cents(refund_amount),
+                    reason="reservation_modification_refund",
+                    idempotency_key=f"{payload.idempotency_key}:refund",
+                    source_ip=source_ip,
+                )
+                payment_dispatch_status = "refund_requested"
+            except PaymentServiceUnavailableError:
+                payment_dispatch_status = "refund_pending_retry"
 
         self.event_repository.add(
             ReservationEventCreateRequest(
