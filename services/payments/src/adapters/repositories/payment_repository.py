@@ -1,6 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
@@ -457,6 +458,35 @@ class SQLModelPaymentRepository(PaymentRepository):
             .where(PaymentProcessingOutbox.next_retry_at <= now)
         ).all()
         return len(models)
+
+    def list_amounts_by_reservations(
+        self,
+        reservation_ids: list[UUID],
+        *,
+        status: PaymentStatus = PaymentStatus.confirmed,
+    ) -> tuple[list[tuple[UUID, int, str]], list[str]]:
+        if not reservation_ids:
+            return [], []
+
+        rows = self.session.exec(
+            select(
+                Payment.reservation_id,
+                Payment.currency,
+                func.sum(Payment.amount_in_cents).label("amount_in_cents"),
+            )
+            .where(
+                Payment.reservation_id.in_(reservation_ids),
+                Payment.status == status.value,
+            )
+            .group_by(Payment.reservation_id, Payment.currency)
+        ).all()
+
+        items = [
+            (reservation_id, int(amount_in_cents), currency)
+            for (reservation_id, currency, amount_in_cents) in rows
+        ]
+        currencies = sorted({currency for (_, currency, _) in rows if currency})
+        return items, currencies
 
     def find_latest_confirmed_by_reservation(
         self,

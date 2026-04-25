@@ -2,15 +2,20 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from assembly import (
     get_create_reservation_refund_use_case,
+    get_payment_repository,
     get_process_queued_payments_use_case,
     get_retry_reservation_confirmations_use_case,
 )
 from core.config import settings
+from domain.ports.payment_repository import PaymentRepository
 from domain.schemas.payment import (
+    PaymentByReservation,
     PaymentProcessingRetryResponse,
+    PaymentsByReservationsRequest,
+    PaymentsByReservationsResponse,
+    ReservationConfirmationRetryResponse,
     ReservationRefundRequest,
     ReservationRefundResponse,
-    ReservationConfirmationRetryResponse,
 )
 from domain.use_cases.create_reservation_refund import CreateReservationRefundUseCase
 from domain.use_cases.process_queued_payments import ProcessQueuedPaymentsUseCase
@@ -63,6 +68,33 @@ def retry_payment_processing(
     ),
 ) -> PaymentProcessingRetryResponse:
     return use_case.execute(source_ip=_resolve_source_ip(request))
+
+
+@router.post(
+    "/payments/by-reservations",
+    response_model=PaymentsByReservationsResponse,
+    status_code=status.HTTP_200_OK,
+)
+def list_payments_by_reservations(
+    payload: PaymentsByReservationsRequest,
+    _: None = Depends(_verify_api_key),
+    repository: PaymentRepository = Depends(get_payment_repository),
+) -> PaymentsByReservationsResponse:
+    items, currencies = repository.list_amounts_by_reservations(
+        payload.reservation_ids,
+        status=payload.status,
+    )
+    return PaymentsByReservationsResponse(
+        items=[
+            PaymentByReservation(
+                reservation_id=res_id,
+                amount_in_cents=amount,
+                currency=cur,
+            )
+            for (res_id, amount, cur) in items
+        ],
+        available_currencies=currencies,
+    )
 
 
 @router.post(

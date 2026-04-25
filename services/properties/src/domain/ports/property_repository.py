@@ -12,6 +12,8 @@ class PropertyRepository(ABC):
         pass
 
     @abstractmethod
-    def list_all(self) -> list[PropertyListResponse]:
-        """List all properties with their images"""
+    def list_all(
+        self, owner_id: Optional[UUID] = None
+    ) -> list[PropertyListResponse]:
+        """List properties with their images, optionally filtered by owner."""
         pass

@@ -1,13 +1,7 @@
-import os
-from pathlib import Path
 from types import SimpleNamespace
 from uuid import uuid4
 
-import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from sqlalchemy import event, text
-from sqlmodel import SQLModel, Session, create_engine, select
+from sqlmodel import Session, select
 
 from adapters.models.payment_audit_log import PaymentAuditLog
 from adapters.models.payment_checkout_session import PaymentCheckoutSession
@@ -28,187 +22,16 @@ from assembly import (
 )
 from core.config import settings
 from core.security import build_request_checksum, hash_token
-from db.session import get_session
-from entrypoints.api.main import create_application
 from entrypoints.api.routers import payments as payments_router
-from errors import StripeIdempotencyConflictError, StripePaymentFailureError
 
-
-SECURE_HEADERS = {"x-forwarded-proto": "https"}
-
-
-class FakeStripeCheckoutGateway:
-    def __init__(self, finalize_status: str = "succeeded"):
-        self.finalize_status = finalize_status
-        self.last_payment_intent_id = "pi_test_123"
-
-    def create_and_confirm_payment(self, **kwargs):
-        if self.finalize_status == "card_error":
-            raise StripePaymentFailureError(code="card_declined", message="Your card was declined.")
-        if self.finalize_status == "card_error_insufficient":
-            raise StripePaymentFailureError(code="insufficient_funds", message="Your card has insufficient funds.")
-        if self.finalize_status == "idempotency_error":
-            raise StripeIdempotencyConflictError("Duplicate Stripe confirmation attempt.")
-        if self.finalize_status == "requires_action":
-            return {
-                "id": self.last_payment_intent_id,
-                "status": "requires_action",
-                "client_secret": "pi_test_123_secret_abc",
-            }
-        if self.finalize_status == "failed":
-            return {
-                "id": self.last_payment_intent_id,
-                "status": "requires_payment_method",
-                "client_secret": "pi_test_123_secret_abc",
-                "last_payment_error": {
-                    "code": "card_declined",
-                    "message": "Your card was declined.",
-                },
-            }
-        return {
-            "id": self.last_payment_intent_id,
-            "status": "succeeded",
-            "client_secret": "pi_test_123_secret_abc",
-        }
-
-    def construct_event(self, *, payload: bytes, signature: str):
-        if signature != "test-signature":
-            raise ValueError("invalid signature")
-        return {
-            "type": "payment_intent.succeeded",
-            "data": {
-                "object": {
-                    "id": self.last_payment_intent_id,
-                }
-            },
-        }
-
-
-class FakeNotificationDispatcher:
-    def __init__(self, should_fail: bool = False):
-        self.should_fail = should_fail
-        self.calls = []
-
-    def dispatch_payment_confirmation(self, *, payment_id, source_ip=None):
-        self.calls.append({"payment_id": payment_id, "source_ip": source_ip})
-        if self.should_fail:
-            raise RuntimeError("notifications unavailable")
-
-
-class FakeReservationUpdater:
-    def __init__(self, should_fail: bool = False):
-        self.should_fail = should_fail
-        self.calls = []
-
-    def confirm_reservation(self, *, reservation_id, source_ip=None):
-        self.calls.append({"reservation_id": reservation_id, "source_ip": source_ip})
-        if self.should_fail:
-            raise RuntimeError("reservations unavailable")
-
-
-def _build_app(test_engine):
-    app = create_application()
-
-    def override_get_session():
-        with Session(test_engine) as session:
-            yield session
-
-    app.dependency_overrides[get_session] = override_get_session
-    return app
-
-
-@pytest.fixture(scope="function")
-def test_engine():
-    database_url = os.getenv("PAYMENTS_TEST_DATABASE_URL")
-    if database_url:
-        schema_name = f"payments_test_{uuid4().hex}"
-        engine = create_engine(database_url)
-
-        @event.listens_for(engine, "connect")
-        def _set_search_path(dbapi_connection, _connection_record):
-            cursor = dbapi_connection.cursor()
-            cursor.execute(f"SET search_path TO {schema_name}, public")
-            cursor.close()
-            dbapi_connection.commit()
-
-        with engine.connect() as conn:
-            conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {schema_name}"))
-            conn.commit()
-        SQLModel.metadata.create_all(engine)
-        yield engine
-        SQLModel.metadata.drop_all(engine)
-        with engine.connect() as conn:
-            conn.execute(text(f"DROP SCHEMA IF EXISTS {schema_name} CASCADE"))
-            conn.commit()
-        engine.dispose()
-        return
-
-    db_file = Path(__file__).resolve().parent / "payments_test.db"
-    if db_file.exists():
-        db_file.unlink()
-    engine = create_engine(
-        f"sqlite:///{db_file}",
-        connect_args={"check_same_thread": False},
-    )
-    SQLModel.metadata.create_all(engine)
-    yield engine
-    engine.dispose()
-    if db_file.exists():
-        db_file.unlink()
-
-
-@pytest.fixture
-def client(test_engine):
-    previous_skip_flag = os.environ.get("SKIP_DB_INIT_ON_STARTUP")
-    os.environ["SKIP_DB_INIT_ON_STARTUP"] = "true"
-
-    with Session(test_engine) as session:
-        for audit_log in session.exec(select(PaymentAuditLog)).all():
-            session.delete(audit_log)
-        for processing_item in session.exec(select(PaymentProcessingOutbox)).all():
-            session.delete(processing_item)
-        for outbox_item in session.exec(select(PaymentReservationConfirmationOutbox)).all():
-            session.delete(outbox_item)
-        for checkout_session in session.exec(select(PaymentCheckoutSession)).all():
-            session.delete(checkout_session)
-        for event in session.exec(select(PaymentEvent)).all():
-            session.delete(event)
-        for payment in session.exec(select(Payment)).all():
-            session.delete(payment)
-        session.commit()
-
-    app = _build_app(test_engine)
-    with TestClient(app) as test_client:
-        yield test_client
-
-    app.dependency_overrides.clear()
-    if previous_skip_flag is None:
-        os.environ.pop("SKIP_DB_INIT_ON_STARTUP", None)
-    else:
-        os.environ["SKIP_DB_INIT_ON_STARTUP"] = previous_skip_flag
-
-
-def _payload(token: str = "pm_tok_visa_ok") -> dict:
-    return {
-        "reservation_id": str(uuid4()),
-        "traveler_id": str(uuid4()),
-        "payment_method_token": token,
-        "amount_in_cents": 125000,
-        "currency": "cop",
-        "idempotency_key": "booking-123-attempt-1",
-    }
-
-
-def _checkout_payload() -> dict:
-    return {
-        "reservation_id": str(uuid4()),
-        "traveler_id": str(uuid4()),
-        "amount_in_cents": 287650,
-        "currency": "cop",
-        "property_name": "Renaissance Estate",
-        "check_in_date": "2026-10-12",
-        "check_out_date": "2026-10-17",
-    }
+from .conftest import (
+    FakeNotificationDispatcher,
+    FakeReservationUpdater,
+    FakeStripeCheckoutGateway,
+    SECURE_HEADERS,
+    build_charge_payload as _payload,
+    build_checkout_payload as _checkout_payload,
+)
 
 
 def test_create_payment_success_generates_receipt_and_events(client, test_engine):

@@ -9,7 +9,12 @@ from adapters.models.user import User
 from adapters.models.user_role import UserRole
 from core.security import hash_password
 from domain.ports.user_repository import UserRepository
-from domain.schemas.user import UserCreateRequest, UserCredentialsData, UserResponse
+from domain.schemas.user import (
+    UserCreateRequest,
+    UserCredentialsData,
+    UserResponse,
+    UserSummary,
+)
 from errors import UserConflictError
 
 
@@ -97,3 +102,24 @@ class SQLModelUserRepository(UserRepository):
         user_role = UserRole(user_id=user_id, role_id=role.id)
         self.session.add(user_role)
         self.session.commit()
+
+    def search_by_name(self, query: str, limit: int = 50) -> list[UserSummary]:
+        if not query.strip():
+            return []
+        pattern = f"%{query.strip().lower()}%"
+        rows = self.session.exec(
+            select(User)
+            .where(User.full_name.ilike(pattern))
+            .limit(limit)
+        ).all()
+        return [
+            UserSummary(id=u.id, full_name=u.full_name, email=u.email) for u in rows
+        ]
+
+    def list_by_ids(self, ids: list[UUID]) -> list[UserSummary]:
+        if not ids:
+            return []
+        rows = self.session.exec(select(User).where(User.id.in_(ids))).all()
+        return [
+            UserSummary(id=u.id, full_name=u.full_name, email=u.email) for u in rows
+        ]

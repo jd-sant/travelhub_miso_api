@@ -6,8 +6,9 @@ from domain.schemas.payment import (
     PaymentChargeResponse,
     PaymentEventResponse,
     PaymentProcessingOutboxRecord,
-    ReservationRefundResponse,
+    PaymentStatus,
     ReservationConfirmationOutboxRecord,
+    ReservationRefundResponse,
 )
 
 
@@ -154,6 +155,15 @@ class PaymentRepository(ABC):
         attempt_count: int,
         mark_as_failed: bool,
     ) -> None:
+        pass
+
+    @abstractmethod
+    def list_amounts_by_reservations(
+        self,
+        reservation_ids: list[UUID],
+        *,
+        status: PaymentStatus = PaymentStatus.confirmed,
+    ) -> tuple[list[tuple[UUID, int, str]], list[str]]:
         pass
 
     @abstractmethod

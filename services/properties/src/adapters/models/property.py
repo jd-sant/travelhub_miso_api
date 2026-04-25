@@ -7,6 +7,7 @@ class Property(SQLModel, table=True):
     __tablename__ = "properties"
 
     id: UUID = Field(default_factory=uuid4, primary_key=True, index=True)
+    id_owner: UUID | None = Field(default=None, index=True)
     name: str = Field(index=True)
     description: str
     location: str = Field(index=True)

@@ -98,6 +98,14 @@ class Settings:
         return os.getenv("DB_ECHO", "False").lower() == "true"
 
     @property
+    def properties_service_url(self) -> str:
+        return os.getenv("PROPERTIES_SERVICE_URL", "http://localhost:8005").rstrip("/")
+
+    @property
+    def users_service_url(self) -> str:
+        return os.getenv("USERS_SERVICE_URL", "http://localhost:8000").rstrip("/")
+
+    @property
     def internal_api_key(self) -> str:
         value = os.getenv("INTERNAL_API_KEY")
         if value:

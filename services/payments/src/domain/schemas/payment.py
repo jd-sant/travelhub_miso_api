@@ -11,6 +11,22 @@ class PaymentStatus(str, Enum):
     failed = "failed"
 
 
+class PaymentByReservation(BaseModel):
+    reservation_id: UUID
+    amount_in_cents: int
+    currency: str
+
+
+class PaymentsByReservationsRequest(BaseModel):
+    reservation_ids: list[UUID] = Field(default_factory=list)
+    status: PaymentStatus = PaymentStatus.confirmed
+
+
+class PaymentsByReservationsResponse(BaseModel):
+    items: list[PaymentByReservation] = Field(default_factory=list)
+    available_currencies: list[str] = Field(default_factory=list)
+
+
 class RefundStatus(str, Enum):
     pending = "pending"
     succeeded = "succeeded"

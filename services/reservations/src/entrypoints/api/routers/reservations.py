@@ -1,58 +1,40 @@
-from functools import lru_cache
+from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import Session
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from adapters.repositories.reservation_repository import SQLModelReservationRepository
-from adapters.services.scheduler_service import (
-    EventBridgeReservationScheduler,
-    NoOpReservationScheduler,
+from assembly import (
+    get_compute_host_metrics_use_case,
+    get_compute_revenue_trends_use_case,
+    get_create_reservation_use_case,
+    get_list_host_reservations_use_case,
+    get_reservation_repository,
 )
-from core.config import settings
-from db.session import get_session
-from domain.ports.reservation_scheduler import ReservationScheduler
-from domain.schemas.reservation import ReservationCreateRequest, ReservationResponse, ReservationSummary
+from core.auth import AuthenticatedUser, get_current_hotel_user
+from domain.schemas.reservation import (
+    HostMetrics,
+    HostReservationsPage,
+    HostRevenueTrends,
+    ReservationCreateRequest,
+    ReservationResponse,
+    ReservationSummary,
+)
+from domain.use_cases.compute_host_metrics import (
+    ComputeHostMetricsUseCase,
+    ComputeRevenueTrendsUseCase,
+)
 from domain.use_cases.create_reservation import CreateReservationUseCase
+from domain.use_cases.list_host_reservations import ListHostReservationsUseCase
 from errors import (
     InvalidReservationDateError,
     ReservationSchedulingError,
     RoomNotAvailableError,
+    ServiceUnavailableError,
 )
 
 router = APIRouter()
-
-
-def get_reservation_repository(session: Session = Depends(get_session)):
-    return SQLModelReservationRepository(session)
-
-
-@lru_cache
-def get_reservation_scheduler() -> ReservationScheduler:
-    if not settings.reservation_scheduler_enabled:
-        return NoOpReservationScheduler()
-
-    try:
-        return EventBridgeReservationScheduler(
-            aws_region=settings.aws_region,
-            lambda_arn=settings.lambda_arn,
-            scheduler_role_arn=settings.scheduler_role_arn,
-            api_base_url=settings.api_base_url,
-            scheduler_group_name=settings.scheduler_group_name,
-            delay_minutes=settings.reservation_scheduler_delay_minutes,
-        )
-    except (ValueError, RuntimeError) as exc:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Scheduler configuration error",
-        ) from exc
-
-
-def get_create_reservation_use_case(
-    repository=Depends(get_reservation_repository),
-    scheduler: ReservationScheduler = Depends(get_reservation_scheduler),
-):
-    return CreateReservationUseCase(repository, scheduler)
 
 
 @router.post(
@@ -104,6 +86,87 @@ def create_reservation(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error",
+        )
+
+
+@router.get("/host/me/metrics", response_model=HostMetrics)
+def get_host_metrics(
+    start_date: datetime | None = Query(default=None),
+    end_date: datetime | None = Query(default=None),
+    currency: str | None = Query(default=None),
+    user: AuthenticatedUser = Depends(get_current_hotel_user),
+    use_case: ComputeHostMetricsUseCase = Depends(get_compute_host_metrics_use_case),
+):
+    try:
+        return use_case.execute(
+            owner_id=user.id,
+            start_date=start_date,
+            end_date=end_date,
+            currency=currency,
+        )
+    except ServiceUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
+        )
+
+
+@router.get("/host/me/revenue-trends", response_model=HostRevenueTrends)
+def get_host_revenue_trends(
+    start_date: datetime | None = Query(default=None),
+    end_date: datetime | None = Query(default=None),
+    granularity: Literal["day", "week", "month"] = Query(default="week"),
+    currency: str | None = Query(default=None),
+    user: AuthenticatedUser = Depends(get_current_hotel_user),
+    use_case: ComputeRevenueTrendsUseCase = Depends(
+        get_compute_revenue_trends_use_case
+    ),
+):
+    try:
+        return use_case.execute(
+            owner_id=user.id,
+            start_date=start_date,
+            end_date=end_date,
+            granularity=granularity,
+            currency=currency,
+        )
+    except ServiceUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
+        )
+
+
+@router.get("/host/me", response_model=HostReservationsPage)
+def list_host_reservations(
+    status_param: list[str] | None = Query(default=None, alias="status"),
+    start_date: datetime | None = Query(default=None),
+    end_date: datetime | None = Query(default=None),
+    guest_name: str | None = Query(default=None),
+    sort_by: Literal["check_in_date", "created_at", "total_price"] = Query(
+        default="check_in_date"
+    ),
+    sort_dir: Literal["asc", "desc"] = Query(default="desc"),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=10, ge=1, le=100),
+    user: AuthenticatedUser = Depends(get_current_hotel_user),
+    use_case: ListHostReservationsUseCase = Depends(get_list_host_reservations_use_case),
+):
+    """Listado paginado de reservas filtrado por las propiedades del hotel autenticado."""
+    try:
+        return use_case.execute(
+            owner_id=user.id,
+            statuses=status_param,
+            start_date=start_date,
+            end_date=end_date,
+            guest_name=guest_name,
+            sort_by=sort_by,
+            sort_dir=sort_dir,
+            page=page,
+            page_size=page_size,
+        )
+    except ServiceUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
         )
 
 

@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from assembly import (
     get_property_detail_use_case,
@@ -24,16 +24,15 @@ router = APIRouter(prefix="/properties", tags=["properties"])
     status_code=status.HTTP_200_OK,
 )
 def list_properties(
+    owner_id: UUID | None = Query(default=None),
     use_case: GetPropertiesListUseCase = Depends(
         get_properties_list_use_case
     ),
 ) -> list[PropertyListResponse]:
     """
-    Get all available properties.
-    
-    Returns a list of properties with basic information including images.
+    Get available properties, optionally scoped to a specific owner.
     """
-    return use_case.execute()
+    return use_case.execute(owner_id=owner_id)
 
 
 @router.get(

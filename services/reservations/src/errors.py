@@ -22,17 +22,13 @@ class InvalidReservationStatusError(Exception):
     pass
 
 
+class ServiceUnavailableError(Exception):
+    pass
+
+
 class ReservationStateConflictError(Exception):
     pass
 
 
 class ReservationAuthorizationError(Exception):
-    pass
-
-
-class TokenExpiredError(Exception):
-    pass
-
-
-class InvalidTokenError(Exception):
     pass

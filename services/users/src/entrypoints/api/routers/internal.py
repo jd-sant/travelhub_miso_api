@@ -5,7 +5,14 @@ from fastapi import APIRouter, Depends, Header, HTTPException, status
 from assembly import get_user_repository, get_verify_credentials_use_case
 from core.config import settings
 from domain.ports.user_repository import UserRepository
-from domain.schemas.user import UserResponse, VerifyCredentialsRequest, VerifyCredentialsResponse
+from domain.schemas.user import (
+    UserBatchByIdsRequest,
+    UserResponse,
+    UserSearchByNameRequest,
+    UserSummary,
+    VerifyCredentialsRequest,
+    VerifyCredentialsResponse,
+)
 from domain.use_cases.verify_credentials import VerifyCredentialsUseCase
 from errors import InvalidCredentialsError
 
@@ -60,3 +67,29 @@ def get_user_by_id(
             detail="Usuario no encontrado",
         )
     return user
+
+
+@router.post(
+    "/users/search-by-name",
+    response_model=list[UserSummary],
+    status_code=status.HTTP_200_OK,
+)
+def search_users_by_name(
+    payload: UserSearchByNameRequest,
+    _: None = Depends(_verify_api_key),
+    repository: UserRepository = Depends(get_user_repository),
+) -> list[UserSummary]:
+    return repository.search_by_name(payload.query)
+
+
+@router.post(
+    "/users/by-ids",
+    response_model=list[UserSummary],
+    status_code=status.HTTP_200_OK,
+)
+def list_users_by_ids(
+    payload: UserBatchByIdsRequest,
+    _: None = Depends(_verify_api_key),
+    repository: UserRepository = Depends(get_user_repository),
+) -> list[UserSummary]:
+    return repository.list_by_ids(payload.ids)

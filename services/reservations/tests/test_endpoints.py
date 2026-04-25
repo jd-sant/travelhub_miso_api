@@ -504,7 +504,7 @@ class TestReservationEndpoints:
         )
 
         assert response.status_code == 401
-        assert response.json()["detail"] == "Token de autenticación inválido"
+        assert response.json()["detail"] == "Token inválido"
 
     def test_hotel_cancel_reason_is_truncated_for_long_other_note(self, client):
         payload = {

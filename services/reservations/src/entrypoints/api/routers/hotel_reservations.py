@@ -11,8 +11,7 @@ from adapters.services.hotel_side_effects import (
     NoOpReservationNotificationDispatcher,
     NoOpReservationRefundDispatcher,
 )
-from core.decorators import require_role
-from core.roles import UserRole
+from core.auth import AuthenticatedUser, get_current_hotel_user
 from core.config import settings
 from db.session import get_session
 from domain.ports.hotel_side_effects import (
@@ -69,16 +68,6 @@ def get_reservation_refund_dispatcher() -> ReservationRefundDispatcher:
     if settings.payments_service_url:
         return HttpReservationRefundDispatcher()
     return NoOpReservationRefundDispatcher()
-
-
-def _resolve_actor_user_id(request: Request) -> UUID | None:
-    user = getattr(request.state, "user", None)
-    if not user or "sub" not in user:
-        return None
-    try:
-        return UUID(str(user["sub"]))
-    except ValueError:
-        return None
 
 
 def _resolve_source_ip(request: Request) -> str | None:
@@ -138,23 +127,22 @@ def _dispatch_post_cancellation_effects(
 
 
 @router.get("", response_model=list[HotelReservationListItem], status_code=status.HTTP_200_OK)
-@require_role(UserRole.HOTEL)
 def list_hotel_reservations(
-    request: Request,
     property_id: UUID = Query(..., alias="propertyId"),
     status_filter: str | None = Query(default=None, alias="status"),
+    user: AuthenticatedUser = Depends(get_current_hotel_user),
     use_case: ListHotelReservationsUseCase = Depends(get_list_hotel_reservations_use_case),
 ) -> list[HotelReservationListItem]:
     return use_case.execute(property_id, status=status_filter)
 
 
 @router.post("/{reservation_id}/confirm", response_model=HotelReservationActionResponse)
-@require_role(UserRole.HOTEL)
 def confirm_hotel_reservation(
     reservation_id: UUID,
     payload: HotelReservationConfirmationRequest,
     background_tasks: BackgroundTasks,
     request: Request,
+    user: AuthenticatedUser = Depends(get_current_hotel_user),
     use_case: ConfirmHotelReservationUseCase = Depends(get_confirm_hotel_reservation_use_case),
     notification_dispatcher: ReservationNotificationDispatcher = Depends(
         get_reservation_notification_dispatcher
@@ -163,7 +151,7 @@ def confirm_hotel_reservation(
     try:
         result = use_case.execute(
             reservation_id,
-            actor_user_id=_resolve_actor_user_id(request),
+            actor_user_id=user.id,
             source_ip=_resolve_source_ip(request),
             reason=payload.reason,
         )
@@ -183,12 +171,12 @@ def confirm_hotel_reservation(
 
 
 @router.post("/{reservation_id}/cancel", response_model=HotelReservationActionResponse)
-@require_role(UserRole.HOTEL)
 def cancel_hotel_reservation(
     reservation_id: UUID,
     payload: HotelReservationCancellationRequest,
     background_tasks: BackgroundTasks,
     request: Request,
+    user: AuthenticatedUser = Depends(get_current_hotel_user),
     use_case: CancelHotelReservationUseCase = Depends(get_cancel_hotel_reservation_use_case),
     notification_dispatcher: ReservationNotificationDispatcher = Depends(
         get_reservation_notification_dispatcher
@@ -198,7 +186,7 @@ def cancel_hotel_reservation(
     try:
         result = use_case.execute(
             reservation_id,
-            actor_user_id=_resolve_actor_user_id(request),
+            actor_user_id=user.id,
             source_ip=_resolve_source_ip(request),
             reason=ReservationCancellationReason(payload.reason),
             note=payload.note,

@@ -50,5 +50,51 @@ class ReservationRepository(ABC):
         pass
 
     @abstractmethod
+    def list_by_properties(
+        self,
+        property_ids: list[UUID],
+        *,
+        statuses: list[str] | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        guest_ids: list[UUID] | None = None,
+        sort_by: str = "check_in_date",
+        sort_dir: str = "desc",
+        page: int = 1,
+        page_size: int = 10,
+    ) -> tuple[list[ReservationResponse], int]:
+        pass
+
+    @abstractmethod
+    def list_confirmed_ids_by_properties(
+        self,
+        property_ids: list[UUID],
+        *,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ) -> list[UUID]:
+        pass
+
+    @abstractmethod
+    def list_confirmed_with_check_in_by_properties(
+        self,
+        property_ids: list[UUID],
+        *,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ) -> list[tuple[UUID, datetime]]:
+        pass
+
+    @abstractmethod
+    def operational_metrics_for_properties(
+        self,
+        property_ids: list[UUID],
+        *,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ) -> dict:
+        pass
+
+    @abstractmethod
     def add_change(self, payload: ReservationChangeRecord) -> ReservationChangeRecord:
         pass
