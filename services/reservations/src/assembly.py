@@ -66,8 +66,9 @@ def get_payments_client() -> PaymentsServiceClient:
 def get_create_reservation_use_case(
     repository: SQLModelReservationRepository = Depends(get_reservation_repository),
     scheduler: ReservationScheduler = Depends(get_reservation_scheduler),
+    properties_client: PropertiesServiceClient = Depends(get_properties_client),
 ) -> CreateReservationUseCase:
-    return CreateReservationUseCase(repository, scheduler)
+    return CreateReservationUseCase(repository, scheduler, properties_client)
 
 
 def get_update_reservation_status_use_case(

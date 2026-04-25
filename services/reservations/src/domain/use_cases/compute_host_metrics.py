@@ -25,6 +25,7 @@ class ComputeHostMetricsUseCase:
         owner_id: UUID,
         start_date: datetime | None = None,
         end_date: datetime | None = None,
+        currency: str | None = None,
     ) -> HostMetrics:
         if end_date is None:
             end_date = datetime.now(timezone.utc)
@@ -39,6 +40,7 @@ class ComputeHostMetricsUseCase:
                 occupancy_rate=0.0,
                 revenue_amount=Decimal("0.00"),
                 revenue_currency=None,
+                available_currencies=[],
                 average_daily_rate=Decimal("0.00"),
                 total_nights=0,
             )
@@ -49,15 +51,25 @@ class ComputeHostMetricsUseCase:
         reservation_ids = self.repository.list_confirmed_ids_by_properties(
             property_ids, start_date=start_date, end_date=end_date
         )
-        aggregate = self.payments_client.aggregate(
+        payments = self.payments_client.list_by_reservations(
             reservation_ids,
             status="confirmed",
-            start_date=start_date,
-            end_date=end_date,
         )
+        items = payments.get("items", [])
+        available_currencies = payments.get("available_currencies", [])
 
-        revenue_amount = Decimal(aggregate["total_amount_cents"]) / Decimal("100")
-        currency = aggregate.get("currency")
+        if currency:
+            currency_filter = currency.upper()
+        elif available_currencies:
+            currency_filter = available_currencies[0]
+        else:
+            currency_filter = None
+
+        if currency_filter:
+            items = [it for it in items if it.get("currency") == currency_filter]
+
+        total_cents = sum(int(it["amount_in_cents"]) for it in items)
+        revenue_amount = Decimal(total_cents) / Decimal("100")
         total_nights = operational["total_nights"]
         average_daily_rate = (
             (revenue_amount / Decimal(total_nights)).quantize(Decimal("0.01"))
@@ -78,7 +90,8 @@ class ComputeHostMetricsUseCase:
             active_reservations=operational["active_reservations"],
             occupancy_rate=occupancy_rate,
             revenue_amount=revenue_amount.quantize(Decimal("0.01")),
-            revenue_currency=currency,
+            revenue_currency=currency_filter,
+            available_currencies=available_currencies,
             average_daily_rate=average_daily_rate,
             total_nights=total_nights,
         )
@@ -102,6 +115,7 @@ class ComputeRevenueTrendsUseCase:
         start_date: datetime | None = None,
         end_date: datetime | None = None,
         granularity: str = "week",
+        currency: str | None = None,
     ) -> HostRevenueTrends:
         if end_date is None:
             end_date = datetime.now(timezone.utc)
@@ -110,31 +124,66 @@ class ComputeRevenueTrendsUseCase:
 
         property_ids = self.properties_client.get_owned_property_ids(owner_id)
         if not property_ids:
-            return HostRevenueTrends(granularity=granularity, currency=None, buckets=[])
+            return HostRevenueTrends(
+                granularity=granularity,
+                currency=None,
+                available_currencies=[],
+                buckets=[],
+            )
 
-        reservation_ids = self.repository.list_confirmed_ids_by_properties(
+        rows = self.repository.list_confirmed_with_check_in_by_properties(
             property_ids, start_date=start_date, end_date=end_date
         )
-        aggregate = self.payments_client.aggregate(
-            reservation_ids,
+        if not rows:
+            return HostRevenueTrends(
+                granularity=granularity,
+                currency=None,
+                available_currencies=[],
+                buckets=[],
+            )
+
+        check_in_by_id: dict[UUID, datetime] = {rid: ci for rid, ci in rows}
+        payments = self.payments_client.list_by_reservations(
+            list(check_in_by_id.keys()),
             status="confirmed",
-            start_date=start_date,
-            end_date=end_date,
-            granularity=granularity,
         )
+        items = payments.get("items", [])
+        available_currencies = payments.get("available_currencies", [])
+
+        if currency:
+            currency_filter = currency.upper()
+        elif available_currencies:
+            currency_filter = available_currencies[0]
+        else:
+            currency_filter = None
+
+        grouped: dict[datetime, dict[str, int]] = {}
+        for item in items:
+            if currency_filter and item.get("currency") != currency_filter:
+                continue
+            res_id = UUID(str(item["reservation_id"]))
+            check_in = check_in_by_id.get(res_id)
+            if check_in is None:
+                continue
+            key = _truncate(check_in, granularity)
+            entry = grouped.setdefault(key, {"amount_cents": 0, "count": 0})
+            entry["amount_cents"] += int(item["amount_in_cents"])
+            entry["count"] += 1
+
         buckets = [
             HostRevenueBucket(
-                bucket=_parse_dt(b["bucket"]),
-                revenue=(Decimal(b["amount_cents"]) / Decimal("100")).quantize(
+                bucket=key,
+                revenue=(Decimal(val["amount_cents"]) / Decimal("100")).quantize(
                     Decimal("0.01")
                 ),
-                reservations=b["count"],
+                reservations=val["count"],
             )
-            for b in aggregate.get("buckets", [])
+            for key, val in sorted(grouped.items())
         ]
         return HostRevenueTrends(
             granularity=granularity,
-            currency=aggregate.get("currency"),
+            currency=currency_filter,
+            available_currencies=available_currencies,
             buckets=buckets,
         )
 
@@ -144,7 +193,12 @@ def _room_count(property_payload: dict) -> int:
     return max(int(bedrooms), 1)
 
 
-def _parse_dt(value):
-    if isinstance(value, datetime):
-        return value
-    return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+def _truncate(moment: datetime, granularity: str) -> datetime:
+    base = moment.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None) if moment.tzinfo else moment.replace(hour=0, minute=0, second=0, microsecond=0)
+    if granularity == "day":
+        return base
+    if granularity == "week":
+        return base - timedelta(days=base.weekday())
+    if granularity == "month":
+        return base.replace(day=1)
+    return base

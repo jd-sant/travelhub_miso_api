@@ -34,3 +34,18 @@ class PropertiesServiceClient:
 
     def get_owned_property_ids(self, owner_id: UUID) -> list[UUID]:
         return [UUID(item["id"]) for item in self.list_by_owner(owner_id)]
+
+    def get_by_id(self, property_id: UUID) -> dict:
+        url = f"{self.base_url}/api/v1/properties/{property_id}"
+        try:
+            response = httpx.get(url, timeout=self.timeout)
+        except httpx.RequestError as exc:
+            raise ServiceUnavailableError(
+                "No se pudo conectar al servicio de propiedades"
+            ) from exc
+
+        if response.status_code != 200:
+            raise ServiceUnavailableError(
+                f"Properties service responded with {response.status_code}"
+            )
+        return response.json()

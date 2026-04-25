@@ -1,4 +1,3 @@
-from datetime import datetime
 from uuid import UUID
 
 import httpx
@@ -14,34 +13,19 @@ class PaymentsServiceClient:
         self.base_url = (base_url or settings.payments_service_url).rstrip("/")
         self.timeout = timeout
 
-    def aggregate(
+    def list_by_reservations(
         self,
         reservation_ids: list[UUID],
         *,
         status: str = "confirmed",
-        start_date: datetime | None = None,
-        end_date: datetime | None = None,
-        granularity: str | None = None,
     ) -> dict:
         if not reservation_ids:
-            return {
-                "total_amount_cents": 0,
-                "currency": None,
-                "count": 0,
-                "buckets": [],
-            }
-        url = f"{self.base_url}/api/v1/internal/payments/aggregate"
+            return {"items": [], "available_currencies": []}
+        url = f"{self.base_url}/api/v1/internal/payments/by-reservations"
         body = {
             "reservation_ids": [str(rid) for rid in reservation_ids],
             "status": status,
         }
-        if start_date is not None:
-            body["start_date"] = start_date.isoformat()
-        if end_date is not None:
-            body["end_date"] = end_date.isoformat()
-        if granularity is not None:
-            body["granularity"] = granularity
-
         try:
             response = httpx.post(
                 url,

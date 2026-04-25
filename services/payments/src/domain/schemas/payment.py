@@ -11,25 +11,20 @@ class PaymentStatus(str, Enum):
     failed = "failed"
 
 
-class PaymentAggregateBucket(BaseModel):
-    bucket: datetime
-    amount_cents: int
-    count: int
+class PaymentByReservation(BaseModel):
+    reservation_id: UUID
+    amount_in_cents: int
+    currency: str
 
 
-class PaymentAggregateRequest(BaseModel):
+class PaymentsByReservationsRequest(BaseModel):
     reservation_ids: list[UUID] = Field(default_factory=list)
-    start_date: datetime | None = None
-    end_date: datetime | None = None
     status: PaymentStatus = PaymentStatus.confirmed
-    granularity: str | None = Field(default=None, pattern="^(day|week|month)$")
 
 
-class PaymentAggregateResponse(BaseModel):
-    total_amount_cents: int
-    currency: str | None = None
-    count: int
-    buckets: list[PaymentAggregateBucket] = Field(default_factory=list)
+class PaymentsByReservationsResponse(BaseModel):
+    items: list[PaymentByReservation] = Field(default_factory=list)
+    available_currencies: list[str] = Field(default_factory=list)
 
 
 class ReservationConfirmationOutboxStatus(str, Enum):

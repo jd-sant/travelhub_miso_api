@@ -3,7 +3,6 @@ from datetime import datetime
 from uuid import UUID
 
 from domain.schemas.payment import (
-    PaymentAggregateResponse,
     PaymentChargeResponse,
     PaymentEventResponse,
     PaymentProcessingOutboxRecord,
@@ -158,15 +157,12 @@ class PaymentRepository(ABC):
         pass
 
     @abstractmethod
-    def aggregate_by_reservations(
+    def list_amounts_by_reservations(
         self,
         reservation_ids: list[UUID],
         *,
         status: PaymentStatus = PaymentStatus.confirmed,
-        start_date: datetime | None = None,
-        end_date: datetime | None = None,
-        granularity: str | None = None,
-    ) -> PaymentAggregateResponse:
+    ) -> tuple[list[tuple[UUID, int, str]], list[str]]:
         pass
 
     @abstractmethod

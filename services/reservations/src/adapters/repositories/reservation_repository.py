@@ -181,6 +181,25 @@ class SQLModelReservationRepository(ReservationRepository):
             statement = statement.where(Reservation.check_in_date <= end_date)
         return list(self.session.exec(statement).all())
 
+    def list_confirmed_with_check_in_by_properties(
+        self,
+        property_ids: list[UUID],
+        *,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ) -> list[tuple[UUID, datetime]]:
+        if not property_ids:
+            return []
+        statement = select(Reservation.id, Reservation.check_in_date).where(
+            Reservation.id_property.in_(property_ids),
+            Reservation.status == "confirmed",
+        )
+        if start_date is not None:
+            statement = statement.where(Reservation.check_out_date >= start_date)
+        if end_date is not None:
+            statement = statement.where(Reservation.check_in_date <= end_date)
+        return [(rid, ci) for rid, ci in self.session.exec(statement).all()]
+
     def operational_metrics_for_properties(
         self,
         property_ids: list[UUID],

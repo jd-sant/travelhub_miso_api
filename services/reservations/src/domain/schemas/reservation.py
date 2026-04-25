@@ -89,6 +89,7 @@ class HostMetrics(BaseModel):
     occupancy_rate: float
     revenue_amount: Decimal
     revenue_currency: str | None = None
+    available_currencies: list[str] = []
     average_daily_rate: Decimal
     total_nights: int
 
@@ -102,5 +103,6 @@ class HostRevenueBucket(BaseModel):
 class HostRevenueTrends(BaseModel):
     granularity: str
     currency: str | None = None
+    available_currencies: list[str] = []
     buckets: list[HostRevenueBucket]
 

@@ -71,31 +71,23 @@ class FakeUsersClient:
 
 class FakePaymentsClient:
     def __init__(self):
-        self.aggregate_response = {
-            "total_amount_cents": 0,
-            "currency": None,
-            "count": 0,
-            "buckets": [],
+        self.list_response = {
+            "items": [],
+            "available_currencies": [],
         }
         self.last_call = None
 
-    def aggregate(
+    def list_by_reservations(
         self,
         reservation_ids,
         *,
         status="confirmed",
-        start_date=None,
-        end_date=None,
-        granularity=None,
     ):
         self.last_call = {
             "reservation_ids": list(reservation_ids),
             "status": status,
-            "start_date": start_date,
-            "end_date": end_date,
-            "granularity": granularity,
         }
-        return self.aggregate_response
+        return self.list_response
 
 
 def _hotel_token(owner_id=HOTEL_OWNER_ID):
@@ -273,14 +265,8 @@ def test_host_listing_pagination_and_sort(client, session, fakes_overridden):
 
 
 def test_host_metrics_uses_payments_aggregate(client, session, fakes_overridden):
-    fakes_overridden["payments"].aggregate_response = {
-        "total_amount_cents": 7500,
-        "currency": "cop",
-        "count": 2,
-        "buckets": [],
-    }
     base_check_in = datetime.now(UTC) - timedelta(days=2)
-    _seed_reservation(
+    reservation = _seed_reservation(
         session,
         id_property=PROPERTY_A,
         id_traveler=uuid4(),
@@ -288,6 +274,16 @@ def test_host_metrics_uses_payments_aggregate(client, session, fakes_overridden)
         check_in=base_check_in,
         nights=3,
     )
+    fakes_overridden["payments"].list_response = {
+        "items": [
+            {
+                "reservation_id": str(reservation.id),
+                "amount_in_cents": 7500,
+                "currency": "COP",
+            },
+        ],
+        "available_currencies": ["COP"],
+    }
 
     response = client.get(
         "/api/v1/reservations/host/me/metrics",
@@ -296,7 +292,8 @@ def test_host_metrics_uses_payments_aggregate(client, session, fakes_overridden)
     assert response.status_code == 200
     body = response.json()
     assert body["revenue_amount"] == "75.00"
-    assert body["revenue_currency"] == "cop"
+    assert body["revenue_currency"] == "COP"
+    assert body["available_currencies"] == ["COP"]
     assert body["total_nights"] >= 1
     assert body["active_reservations"] >= 1
     call = fakes_overridden["payments"].last_call
@@ -304,23 +301,37 @@ def test_host_metrics_uses_payments_aggregate(client, session, fakes_overridden)
 
 
 def test_host_revenue_trends_returns_buckets(client, session, fakes_overridden):
-    bucket_dt = datetime.now(UTC).replace(microsecond=0)
-    fakes_overridden["payments"].aggregate_response = {
-        "total_amount_cents": 12000,
-        "currency": "cop",
-        "count": 2,
-        "buckets": [
+    base_check_in = datetime.now(UTC).replace(microsecond=0) - timedelta(days=4)
+    reservation_a = _seed_reservation(
+        session,
+        id_property=PROPERTY_A,
+        id_traveler=uuid4(),
+        status="confirmed",
+        check_in=base_check_in,
+        nights=2,
+    )
+    reservation_b = _seed_reservation(
+        session,
+        id_property=PROPERTY_A,
+        id_traveler=uuid4(),
+        status="confirmed",
+        check_in=base_check_in + timedelta(days=1),
+        nights=2,
+    )
+    fakes_overridden["payments"].list_response = {
+        "items": [
             {
-                "bucket": bucket_dt.isoformat(),
-                "amount_cents": 7000,
-                "count": 1,
+                "reservation_id": str(reservation_a.id),
+                "amount_in_cents": 7000,
+                "currency": "COP",
             },
             {
-                "bucket": (bucket_dt + timedelta(days=1)).isoformat(),
-                "amount_cents": 5000,
-                "count": 1,
+                "reservation_id": str(reservation_b.id),
+                "amount_in_cents": 5000,
+                "currency": "COP",
             },
         ],
+        "available_currencies": ["COP"],
     }
     response = client.get(
         "/api/v1/reservations/host/me/revenue-trends?granularity=day",
@@ -329,7 +340,8 @@ def test_host_revenue_trends_returns_buckets(client, session, fakes_overridden):
     assert response.status_code == 200
     body = response.json()
     assert body["granularity"] == "day"
-    assert body["currency"] == "cop"
+    assert body["currency"] == "COP"
+    assert body["available_currencies"] == ["COP"]
     assert len(body["buckets"]) == 2
     assert body["buckets"][0]["revenue"] == "70.00"
     assert body["buckets"][1]["revenue"] == "50.00"
