@@ -22,9 +22,22 @@ class TestCreateReservationUseCase:
         assert result.id is not None
         assert result.id_traveler == valid_create_request.id_traveler
         assert result.status == "pending_payment"
-        # 3 noches * 2 huéspedes * 100 * (1 + 0.19 de impuesto para COP) = 714.00
-        expected_price = Decimal("714.00")
+        # Sin property_client => fallback (price=100, cleaning=0, tax_rate=0.16,
+        # service_fee_rate=0.08). Para 3 noches y 2 huéspedes:
+        #   accommodation = 100*3*2 = 600
+        #   service       = 600*0.08 = 48
+        #   subtotal      = 648
+        #   taxes         = 648*0.16 = 103.68
+        #   total         = 751.68
+        expected_price = Decimal("751.68")
         assert result.total_price == expected_price
+        breakdown = result.price_breakdown
+        assert breakdown is not None
+        assert breakdown.accommodation_in_cents == 60000
+        assert breakdown.service_fee_in_cents == 4800
+        assert breakdown.taxes_in_cents == 10368
+        assert breakdown.total_in_cents == 75168
+        assert breakdown.nights == 3
 
     def test_execute_validates_dates(self, create_reservation_use_case):
         """Test that execute raises error if check_out is before check_in."""
@@ -82,37 +95,27 @@ class TestCreateReservationUseCase:
 
         result = create_reservation_use_case.execute(request)
 
-        # 1 noche * 100 * (1 + 0.19 de impuesto) = 119.00
-        expected_price = Decimal("119.00")
+        # 1 noche, 1 huésped (fallback price=100, cleaning=0, tax_rate=0.16,
+        # service_fee=0.08): accommodation=100; service=8; subtotal=108;
+        # taxes=17.28; total=125.28
+        expected_price = Decimal("125.28")
         assert result.total_price == expected_price
 
-    def test_execute_applies_correct_tax_rate_for_each_currency(
+    def test_execute_preserves_currency_for_each_supported_code(
         self, create_reservation_use_case, traveler_id, property_id
     ):
-        """Test that correct tax rates are applied for different currencies."""
+        """El tax_rate proviene de la propiedad; sin property_client mockeado el
+        fallback (0.16) aplica a todas las monedas. Solo verificamos que la
+        moneda se preserva y el total cuadra con la fórmula canónica.
+        """
         check_in = datetime.now(UTC) + timedelta(days=5)
         check_out = check_in + timedelta(days=2)  # 2 noches
-        base_price = Decimal(100) * 2 * 2  # 2 huéspedes * 2 noches * 100 = 400
 
-        tax_rates = {
-            "COP": Decimal("0.19"),  # 400 * 1.19 = 476.00
-            "USD": Decimal("0.08"),  # 400 * 1.08 = 432.00
-            "ARS": Decimal("0.21"),  # 400 * 1.21 = 484.00
-            "CLP": Decimal("0.19"),  # 400 * 1.19 = 476.00
-            "PEN": Decimal("0.18"),  # 400 * 1.18 = 472.00
-            "MXN": Decimal("0.16"),  # 400 * 1.16 = 464.00
-        }
+        # 2 noches * 2 huéspedes * 100 = 400 acomodación;
+        # service = 32; subtotal = 432; taxes = 69.12; total = 501.12
+        expected_price = Decimal("501.12")
 
-        expected_prices = {
-            "COP": Decimal("476.00"),
-            "USD": Decimal("432.00"),
-            "ARS": Decimal("484.00"),
-            "CLP": Decimal("476.00"),
-            "PEN": Decimal("472.00"),
-            "MXN": Decimal("464.00"),
-        }
-
-        for currency, expected_price in expected_prices.items():
+        for currency in ("COP", "USD", "ARS", "CLP", "PEN", "MXN"):
             request = ReservationCreateRequest(
                 id_traveler=traveler_id,
                 id_property=property_id,
@@ -123,6 +126,7 @@ class TestCreateReservationUseCase:
                 currency=currency,
             )
             result = create_reservation_use_case.execute(request)
+            assert result.currency == currency
             assert result.total_price == expected_price
 
     def test_execute_uses_unknown_currency_tax_rate(
@@ -144,8 +148,10 @@ class TestCreateReservationUseCase:
 
         result = create_reservation_use_case.execute(request)
 
-        # 2 huéspedes * 1 noche * 100 * (1 + 0.16) = 232.00
-        expected_price = Decimal("232.00")
+        # 1 noche * 2 huéspedes con fallback (price=100, cleaning=0,
+        # tax_rate=0.16, service=0.08): accommodation=200; service=16;
+        # subtotal=216; taxes=34.56; total=250.56
+        expected_price = Decimal("250.56")
         assert result.total_price == expected_price
 
     def test_execute_handles_timezone_aware_datetimes(
@@ -170,6 +176,63 @@ class TestCreateReservationUseCase:
         assert result.status == "pending_payment"
         assert result.check_in_date.tzinfo is None
         assert result.check_out_date.tzinfo is None
+
+    def test_execute_uses_property_pricing_for_canonical_breakdown(
+        self, reservation_repository, traveler_id, property_id, room_id
+    ):
+        """Cuando hay property_client el breakdown se construye con los datos
+        reales de la propiedad (price/cleaning/tax_rate)."""
+        from uuid import UUID
+        from domain.ports.property_service_client import PropertyServiceClient
+        from domain.schemas.property_service import PropertyDetailResponse
+
+        class StubPropertyClient(PropertyServiceClient):
+            def get_property(self, property_id: UUID) -> PropertyDetailResponse:
+                return PropertyDetailResponse(
+                    id=property_id,
+                    max_guests=4,
+                    price_per_night=Decimal("200"),
+                    cleaning_fee=Decimal("50"),
+                    tax_rate=Decimal("0.10"),
+                )
+
+            def get_cancellation_policy(self, property_id: UUID):  # pragma: no cover
+                raise NotImplementedError
+
+        use_case = CreateReservationUseCase(
+            reservation_repository,
+            scheduler=None,
+            properties_client=None,
+            property_client=StubPropertyClient(),
+        )
+
+        check_in = datetime.now(UTC) + timedelta(days=5)
+        check_out = check_in + timedelta(days=2)
+        result = use_case.execute(
+            ReservationCreateRequest(
+                id_traveler=traveler_id,
+                id_property=property_id,
+                id_room=room_id,
+                check_in_date=check_in,
+                check_out_date=check_out,
+                number_of_guests=2,
+                currency="USD",
+            )
+        )
+
+        # 2 noches * 2 huéspedes * 200 = 800 (accommodation)
+        # cleaning = 50; service = 800*0.08 = 64; subtotal = 914
+        # taxes = 914*0.10 = 91.40; total = 1005.40
+        breakdown = result.price_breakdown
+        assert breakdown is not None
+        assert breakdown.accommodation_in_cents == 80000
+        assert breakdown.cleaning_fee_in_cents == 5000
+        assert breakdown.service_fee_in_cents == 6400
+        assert breakdown.taxes_in_cents == 9140
+        assert breakdown.total_in_cents == 100540
+        assert breakdown.nights == 2
+        assert breakdown.nightly_rate_in_cents == 40000
+        assert result.total_price == Decimal("1005.40")
 
     def test_execute_checks_room_availability(
         self, create_reservation_use_case, reservation_repository, valid_create_request

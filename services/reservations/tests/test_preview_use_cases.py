@@ -113,9 +113,13 @@ class TestPreviewReservationModificationUseCase:
 
         assert result.change_allowed is True
         assert result.requires_additional_charge is True
-        assert result.delta_amount == Decimal("595.00")
+        # Original almacenado en DB: 476.00. Preview con fórmula canónica
+        # (FakePropertyServiceClient sin cleaning ni tax_rate, sólo service 8%):
+        # 3 noches * 3 huéspedes * 100 = 900; service = 72; total = 972.
+        # delta = 972 - 476 = 496.
+        assert result.delta_amount == Decimal("496.00")
         assert result.estimated_refund_amount == Decimal("0.00")
-        assert result.price_after.total_price == Decimal("1071.00")
+        assert result.price_after.total_price == Decimal("972.00")
         assert result.reservation_after_preview.number_of_guests == 3
         assert result.reasons == []
 
