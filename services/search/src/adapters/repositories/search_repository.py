@@ -15,6 +15,10 @@ from adapters.models import RatePlan
 from adapters.models import RoomType
 from domain.ports.cache_port import CachePort
 from domain.ports.search_repository import SearchRepository
+from domain.schemas.availability import (
+    PropertyAvailabilityQuery,
+    PropertyAvailabilityResponse,
+)
 from domain.schemas.search import PropertySearchItem, SearchQuery, SearchResult
 
 logger = logging.getLogger(__name__)
@@ -41,6 +45,15 @@ def _make_cache_key(query: SearchQuery) -> str:
     )
 
 
+def _make_availability_cache_key(query: PropertyAvailabilityQuery) -> str:
+    return (
+        f"availability:"
+        f"{query.property_id}:"
+        f"{query.check_in}:{query.check_out}:"
+        f"{query.guests}"
+    )
+
+
 class SQLModelSearchRepository(SearchRepository):
     def __init__(self, session: Session, cache: Optional[CachePort] = None):
         self.session = session
@@ -62,6 +75,34 @@ class SQLModelSearchRepository(SearchRepository):
                         logger.warning("Failed to delete invalid cached search result for %s: %s", key, delete_exc)
 
         result = self._search_from_db(query)
+
+        if self._cache is not None and key is not None:
+            self._cache.set(key, result.model_dump(mode="json"), ttl=self._cache.get_ttl())
+
+        return result
+
+    def check_availability(
+        self, query: PropertyAvailabilityQuery
+    ) -> PropertyAvailabilityResponse:
+        key = None
+        if self._cache is not None:
+            key = _make_availability_cache_key(query)
+            cached = self._cache.get(key)
+            if cached is not None:
+                try:
+                    return PropertyAvailabilityResponse.model_validate(cached)
+                except ValidationError as exc:
+                    logger.warning("Invalid cached availability result for %s: %s", key, exc)
+                    try:
+                        self._cache.delete(key)
+                    except Exception as delete_exc:
+                        logger.warning(
+                            "Failed to delete invalid cached availability result for %s: %s",
+                            key,
+                            delete_exc,
+                        )
+
+        result = self._check_availability_from_db(query)
 
         if self._cache is not None and key is not None:
             self._cache.set(key, result.model_dump(mode="json"), ttl=self._cache.get_ttl())
@@ -214,5 +255,85 @@ class SQLModelSearchRepository(SearchRepository):
             total=total,
             page=query.page,
             page_size=query.page_size,
+        )
+
+    def _check_availability_from_db(
+        self, query: PropertyAvailabilityQuery
+    ) -> PropertyAvailabilityResponse:
+        nights = (query.check_out - query.check_in).days
+        if nights <= 0:
+            return PropertyAvailabilityResponse(
+                property_id=query.property_id,
+                check_in=query.check_in,
+                check_out=query.check_out,
+                guests=query.guests,
+                available=False,
+            )
+
+        available_room_type_subq = (
+            select(InventoryCalendar.room_type_id)
+            .where(
+                and_(
+                    InventoryCalendar.date >= query.check_in,
+                    InventoryCalendar.date < query.check_out,
+                    InventoryCalendar.available_units
+                    > InventoryCalendar.blocked_units,
+                )
+            )
+            .group_by(InventoryCalendar.room_type_id)
+            .having(func.count(func.distinct(InventoryCalendar.date)) == nights)
+        )
+
+        avg_calendar_price_subq = (
+            select(func.avg(RateCalendar.price))
+            .where(
+                and_(
+                    RateCalendar.rate_plan_id == RatePlan.id,
+                    RateCalendar.date >= query.check_in,
+                    RateCalendar.date < query.check_out,
+                )
+            )
+            .correlate(RatePlan)
+            .scalar_subquery()
+        )
+
+        effective_price_expr = func.coalesce(avg_calendar_price_subq, RatePlan.base_price)
+
+        row = self.session.exec(
+            select(
+                func.min(effective_price_expr).label("price_from"),
+                func.min(RatePlan.currency).label("currency"),
+            )
+            .join(RoomType, RoomType.id == RatePlan.room_type_id)
+            .join(Property, Property.id == RoomType.property_id)
+            .where(
+                and_(
+                    Property.id == query.property_id,
+                    Property.is_active.is_(True),
+                    RoomType.is_active.is_(True),
+                    RatePlan.is_active.is_(True),
+                    RoomType.capacity >= query.guests,
+                    RoomType.id.in_(available_room_type_subq),
+                )
+            )
+        ).first()
+
+        if row is None or row.price_from is None:
+            return PropertyAvailabilityResponse(
+                property_id=query.property_id,
+                check_in=query.check_in,
+                check_out=query.check_out,
+                guests=query.guests,
+                available=False,
+            )
+
+        return PropertyAvailabilityResponse(
+            property_id=query.property_id,
+            check_in=query.check_in,
+            check_out=query.check_out,
+            guests=query.guests,
+            available=True,
+            price_from=Decimal(str(row.price_from)),
+            currency=row.currency,
         )
 

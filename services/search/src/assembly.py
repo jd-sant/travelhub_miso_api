@@ -8,7 +8,10 @@ from adapters.cache.redis_cache import RedisCache
 from adapters.repositories import SQLModelSearchRepository
 from core.config import settings
 from domain.ports.cache_port import CachePort
-from domain.use_cases import SearchPropertiesUseCase
+from domain.use_cases import (
+    CheckPropertyAvailabilityUseCase,
+    SearchPropertiesUseCase,
+)
 
 
 def build_cache(redis_client: Optional[Redis]) -> Optional[CachePort]:
@@ -31,3 +34,11 @@ def get_search_properties_use_case(
 ) -> SearchPropertiesUseCase:
     repository = get_search_repository(session, cache)
     return SearchPropertiesUseCase(repository)
+
+
+def get_property_availability_use_case(
+    session: Session,
+    cache: Optional[CachePort] = None,
+) -> CheckPropertyAvailabilityUseCase:
+    repository = get_search_repository(session, cache)
+    return CheckPropertyAvailabilityUseCase(repository)

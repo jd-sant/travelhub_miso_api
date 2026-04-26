@@ -225,10 +225,16 @@ services:
       DB_SCHEMA: properties_schema
       DB_ECHO: "False"
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_CACHE_ENABLED: "true"
+      REDIS_CACHE_TTL_SECONDS: "300"
     ports:
       - "8005:8000"
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   search:

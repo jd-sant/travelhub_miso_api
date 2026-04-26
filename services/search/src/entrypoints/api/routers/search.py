@@ -1,12 +1,17 @@
 from datetime import date
 from decimal import Decimal
 from typing import Optional
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from redis import Redis
 from sqlmodel import Session, select
 
-from assembly import build_cache, get_search_properties_use_case
+from assembly import (
+    build_cache,
+    get_property_availability_use_case,
+    get_search_properties_use_case,
+)
 from db.redis import get_redis_client
 from adapters.models import Amenity
 from adapters.models import InventoryCalendar
@@ -19,11 +24,18 @@ from adapters.models import Service
 from core.config import settings
 from db.session import get_session
 from db.session import engine
-from domain.schemas import EmptyStateSuggestion
+from domain.schemas import (
+    EmptyStateSuggestion,
+    PropertyAvailabilityQuery,
+    PropertyAvailabilityResponse,
+)
 from domain.schemas import SearchPagination
 from domain.schemas import SearchQuery
 from domain.schemas import SearchResponse
-from domain.use_cases import SearchPropertiesUseCase
+from domain.use_cases import (
+    CheckPropertyAvailabilityUseCase,
+    SearchPropertiesUseCase,
+)
 from errors import InvalidSearchRuleError
 
 router = APIRouter(prefix="/search", tags=["search"])
@@ -100,6 +112,42 @@ def search_properties(
                 total_pages=total_pages,
             ),
             empty_state=empty_state,
+        )
+    except InvalidSearchRuleError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+
+@router.get(
+    "/properties/{property_id}/availability",
+    response_model=PropertyAvailabilityResponse,
+)
+def check_property_availability(
+    property_id: UUID,
+    check_in: date = Query(),
+    check_out: date = Query(),
+    guests: int = Query(ge=1),
+    session: Session = Depends(get_session),
+    redis: Optional[Redis] = Depends(get_redis_client),
+) -> PropertyAvailabilityResponse:
+    cache = build_cache(redis)
+    use_case: CheckPropertyAvailabilityUseCase = get_property_availability_use_case(session, cache)
+
+    try:
+        _validate_search_rules(
+            SearchQuery(
+                city="placeholder",
+                check_in=check_in,
+                check_out=check_out,
+                guests=guests,
+            )
+        )
+        return use_case.execute(
+            PropertyAvailabilityQuery(
+                property_id=property_id,
+                check_in=check_in,
+                check_out=check_out,
+                guests=guests,
+            )
         )
     except InvalidSearchRuleError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
