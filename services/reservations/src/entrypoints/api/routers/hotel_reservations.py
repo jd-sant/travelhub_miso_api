@@ -1,5 +1,6 @@
 from functools import lru_cache
 import logging
+from decimal import Decimal, ROUND_HALF_UP
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
@@ -21,6 +22,7 @@ from domain.ports.hotel_side_effects import (
     ReservationNotificationDispatcher,
     ReservationRefundDispatcher,
 )
+from domain.ports.property_service_client import PropertyServiceClient
 from domain.schemas.reservation import (
     HotelReservationActionResponse,
     HotelReservationCancellationRequest,
@@ -30,13 +32,16 @@ from domain.schemas.reservation import (
     InternalNoteCreateRequest,
     InternalNoteResponse,
     ReservationCancellationReason,
+    ReservationResponse,
     ReservationStatus,
 )
+from domain.services.cancellation_policy_refund import calculate_cancellation_refund
 from domain.use_cases.add_internal_note import AddInternalNoteUseCase
 from domain.use_cases.cancel_hotel_reservation import CancelHotelReservationUseCase
 from domain.use_cases.confirm_hotel_reservation import ConfirmHotelReservationUseCase
 from domain.use_cases.get_hotel_reservation_detail import GetHotelReservationDetailUseCase
 from domain.use_cases.list_hotel_reservations import ListHotelReservationsUseCase
+from entrypoints.api.routers.reservations import get_property_service_client
 from errors import ReservationAuthorizationError, ReservationNotFoundError, ReservationStateConflictError
 
 router = APIRouter(prefix="/hotel/reservations", tags=["hotel-reservations"])
@@ -107,6 +112,12 @@ def _resolve_source_ip(request: Request) -> str | None:
     return None
 
 
+def _to_cents(amount: Decimal) -> int:
+    return int(
+        (amount * Decimal("100")).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+    )
+
+
 def _dispatch_post_confirmation_effects(
     *,
     notification_dispatcher: ReservationNotificationDispatcher,
@@ -132,6 +143,8 @@ def _dispatch_post_cancellation_effects(
     *,
     refund_dispatcher: ReservationRefundDispatcher,
     notification_dispatcher: ReservationNotificationDispatcher,
+    property_client: PropertyServiceClient,
+    reservation: ReservationResponse,
     traveler_id: UUID,
     reservation_id: UUID,
     source_ip: str | None,
@@ -142,20 +155,40 @@ def _dispatch_post_cancellation_effects(
     refund_requested: bool,
 ) -> None:
     refund_amount = None
+    should_request_refund = refund_requested
     if refund_requested:
         try:
-            refund_response = refund_dispatcher.request_refund(
-                reservation_id=reservation_id,
-                cancellation_reason=reason,
-                source_ip=source_ip,
+            policy = property_client.get_cancellation_policy(reservation.id_property)
+            calculated_refund, _, _, _, _ = calculate_cancellation_refund(
+                total_price=reservation.total_price,
+                check_in_date=reservation.check_in_date,
+                policy=policy,
             )
-            if refund_response:
-                refund_amount = refund_response.get("amount_in_cents")
+            refund_amount = _to_cents(calculated_refund)
         except Exception:
             logger.exception(
-                "Failed to request refund for cancelled reservation %s",
+                "Failed to calculate policy refund for cancelled reservation %s; using full refund fallback",
                 reservation_id,
             )
+            refund_amount = _to_cents(reservation.total_price)
+
+        should_request_refund = bool(refund_amount and refund_amount > 0)
+        if should_request_refund:
+            try:
+                refund_response = refund_dispatcher.request_refund(
+                    reservation_id=reservation_id,
+                    amount_in_cents=refund_amount,
+                    cancellation_reason=reason,
+                    idempotency_key=f"hotel-cancel:{reservation_id}",
+                    source_ip=source_ip,
+                )
+                if refund_response and refund_response.get("amount_in_cents") is not None:
+                    refund_amount = refund_response.get("amount_in_cents")
+            except Exception:
+                logger.exception(
+                    "Failed to request refund for cancelled reservation %s",
+                    reservation_id,
+                )
 
     notification_dispatcher.dispatch_reservation_update(
         traveler_id=traveler_id,
@@ -166,7 +199,7 @@ def _dispatch_post_cancellation_effects(
         reason_code=reason_code,
         reason_note=reason_note,
         source_ip=source_ip,
-        refund_requested=refund_requested,
+        refund_requested=should_request_refund,
         refund_amount_in_cents=refund_amount,
     )
 
@@ -224,6 +257,7 @@ def cancel_hotel_reservation(
     request: Request,
     user: AuthenticatedUser = Depends(get_current_hotel_user),
     use_case: CancelHotelReservationUseCase = Depends(get_cancel_hotel_reservation_use_case),
+    property_client: PropertyServiceClient = Depends(get_property_service_client),
     notification_dispatcher: ReservationNotificationDispatcher = Depends(
         get_reservation_notification_dispatcher
     ),
@@ -241,6 +275,8 @@ def cancel_hotel_reservation(
             _dispatch_post_cancellation_effects,
             refund_dispatcher=refund_dispatcher,
             notification_dispatcher=notification_dispatcher,
+            property_client=property_client,
+            reservation=result.reservation,
             traveler_id=result.reservation.id_traveler,
             reservation_id=result.reservation.id,
             source_ip=_resolve_source_ip(request),

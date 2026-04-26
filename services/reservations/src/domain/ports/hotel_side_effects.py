@@ -27,7 +27,9 @@ class ReservationRefundDispatcher(ABC):
         self,
         *,
         reservation_id: UUID,
+        amount_in_cents: int,
         cancellation_reason: str,
+        idempotency_key: str,
         source_ip: str | None = None,
     ) -> dict | None:
         raise NotImplementedError
