@@ -1,7 +1,8 @@
-"""Database initialization utilities for properties service"""
+"""Database initialization utilities for properties service."""
 import json
 from datetime import date
 from uuid import UUID
+
 from sqlmodel import Session, select
 
 from adapters.models.property import Property
@@ -10,7 +11,6 @@ from adapters.models.property_image import PropertyImage
 from adapters.models.property_review import PropertyReview
 
 
-# Property IDs (using fixed UUIDs for frontend to use)
 RENAISSANCE_ESTATE_ID = UUID("11111111-1111-1111-1111-111111111111")
 BEACHFRONT_PENTHOUSE_ID = UUID("22222222-2222-2222-2222-222222222222")
 ALPINE_LODGE_ID = UUID("33333333-3333-3333-3333-333333333333")
@@ -46,7 +46,7 @@ PROPERTIES_DATA = [
             "Estacionamiento con Valet Gratuito",
             "Control Climático",
             "Sistema Domótico Inteligente",
-            "Bodega de Vinos"
+            "Bodega de Vinos",
         ],
         "cancellation_policy": "Cancelación gratuita hasta 7 días antes del check-in. Cancelación al 50% entre 3 y 7 días. Sin reembolso con menos de 3 días.",
         "tax_rate": 0.19,
@@ -86,7 +86,7 @@ PROPERTIES_DATA = [
             "Enfriador de Vinos",
             "Sauna y Baño de Vapor",
             "Servicio de Conserjería",
-            "Terraza en Azotea"
+            "Terraza en Azotea",
         ],
         "cancellation_policy": "Cancelación gratuita hasta 14 días antes del check-in. Sin reembolso con menos de 14 días.",
         "tax_rate": 0.13,
@@ -100,7 +100,7 @@ PROPERTIES_DATA = [
         ],
         "reviews": [
             ("Ana Martínez", 5, date(2024, 9, 10), "¡Lo mejor de mis vacaciones! Propiedad asombrosa con atención increíble. ¡Altamente recomendado!"),
-            ("Juan Pérez", 5, date(2024, 8, 5), "Ubicación espectacular y servicio excepcional. El anfitrión se enforzó mucho para hacernos sentir bienvenido. ¡Volveremos!"),
+            ("Juan Pérez", 5, date(2024, 8, 5), "Ubicación espectacular y servicio excepcional. El anfitrión se esforzó mucho para hacernos sentir bienvenidos. ¡Volveremos!"),
         ],
     },
     {
@@ -126,7 +126,7 @@ PROPERTIES_DATA = [
             "Acceso Esquí Salida/Entrada",
             "Sala de Juegos",
             "Bodega de Vinos",
-            "Biblioteca"
+            "Biblioteca",
         ],
         "cancellation_policy": "Cancelación gratuita hasta 21 días antes del check-in. Cancelación al 50% entre 10 y 21 días. Sin reembolso con menos de 10 días.",
         "tax_rate": 0.20,
@@ -166,7 +166,7 @@ PROPERTIES_DATA = [
             "Jardines Tropicales",
             "Bar Tiki",
             "Pabellón Aéreo",
-            "Acceso Esnórquel"
+            "Acceso Esnórquel",
         ],
         "cancellation_policy": "No reembolsable. Política estricta de cancelación.",
         "tax_rate": 0.0,
@@ -187,8 +187,8 @@ PROPERTIES_DATA = [
         "id": CIKOS_EXECUTIVE_SUITES_ID,
         "id_owner": DEMO_HOTEL_A_OWNER_ID,
         "name": "Hotel Cikos Executive Suites",
-        "description": "Un hotel boutique urbano pensado para viajes de negocio y escapadas premium en BogotÃ¡. La propiedad combina diseÃ±o contemporÃ¡neo, suites luminosas, espacios de coworking y una experiencia flexible para viajeros que llegan tarde, trabajan remoto o necesitan gestionar su reserva desde el panel del hotel. Sus habitaciones estÃ¡n equipadas con mobiliario ergonÃ³mico, domÃ³tica ligera, ropa de cama de alta gama y una terraza social con vistas a la ciudad.",
-        "location": "BogotÃ¡, Colombia",
+        "description": "Un hotel boutique urbano pensado para viajes de negocio y escapadas premium en Bogotá. La propiedad combina diseño contemporáneo, suites luminosas, espacios de coworking y una experiencia flexible para viajeros que llegan tarde, trabajan remoto o necesitan gestionar su reserva desde el panel del hotel. Sus habitaciones están equipadas con mobiliario ergonómico, domótica ligera, ropa de cama de alta gama y una terraza social con vistas a la ciudad.",
+        "location": "Bogotá, Colombia",
         "latitude": 4.7110,
         "longitude": -74.0721,
         "price_per_night": 180000.0,
@@ -202,32 +202,32 @@ PROPERTIES_DATA = [
             "WiFi Empresarial de Alta Velocidad",
             "Desayuno Incluido",
             "Coworking Lounge",
-            "RecepciÃ³n 24 Horas",
+            "Recepción 24 Horas",
             "Check-in Digital",
-            "Terraza PanorÃ¡mica",
-            "Salas de ReuniÃ³n",
-            "Servicio de Traslado"
+            "Terraza Panorámica",
+            "Salas de Reunión",
+            "Servicio de Traslado",
         ],
-        "cancellation_policy": "CancelaciÃ³n gratuita hasta 24 horas antes del check-in. Luego se cobra la primera noche.",
+        "cancellation_policy": "Cancelación gratuita hasta 24 horas antes del check-in. Luego se cobra la primera noche.",
         "tax_rate": 0.19,
         "cleaning_fee": 25000.0,
         "images": [
             ("1", "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80", "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1920&q=90", "Fachada Hotel Cikos Executive Suites", 0, True),
             ("2", "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=800&q=80", "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=1920&q=90", "Suite Ejecutiva", 1, False),
             ("3", "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&q=80", "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=1920&q=90", "Lounge de trabajo", 2, False),
-            ("4", "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&q=80", "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=1920&q=90", "Lobby y recepciÃ³n", 3, False),
-            ("5", "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&q=80", "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=1920&q=90", "Terraza panorÃ¡mica", 4, False),
+            ("4", "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&q=80", "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=1920&q=90", "Lobby y recepción", 3, False),
+            ("5", "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&q=80", "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=1920&q=90", "Terraza panorámica", 4, False),
         ],
         "reviews": [
-            ("Laura Sánchez", 5, date(2024, 9, 18), "Excelente opciÃ³n en BogotÃ¡ para viaje de trabajo. Las suites son muy cÃ³modas y el personal resolviÃ³ un cambio de reserva rapidÃ­simo."),
-            ("Andrés Melo", 5, date(2024, 8, 27), "Muy buena ubicaciÃ³n, internet estable y espacios comunes impecables. Ideal para combinar reuniones y descanso."),
+            ("Laura Sánchez", 5, date(2024, 9, 18), "Excelente opción en Bogotá para viaje de trabajo. Las suites son muy cómodas y el personal resolvió un cambio de reserva rapidísimo."),
+            ("Andrés Melo", 5, date(2024, 8, 27), "Muy buena ubicación, internet estable y espacios comunes impecables. Ideal para combinar reuniones y descanso."),
         ],
     },
 ]
 
 
-def seed_properties_if_empty(session: Session) -> None:
-    """Seed database with sample properties and fill missing demo assets."""
+def sync_demo_properties_seed(session: Session) -> None:
+    """Create or update demo properties and backfill any missing demo assets."""
     try:
         for prop_data in PROPERTIES_DATA:
             existing = session.get(Property, prop_data["id"])
@@ -256,50 +256,68 @@ def seed_properties_if_empty(session: Session) -> None:
             existing.status = 1
 
         session.commit()
-
         seed_property_policies_if_missing(session)
 
         for prop_data in PROPERTIES_DATA:
             existing_images = session.exec(
                 select(PropertyImage).where(PropertyImage.property_id == prop_data["id"])
-            ).first()
-            if existing_images is None:
-                for _, url, url_hires, alt_text, position, is_cover in prop_data["images"]:
-                    session.add(
-                        PropertyImage(
-                            property_id=prop_data["id"],
-                            url=url,
-                            url_hires=url_hires,
-                            alt_text=alt_text,
-                            position=position,
-                            is_cover=is_cover,
-                        )
+            ).all()
+            existing_positions = {
+                image.position for image in existing_images if image.position is not None
+            }
+            existing_urls = {
+                image.url for image in existing_images if image.url is not None
+            }
+            for _, url, url_hires, alt_text, position, is_cover in prop_data["images"]:
+                if position in existing_positions or url in existing_urls:
+                    continue
+                session.add(
+                    PropertyImage(
+                        property_id=prop_data["id"],
+                        url=url,
+                        url_hires=url_hires,
+                        alt_text=alt_text,
+                        position=position,
+                        is_cover=is_cover,
                     )
+                )
+                existing_positions.add(position)
+                existing_urls.add(url)
 
         session.commit()
 
         for prop_data in PROPERTIES_DATA:
             existing_reviews = session.exec(
                 select(PropertyReview).where(PropertyReview.property_id == prop_data["id"])
-            ).first()
-            if existing_reviews is None:
-                for author, rating, review_date, comment in prop_data["reviews"]:
-                    session.add(
-                        PropertyReview(
-                            property_id=prop_data["id"],
-                            author=author,
-                            rating=rating,
-                            review_date=review_date,
-                            comment=comment,
-                            verified_stay=True,
-                        )
+            ).all()
+            existing_review_keys = {
+                (review.author, review.review_date) for review in existing_reviews
+            }
+            for author, rating, review_date, comment in prop_data["reviews"]:
+                review_key = (author, review_date)
+                if review_key in existing_review_keys:
+                    continue
+                session.add(
+                    PropertyReview(
+                        property_id=prop_data["id"],
+                        author=author,
+                        rating=rating,
+                        review_date=review_date,
+                        comment=comment,
+                        verified_stay=True,
                     )
+                )
+                existing_review_keys.add(review_key)
 
         session.commit()
-
     except Exception:
         session.rollback()
         raise
+
+
+def seed_properties_if_empty(session: Session) -> None:
+    """Backward-compatible alias for syncing demo properties and assets."""
+    sync_demo_properties_seed(session)
 
 
 def seed_property_policies_if_missing(session: Session) -> None:

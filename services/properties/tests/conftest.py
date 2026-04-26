@@ -15,7 +15,7 @@ if str(SRC_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_PATH))
 
 from db.session import get_session
-from db.seed import seed_properties_if_empty
+from db.seed import sync_demo_properties_seed
 from entrypoints.api.main import app
 
 
@@ -31,7 +31,7 @@ def session_fixture():
     
     # Seed database with sample data
     with Session(engine) as session:
-        seed_properties_if_empty(session)
+        sync_demo_properties_seed(session)
     
     with Session(engine) as session:
         yield session

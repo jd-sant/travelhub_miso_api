@@ -9,7 +9,7 @@ from db.seed import (
     CIKOS_EXECUTIVE_SUITES_ID,
     DEMO_HOTEL_A_OWNER_ID,
     RENAISSANCE_ESTATE_ID,
-    seed_properties_if_empty,
+    sync_demo_properties_seed,
 )
 
 
@@ -27,7 +27,7 @@ def test_seed_includes_cikos_property_for_demo_hotel_a():
     engine = _engine()
 
     with Session(engine) as session:
-        seed_properties_if_empty(session)
+        sync_demo_properties_seed(session)
 
         property_row = session.get(Property, CIKOS_EXECUTIVE_SUITES_ID)
         assert property_row is not None
@@ -81,7 +81,7 @@ def test_seed_adds_missing_demo_property_even_when_database_is_not_empty():
         )
         session.commit()
 
-        seed_properties_if_empty(session)
+        sync_demo_properties_seed(session)
 
         property_row = session.get(Property, CIKOS_EXECUTIVE_SUITES_ID)
         assert property_row is not None
