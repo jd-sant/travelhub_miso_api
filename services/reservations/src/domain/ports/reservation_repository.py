@@ -6,6 +6,7 @@ from uuid import UUID
 
 from domain.schemas.reservation import (
     HotelReservationListItem,
+    InternalNoteResponse,
     ReservationChangeRecord,
     ReservationCreateRequest,
     ReservationResponse,
@@ -128,4 +129,22 @@ class ReservationRepository(ABC):
 
     @abstractmethod
     def add_change(self, payload: ReservationChangeRecord) -> ReservationChangeRecord:
+        pass
+
+    @abstractmethod
+    def list_changes(self, reservation_id: UUID) -> list[ReservationChangeRecord]:
+        pass
+
+    @abstractmethod
+    def add_note(
+        self,
+        reservation_id: UUID,
+        content: str,
+        author_user_id: UUID,
+        author_name: str | None,
+    ) -> InternalNoteResponse:
+        pass
+
+    @abstractmethod
+    def list_notes(self, reservation_id: UUID) -> list[InternalNoteResponse]:
         pass
