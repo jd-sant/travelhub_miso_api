@@ -85,12 +85,14 @@ def _dispatch_post_confirmation_effects(
     reservation_id: UUID,
     source_ip: str | None,
     reason: str,
+    locale: str | None,
 ) -> None:
     notification_dispatcher.dispatch_reservation_update(
         traveler_id=traveler_id,
         reservation_id=reservation_id,
         status=ReservationStatus.confirmed.value,
         reason=reason,
+        locale=locale,
         source_ip=source_ip,
         refund_requested=False,
         refund_amount_in_cents=None,
@@ -105,6 +107,7 @@ def _dispatch_post_cancellation_effects(
     reservation_id: UUID,
     source_ip: str | None,
     reason: str,
+    locale: str | None,
     reason_code: str | None,
     reason_note: str | None,
     refund_requested: bool,
@@ -130,6 +133,7 @@ def _dispatch_post_cancellation_effects(
         reservation_id=reservation_id,
         status=ReservationStatus.cancelled.value,
         reason=reason,
+        locale=locale,
         reason_code=reason_code,
         reason_note=reason_note,
         source_ip=source_ip,
@@ -174,6 +178,7 @@ def confirm_hotel_reservation(
             reservation_id=result.reservation.id,
             source_ip=_resolve_source_ip(request),
             reason=result.reason,
+            locale=payload.locale,
         )
         return result
     except ReservationNotFoundError as exc:
@@ -211,6 +216,7 @@ def cancel_hotel_reservation(
             reservation_id=result.reservation.id,
             source_ip=_resolve_source_ip(request),
             reason=result.reason,
+            locale=payload.locale,
             reason_code=payload.reason.value,
             reason_note=payload.note.strip() if payload.note else None,
             refund_requested=result.refund_requested,

@@ -279,6 +279,7 @@ def test_create_reservation_update_persists_reason_code_and_note(client, test_en
         "traveler_id": str(uuid4()),
         "status": "cancelled",
         "reason": "hotel_policy",
+        "locale": "en",
         "reason_code": "hotel_policy",
         "reason_note": "No se permite el check-in con mascotas en esta tarifa.",
         "refund_requested": True,
@@ -299,5 +300,6 @@ def test_create_reservation_update_persists_reason_code_and_note(client, test_en
 
     assert len(notifications) == 1
     summary = notifications[0].payload["reservation_update"]
+    assert summary["locale"] == "en"
     assert summary["reason_code"] == "hotel_policy"
     assert summary["reason_note"] == payload["reason_note"]

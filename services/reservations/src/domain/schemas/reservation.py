@@ -89,11 +89,13 @@ class HotelReservationListItem(BaseModel):
 
 class HotelReservationConfirmationRequest(BaseModel):
     reason: str | None = Field(default=None, max_length=255)
+    locale: str | None = Field(default=None, max_length=16)
 
 
 class HotelReservationCancellationRequest(BaseModel):
     reason: ReservationCancellationReason
     note: str | None = Field(default=None, max_length=500)
+    locale: str | None = Field(default=None, max_length=16)
 
 
 class ReservationPriceBreakdown(BaseModel):

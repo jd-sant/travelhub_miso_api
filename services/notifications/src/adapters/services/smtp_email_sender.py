@@ -12,7 +12,8 @@ class SmtpEmailSender(EmailSender):
         message["From"] = settings.smtp_from
         message["To"] = recipient_email
         message["Subject"] = subject
-        message.set_content(html_body, subtype="html")
+        message.set_content("This email contains an HTML version of the reservation update.")
+        message.add_alternative(html_body, subtype="html")
 
         with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as smtp:
             smtp.starttls(context=ssl.create_default_context())

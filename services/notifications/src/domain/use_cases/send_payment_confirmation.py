@@ -1,5 +1,5 @@
-import json
 import logging
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID, uuid4
@@ -31,6 +31,75 @@ _env = Environment(
     trim_blocks=False,
     lstrip_blocks=False,
 )
+
+_RESERVATION_UPDATE_I18N = {
+    "es": {
+        "language_tag": "es",
+        "title_cancelled": "Reserva cancelada por el hotel",
+        "title_confirmed": "Reserva confirmada",
+        "greeting": "Hola",
+        "subtitle_cancelled": "Te compartimos el detalle de esta actualización sobre tu reserva.",
+        "subtitle_confirmed": "Tu reserva fue actualizada correctamente.",
+        "reservation_details": "Detalle de la reserva",
+        "reservation_label": "Reserva",
+        "status_label": "Estado",
+        "status_cancelled": "cancelada",
+        "status_confirmed": "confirmada",
+        "reason_label": "Motivo",
+        "description_label": "Descripción",
+        "refund_title": "Proceso de reembolso",
+        "refund_description": "El sistema inició automáticamente el reembolso según la política de cancelación vigente.",
+        "refund_amount_label": "Monto estimado",
+        "help_text": "Si necesitas ayuda adicional, revisa tu panel de reservas o contacta al hotel.",
+        "footer": "Gracias por usar TravelHub.",
+        "subject_cancelled": "Reserva cancelada",
+        "subject_confirmed": "Reserva confirmada",
+    },
+    "en": {
+        "language_tag": "en",
+        "title_cancelled": "Reservation cancelled by the hotel",
+        "title_confirmed": "Reservation confirmed",
+        "greeting": "Hello",
+        "subtitle_cancelled": "Here are the details of this reservation update.",
+        "subtitle_confirmed": "Your reservation was updated successfully.",
+        "reservation_details": "Reservation details",
+        "reservation_label": "Reservation",
+        "status_label": "Status",
+        "status_cancelled": "cancelled",
+        "status_confirmed": "confirmed",
+        "reason_label": "Reason",
+        "description_label": "Description",
+        "refund_title": "Refund process",
+        "refund_description": "The system automatically started the refund according to the active cancellation policy.",
+        "refund_amount_label": "Estimated amount",
+        "help_text": "If you need additional help, review your reservations panel or contact the hotel.",
+        "footer": "Thanks for using TravelHub.",
+        "subject_cancelled": "Reservation cancelled",
+        "subject_confirmed": "Reservation confirmed",
+    },
+    "pt": {
+        "language_tag": "pt",
+        "title_cancelled": "Reserva cancelada pelo hotel",
+        "title_confirmed": "Reserva confirmada",
+        "greeting": "Olá",
+        "subtitle_cancelled": "Compartilhamos os detalhes desta atualização da sua reserva.",
+        "subtitle_confirmed": "Sua reserva foi atualizada com sucesso.",
+        "reservation_details": "Detalhes da reserva",
+        "reservation_label": "Reserva",
+        "status_label": "Status",
+        "status_cancelled": "cancelada",
+        "status_confirmed": "confirmada",
+        "reason_label": "Motivo",
+        "description_label": "Descrição",
+        "refund_title": "Processo de reembolso",
+        "refund_description": "O sistema iniciou automaticamente o reembolso de acordo com a política de cancelamento vigente.",
+        "refund_amount_label": "Valor estimado",
+        "help_text": "Se precisar de ajuda adicional, consulte seu painel de reservas ou entre em contato com o hotel.",
+        "footer": "Obrigado por usar a TravelHub.",
+        "subject_cancelled": "Reserva cancelada",
+        "subject_confirmed": "Reserva confirmada",
+    },
+}
 
 
 class SendPaymentConfirmationUseCase(BaseUseCase[UUID, NotificationResponse]):
@@ -130,33 +199,11 @@ class SendPaymentConfirmationUseCase(BaseUseCase[UUID, NotificationResponse]):
         return self._to_response(stored_notification)
 
     def _render(self, notification: NotificationRecord) -> str:
-        if notification.template_code == "reservation_confirmed_v1":
-            summary = notification.payload.get("reservation_update", {})
-            return _env.get_template("reservation_update.html").render(
-                recipient_name=notification.recipient_name,
-                reservation_id=summary.get("reservation_id"),
-                status="confirmada",
-                reason=summary.get("reason"),
-                description=None,
-                refund_requested=False,
-                refund_amount=None,
-            )
-        if notification.template_code == "reservation_cancelled_v1":
-            summary = notification.payload.get("reservation_update", {})
-            refund_amount = summary.get("refund_amount_in_cents")
-            return _env.get_template("reservation_update.html").render(
-                recipient_name=notification.recipient_name,
-                reservation_id=summary.get("reservation_id"),
-                status="cancelada",
-                reason=summary.get("reason_code") or summary.get("reason"),
-                description=summary.get("reason_note"),
-                refund_requested=summary.get("refund_requested", False),
-                refund_amount=(
-                    f"{refund_amount / 100:.2f}"
-                    if isinstance(refund_amount, int)
-                    else None
-                ),
-            )
+        if notification.template_code in {
+            "reservation_confirmed_v1",
+            "reservation_cancelled_v1",
+        }:
+            return self._render_reservation_update(notification)
 
         summary = notification.payload.get("payment_summary", {})
         currency = summary.get("currency", "")
@@ -189,79 +236,61 @@ class SendPaymentConfirmationUseCase(BaseUseCase[UUID, NotificationResponse]):
             ),
         }
         return _env.get_template("payment_confirmation.html").render(**context)
-    
-    def _build_body(self, notification: NotificationRecord) -> str:
-        if notification.template_code == "payment_confirmation_v1":
-            return self._build_payment_confirmation_body(notification)
-        return self._build_reservation_event_body(notification)
 
-    def _build_payment_confirmation_body(self, notification: NotificationRecord) -> str:
-        payment_summary = notification.payload.get("payment_summary", {})
-        lines = [
-            f"Hola {notification.recipient_name},",
-            "",
-            "Tu pago fue confirmado exitosamente.",
-            f"Reserva: {payment_summary.get('reservation_id')}",
-            f"Pago: {payment_summary.get('payment_id')}",
-            f"Monto: {payment_summary.get('amount_in_cents', 0) / 100:.2f} {payment_summary.get('currency', '')}",
-        ]
-        if payment_summary.get("property_name"):
-            lines.append(f"Propiedad: {payment_summary['property_name']}")
-        if payment_summary.get("check_in_date") and payment_summary.get("check_out_date"):
-            lines.append(
-                f"Fechas: {payment_summary['check_in_date']} - {payment_summary['check_out_date']}"
-            )
-        if payment_summary.get("receipt_number"):
-            lines.append(f"Recibo: {payment_summary['receipt_number']}")
-        return "\n".join(lines)
-
-    def _build_reservation_event_body(self, notification: NotificationRecord) -> str:
-        event = notification.payload.get("event", {})
-        payment = notification.payload.get("payment") or {}
-        refund = notification.payload.get("refund") or {}
-
-        lines = [
-            f"Hola {notification.recipient_name},",
-            "",
-            notification.subject,
-            f"Reserva: {event.get('reservation_id')}",
-        ]
-
-        if payment:
-            lines.append(f"Pago: {payment.get('payment_id')}")
-            lines.append(
-                f"Monto pago: {payment.get('amount_in_cents', 0) / 100:.2f} {payment.get('currency', '')}"
-            )
-            lines.append(f"Estado pago: {payment.get('status')}")
-
-        if refund:
-            lines.append(f"Reembolso: {refund.get('refund_id')}")
-            lines.append(
-                f"Monto reembolso: {refund.get('amount_in_cents', 0) / 100:.2f} {refund.get('currency', '')}"
-            )
-            lines.append(f"Estado reembolso: {refund.get('status')}")
-            if refund.get("reason"):
-                lines.append(f"Motivo: {refund.get('reason')}")
-
-        return "\n".join(lines)
-
-    def _audit_action(self, notification: NotificationRecord) -> str:
-        base = notification.template_code.replace("_v1", "")
-        suffix = "sent" if notification.status == NotificationStatus.sent else "failed"
-        return f"notification.{base}.{suffix}"
-
-    def _resolve_audit_action(self, notification: NotificationRecord) -> str:
-        prefix = {
-            "payment_confirmation_v1": "notification.payment_confirmation",
-            "reservation_confirmed_v1": "notification.reservation_confirmed",
-            "reservation_cancelled_v1": "notification.reservation_cancelled",
-        }.get(notification.template_code, "notification.delivery")
-        suffix = (
-            "sent"
-            if notification.status == NotificationStatus.sent
-            else "failed"
+    def _render_reservation_update(self, notification: NotificationRecord) -> str:
+        summary = notification.payload.get("reservation_update", {})
+        translations = self._reservation_update_translations(summary.get("locale"))
+        refund_amount = summary.get("refund_amount_in_cents")
+        is_cancelled = notification.template_code == "reservation_cancelled_v1"
+        return _env.get_template("reservation_update.html").render(
+            recipient_name=notification.recipient_name,
+            reservation_id=summary.get("reservation_id"),
+            status=(
+                translations["status_cancelled"]
+                if is_cancelled
+                else translations["status_confirmed"]
+            ),
+            reason=summary.get("reason_code") or summary.get("reason"),
+            description=summary.get("reason_note"),
+            refund_requested=summary.get("refund_requested", False),
+            refund_amount=(
+                f"{refund_amount / 100:.2f}"
+                if isinstance(refund_amount, int)
+                else None
+            ),
+            translations=translations,
+            language_tag=translations["language_tag"],
+            is_cancelled=is_cancelled,
         )
-        return f"{prefix}.{suffix}"
+
+    def _reservation_update_translations(self, locale: str | None) -> dict[str, str]:
+        normalized = self._normalize_locale(locale)
+        return _RESERVATION_UPDATE_I18N.get(
+            normalized, _RESERVATION_UPDATE_I18N["es"]
+        )
+
+    def _normalize_locale(self, locale: str | None) -> str:
+        if not locale:
+            return "es"
+        lowered = locale.strip().lower()
+        if lowered.startswith("en"):
+            return "en"
+        if lowered.startswith("pt"):
+            return "pt"
+        return "es"
+
+    def _html_to_text(self, html_body: str) -> str:
+        text = re.sub(r"<br\\s*/?>", "\n", html_body, flags=re.IGNORECASE)
+        text = re.sub(r"</(p|div|tr|h1|h2|h3|li|table|td)>", "\n", text, flags=re.IGNORECASE)
+        text = re.sub(r"<[^>]+>", "", text)
+        text = (
+            text.replace("&nbsp;", " ")
+            .replace("&amp;", "&")
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+        )
+        lines = [line.strip() for line in text.splitlines()]
+        return "\n".join(line for line in lines if line)
 
     def _resolve_audit_action(self, notification: NotificationRecord) -> str:
         prefix = {

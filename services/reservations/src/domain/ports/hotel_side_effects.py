@@ -11,6 +11,7 @@ class ReservationNotificationDispatcher(ABC):
         reservation_id: UUID,
         status: str,
         reason: str,
+        locale: str | None = None,
         reason_code: str | None = None,
         reason_note: str | None = None,
         source_ip: str | None = None,

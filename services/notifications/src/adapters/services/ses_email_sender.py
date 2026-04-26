@@ -18,13 +18,14 @@ class SesEmailSender(EmailSender):
 
     def send(self, *, recipient_email: str, subject: str, html_body: str) -> str:
         if not self._from_address:
-            raise RuntimeError("SES_FROM_ADDRESS no esta configurado.")
+            raise RuntimeError("SES_FROM_ADDRESS no está configurado.")
 
         message = EmailMessage()
         message["From"] = self._from_address
         message["To"] = recipient_email
         message["Subject"] = subject
-        message.set_content(html_body, subtype="html")
+        message.set_content("This email contains an HTML version of the reservation update.")
+        message.add_alternative(html_body, subtype="html")
 
         response = self._client.send_raw_email(
             Source=self._from_address,
