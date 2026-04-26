@@ -271,3 +271,33 @@ def test_create_reservation_event_notification_requires_internal_api_key(client)
     )
 
     assert response.status_code == 403
+
+
+def test_create_reservation_update_persists_reason_code_and_note(client, test_engine):
+    payload = {
+        "reservation_id": str(uuid4()),
+        "traveler_id": str(uuid4()),
+        "status": "cancelled",
+        "reason": "hotel_policy",
+        "reason_code": "hotel_policy",
+        "reason_note": "No se permite el check-in con mascotas en esta tarifa.",
+        "refund_requested": True,
+        "refund_amount_in_cents": 428400,
+        "source_ip": "127.0.0.1",
+    }
+
+    response = client.post(
+        "/api/v1/internal/reservation-updates",
+        json=payload,
+        headers={"X-Internal-Api-Key": settings.internal_api_key},
+    )
+
+    assert response.status_code == 201
+
+    with Session(test_engine) as session:
+        notifications = session.exec(select(Notification)).all()
+
+    assert len(notifications) == 1
+    summary = notifications[0].payload["reservation_update"]
+    assert summary["reason_code"] == "hotel_policy"
+    assert summary["reason_note"] == payload["reason_note"]

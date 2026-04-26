@@ -1,4 +1,5 @@
 from functools import lru_cache
+import logging
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, status
@@ -32,6 +33,7 @@ from domain.use_cases.list_hotel_reservations import ListHotelReservationsUseCas
 from errors import ReservationNotFoundError, ReservationStateConflictError
 
 router = APIRouter(prefix="/hotel/reservations", tags=["hotel-reservations"])
+logger = logging.getLogger(__name__)
 
 
 def get_reservation_repository(session: Session = Depends(get_session)):
@@ -103,23 +105,33 @@ def _dispatch_post_cancellation_effects(
     reservation_id: UUID,
     source_ip: str | None,
     reason: str,
+    reason_code: str | None,
+    reason_note: str | None,
     refund_requested: bool,
 ) -> None:
     refund_amount = None
     if refund_requested:
-        refund_response = refund_dispatcher.request_refund(
-            reservation_id=reservation_id,
-            cancellation_reason=reason,
-            source_ip=source_ip,
-        )
-        if refund_response:
-            refund_amount = refund_response.get("amount_in_cents")
+        try:
+            refund_response = refund_dispatcher.request_refund(
+                reservation_id=reservation_id,
+                cancellation_reason=reason,
+                source_ip=source_ip,
+            )
+            if refund_response:
+                refund_amount = refund_response.get("amount_in_cents")
+        except Exception:
+            logger.exception(
+                "Failed to request refund for cancelled reservation %s",
+                reservation_id,
+            )
 
     notification_dispatcher.dispatch_reservation_update(
         traveler_id=traveler_id,
         reservation_id=reservation_id,
         status=ReservationStatus.cancelled.value,
         reason=reason,
+        reason_code=reason_code,
+        reason_note=reason_note,
         source_ip=source_ip,
         refund_requested=refund_requested,
         refund_amount_in_cents=refund_amount,
@@ -199,6 +211,8 @@ def cancel_hotel_reservation(
             reservation_id=result.reservation.id,
             source_ip=_resolve_source_ip(request),
             reason=result.reason,
+            reason_code=payload.reason.value,
+            reason_note=payload.note.strip() if payload.note else None,
             refund_requested=result.refund_requested,
         )
         return result

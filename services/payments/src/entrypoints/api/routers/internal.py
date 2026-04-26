@@ -26,6 +26,7 @@ from domain.schemas.payment import (
     PaymentsByReservationsRequest,
     PaymentsByReservationsResponse,
     ReservationConfirmationRetryResponse,
+    ReservationPaymentRefundRequest,
     ReservationRefundRequest,
     ReservationRefundResponse,
 )
@@ -166,7 +167,7 @@ def retry_payment_refunds(
 )
 def create_refund_for_reservation(
     request: Request,
-    payload: ReservationRefundRequest,
+    payload: ReservationPaymentRefundRequest,
     correlation_id: str = Depends(resolve_correlation_id),
     _: None = Depends(_verify_api_key),
     use_case: CreateRefundForReservationUseCase = Depends(

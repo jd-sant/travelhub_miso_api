@@ -871,6 +871,29 @@ def test_internal_create_refund_for_reservation_uses_latest_confirmed_payment(cl
     assert body["status"] == "pending"
 
 
+def test_internal_create_reservation_refund_accepts_simple_payload(client):
+    payment_response = client.post("/api/v1/payments/charges", json=_payload(), headers=SECURE_HEADERS)
+    reservation_id = payment_response.json()["reservation_id"]
+    gateway = FakeStripeCheckoutGateway(finalize_status="succeeded")
+    client.app.dependency_overrides[get_stripe_checkout_gateway] = lambda: gateway
+    try:
+        response = client.post(
+            "/api/v1/internal/refunds",
+            json={
+                "reservation_id": reservation_id,
+                "reason": "hotel_cancellation",
+            },
+            headers={"X-Internal-Api-Key": settings.internal_api_key},
+        )
+    finally:
+        client.app.dependency_overrides.pop(get_stripe_checkout_gateway, None)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["reservation_id"] == reservation_id
+    assert body["status"] == "succeeded"
+
+
 def test_internal_additional_charge_endpoint_creates_charge(client):
     payload = _payload()
     response = client.post(

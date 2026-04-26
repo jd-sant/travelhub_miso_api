@@ -243,6 +243,12 @@ class ReservationConfirmationRetryResponse(BaseModel):
 
 class ReservationRefundRequest(BaseModel):
     reservation_id: UUID
+    reason: str = Field(min_length=3, max_length=255)
+    source_ip: str | None = Field(default=None, max_length=64)
+
+
+class ReservationPaymentRefundRequest(BaseModel):
+    reservation_id: UUID
     amount_in_cents: int = Field(gt=0)
     reason: str = Field(min_length=3, max_length=255)
     idempotency_key: str = Field(min_length=1, max_length=255)

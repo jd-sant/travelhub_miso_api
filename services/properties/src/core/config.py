@@ -48,6 +48,13 @@ class Settings:
         return os.getenv("DB_ECHO", "False").lower() == "true"
 
     @property
+    def seed_demo_data(self) -> bool:
+        value = os.getenv("SEED_DEMO_DATA")
+        if value is None:
+            return self.is_local_dev
+        return value.lower() == "true"
+
+    @property
     def allowed_cors_origins(self) -> list[str]:
         raw_origins = os.getenv("ALLOWED_CORS_ORIGIN")
         if raw_origins:

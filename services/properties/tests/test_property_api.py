@@ -19,8 +19,8 @@ def test_list_properties_endpoint_success(client: TestClient):
     assert response.status_code == 200
     data = response.json()
     
-    # Should have 4 seeded properties
-    assert len(data) == 4
+    # Should have 5 seeded properties
+    assert len(data) == 5
     
     # Check basic structure
     for prop in data:
@@ -111,7 +111,7 @@ def test_list_properties_filter_by_owner(client: TestClient):
 
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 2
+    assert len(data) == 3
     owner_strs = {item["id_owner"] for item in data}
     assert owner_strs == {str(DEMO_HOTEL_A_OWNER_ID)}
 

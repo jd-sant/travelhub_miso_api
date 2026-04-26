@@ -31,16 +31,29 @@ class HttpPropertyServiceClient(PropertyServiceClient):
 
         payload = response.json()
         images = payload.get("images") or []
-        cover = next(
-            (img.get("url") for img in images if img.get("is_cover")),
-            (images[0].get("url") if images else None),
+        cover_image_url = next(
+            (
+                image.get("url")
+                for image in images
+                if isinstance(image, dict) and image.get("is_cover") and image.get("url")
+            ),
+            None,
         )
+        if cover_image_url is None:
+            cover_image_url = next(
+                (
+                    image.get("url")
+                    for image in images
+                    if isinstance(image, dict) and image.get("url")
+                ),
+                None,
+            )
         return PropertyDetailResponse(
             id=payload["id"],
+            name=payload.get("name"),
             max_guests=payload["max_guests"],
             price_per_night=Decimal(str(payload.get("price_per_night", 0))),
-            name=payload.get("name"),
-            cover_image_url=cover,
+            cover_image_url=cover_image_url,
             cleaning_fee=Decimal(str(payload.get("cleaning_fee", 0))),
             tax_rate=Decimal(str(payload.get("tax_rate", 0))),
         )

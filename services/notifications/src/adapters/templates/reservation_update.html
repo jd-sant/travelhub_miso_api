@@ -3,6 +3,9 @@
     <h2>Hola {{ recipient_name }},</h2>
     <p>Tu reserva <strong>{{ reservation_id }}</strong> fue {{ status }} por el hotel.</p>
     <p><strong>Motivo:</strong> {{ reason }}</p>
+    {% if description %}
+    <p><strong>Descripci&oacute;n:</strong> {{ description }}</p>
+    {% endif %}
     {% if refund_requested %}
     <p>El sistema inici&oacute; autom&aacute;ticamente el proceso de reembolso.</p>
     {% if refund_amount %}

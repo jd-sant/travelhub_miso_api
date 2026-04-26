@@ -1,7 +1,8 @@
-"""Database initialization utilities for properties service"""
+"""Database initialization utilities for properties service."""
 import json
 from datetime import date
 from uuid import UUID
+
 from sqlmodel import Session, select
 
 from adapters.models.property import Property
@@ -10,11 +11,11 @@ from adapters.models.property_image import PropertyImage
 from adapters.models.property_review import PropertyReview
 
 
-# Property IDs (using fixed UUIDs for frontend to use)
 RENAISSANCE_ESTATE_ID = UUID("11111111-1111-1111-1111-111111111111")
 BEACHFRONT_PENTHOUSE_ID = UUID("22222222-2222-2222-2222-222222222222")
 ALPINE_LODGE_ID = UUID("33333333-3333-3333-3333-333333333333")
 TROPICAL_VILLA_ID = UUID("44444444-4444-4444-4444-444444444444")
+CIKOS_EXECUTIVE_SUITES_ID = UUID("55555555-5555-5555-5555-555555555555")
 
 # Demo hotel owner IDs — must match user IDs seeded in the users service.
 DEMO_HOTEL_A_OWNER_ID = UUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
@@ -45,7 +46,7 @@ PROPERTIES_DATA = [
             "Estacionamiento con Valet Gratuito",
             "Control Climático",
             "Sistema Domótico Inteligente",
-            "Bodega de Vinos"
+            "Bodega de Vinos",
         ],
         "cancellation_policy": "Cancelación gratuita hasta 7 días antes del check-in. Cancelación al 50% entre 3 y 7 días. Sin reembolso con menos de 3 días.",
         "tax_rate": 0.19,
@@ -85,7 +86,7 @@ PROPERTIES_DATA = [
             "Enfriador de Vinos",
             "Sauna y Baño de Vapor",
             "Servicio de Conserjería",
-            "Terraza en Azotea"
+            "Terraza en Azotea",
         ],
         "cancellation_policy": "Cancelación gratuita hasta 14 días antes del check-in. Sin reembolso con menos de 14 días.",
         "tax_rate": 0.13,
@@ -99,7 +100,7 @@ PROPERTIES_DATA = [
         ],
         "reviews": [
             ("Ana Martínez", 5, date(2024, 9, 10), "¡Lo mejor de mis vacaciones! Propiedad asombrosa con atención increíble. ¡Altamente recomendado!"),
-            ("Juan Pérez", 5, date(2024, 8, 5), "Ubicación espectacular y servicio excepcional. El anfitrión se enforzó mucho para hacernos sentir bienvenido. ¡Volveremos!"),
+            ("Juan Pérez", 5, date(2024, 8, 5), "Ubicación espectacular y servicio excepcional. El anfitrión se esforzó mucho para hacernos sentir bienvenidos. ¡Volveremos!"),
         ],
     },
     {
@@ -125,7 +126,7 @@ PROPERTIES_DATA = [
             "Acceso Esquí Salida/Entrada",
             "Sala de Juegos",
             "Bodega de Vinos",
-            "Biblioteca"
+            "Biblioteca",
         ],
         "cancellation_policy": "Cancelación gratuita hasta 21 días antes del check-in. Cancelación al 50% entre 10 y 21 días. Sin reembolso con menos de 10 días.",
         "tax_rate": 0.20,
@@ -165,7 +166,7 @@ PROPERTIES_DATA = [
             "Jardines Tropicales",
             "Bar Tiki",
             "Pabellón Aéreo",
-            "Acceso Esnórquel"
+            "Acceso Esnórquel",
         ],
         "cancellation_policy": "No reembolsable. Política estricta de cancelación.",
         "tax_rate": 0.0,
@@ -182,87 +183,145 @@ PROPERTIES_DATA = [
             ("Miguel Fernández", 5, date(2024, 8, 1), "¡Mejores vacaciones de mi vida! El entorno tropical y comodidades son de clase mundial. ¡Definitivamente volvemos!"),
         ],
     },
+    {
+        "id": CIKOS_EXECUTIVE_SUITES_ID,
+        "id_owner": DEMO_HOTEL_A_OWNER_ID,
+        "name": "Hotel Cikos Executive Suites",
+        "description": "Un hotel boutique urbano pensado para viajes de negocio y escapadas premium en Bogotá. La propiedad combina diseño contemporáneo, suites luminosas, espacios de coworking y una experiencia flexible para viajeros que llegan tarde, trabajan remoto o necesitan gestionar su reserva desde el panel del hotel. Sus habitaciones están equipadas con mobiliario ergonómico, domótica ligera, ropa de cama de alta gama y una terraza social con vistas a la ciudad.",
+        "location": "Bogotá, Colombia",
+        "latitude": 4.7110,
+        "longitude": -74.0721,
+        "price_per_night": 180000.0,
+        "currency": "COP",
+        "rating": 4.84,
+        "review_count": 31,
+        "bedrooms": 8,
+        "bathrooms": 8.0,
+        "max_guests": 24,
+        "amenities": [
+            "WiFi Empresarial de Alta Velocidad",
+            "Desayuno Incluido",
+            "Coworking Lounge",
+            "Recepción 24 Horas",
+            "Check-in Digital",
+            "Terraza Panorámica",
+            "Salas de Reunión",
+            "Servicio de Traslado",
+        ],
+        "cancellation_policy": "Cancelación gratuita hasta 24 horas antes del check-in. Luego se cobra la primera noche.",
+        "tax_rate": 0.19,
+        "cleaning_fee": 25000.0,
+        "images": [
+            ("1", "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80", "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1920&q=90", "Fachada Hotel Cikos Executive Suites", 0, True),
+            ("2", "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=800&q=80", "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=1920&q=90", "Suite Ejecutiva", 1, False),
+            ("3", "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&q=80", "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=1920&q=90", "Lounge de trabajo", 2, False),
+            ("4", "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&q=80", "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=1920&q=90", "Lobby y recepción", 3, False),
+            ("5", "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&q=80", "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=1920&q=90", "Terraza panorámica", 4, False),
+        ],
+        "reviews": [
+            ("Laura Sánchez", 5, date(2024, 9, 18), "Excelente opción en Bogotá para viaje de trabajo. Las suites son muy cómodas y el personal resolvió un cambio de reserva rapidísimo."),
+            ("Andrés Melo", 5, date(2024, 8, 27), "Muy buena ubicación, internet estable y espacios comunes impecables. Ideal para combinar reuniones y descanso."),
+        ],
+    },
 ]
 
 
-def seed_properties_if_empty(session: Session) -> None:
-    """Seed database with sample properties if empty"""
-    # Check if properties already exist
-    existing = session.exec(select(Property).limit(1)).first()
-    if existing:
-        seed_property_policies_if_missing(session)
-        return
-
+def sync_demo_properties_seed(session: Session) -> None:
+    """Create or update demo properties and backfill any missing demo assets."""
     try:
-        # Add all properties
         for prop_data in PROPERTIES_DATA:
-            property_obj = Property(
-                id=prop_data["id"],
-                id_owner=prop_data.get("id_owner"),
-                name=prop_data["name"],
-                description=prop_data["description"],
-                location=prop_data["location"],
-                latitude=prop_data["latitude"],
-                longitude=prop_data["longitude"],
-                price_per_night=prop_data["price_per_night"],
-                currency=prop_data["currency"],
-                rating=prop_data["rating"],
-                review_count=prop_data["review_count"],
-                bedrooms=prop_data["bedrooms"],
-                bathrooms=prop_data["bathrooms"],
-                max_guests=prop_data["max_guests"],
-                amenities=json.dumps(prop_data["amenities"]),
-                cancellation_policy=prop_data["cancellation_policy"],
-                tax_rate=prop_data["tax_rate"],
-                cleaning_fee=prop_data["cleaning_fee"],
-                status=1,
-            )
-            session.add(property_obj)
+            existing = session.get(Property, prop_data["id"])
+            amenities = json.dumps(prop_data["amenities"])
+            if existing is None:
+                existing = Property(id=prop_data["id"])
+                session.add(existing)
+
+            existing.id_owner = prop_data.get("id_owner")
+            existing.name = prop_data["name"]
+            existing.description = prop_data["description"]
+            existing.location = prop_data["location"]
+            existing.latitude = prop_data["latitude"]
+            existing.longitude = prop_data["longitude"]
+            existing.price_per_night = prop_data["price_per_night"]
+            existing.currency = prop_data["currency"]
+            existing.rating = prop_data["rating"]
+            existing.review_count = prop_data["review_count"]
+            existing.bedrooms = prop_data["bedrooms"]
+            existing.bathrooms = prop_data["bathrooms"]
+            existing.max_guests = prop_data["max_guests"]
+            existing.amenities = amenities
+            existing.cancellation_policy = prop_data["cancellation_policy"]
+            existing.tax_rate = prop_data["tax_rate"]
+            existing.cleaning_fee = prop_data["cleaning_fee"]
+            existing.status = 1
 
         session.commit()
+        sync_property_policies_seed(session)
 
-        seed_property_policies_if_missing(session)
-
-        # Add images
         for prop_data in PROPERTIES_DATA:
-            for img_id, url, url_hires, alt_text, position, is_cover in prop_data["images"]:
-                image = PropertyImage(
-                    property_id=prop_data["id"],
-                    url=url,
-                    url_hires=url_hires,
-                    alt_text=alt_text,
-                    position=position,
-                    is_cover=is_cover,
+            existing_images = session.exec(
+                select(PropertyImage).where(PropertyImage.property_id == prop_data["id"])
+            ).all()
+            existing_positions = {
+                image.position for image in existing_images if image.position is not None
+            }
+            existing_urls = {
+                image.url for image in existing_images if image.url is not None
+            }
+            for _, url, url_hires, alt_text, position, is_cover in prop_data["images"]:
+                if position in existing_positions or url in existing_urls:
+                    continue
+                session.add(
+                    PropertyImage(
+                        property_id=prop_data["id"],
+                        url=url,
+                        url_hires=url_hires,
+                        alt_text=alt_text,
+                        position=position,
+                        is_cover=is_cover,
+                    )
                 )
-                session.add(image)
+                existing_positions.add(position)
+                existing_urls.add(url)
 
         session.commit()
 
-        # Add reviews
         for prop_data in PROPERTIES_DATA:
+            existing_reviews = session.exec(
+                select(PropertyReview).where(PropertyReview.property_id == prop_data["id"])
+            ).all()
+            existing_review_keys = {
+                (review.author, review.review_date) for review in existing_reviews
+            }
             for author, rating, review_date, comment in prop_data["reviews"]:
-                review = PropertyReview(
-                    property_id=prop_data["id"],
-                    author=author,
-                    rating=rating,
-                    review_date=review_date,
-                    comment=comment,
-                    verified_stay=True,
+                review_key = (author, review_date)
+                if review_key in existing_review_keys:
+                    continue
+                session.add(
+                    PropertyReview(
+                        property_id=prop_data["id"],
+                        author=author,
+                        rating=rating,
+                        review_date=review_date,
+                        comment=comment,
+                        verified_stay=True,
+                    )
                 )
-                session.add(review)
+                existing_review_keys.add(review_key)
 
         session.commit()
-
-    except Exception as e:
+    except Exception:
         session.rollback()
         raise
 
 
-def seed_property_policies_if_missing(session: Session) -> None:
-    existing_policy = session.exec(select(PropertyCancellationPolicy).limit(1)).first()
-    if existing_policy:
-        return
+def seed_properties_if_empty(session: Session) -> None:
+    """Backward-compatible alias for syncing demo properties and assets."""
+    sync_demo_properties_seed(session)
 
+
+def sync_property_policies_seed(session: Session) -> None:
+    """Create or update demo cancellation policies for seeded properties."""
     policies = [
         {
             "property_id": RENAISSANCE_ESTATE_ID,
@@ -292,18 +351,34 @@ def seed_property_policies_if_missing(session: Session) -> None:
             "penalty_percentage": 0,
             "timezone": "Pacific/Tahiti",
         },
+        {
+            "property_id": CIKOS_EXECUTIVE_SUITES_ID,
+            "policy_type": "full_refund",
+            "minimum_notice_hours": 24,
+            "penalty_percentage": 0,
+            "timezone": "America/Bogota",
+        },
     ]
 
     for policy_data in policies:
-        session.add(
-            PropertyCancellationPolicy(
-                property_id=policy_data["property_id"],
-                policy_type=policy_data["policy_type"],
-                minimum_notice_hours=policy_data["minimum_notice_hours"],
-                penalty_percentage=policy_data["penalty_percentage"],
-                timezone=policy_data["timezone"],
-                is_active=True,
+        existing = session.exec(
+            select(PropertyCancellationPolicy).where(
+                PropertyCancellationPolicy.property_id == policy_data["property_id"]
             )
-        )
+        ).first()
+        if existing is None:
+            existing = PropertyCancellationPolicy(property_id=policy_data["property_id"])
+            session.add(existing)
+
+        existing.policy_type = policy_data["policy_type"]
+        existing.minimum_notice_hours = policy_data["minimum_notice_hours"]
+        existing.penalty_percentage = policy_data["penalty_percentage"]
+        existing.timezone = policy_data["timezone"]
+        existing.is_active = True
 
     session.commit()
+
+
+def seed_property_policies_if_missing(session: Session) -> None:
+    """Backward-compatible alias for syncing demo cancellation policies."""
+    sync_property_policies_seed(session)

@@ -137,6 +137,7 @@ class SendPaymentConfirmationUseCase(BaseUseCase[UUID, NotificationResponse]):
                 reservation_id=summary.get("reservation_id"),
                 status="confirmada",
                 reason=summary.get("reason"),
+                description=None,
                 refund_requested=False,
                 refund_amount=None,
             )
@@ -147,7 +148,8 @@ class SendPaymentConfirmationUseCase(BaseUseCase[UUID, NotificationResponse]):
                 recipient_name=notification.recipient_name,
                 reservation_id=summary.get("reservation_id"),
                 status="cancelada",
-                reason=summary.get("reason"),
+                reason=summary.get("reason_code") or summary.get("reason"),
+                description=summary.get("reason_note"),
                 refund_requested=summary.get("refund_requested", False),
                 refund_amount=(
                     f"{refund_amount / 100:.2f}"

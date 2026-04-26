@@ -5,7 +5,7 @@ from sqlmodel import Session, SQLModel, create_engine
 
 from adapters.models import Property, PropertyCancellationPolicy, PropertyImage, PropertyReview
 from core.config import settings
-from db.seed import seed_properties_if_empty
+from db.seed import sync_demo_properties_seed
 
 _is_postgres = settings.database_url.startswith("postgresql")
 
@@ -43,9 +43,10 @@ def create_db_and_tables() -> None:
     _ = (Property, PropertyCancellationPolicy, PropertyImage, PropertyReview)
     SQLModel.metadata.create_all(engine)
     
-    # Seed database if empty
-    with Session(engine) as session:
-        seed_properties_if_empty(session)
+    # Create or sync demo properties and assets only in allowed environments.
+    if settings.seed_demo_data:
+        with Session(engine) as session:
+            sync_demo_properties_seed(session)
 
 
 def get_session() -> Generator[Session, None, None]:

@@ -4,30 +4,36 @@ import uuid
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from db.seed import RENAISSANCE_ESTATE_ID, BEACHFRONT_PENTHOUSE_ID, ALPINE_LODGE_ID, TROPICAL_VILLA_ID
+from db.seed import (
+    ALPINE_LODGE_ID,
+    BEACHFRONT_PENTHOUSE_ID,
+    CIKOS_EXECUTIVE_SUITES_ID,
+    RENAISSANCE_ESTATE_ID,
+    TROPICAL_VILLA_ID,
+)
 
 
 def test_list_properties_returns_seeded_data(
     client: TestClient, session: Session
 ):
-    """Test that list_properties returns all 4 seeded properties"""
+    """Test that list_properties returns all 5 seeded properties"""
     response = client.get("/api/v1/properties")
 
     assert response.status_code == 200
     data = response.json()
-    
-    # Should have exactly 4 seeded properties
-    assert len(data) == 4
-    
-    # Check property names
+
+    assert len(data) == 5
+
     names = {prop["name"] for prop in data}
     expected_names = {
         "Mansión Renacentista & Viñedo Privado",
         "Penthouse Moderno Frente a la Playa",
         "Refugio Alpino de Montaña",
         "Villa Paraíso Tropical",
+        "Hotel Cikos Executive Suites",
     }
     assert names == expected_names
+    assert str(CIKOS_EXECUTIVE_SUITES_ID) in {prop["id"] for prop in data}
 
 
 def test_get_renaissance_estate(client: TestClient):
@@ -36,7 +42,7 @@ def test_get_renaissance_estate(client: TestClient):
 
     assert response.status_code == 200
     data = response.json()
-    
+
     assert data["id"] == str(RENAISSANCE_ESTATE_ID)
     assert data["name"] == "Mansión Renacentista & Viñedo Privado"
     assert data["location"] == "Fiesole, Florencia"
@@ -47,20 +53,23 @@ def test_get_renaissance_estate(client: TestClient):
     assert data["currency"] == "COP"
     assert data["rating"] == 4.98
     assert data["review_count"] == 54
-    
-    # Check images (should have 5)
+
     assert len(data["images"]) == 5
     assert data["images"][0]["position"] == 0
-    assert data["images"][0]["url"] == "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80"
-    assert data["images"][0]["url_hires"] == "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1920&q=90"
+    assert (
+        data["images"][0]["url"]
+        == "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80"
+    )
+    assert (
+        data["images"][0]["url_hires"]
+        == "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1920&q=90"
+    )
     assert data["images"][0]["is_cover"] is True
-    
-    # Check reviews (should have 2)
+
     assert len(data["reviews"]) == 2
     assert data["reviews"][0]["author"] == "María González"
     assert data["reviews"][0]["rating"] == 5
-    
-    # Check new pricing/policy fields
+
     assert data["cancellation_policy"] != ""
     assert data["tax_rate"] == 0.19
     assert data["cleaning_fee"] == 120.0
@@ -72,7 +81,7 @@ def test_get_beachfront_penthouse(client: TestClient):
 
     assert response.status_code == 200
     data = response.json()
-    
+
     assert data["id"] == str(BEACHFRONT_PENTHOUSE_ID)
     assert data["name"] == "Penthouse Moderno Frente a la Playa"
     assert data["location"] == "Playa Miami, Florida"
@@ -92,7 +101,7 @@ def test_get_alpine_lodge(client: TestClient):
 
     assert response.status_code == 200
     data = response.json()
-    
+
     assert data["id"] == str(ALPINE_LODGE_ID)
     assert data["name"] == "Refugio Alpino de Montaña"
     assert data["location"] == "Chamonix, Alpes Franceses"
@@ -112,7 +121,7 @@ def test_get_tropical_villa(client: TestClient):
 
     assert response.status_code == 200
     data = response.json()
-    
+
     assert data["id"] == str(TROPICAL_VILLA_ID)
     assert data["name"] == "Villa Paraíso Tropical"
     assert data["location"] == "Bora Bora, Polinesia Francesa"
@@ -133,7 +142,7 @@ def test_property_amenities_loaded_correctly(client: TestClient):
 
     assert response.status_code == 200
     data = response.json()
-    
+
     amenities = data["amenities"]
     assert isinstance(amenities, list)
     assert "Piscina Infinita Privada" in amenities

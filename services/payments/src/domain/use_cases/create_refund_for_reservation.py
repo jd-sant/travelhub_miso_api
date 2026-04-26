@@ -2,7 +2,7 @@ from domain.ports.payment_repository import PaymentRepository
 from domain.schemas.payment import (
     PaymentRefundCreateRequest,
     PaymentRefundPublicResponse,
-    ReservationRefundRequest,
+    ReservationPaymentRefundRequest,
 )
 from domain.use_cases.base import BaseUseCase
 from domain.use_cases.create_payment_refund import CreatePaymentRefundUseCase
@@ -10,7 +10,7 @@ from errors import PaymentNotFoundError
 
 
 class CreateRefundForReservationUseCase(
-    BaseUseCase[ReservationRefundRequest, PaymentRefundPublicResponse]
+    BaseUseCase[ReservationPaymentRefundRequest, PaymentRefundPublicResponse]
 ):
     def __init__(
         self,
@@ -22,7 +22,7 @@ class CreateRefundForReservationUseCase(
 
     def execute(
         self,
-        payload: ReservationRefundRequest,
+        payload: ReservationPaymentRefundRequest,
         source_ip: str | None = None,
         correlation_id: str | None = None,
     ) -> PaymentRefundPublicResponse:
