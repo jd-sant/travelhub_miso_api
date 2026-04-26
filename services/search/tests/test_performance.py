@@ -24,6 +24,7 @@ from datetime import date
 
 import pytest
 
+from domain.schemas.availability import PropertyAvailabilityQuery
 from domain.schemas.search import SearchQuery
 from core.config import settings
 
@@ -87,6 +88,28 @@ class TestCriteriosDeAceptacion:
         p95 = _p(latencies_ms, 95)
         assert p95 <= 200, (
             f"CA3 FALLO: Cache hit P95={p95:.1f}ms supera 200ms. "
+            f"Max={max(latencies_ms):.1f}ms, Min={min(latencies_ms):.1f}ms"
+        )
+
+    def test_ca_mobile_availability_p99_bajo_200ms(self, search_repository_with_cache):
+        query = PropertyAvailabilityQuery(
+            property_id="11111111-1111-1111-1111-111111111111",
+            check_in=date(2026, 4, 10),
+            check_out=date(2026, 4, 11),
+            guests=2,
+        )
+
+        search_repository_with_cache.check_availability(query)
+
+        latencies_ms = []
+        for _ in range(20):
+            start = time.perf_counter()
+            search_repository_with_cache.check_availability(query)
+            latencies_ms.append((time.perf_counter() - start) * 1000)
+
+        p99 = _p(latencies_ms, 99)
+        assert p99 <= 200, (
+            f"CA MOBILE DISPONIBILIDAD FALLO: P99={p99:.1f}ms supera 200ms. "
             f"Max={max(latencies_ms):.1f}ms, Min={min(latencies_ms):.1f}ms"
         )
 

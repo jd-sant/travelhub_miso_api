@@ -1,3 +1,5 @@
+from .availability import PropertyAvailabilityQuery
+from .availability import PropertyAvailabilityResponse
 from .search import EmptyStateSuggestion
 from .search import PropertySearchItem
 from .search import SearchPagination
@@ -6,6 +8,8 @@ from .search import SearchResponse
 from .search import SearchResult
 
 __all__ = [
+    "PropertyAvailabilityQuery",
+    "PropertyAvailabilityResponse",
     "EmptyStateSuggestion",
     "PropertySearchItem",
     "SearchPagination",

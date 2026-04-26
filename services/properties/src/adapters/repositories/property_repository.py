@@ -1,5 +1,6 @@
 import json
 from typing import Optional
+from urllib.parse import urlparse, urlunparse
 from uuid import UUID
 
 from sqlmodel import Session, select
@@ -19,6 +20,28 @@ from domain.schemas.property_policy import (
     PropertyCancellationPolicyResponse,
     CancellationPolicyType,
 )
+from core.config import settings
+
+
+def _rewrite_asset_url(url: str | None) -> str | None:
+    if not url or not settings.asset_cdn_enabled:
+        return url
+
+    original = urlparse(url)
+    cdn = urlparse(settings.asset_cdn_base_url or "")
+    if not original.scheme or not original.netloc or not cdn.scheme or not cdn.netloc:
+        return url
+
+    return urlunparse(
+        (
+            cdn.scheme,
+            cdn.netloc,
+            original.path,
+            original.params,
+            original.query,
+            original.fragment,
+        )
+    )
 
 
 def _to_response(
@@ -38,10 +61,10 @@ def _to_response(
     image_list = [
         PropertyImageSchema(
             id=str(img.id),
-            url=img.url,
+            url=_rewrite_asset_url(img.url) or img.url,
             alt_text=img.alt_text,
             position=img.position,
-            url_hires=img.url_hires,
+            url_hires=_rewrite_asset_url(img.url_hires),
             is_cover=img.is_cover,
         )
         for img in (images or [])
@@ -101,10 +124,10 @@ def _to_list_response(
     image_list = [
         PropertyImageSchema(
             id=str(img.id),
-            url=img.url,
+            url=_rewrite_asset_url(img.url) or img.url,
             alt_text=img.alt_text,
             position=img.position,
-            url_hires=img.url_hires,
+            url_hires=_rewrite_asset_url(img.url_hires),
             is_cover=img.is_cover,
         )
         for img in (images or [])

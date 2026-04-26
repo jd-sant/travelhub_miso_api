@@ -1,5 +1,6 @@
 import os
 from functools import lru_cache
+from urllib.parse import urlparse
 
 
 class Settings:
@@ -65,6 +66,43 @@ class Settings:
     @property
     def database_url(self) -> str:
         return f"postgresql://{self.rds_username}:{self.rds_password}@{self.rds_hostname}:{self.rds_port}/{self.rds_db_name}"
+
+    @property
+    def redis_host(self) -> str:
+        return os.getenv("REDIS_HOST", "localhost")
+
+    @property
+    def redis_port(self) -> int:
+        return int(os.getenv("REDIS_PORT", "6379"))
+
+    @property
+    def redis_db(self) -> int:
+        return int(os.getenv("REDIS_DB", "0"))
+
+    @property
+    def redis_cache_enabled(self) -> bool:
+        return os.getenv("REDIS_CACHE_ENABLED", "false").lower() == "true"
+
+    @property
+    def redis_cache_ttl_seconds(self) -> int:
+        return int(os.getenv("REDIS_CACHE_TTL_SECONDS", "300"))
+
+    @property
+    def redis_connection_pool_size(self) -> int:
+        return int(os.getenv("REDIS_CONNECTION_POOL_SIZE", "20"))
+
+    @property
+    def asset_cdn_base_url(self) -> str | None:
+        value = os.getenv("ASSET_CDN_BASE_URL", "").strip()
+        return value.rstrip("/") if value else None
+
+    @property
+    def asset_cdn_enabled(self) -> bool:
+        base_url = self.asset_cdn_base_url
+        if not base_url:
+            return False
+        parsed = urlparse(base_url)
+        return bool(parsed.scheme and parsed.netloc)
 
     def load(self):
         pass
