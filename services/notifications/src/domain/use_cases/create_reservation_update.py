@@ -15,6 +15,36 @@ from domain.schemas.notification import (
 from domain.use_cases.base import BaseUseCase
 
 
+def _normalize_locale(locale: str | None) -> str:
+    if not locale:
+        return "es"
+    lowered = locale.strip().lower()
+    if lowered.startswith("en"):
+        return "en"
+    if lowered.startswith("pt"):
+        return "pt"
+    return "es"
+
+
+def _build_subject(status: str, locale: str | None, reservation_id) -> str:
+    normalized = _normalize_locale(locale)
+    subject_map = {
+        "cancelled": {
+            "es": "Reserva cancelada",
+            "en": "Reservation cancelled",
+            "pt": "Reserva cancelada",
+        },
+        "confirmed": {
+            "es": "Reserva confirmada",
+            "en": "Reservation confirmed",
+            "pt": "Reserva confirmada",
+        },
+    }
+    event_key = "cancelled" if status == "cancelled" else "confirmed"
+    prefix = subject_map[event_key][normalized]
+    return f"{prefix} {reservation_id}"
+
+
 class CreateReservationUpdateUseCase(
     BaseUseCase[ReservationUpdateRequest, NotificationResponse]
 ):
@@ -43,11 +73,7 @@ class CreateReservationUpdateUseCase(
 
         traveler = self.traveler_profile_source.get_traveler(payload.traveler_id)
         now = datetime.now(timezone.utc)
-        subject = (
-            f"Reserva cancelada {payload.reservation_id}"
-            if payload.status == "cancelled"
-            else f"Reserva confirmada {payload.reservation_id}"
-        )
+        subject = _build_subject(payload.status, payload.locale, payload.reservation_id)
         notification = NotificationRecord(
             notification_id=uuid4(),
             traveler_id=payload.traveler_id,
@@ -64,6 +90,7 @@ class CreateReservationUpdateUseCase(
                     "reservation_id": str(payload.reservation_id),
                     "status": payload.status,
                     "reason": payload.reason,
+                    "locale": payload.locale,
                     "reason_code": payload.reason_code,
                     "reason_note": payload.reason_note,
                     "refund_requested": payload.refund_requested,

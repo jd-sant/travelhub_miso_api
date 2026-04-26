@@ -37,6 +37,14 @@ def _strip_tz(value):
     return value.replace(tzinfo=None) if value.tzinfo else value
 
 
+def _ensure_utc(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
+
+
 def _hold_expires_at(created_at: datetime) -> datetime:
     return created_at + timedelta(minutes=settings.reservation_scheduler_delay_minutes)
 
@@ -68,16 +76,16 @@ def _to_response(model: Reservation) -> ReservationResponse:
         id_traveler=model.id_traveler,
         id_property=model.id_property,
         id_room=model.id_room,
-        check_in_date=model.check_in_date,
-        check_out_date=model.check_out_date,
+        check_in_date=_ensure_utc(model.check_in_date),
+        check_out_date=_ensure_utc(model.check_out_date),
         number_of_guests=model.number_of_guests,
         total_price=model.total_price,
         currency=model.currency,
         status=model.status,
-        hold_expires_at=_hold_expires_at(model.created_at),
+        hold_expires_at=_ensure_utc(_hold_expires_at(model.created_at)),
         version=model.version,
-        created_at=model.created_at,
-        updated_at=model.updated_at,
+        created_at=_ensure_utc(model.created_at),
+        updated_at=_ensure_utc(model.updated_at),
         price_breakdown=_build_price_breakdown(model),
     )
 
@@ -88,16 +96,16 @@ def _to_hotel_item(model: Reservation) -> HotelReservationListItem:
         id_traveler=model.id_traveler,
         id_property=model.id_property,
         id_room=model.id_room,
-        check_in_date=model.check_in_date,
-        check_out_date=model.check_out_date,
+        check_in_date=_ensure_utc(model.check_in_date),
+        check_out_date=_ensure_utc(model.check_out_date),
         number_of_guests=model.number_of_guests,
         total_price=model.total_price,
         currency=model.currency,
         status=model.status,
-        hold_expires_at=_hold_expires_at(model.created_at),
+        hold_expires_at=_ensure_utc(_hold_expires_at(model.created_at)),
         version=model.version,
-        created_at=model.created_at,
-        updated_at=model.updated_at,
+        created_at=_ensure_utc(model.created_at),
+        updated_at=_ensure_utc(model.updated_at),
     )
 
 

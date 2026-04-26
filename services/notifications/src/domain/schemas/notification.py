@@ -40,6 +40,7 @@ class ReservationUpdateRequest(BaseModel):
     reservation_id: UUID
     status: str = Field(min_length=3, max_length=32)
     reason: str = Field(min_length=3, max_length=500)
+    locale: str | None = Field(default=None, max_length=16)
     reason_code: str | None = Field(default=None, max_length=64)
     reason_note: str | None = Field(default=None, max_length=500)
     source_ip: str | None = Field(default=None, max_length=64)

@@ -1,3 +1,5 @@
+from datetime import date
+
 from sqlmodel import Session, SQLModel, create_engine, select
 from sqlmodel.pool import StaticPool
 
@@ -86,3 +88,54 @@ def test_seed_adds_missing_demo_property_even_when_database_is_not_empty():
         property_row = session.get(Property, CIKOS_EXECUTIVE_SUITES_ID)
         assert property_row is not None
         assert property_row.id_owner == DEMO_HOTEL_A_OWNER_ID
+
+
+def test_seed_updates_existing_demo_review_and_image_text():
+    engine = _engine()
+
+    with Session(engine) as session:
+        sync_demo_properties_seed(session)
+
+        review = session.exec(
+            select(PropertyReview).where(
+                PropertyReview.property_id == CIKOS_EXECUTIVE_SUITES_ID,
+                PropertyReview.review_date == date(2024, 9, 18),
+            )
+        ).first()
+        image = session.exec(
+            select(PropertyImage).where(
+                PropertyImage.property_id == CIKOS_EXECUTIVE_SUITES_ID,
+                PropertyImage.position == 3,
+            )
+        ).first()
+
+        assert review is not None
+        assert image is not None
+
+        review.author = "Laura SÃ¡nchez"
+        review.comment = "Excelente opciÃ³n en BogotÃ¡"
+        image.alt_text = "Lobby y recepciÃ³n"
+        session.add(review)
+        session.add(image)
+        session.commit()
+
+        sync_demo_properties_seed(session)
+
+        updated_review = session.exec(
+            select(PropertyReview).where(
+                PropertyReview.property_id == CIKOS_EXECUTIVE_SUITES_ID,
+                PropertyReview.review_date == date(2024, 9, 18),
+            )
+        ).first()
+        updated_image = session.exec(
+            select(PropertyImage).where(
+                PropertyImage.property_id == CIKOS_EXECUTIVE_SUITES_ID,
+                PropertyImage.position == 3,
+            )
+        ).first()
+
+        assert updated_review is not None
+        assert updated_review.author == "Laura Sánchez"
+        assert "Bogotá" in updated_review.comment
+        assert updated_image is not None
+        assert updated_image.alt_text == "Lobby y recepción"

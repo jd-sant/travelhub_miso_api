@@ -17,6 +17,7 @@ class NoOpReservationNotificationDispatcher(ReservationNotificationDispatcher):
         reservation_id: UUID,
         status: str,
         reason: str,
+        locale: str | None = None,
         reason_code: str | None = None,
         reason_note: str | None = None,
         source_ip: str | None = None,
@@ -37,6 +38,7 @@ class HttpReservationNotificationDispatcher(ReservationNotificationDispatcher):
         reservation_id: UUID,
         status: str,
         reason: str,
+        locale: str | None = None,
         reason_code: str | None = None,
         reason_note: str | None = None,
         source_ip: str | None = None,
@@ -52,6 +54,7 @@ class HttpReservationNotificationDispatcher(ReservationNotificationDispatcher):
                 "reservation_id": str(reservation_id),
                 "status": status,
                 "reason": reason,
+                "locale": locale,
                 "reason_code": reason_code,
                 "reason_note": reason_note,
                 "source_ip": source_ip,
@@ -68,7 +71,9 @@ class NoOpReservationRefundDispatcher(ReservationRefundDispatcher):
         self,
         *,
         reservation_id: UUID,
+        amount_in_cents: int,
         cancellation_reason: str,
+        idempotency_key: str,
         source_ip: str | None = None,
     ) -> dict | None:
         return None
@@ -82,16 +87,20 @@ class HttpReservationRefundDispatcher(ReservationRefundDispatcher):
         self,
         *,
         reservation_id: UUID,
+        amount_in_cents: int,
         cancellation_reason: str,
+        idempotency_key: str,
         source_ip: str | None = None,
     ) -> dict | None:
         if not settings.payments_service_url:
             return None
         response = self._client.post(
-            f"{settings.payments_service_url}/api/v1/internal/refunds",
+            f"{settings.payments_service_url}/api/v1/internal/payments/refunds",
             json={
                 "reservation_id": str(reservation_id),
+                "amount_in_cents": amount_in_cents,
                 "reason": cancellation_reason[:255],
+                "idempotency_key": idempotency_key,
                 "source_ip": source_ip,
             },
             headers={"X-Internal-Api-Key": settings.internal_api_key},

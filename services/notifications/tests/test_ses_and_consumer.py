@@ -30,6 +30,7 @@ def test_ses_sender_envia_html():
     assert call_kwargs["Destinations"] == ["user@example.com"]
     raw_bytes = call_kwargs["RawMessage"]["Data"]
     assert b"Hola html" in raw_bytes
+    assert b"text/plain" in raw_bytes
     assert b"text/html" in raw_bytes
 
 

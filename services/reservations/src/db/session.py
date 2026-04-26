@@ -75,6 +75,10 @@ def _apply_schema_upgrades() -> None:
             )
         }
         required_columns = {
+            "accommodation_in_cents": "INTEGER NOT NULL DEFAULT 0",
+            "cleaning_fee_in_cents": "INTEGER NOT NULL DEFAULT 0",
+            "service_fee_in_cents": "INTEGER NOT NULL DEFAULT 0",
+            "taxes_in_cents": "INTEGER NOT NULL DEFAULT 0",
             "version": "INTEGER NOT NULL DEFAULT 1",
             "last_policy_snapshot": "TEXT",
             "cancelled_at": "TIMESTAMP",
