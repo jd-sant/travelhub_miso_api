@@ -19,14 +19,14 @@ from errors import PropertyNotFoundError
 
 
 def test_list_properties_success(session: Session):
-    """Test listing all properties - should have 4 seeded properties"""
+    """Test listing all properties - should have 5 seeded properties"""
     repository = SQLModelPropertyRepository(session)
     use_case = GetPropertiesListUseCase(repository)
 
     result = use_case.execute()
 
-    # Should have 4 seeded properties
-    assert len(result) == 4
+    # Should have 5 seeded properties
+    assert len(result) == 5
     names = {prop.name for prop in result}
     assert "Mansión Renacentista & Viñedo Privado" in names
     assert "Penthouse Moderno Frente a la Playa" in names

@@ -9,8 +9,10 @@ from domain.schemas.reservation import CancellationPolicyType
 
 class PropertyDetailResponse(BaseModel):
     id: UUID
+    name: str | None = None
     max_guests: int = Field(ge=0)
     price_per_night: Decimal
+    cover_image_url: str | None = None
 
 
 class PropertyCancellationPolicyResponse(BaseModel):
