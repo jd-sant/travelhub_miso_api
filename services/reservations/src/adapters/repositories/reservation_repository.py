@@ -14,6 +14,7 @@ from core.config import settings
 from domain.ports.reservation_repository import ReservationRepository
 from domain.schemas.reservation import (
     HotelReservationListItem,
+    PriceBreakdown,
     ReservationChangeRecord,
     ReservationCreateRequest,
     ReservationResponse,
@@ -38,6 +39,27 @@ def _hold_expires_at(created_at: datetime) -> datetime:
     return created_at + timedelta(minutes=settings.reservation_scheduler_delay_minutes)
 
 
+def _build_price_breakdown(model: Reservation) -> PriceBreakdown | None:
+    accommodation = model.accommodation_in_cents or 0
+    cleaning = model.cleaning_fee_in_cents or 0
+    service = model.service_fee_in_cents or 0
+    taxes = model.taxes_in_cents or 0
+    if not (accommodation or cleaning or service or taxes):
+        return None
+    nights = max(1, (model.check_out_date - model.check_in_date).days)
+    nightly_rate = accommodation // nights if nights else accommodation
+    return PriceBreakdown(
+        accommodation_in_cents=accommodation,
+        cleaning_fee_in_cents=cleaning,
+        service_fee_in_cents=service,
+        taxes_in_cents=taxes,
+        total_in_cents=accommodation + cleaning + service + taxes,
+        currency=model.currency,
+        nights=nights,
+        nightly_rate_in_cents=nightly_rate,
+    )
+
+
 def _to_response(model: Reservation) -> ReservationResponse:
     return ReservationResponse(
         id=model.id,
@@ -54,6 +76,7 @@ def _to_response(model: Reservation) -> ReservationResponse:
         version=model.version,
         created_at=model.created_at,
         updated_at=model.updated_at,
+        price_breakdown=_build_price_breakdown(model),
     )
 
 
@@ -95,6 +118,7 @@ class SQLModelReservationRepository(ReservationRepository):
         payload: ReservationCreateRequest,
         total_price: Decimal,
         reservation_id: UUID | None = None,
+        breakdown=None,
     ) -> ReservationResponse:
         # Verificar disponibilidad antes de crear
         if not self.check_room_availability(
@@ -115,6 +139,10 @@ class SQLModelReservationRepository(ReservationRepository):
             total_price=total_price,
             currency=payload.currency,
             status="pending_payment",
+            accommodation_in_cents=getattr(breakdown, "accommodation_in_cents", 0) or 0,
+            cleaning_fee_in_cents=getattr(breakdown, "cleaning_fee_in_cents", 0) or 0,
+            service_fee_in_cents=getattr(breakdown, "service_fee_in_cents", 0) or 0,
+            taxes_in_cents=getattr(breakdown, "taxes_in_cents", 0) or 0,
         )
         self.session.add(reservation)
         try:

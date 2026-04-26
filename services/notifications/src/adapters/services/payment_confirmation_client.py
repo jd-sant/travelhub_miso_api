@@ -46,5 +46,8 @@ class HttpPaymentConfirmationClient(PaymentConfirmationSource):
             nightly_rate_in_cents=payload.get("nightly_rate_in_cents"),
             taxes_in_cents=payload.get("taxes_in_cents"),
             total_in_cents=payload.get("total_in_cents"),
+            accommodation_in_cents=payload.get("accommodation_in_cents"),
+            cleaning_fee_in_cents=payload.get("cleaning_fee_in_cents"),
+            service_fee_in_cents=payload.get("service_fee_in_cents"),
             cancellation_policy=payload.get("cancellation_policy"),
         )

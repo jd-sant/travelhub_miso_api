@@ -176,6 +176,9 @@ class SendPaymentConfirmationUseCase(BaseUseCase[UUID, NotificationResponse]):
             "nights": summary.get("nights"),
             "nightly_rate": _money(summary.get("nightly_rate_in_cents")),
             "taxes": _money(summary.get("taxes_in_cents")),
+            "accommodation": _money(summary.get("accommodation_in_cents")),
+            "cleaning_fee": _money(summary.get("cleaning_fee_in_cents")),
+            "service_fee": _money(summary.get("service_fee_in_cents")),
             "total": _money(summary.get("total_in_cents") or summary.get("amount_in_cents")),
             "currency": currency,
             "cancellation_policy": (

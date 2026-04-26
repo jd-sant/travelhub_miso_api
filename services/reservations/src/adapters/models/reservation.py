@@ -15,6 +15,10 @@ class Reservation(SQLModel, table=True):
     number_of_guests: int = Field(ge=1)
     total_price: Decimal = Field(decimal_places=2, max_digits=10)
     currency: str = Field(max_length=3)
+    accommodation_in_cents: int = Field(default=0, ge=0)
+    cleaning_fee_in_cents: int = Field(default=0, ge=0)
+    service_fee_in_cents: int = Field(default=0, ge=0)
+    taxes_in_cents: int = Field(default=0, ge=0)
     status: str = Field(default="pending_payment")
     version: int = Field(default=1)
     last_policy_snapshot: str | None = None

@@ -92,6 +92,9 @@ class PaymentConfirmationSourceRecord(BaseModel):
     nightly_rate_in_cents: int | None = None
     taxes_in_cents: int | None = None
     total_in_cents: int | None = None
+    accommodation_in_cents: int | None = None
+    cleaning_fee_in_cents: int | None = None
+    service_fee_in_cents: int | None = None
     cancellation_policy: str | None = None
 
 

@@ -35,10 +35,27 @@
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
           <p style="margin: 0 0 8px; font-weight: 700; font-size: 14px;">Desglose del precio</p>
           <table role="presentation" cellspacing="0" cellpadding="0" width="100%" style="font-size: 14px;">
-            {% if nightly_rate %}
+            {% if accommodation %}
+            <tr>
+              <td style="padding: 4px 0; color: #475569;">Alojamiento{% if nights %} ({{ nights }} noches){% endif %}</td>
+              <td style="padding: 4px 0; text-align: right; color: #0f172a;">{{ accommodation }} {{ currency }}</td>
+            </tr>
+            {% elif nightly_rate %}
             <tr>
               <td style="padding: 4px 0; color: #475569;">Tarifa por noche{% if nights %} × {{ nights }}{% endif %}</td>
               <td style="padding: 4px 0; text-align: right; color: #0f172a;">{{ nightly_rate }} {{ currency }}</td>
+            </tr>
+            {% endif %}
+            {% if cleaning_fee %}
+            <tr>
+              <td style="padding: 4px 0; color: #475569;">Tarifa de limpieza</td>
+              <td style="padding: 4px 0; text-align: right; color: #0f172a;">{{ cleaning_fee }} {{ currency }}</td>
+            </tr>
+            {% endif %}
+            {% if service_fee %}
+            <tr>
+              <td style="padding: 4px 0; color: #475569;">Cargo de servicio TravelHub</td>
+              <td style="padding: 4px 0; text-align: right; color: #0f172a;">{{ service_fee }} {{ currency }}</td>
             </tr>
             {% endif %}
             <tr>

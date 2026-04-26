@@ -122,7 +122,10 @@ class TestReservationEndpoints:
         assert response.status_code == 201
         data = response.json()
         assert data["status"] == "pending_payment"
-        assert data["total_price"] == "714.00"  # 3 noches * 2 huéspedes * 100 * 1.19
+        # Sin property_client mock => fallback: price=100, cleaning=0, tax_rate=0.16
+        # accommodation = 100*3*2 = 600; service = 48; subtotal = 648;
+        # taxes = 648*0.16 = 103.68; total = 751.68
+        assert data["total_price"] == "751.68"
         assert data["currency"] == "COP"
         assert "id" in data
         assert "created_at" in data
@@ -569,14 +572,21 @@ class TestReservationEndpoints:
         assert response.json() == {"status": "ok"}
 
     def test_create_reservation_with_different_currencies(self, client):
-        """Test creating reservations with different currencies."""
+        """Test creating reservations with different currencies.
+
+        El tax_rate ahora viene de la propiedad (no de la moneda), por lo que
+        sin un property_client mockeado el fallback (0.16) aplica a todas las
+        monedas. Verificamos que la reserva se crea OK y la moneda se preserva.
+        """
+        # accommodation = 100*3*2 = 600; service = 48; subtotal = 648;
+        # taxes = 648*0.16 = 103.68; total = 751.68
         currencies_and_expected_prices = {
-            "COP": "714.00",  # 3 noches * 2 huéspedes * 100 * 1.19
-            "USD": "648.00",  # 3 noches * 2 huéspedes * 100 * 1.08
-            "ARS": "726.00",  # 3 noches * 2 huéspedes * 100 * 1.21
-            "CLP": "714.00",  # 3 noches * 2 huéspedes * 100 * 1.19
-            "PEN": "708.00",  # 3 noches * 2 huéspedes * 100 * 1.18
-            "MXN": "696.00",  # 3 noches * 2 huéspedes * 100 * 1.16
+            "COP": "751.68",
+            "USD": "751.68",
+            "ARS": "751.68",
+            "CLP": "751.68",
+            "PEN": "751.68",
+            "MXN": "751.68",
         }
 
         check_in = (datetime.now(UTC) + timedelta(days=5)).isoformat()
@@ -790,7 +800,12 @@ class TestReservationEndpoints:
         body = response.json()
         assert body["change_allowed"] is True
         assert body["requires_additional_charge"] is True
-        assert body["delta_amount"] == "595.00"
+        # Reserva original via POST: fallback (price=100, cleaning=0,
+        # tax_rate=0.16, service=0.08) → 2 noches * 2 huéspedes = total 501.12.
+        # Preview con FakePropertyServiceClient (price=100, sin cleaning ni tax):
+        # 3 noches * 3 huéspedes = 900; service=72; total=972.
+        # delta = 972 - 501.12 = 470.88
+        assert body["delta_amount"] == "470.88"
         assert body["reservation_after_preview"]["number_of_guests"] == 3
 
     def test_preview_cancellation_returns_preview(self, client):
@@ -829,7 +844,8 @@ class TestReservationEndpoints:
         assert response.status_code == 200
         body = response.json()
         assert body["change_allowed"] is True
-        assert body["refund_amount"] == "476.00"
+        # 2 noches * 2 huéspedes = total 501.12 con la fórmula canónica
+        assert body["refund_amount"] == "501.12"
         assert body["penalty_amount"] == "0.00"
         assert body["refund_type"] == "full_refund"
 

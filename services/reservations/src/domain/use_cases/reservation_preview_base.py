@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import UUID
 
+from core.config import settings
 from domain.ports.property_service_client import PropertyServiceClient
 from domain.ports.reservation_event_repository import ReservationEventRepository
 from domain.ports.reservation_repository import ReservationRepository
@@ -69,31 +70,44 @@ class ReservationPreviewBaseUseCase:
     def _calculate_price_with_taxes(
         self, currency: str, check_in: datetime, check_out: datetime, number_of_guests: int, property_id: UUID | None = None
     ) -> Decimal:
-        tax_rates = {
-            "COP": Decimal("0.19"),
-            "USD": Decimal("0.08"),
-            "ARS": Decimal("0.21"),
-            "CLP": Decimal("0.19"),
-            "PEN": Decimal("0.18"),
-            "MXN": Decimal("0.16"),
-        }
+        """Espejo de la fórmula canónica de `CreateReservationUseCase`:
+            accommodation = price_per_night × nights × guests
+            service       = round(accommodation × service_fee_rate)
+            subtotal      = accommodation + cleaning_fee + service
+            taxes         = round(subtotal × property.tax_rate)
+            total         = subtotal + taxes
+        """
+        nights = max(1, (check_out - check_in).days)
+        guests = max(1, number_of_guests)
+        price_per_night, cleaning_fee, tax_rate = self._fetch_property_pricing(
+            property_id
+        )
+        service_fee_rate = Decimal(settings.service_fee_rate)
 
-        price_per_night = self._get_property_price(property_id) if property_id else Decimal(100)
+        accommodation = (price_per_night * nights * guests).quantize(Decimal("0.01"))
+        cleaning = cleaning_fee.quantize(Decimal("0.01"))
+        service = (accommodation * service_fee_rate).quantize(Decimal("0.01"))
+        subtotal = accommodation + cleaning + service
+        taxes = (subtotal * tax_rate).quantize(Decimal("0.01"))
+        return (subtotal + taxes).quantize(Decimal("0.01"))
 
-        num_nights = (check_out - check_in).days
-        base_price = price_per_night * number_of_guests * num_nights
-        tax_rate = tax_rates.get(currency, Decimal("0.16"))
-        total = base_price * (1 + tax_rate)
-        return total.quantize(Decimal("0.01"))
+    def _fetch_property_pricing(
+        self, property_id: UUID | None
+    ) -> tuple[Decimal, Decimal, Decimal]:
+        if not (property_id and self.property_client):
+            return (Decimal(100), Decimal(0), Decimal("0.16"))
+        try:
+            details = self.property_client.get_property(property_id)
+            return (
+                details.price_per_night,
+                details.cleaning_fee,
+                details.tax_rate,
+            )
+        except Exception:
+            return (Decimal(100), Decimal(0), Decimal("0.16"))
 
     def _get_property_price(self, property_id: UUID | None) -> Decimal:
-        try:
-            if property_id and self.property_client:
-                property_details = self.property_client.get_property(property_id)
-                return property_details.price_per_night
-        except Exception:
-            pass
-        return Decimal(100)
+        return self._fetch_property_pricing(property_id)[0]
 
     def _record_event(
         self,

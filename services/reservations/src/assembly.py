@@ -6,6 +6,8 @@ from sqlmodel import Session
 from adapters.repositories.reservation_repository import SQLModelReservationRepository
 from adapters.services.payments_client import PaymentsServiceClient
 from adapters.services.properties_client import PropertiesServiceClient
+from adapters.services.property_service_client import HttpPropertyServiceClient
+from domain.ports.property_service_client import PropertyServiceClient
 from adapters.services.scheduler_service import (
     EventBridgeReservationScheduler,
     NoOpReservationScheduler,
@@ -55,6 +57,10 @@ def get_properties_client() -> PropertiesServiceClient:
     return PropertiesServiceClient()
 
 
+def get_property_service_client() -> PropertyServiceClient:
+    return HttpPropertyServiceClient()
+
+
 def get_users_client() -> UsersServiceClient:
     return UsersServiceClient()
 
@@ -67,8 +73,11 @@ def get_create_reservation_use_case(
     repository: SQLModelReservationRepository = Depends(get_reservation_repository),
     scheduler: ReservationScheduler = Depends(get_reservation_scheduler),
     properties_client: PropertiesServiceClient = Depends(get_properties_client),
+    property_client: PropertyServiceClient = Depends(get_property_service_client),
 ) -> CreateReservationUseCase:
-    return CreateReservationUseCase(repository, scheduler, properties_client)
+    return CreateReservationUseCase(
+        repository, scheduler, properties_client, property_client
+    )
 
 
 def get_update_reservation_status_use_case(
