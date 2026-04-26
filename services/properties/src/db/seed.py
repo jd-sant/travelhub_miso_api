@@ -262,17 +262,16 @@ def sync_demo_properties_seed(session: Session) -> None:
             existing_images = session.exec(
                 select(PropertyImage).where(PropertyImage.property_id == prop_data["id"])
             ).all()
-            existing_positions = {
-                image.position for image in existing_images if image.position is not None
+            existing_by_position = {
+                image.position: image for image in existing_images if image.position is not None
             }
-            existing_urls = {
-                image.url for image in existing_images if image.url is not None
+            existing_by_url = {
+                image.url: image for image in existing_images if image.url is not None
             }
             for _, url, url_hires, alt_text, position, is_cover in prop_data["images"]:
-                if position in existing_positions or url in existing_urls:
-                    continue
-                session.add(
-                    PropertyImage(
+                existing_image = existing_by_position.get(position) or existing_by_url.get(url)
+                if existing_image is None:
+                    existing_image = PropertyImage(
                         property_id=prop_data["id"],
                         url=url,
                         url_hires=url_hires,
@@ -280,9 +279,16 @@ def sync_demo_properties_seed(session: Session) -> None:
                         position=position,
                         is_cover=is_cover,
                     )
-                )
-                existing_positions.add(position)
-                existing_urls.add(url)
+                    session.add(existing_image)
+                else:
+                    existing_image.url = url
+                    existing_image.url_hires = url_hires
+                    existing_image.alt_text = alt_text
+                    existing_image.position = position
+                    existing_image.is_cover = is_cover
+
+                existing_by_position[position] = existing_image
+                existing_by_url[url] = existing_image
 
         session.commit()
 
@@ -290,15 +296,13 @@ def sync_demo_properties_seed(session: Session) -> None:
             existing_reviews = session.exec(
                 select(PropertyReview).where(PropertyReview.property_id == prop_data["id"])
             ).all()
-            existing_review_keys = {
-                (review.author, review.review_date) for review in existing_reviews
+            existing_reviews_by_date = {
+                review.review_date: review for review in existing_reviews
             }
             for author, rating, review_date, comment in prop_data["reviews"]:
-                review_key = (author, review_date)
-                if review_key in existing_review_keys:
-                    continue
-                session.add(
-                    PropertyReview(
+                existing_review = existing_reviews_by_date.get(review_date)
+                if existing_review is None:
+                    existing_review = PropertyReview(
                         property_id=prop_data["id"],
                         author=author,
                         rating=rating,
@@ -306,8 +310,14 @@ def sync_demo_properties_seed(session: Session) -> None:
                         comment=comment,
                         verified_stay=True,
                     )
-                )
-                existing_review_keys.add(review_key)
+                    session.add(existing_review)
+                else:
+                    existing_review.author = author
+                    existing_review.rating = rating
+                    existing_review.comment = comment
+                    existing_review.verified_stay = True
+
+                existing_reviews_by_date[review_date] = existing_review
 
         session.commit()
     except Exception:
