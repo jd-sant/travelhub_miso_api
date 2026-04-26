@@ -11,6 +11,7 @@ from adapters.services.hotel_side_effects import (
     NoOpReservationNotificationDispatcher,
     NoOpReservationRefundDispatcher,
 )
+from adapters.services.properties_client import PropertiesServiceClient
 from adapters.services.users_client import UsersServiceClient
 from core.auth import AuthenticatedUser, get_current_hotel_user
 from core.config import settings
@@ -35,7 +36,7 @@ from domain.use_cases.cancel_hotel_reservation import CancelHotelReservationUseC
 from domain.use_cases.confirm_hotel_reservation import ConfirmHotelReservationUseCase
 from domain.use_cases.get_hotel_reservation_detail import GetHotelReservationDetailUseCase
 from domain.use_cases.list_hotel_reservations import ListHotelReservationsUseCase
-from errors import ReservationNotFoundError, ReservationStateConflictError
+from errors import ReservationAuthorizationError, ReservationNotFoundError, ReservationStateConflictError
 
 router = APIRouter(prefix="/hotel/reservations", tags=["hotel-reservations"])
 
@@ -66,11 +67,16 @@ def get_users_client() -> UsersServiceClient:
     return UsersServiceClient()
 
 
+def get_properties_client() -> PropertiesServiceClient:
+    return PropertiesServiceClient()
+
+
 def get_hotel_reservation_detail_use_case(
     repository=Depends(get_reservation_repository),
     users_client: UsersServiceClient = Depends(get_users_client),
+    properties_client: PropertiesServiceClient = Depends(get_properties_client),
 ):
-    return GetHotelReservationDetailUseCase(repository, users_client)
+    return GetHotelReservationDetailUseCase(repository, users_client, properties_client)
 
 
 def get_add_internal_note_use_case(
@@ -238,9 +244,11 @@ def get_hotel_reservation_detail(
     use_case: GetHotelReservationDetailUseCase = Depends(get_hotel_reservation_detail_use_case),
 ) -> HotelReservationDetailResponse:
     try:
-        return use_case.execute(reservation_id)
+        return use_case.execute(reservation_id, owner_hotel_id=user.id)
     except ReservationNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    except ReservationAuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
 
 
 @router.post("/{reservation_id}/notes", response_model=InternalNoteResponse, status_code=status.HTTP_201_CREATED)

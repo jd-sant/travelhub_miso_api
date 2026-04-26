@@ -328,14 +328,12 @@ ReservationModificationPreviewResponse.model_rebuild()
 
 _CONFIRMABLE_STATUSES = frozenset({
     "pending_payment",
-    "refund_completed",
     "modification_confirmed",
 })
 
 _CANCELLABLE_STATUSES = frozenset({
     "pending_payment",
     "confirmed",
-    "refund_completed",
     "modification_confirmed",
 })
 

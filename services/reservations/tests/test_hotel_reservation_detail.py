@@ -12,10 +12,11 @@ from adapters.models.reservation_change import ReservationChange
 from core.config import settings
 from domain.schemas.reservation import compute_available_actions
 from entrypoints.api.main import app
-from entrypoints.api.routers.hotel_reservations import get_users_client
+from entrypoints.api.routers.hotel_reservations import get_properties_client, get_users_client
 
 
 HOTEL_USER_ID = UUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+OTHER_HOTEL_USER_ID = UUID("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
 TRAVELER_ID = UUID("cccccccc-cccc-cccc-cccc-cccccccccccc")
 PROPERTY_ID = UUID("11111111-1111-1111-1111-111111111111")
 ROOM_ID = UUID("22222222-2222-2222-2222-222222222222")
@@ -25,6 +26,16 @@ def _hotel_token(user_id: UUID = HOTEL_USER_ID) -> str:
     payload = {
         "sub": str(user_id),
         "email": "hotel@example.com",
+        "role": "hotel",
+        "exp": datetime.now(UTC) + timedelta(hours=1),
+    }
+    return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
+
+
+def _other_hotel_token() -> str:
+    payload = {
+        "sub": str(OTHER_HOTEL_USER_ID),
+        "email": "other_hotel@example.com",
         "role": "hotel",
         "exp": datetime.now(UTC) + timedelta(hours=1),
     }
@@ -53,6 +64,18 @@ class FakeUsersClientWithData:
         ]
 
     def search_by_name(self, query):
+        return []
+
+
+class FakePropertiesClientOwner:
+    """Returns PROPERTY_ID as owned by whoever asks."""
+    def get_owned_property_ids(self, owner_id):
+        return [PROPERTY_ID]
+
+
+class FakePropertiesClientOther:
+    """Returns empty list — simulates a hotel that owns no properties."""
+    def get_owned_property_ids(self, owner_id):
         return []
 
 
@@ -127,12 +150,18 @@ def test_available_actions_modification_confirmed_has_confirm_and_cancel():
     assert "cancel" in actions
 
 
+def test_available_actions_refund_completed_is_empty():
+    actions = compute_available_actions("refund_completed")
+    assert actions == []
+
+
 # ---------------------------------------------------------------------------
 # Integration tests
 # ---------------------------------------------------------------------------
 
 def test_get_detail_returns_full_response(client, session):
     app.dependency_overrides[get_users_client] = lambda: FakeUsersClientWithData()
+    app.dependency_overrides[get_properties_client] = lambda: FakePropertiesClientOwner()
     r = _seed_reservation(session)
     resp = client.get(
         f"/api/v1/hotel/reservations/{r.id}",
@@ -152,14 +181,17 @@ def test_get_detail_returns_full_response(client, session):
     assert "cancel" in action_names
     assert "confirm" not in action_names
     app.dependency_overrides.pop(get_users_client, None)
+    app.dependency_overrides.pop(get_properties_client, None)
 
 
 def test_get_detail_not_found_returns_404(client):
+    app.dependency_overrides[get_properties_client] = lambda: FakePropertiesClientOwner()
     resp = client.get(
         f"/api/v1/hotel/reservations/{uuid4()}",
         headers={"Authorization": f"Bearer {_hotel_token()}"},
     )
     assert resp.status_code == 404
+    app.dependency_overrides.pop(get_properties_client, None)
 
 
 def test_get_detail_requires_hotel_role(client, session):
@@ -173,6 +205,7 @@ def test_get_detail_requires_hotel_role(client, session):
 
 def test_get_detail_includes_change_history(client, session):
     app.dependency_overrides[get_users_client] = lambda: FakeUsersClientWithData()
+    app.dependency_overrides[get_properties_client] = lambda: FakePropertiesClientOwner()
     r = _seed_reservation(session)
     _seed_change(session, r.id)
     resp = client.get(
@@ -186,6 +219,7 @@ def test_get_detail_includes_change_history(client, session):
     assert history[0]["previous_status"] == "pending_payment"
     assert history[0]["new_status"] == "confirmed"
     app.dependency_overrides.pop(get_users_client, None)
+    app.dependency_overrides.pop(get_properties_client, None)
 
 
 def test_add_note_creates_note_and_returns_201(client, session):
@@ -215,6 +249,7 @@ def test_add_note_to_nonexistent_reservation_returns_404(client):
 
 def test_get_detail_includes_internal_notes(client, session):
     app.dependency_overrides[get_users_client] = lambda: FakeUsersClientWithData()
+    app.dependency_overrides[get_properties_client] = lambda: FakePropertiesClientOwner()
     r = _seed_reservation(session)
     # Add a note first
     client.post(
@@ -231,6 +266,7 @@ def test_get_detail_includes_internal_notes(client, session):
     assert len(notes) == 1
     assert notes[0]["content"] == "Nota interna de prueba."
     app.dependency_overrides.pop(get_users_client, None)
+    app.dependency_overrides.pop(get_properties_client, None)
 
 
 def test_add_note_requires_hotel_role(client, session):
@@ -255,6 +291,7 @@ def test_add_note_empty_content_returns_422(client, session):
 
 def test_get_detail_price_breakdown_present(client, session):
     app.dependency_overrides[get_users_client] = lambda: FakeUsersClientWithData()
+    app.dependency_overrides[get_properties_client] = lambda: FakePropertiesClientOwner()
     r = _seed_reservation(session)
     resp = client.get(
         f"/api/v1/hotel/reservations/{r.id}",
@@ -266,11 +303,13 @@ def test_get_detail_price_breakdown_present(client, session):
     assert breakdown["accommodation_in_cents"] == 750000_00
     assert breakdown["cleaning_fee_in_cents"] == 80000_00
     app.dependency_overrides.pop(get_users_client, None)
+    app.dependency_overrides.pop(get_properties_client, None)
 
 
 @pytest.mark.performance
 def test_detail_p95_below_1000ms(client, session):
     app.dependency_overrides[get_users_client] = lambda: FakeUsersClientWithData()
+    app.dependency_overrides[get_properties_client] = lambda: FakePropertiesClientOwner()
     r = _seed_reservation(session)
     _seed_change(session, r.id)
     token = _hotel_token()
@@ -297,3 +336,17 @@ def test_detail_p95_below_1000ms(client, session):
     )
     assert p95 < 1000, f"P95 latency {p95:.2f}ms exceeds 1000ms threshold"
     app.dependency_overrides.pop(get_users_client, None)
+    app.dependency_overrides.pop(get_properties_client, None)
+
+
+def test_get_detail_from_other_hotel_returns_403(client, session):
+    app.dependency_overrides[get_users_client] = lambda: FakeUsersClientWithData()
+    app.dependency_overrides[get_properties_client] = lambda: FakePropertiesClientOther()
+    r = _seed_reservation(session)
+    resp = client.get(
+        f"/api/v1/hotel/reservations/{r.id}",
+        headers={"Authorization": f"Bearer {_other_hotel_token()}"},
+    )
+    assert resp.status_code == 403
+    app.dependency_overrides.pop(get_users_client, None)
+    app.dependency_overrides.pop(get_properties_client, None)
