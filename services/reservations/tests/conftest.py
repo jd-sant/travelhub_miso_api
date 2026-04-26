@@ -23,6 +23,7 @@ if str(SRC_PATH) not in sys.path:
 from adapters.models.reservation import Reservation
 from adapters.models.reservation_command_log import ReservationCommandLog
 from adapters.models.reservation_event import ReservationEvent
+from adapters.models.reservation_internal_note import ReservationInternalNote
 from adapters.repositories.reservation_command_log_repository import (
     SQLModelReservationCommandLogRepository,
 )
@@ -44,7 +45,7 @@ def session():
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    _ = (Reservation, ReservationEvent, ReservationCommandLog)
+    _ = (Reservation, ReservationEvent, ReservationCommandLog, ReservationInternalNote)
     SQLModel.metadata.create_all(engine)
     with Session(engine) as session:
         yield session
