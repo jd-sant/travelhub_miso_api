@@ -22,8 +22,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-Traveler-Id", "X-Internal-Api-Key"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(router, prefix="/api/v1/reservations", tags=["reservations"])
