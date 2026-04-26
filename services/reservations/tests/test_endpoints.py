@@ -15,6 +15,10 @@ from entrypoints.api.routers.reservations import (
     get_property_service_client,
 )
 from entrypoints.api.routers.internal import get_reservation_repository
+from entrypoints.api.routers.hotel_reservations import (
+    get_reservation_notification_dispatcher,
+    get_reservation_refund_dispatcher,
+)
 from core.config import settings
 from errors import ReservationConcurrencyError
 
@@ -94,6 +98,19 @@ class FakePaymentServiceClient:
                 "idempotency_key": idempotency_key,
             }
         )
+
+
+class FakeReservationNotificationDispatcher:
+    def __init__(self):
+        self.calls = []
+
+    def dispatch_reservation_update(self, **kwargs):
+        self.calls.append(kwargs)
+
+
+class FailingReservationRefundDispatcher:
+    def request_refund(self, **kwargs):
+        raise RuntimeError("refund service unavailable")
 
 
 class TestReservationEndpoints:
@@ -690,6 +707,45 @@ class TestReservationEndpoints:
         assert data["status_before"] == "confirmed"
         assert data["status_after"] == "cancelled"
         assert data["refund_requested"] is True
+
+    def test_hotel_cancellation_still_notifies_when_refund_fails(self, client):
+        payload = {
+            "id_traveler": str(uuid4()),
+            "id_property": str(uuid4()),
+            "id_room": str(uuid4()),
+            "check_in_date": (datetime.now(UTC) + timedelta(days=5)).isoformat(),
+            "check_out_date": (datetime.now(UTC) + timedelta(days=8)).isoformat(),
+            "number_of_guests": 2,
+            "currency": "COP",
+        }
+        created = client.post("/api/v1/reservations", json=payload)
+        reservation_id = created.json()["id"]
+        client.post(
+            f"/api/v1/hotel/reservations/{reservation_id}/confirm",
+            json={"reason": "confirmacion manual"},
+            headers={"Authorization": f"Bearer {self._hotel_token()}"},
+        )
+
+        notification_dispatcher = FakeReservationNotificationDispatcher()
+        app.dependency_overrides[get_reservation_notification_dispatcher] = (
+            lambda: notification_dispatcher
+        )
+        app.dependency_overrides[get_reservation_refund_dispatcher] = (
+            lambda: FailingReservationRefundDispatcher()
+        )
+        try:
+            response = client.post(
+                f"/api/v1/hotel/reservations/{reservation_id}/cancel",
+                json={"reason": "maintenance"},
+                headers={"Authorization": f"Bearer {self._hotel_token()}"},
+            )
+        finally:
+            app.dependency_overrides.pop(get_reservation_notification_dispatcher, None)
+            app.dependency_overrides.pop(get_reservation_refund_dispatcher, None)
+
+        assert response.status_code == 200
+        assert len(notification_dispatcher.calls) == 1
+        assert notification_dispatcher.calls[0]["status"] == "cancelled"
 
     def test_hotel_cannot_confirm_cancelled_reservation(self, client):
         payload = {

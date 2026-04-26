@@ -64,6 +64,8 @@ class CreateReservationUpdateUseCase(
                     "reservation_id": str(payload.reservation_id),
                     "status": payload.status,
                     "reason": payload.reason,
+                    "reason_code": payload.reason_code,
+                    "reason_note": payload.reason_note,
                     "refund_requested": payload.refund_requested,
                     "refund_amount_in_cents": payload.refund_amount_in_cents,
                 },
