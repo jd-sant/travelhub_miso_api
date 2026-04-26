@@ -32,11 +32,24 @@ def _parse_date(value) -> date | None:
 
 
 @dataclass(frozen=True)
+class ReservationPriceBreakdown:
+    accommodation_in_cents: int
+    cleaning_fee_in_cents: int
+    service_fee_in_cents: int
+    taxes_in_cents: int
+    total_in_cents: int
+    nights: int
+    nightly_rate_in_cents: int
+    currency: str
+
+
+@dataclass(frozen=True)
 class ReservationDetails:
     guests_count: int | None
     property_id: UUID | None
     check_in_date: date | None
     check_out_date: date | None
+    price_breakdown: ReservationPriceBreakdown | None = None
 
 
 @dataclass(frozen=True)
@@ -45,9 +58,27 @@ class PropertyDetails:
     address: str | None
 
 
+def _parse_breakdown(value) -> ReservationPriceBreakdown | None:
+    if not isinstance(value, dict):
+        return None
+    try:
+        return ReservationPriceBreakdown(
+            accommodation_in_cents=int(value.get("accommodation_in_cents") or 0),
+            cleaning_fee_in_cents=int(value.get("cleaning_fee_in_cents") or 0),
+            service_fee_in_cents=int(value.get("service_fee_in_cents") or 0),
+            taxes_in_cents=int(value.get("taxes_in_cents") or 0),
+            total_in_cents=int(value.get("total_in_cents") or 0),
+            nights=int(value.get("nights") or 0),
+            nightly_rate_in_cents=int(value.get("nightly_rate_in_cents") or 0),
+            currency=str(value.get("currency") or ""),
+        )
+    except (TypeError, ValueError):
+        return None
+
+
 class ReservationDetailsClient:
     def fetch(self, reservation_id: UUID) -> ReservationDetails:
-        empty = ReservationDetails(None, None, None, None)
+        empty = ReservationDetails(None, None, None, None, None)
         if not settings.reservations_service_url:
             return empty
         url = (
@@ -69,6 +100,7 @@ class ReservationDetailsClient:
                 property_id=UUID(property_id) if property_id else None,
                 check_in_date=_parse_date(data.get("check_in_date")),
                 check_out_date=_parse_date(data.get("check_out_date")),
+                price_breakdown=_parse_breakdown(data.get("price_breakdown")),
             )
         except Exception as exc:  # noqa: BLE001
             logger.warning(

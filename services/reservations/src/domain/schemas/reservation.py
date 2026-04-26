@@ -187,6 +187,17 @@ class ReservationEventResponse(BaseModel):
     created_at: datetime
 
 
+class PriceBreakdown(BaseModel):
+    accommodation_in_cents: int = Field(ge=0)
+    cleaning_fee_in_cents: int = Field(ge=0)
+    service_fee_in_cents: int = Field(ge=0)
+    taxes_in_cents: int = Field(ge=0)
+    total_in_cents: int = Field(ge=0)
+    currency: str
+    nights: int = Field(ge=0)
+    nightly_rate_in_cents: int = Field(ge=0)
+
+
 class ReservationResponse(BaseModel):
     id: UUID
     id_traveler: UUID
@@ -202,6 +213,7 @@ class ReservationResponse(BaseModel):
     version: int = 1
     created_at: datetime
     updated_at: datetime
+    price_breakdown: PriceBreakdown | None = None
 
 
 class ReservationSummary(BaseModel):

@@ -116,6 +116,9 @@ class CreatePaymentConfirmationUseCase(
                 "nightly_rate_in_cents": confirmation.nightly_rate_in_cents,
                 "taxes_in_cents": confirmation.taxes_in_cents,
                 "total_in_cents": confirmation.total_in_cents or confirmation.amount_in_cents,
+                "accommodation_in_cents": confirmation.accommodation_in_cents,
+                "cleaning_fee_in_cents": confirmation.cleaning_fee_in_cents,
+                "service_fee_in_cents": confirmation.service_fee_in_cents,
                 "cancellation_policy": confirmation.cancellation_policy,
             },
             "recipient": {
