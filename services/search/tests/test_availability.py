@@ -33,6 +33,19 @@ def test_property_availability_endpoint_returns_bad_request_for_invalid_window(c
     assert response.status_code == 400
 
 
+def test_property_availability_endpoint_rejects_invalid_uuid(client):
+    response = client.get(
+        "/api/v1/search/properties/not-a-uuid/availability",
+        params={
+            "check_in": "2026-04-10",
+            "check_out": "2026-04-11",
+            "guests": 2,
+        },
+    )
+
+    assert response.status_code == 422
+
+
 def test_property_availability_cache_hit_returns_same_payload(search_repository_with_cache):
     query = PropertyAvailabilityQuery(
         property_id="11111111-1111-1111-1111-111111111111",

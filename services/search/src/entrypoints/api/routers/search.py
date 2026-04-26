@@ -1,6 +1,7 @@
 from datetime import date
 from decimal import Decimal
 from typing import Optional
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from redis import Redis
@@ -121,7 +122,7 @@ def search_properties(
     response_model=PropertyAvailabilityResponse,
 )
 def check_property_availability(
-    property_id: str,
+    property_id: UUID,
     check_in: date = Query(),
     check_out: date = Query(),
     guests: int = Query(ge=1),
