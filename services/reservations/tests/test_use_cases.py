@@ -174,8 +174,8 @@ class TestCreateReservationUseCase:
         result = create_reservation_use_case.execute(request)
 
         assert result.status == "pending_payment"
-        assert result.check_in_date.tzinfo is None
-        assert result.check_out_date.tzinfo is None
+        assert result.check_in_date.tzinfo == UTC
+        assert result.check_out_date.tzinfo == UTC
 
     def test_execute_uses_property_pricing_for_canonical_breakdown(
         self, reservation_repository, traveler_id, property_id, room_id
