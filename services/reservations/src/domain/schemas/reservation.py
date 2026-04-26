@@ -327,3 +327,57 @@ class ReservationWithDetailsResponse(BaseModel):
 
 ReservationModificationPreviewResponse.model_rebuild()
 
+
+_CONFIRMABLE_STATUSES = frozenset({
+    "pending_payment",
+    "modification_confirmed",
+})
+
+_CANCELLABLE_STATUSES = frozenset({
+    "pending_payment",
+    "confirmed",
+    "modification_confirmed",
+})
+
+
+def compute_available_actions(status: str) -> list["AvailableAction"]:
+    actions: list[AvailableAction] = []
+    if status in _CONFIRMABLE_STATUSES:
+        actions.append(AvailableAction(action="confirm", label="Confirmar reserva"))
+    if status in _CANCELLABLE_STATUSES:
+        actions.append(AvailableAction(action="cancel", label="Cancelar reserva"))
+    return actions
+
+
+class GuestInfo(BaseModel):
+    id: UUID
+    full_name: str | None = None
+    email: str | None = None
+    phone: str | None = None
+
+
+class AvailableAction(BaseModel):
+    action: str
+    label: str
+
+
+class InternalNoteCreateRequest(BaseModel):
+    content: str = Field(min_length=1, max_length=1000)
+
+
+class InternalNoteResponse(BaseModel):
+    id: UUID
+    reservation_id: UUID
+    content: str
+    author_user_id: UUID
+    author_name: str | None = None
+    created_at: datetime
+
+
+class HotelReservationDetailResponse(BaseModel):
+    reservation: ReservationResponse
+    guest: GuestInfo | None = None
+    change_history: list[ReservationChangeRecord] = []
+    internal_notes: list[InternalNoteResponse] = []
+    available_actions: list[AvailableAction] = []
+

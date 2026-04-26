@@ -12,6 +12,8 @@ from adapters.services.hotel_side_effects import (
     NoOpReservationNotificationDispatcher,
     NoOpReservationRefundDispatcher,
 )
+from adapters.services.properties_client import PropertiesServiceClient
+from adapters.services.users_client import UsersServiceClient
 from core.auth import AuthenticatedUser, get_current_hotel_user
 from core.config import settings
 from db.session import get_session
@@ -23,14 +25,19 @@ from domain.schemas.reservation import (
     HotelReservationActionResponse,
     HotelReservationCancellationRequest,
     HotelReservationConfirmationRequest,
+    HotelReservationDetailResponse,
     HotelReservationListItem,
+    InternalNoteCreateRequest,
+    InternalNoteResponse,
     ReservationCancellationReason,
     ReservationStatus,
 )
+from domain.use_cases.add_internal_note import AddInternalNoteUseCase
 from domain.use_cases.cancel_hotel_reservation import CancelHotelReservationUseCase
 from domain.use_cases.confirm_hotel_reservation import ConfirmHotelReservationUseCase
+from domain.use_cases.get_hotel_reservation_detail import GetHotelReservationDetailUseCase
 from domain.use_cases.list_hotel_reservations import ListHotelReservationsUseCase
-from errors import ReservationNotFoundError, ReservationStateConflictError
+from errors import ReservationAuthorizationError, ReservationNotFoundError, ReservationStateConflictError
 
 router = APIRouter(prefix="/hotel/reservations", tags=["hotel-reservations"])
 logger = logging.getLogger(__name__)
@@ -56,6 +63,28 @@ def get_cancel_hotel_reservation_use_case(
     repository=Depends(get_reservation_repository),
 ):
     return CancelHotelReservationUseCase(repository)
+
+
+def get_users_client() -> UsersServiceClient:
+    return UsersServiceClient()
+
+
+def get_properties_client() -> PropertiesServiceClient:
+    return PropertiesServiceClient()
+
+
+def get_hotel_reservation_detail_use_case(
+    repository=Depends(get_reservation_repository),
+    users_client: UsersServiceClient = Depends(get_users_client),
+    properties_client: PropertiesServiceClient = Depends(get_properties_client),
+):
+    return GetHotelReservationDetailUseCase(repository, users_client, properties_client)
+
+
+def get_add_internal_note_use_case(
+    repository=Depends(get_reservation_repository),
+):
+    return AddInternalNoteUseCase(repository)
 
 
 @lru_cache
@@ -226,3 +255,35 @@ def cancel_hotel_reservation(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
     except ReservationStateConflictError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+
+
+@router.get("/{reservation_id}", response_model=HotelReservationDetailResponse, status_code=status.HTTP_200_OK)
+def get_hotel_reservation_detail(
+    reservation_id: UUID,
+    user: AuthenticatedUser = Depends(get_current_hotel_user),
+    use_case: GetHotelReservationDetailUseCase = Depends(get_hotel_reservation_detail_use_case),
+) -> HotelReservationDetailResponse:
+    try:
+        return use_case.execute(reservation_id, owner_hotel_id=user.id)
+    except ReservationNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    except ReservationAuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
+
+
+@router.post("/{reservation_id}/notes", response_model=InternalNoteResponse, status_code=status.HTTP_201_CREATED)
+def add_internal_note(
+    reservation_id: UUID,
+    payload: InternalNoteCreateRequest,
+    user: AuthenticatedUser = Depends(get_current_hotel_user),
+    use_case: AddInternalNoteUseCase = Depends(get_add_internal_note_use_case),
+) -> InternalNoteResponse:
+    try:
+        return use_case.execute(
+            reservation_id=reservation_id,
+            content=payload.content,
+            author_user_id=user.id,
+            author_name=None,
+        )
+    except ReservationNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))

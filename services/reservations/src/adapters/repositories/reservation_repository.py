@@ -9,11 +9,13 @@ from sqlalchemy import update, asc
 from sqlmodel import Session, select
 
 from adapters.models.reservation_change import ReservationChange
+from adapters.models.reservation_internal_note import ReservationInternalNote
 from adapters.models.reservation import Reservation
 from core.config import settings
 from domain.ports.reservation_repository import ReservationRepository
 from domain.schemas.reservation import (
     HotelReservationListItem,
+    InternalNoteResponse,
     PriceBreakdown,
     ReservationChangeRecord,
     ReservationCreateRequest,
@@ -471,3 +473,67 @@ class SQLModelReservationRepository(ReservationRepository):
             source_ip=model.source_ip,
             created_at=model.created_at,
         )
+
+    def list_changes(self, reservation_id: UUID) -> list[ReservationChangeRecord]:
+        models = self.session.exec(
+            select(ReservationChange)
+            .where(ReservationChange.reservation_id == reservation_id)
+            .order_by(ReservationChange.created_at.asc())
+        ).all()
+        return [
+            ReservationChangeRecord(
+                id=m.id,
+                reservation_id=m.reservation_id,
+                action=m.action,
+                previous_status=m.previous_status,
+                new_status=m.new_status,
+                reason=m.reason,
+                actor_user_id=m.actor_user_id,
+                source_ip=m.source_ip,
+                created_at=m.created_at,
+            )
+            for m in models
+        ]
+
+    def add_note(
+        self,
+        reservation_id: UUID,
+        content: str,
+        author_user_id: UUID,
+        author_name: str | None,
+    ) -> InternalNoteResponse:
+        model = ReservationInternalNote(
+            reservation_id=reservation_id,
+            content=content,
+            author_user_id=author_user_id,
+            author_name=author_name,
+        )
+        self.session.add(model)
+        self.session.commit()
+        self.session.refresh(model)
+        return InternalNoteResponse(
+            id=model.id,
+            reservation_id=model.reservation_id,
+            content=model.content,
+            author_user_id=model.author_user_id,
+            author_name=model.author_name,
+            created_at=model.created_at,
+        )
+
+    def list_notes(self, reservation_id: UUID) -> list[InternalNoteResponse]:
+        models = self.session.exec(
+            select(ReservationInternalNote)
+            .where(ReservationInternalNote.reservation_id == reservation_id)
+            .order_by(ReservationInternalNote.created_at.asc())
+        ).all()
+        return [
+            InternalNoteResponse(
+                id=m.id,
+                reservation_id=m.reservation_id,
+                content=m.content,
+                author_user_id=m.author_user_id,
+                author_name=m.author_name,
+                created_at=m.created_at,
+            )
+            for m in models
+        ]

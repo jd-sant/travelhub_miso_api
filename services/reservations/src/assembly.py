@@ -116,3 +116,6 @@ def get_compute_revenue_trends_use_case(
     payments_client: PaymentsServiceClient = Depends(get_payments_client),
 ) -> ComputeRevenueTrendsUseCase:
     return ComputeRevenueTrendsUseCase(repository, properties_client, payments_client)
+
+
+

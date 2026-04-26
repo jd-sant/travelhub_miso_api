@@ -4,7 +4,7 @@ import re
 from sqlalchemy import event, inspect, text
 from sqlmodel import Session, SQLModel, create_engine
 
-from adapters.models import Reservation, ReservationCommandLog, ReservationEvent
+from adapters.models import Reservation, ReservationCommandLog, ReservationEvent, ReservationInternalNote
 from core.config import settings
 
 _is_postgres = settings.database_url.startswith("postgresql")
@@ -49,7 +49,7 @@ if _is_postgres:
 
 def create_db_and_tables() -> None:
     # Keep explicit model references so SQLModel metadata includes all tables.
-    _ = (Reservation, ReservationEvent, ReservationCommandLog)
+    _ = (Reservation, ReservationEvent, ReservationCommandLog, ReservationInternalNote)
     if _is_postgres:
         schema_name = _validated_schema_name()
         with engine.connect() as conn:
