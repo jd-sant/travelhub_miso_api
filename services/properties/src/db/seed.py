@@ -256,7 +256,7 @@ def sync_demo_properties_seed(session: Session) -> None:
             existing.status = 1
 
         session.commit()
-        seed_property_policies_if_missing(session)
+        sync_property_policies_seed(session)
 
         for prop_data in PROPERTIES_DATA:
             existing_images = session.exec(
@@ -320,7 +320,8 @@ def seed_properties_if_empty(session: Session) -> None:
     sync_demo_properties_seed(session)
 
 
-def seed_property_policies_if_missing(session: Session) -> None:
+def sync_property_policies_seed(session: Session) -> None:
+    """Create or update demo cancellation policies for seeded properties."""
     policies = [
         {
             "property_id": RENAISSANCE_ESTATE_ID,
@@ -376,3 +377,8 @@ def seed_property_policies_if_missing(session: Session) -> None:
         existing.is_active = True
 
     session.commit()
+
+
+def seed_property_policies_if_missing(session: Session) -> None:
+    """Backward-compatible alias for syncing demo cancellation policies."""
+    sync_property_policies_seed(session)

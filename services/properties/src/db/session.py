@@ -43,9 +43,10 @@ def create_db_and_tables() -> None:
     _ = (Property, PropertyCancellationPolicy, PropertyImage, PropertyReview)
     SQLModel.metadata.create_all(engine)
     
-    # Create or sync demo properties and assets
-    with Session(engine) as session:
-        sync_demo_properties_seed(session)
+    # Create or sync demo properties and assets only in allowed environments.
+    if settings.seed_demo_data:
+        with Session(engine) as session:
+            sync_demo_properties_seed(session)
 
 
 def get_session() -> Generator[Session, None, None]:
