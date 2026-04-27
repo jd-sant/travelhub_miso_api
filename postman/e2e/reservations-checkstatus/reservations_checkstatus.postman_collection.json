@@ -202,8 +202,8 @@
   ],
   "variable": [
     { "key": "base_url", "value": "http://localhost:8002" },
-    { "key": "internal_api_key", "value": "dev-internal-key-change-me" },
-    { "key": "INTERNAL_API_KEY", "value": "dev-internal-key-change-me" },
+    { "key": "internal_api_key", "value": "travelhub-internal-secret-key" },
+    { "key": "INTERNAL_API_KEY", "value": "travelhub-internal-secret-key" },
     { "key": "WRONG_INTERNAL_API_KEY", "value": "invalid-key" }
   ]
 }
