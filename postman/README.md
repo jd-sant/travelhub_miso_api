@@ -144,7 +144,7 @@ newman run postman/e2e/reservation-payment-failure-checkstatus/travelhub-reserva
 
 Valida los flujos completos de la HU:
 
-1. Cancelacion de reserva con pago confirmado y transicion final a `refund_completed`.
+1. Cancelacion de reserva con pago confirmado y transicion final a `cancelled`.
 2. Modificacion con delta negativo, refund iniciado y transicion final a `modification_confirmed`.
 
 Ejecucion sugerida con Newman:
@@ -164,7 +164,7 @@ Ejecucion sugerida con Newman:
 ```bash
 newman run postman/e2e/reservations-checkstatus/reservations_checkstatus.postman_collection.json \
   --env-var base_url=http://localhost:8002 \
-  --env-var INTERNAL_API_KEY=${INTERNAL_API_KEY:-dev-internal-key-change-me} \
+  --env-var INTERNAL_API_KEY=${INTERNAL_API_KEY:-travelhub-internal-secret-key} \
   --reporters cli
 ```
 

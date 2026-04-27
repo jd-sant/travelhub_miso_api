@@ -1,0 +1,1273 @@
+{
+  "collection": {
+    "_": {
+      "postman_id": "eff589e6-f61a-4df6-839c-9b799323c6ac"
+    },
+    "item": [
+      {
+        "id": "71472dc7-3717-4f25-86e1-99d51caa9d1e",
+        "name": "Health - Search",
+        "request": {
+          "url": {
+            "path": [
+              "health"
+            ],
+            "host": [
+              "{{search_base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "c3261e6c-5389-46f1-bfc4-3585727495ff",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('health 200', function () { pm.response.to.have.status(200); });"
+              ],
+              "_lastExecutionId": "095d9dd4-b3d4-4fb5-b688-62bc1ea4c965"
+            }
+          }
+        ]
+      },
+      {
+        "id": "9f0a3067-83b7-4b52-a331-77ad3040d93b",
+        "name": "Search Status",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "search",
+              "status"
+            ],
+            "host": [
+              "{{search_base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "f08c1020-f53a-4b7f-837f-e9cfa00b6a01",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                "const body = pm.response.json();",
+                "pm.test('service is search', function () { pm.expect(body.service).to.eql('search'); });"
+              ],
+              "_lastExecutionId": "667007f6-308e-454b-a135-b9247e87cff2"
+            }
+          }
+        ]
+      },
+      {
+        "id": "f5a14777-1fdb-411d-a55e-298f8941e5be",
+        "name": "Search Query",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "search"
+            ],
+            "host": [
+              "{{search_base_url}}"
+            ],
+            "query": [
+              {
+                "key": "city",
+                "value": "Bogota"
+              },
+              {
+                "key": "check_in",
+                "value": "{{search_check_in}}"
+              },
+              {
+                "key": "check_out",
+                "value": "{{search_check_out}}"
+              },
+              {
+                "key": "guests",
+                "value": "2"
+              },
+              {
+                "key": "page",
+                "value": "1"
+              },
+              {
+                "key": "page_size",
+                "value": "5"
+              }
+            ],
+            "variable": []
+          },
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "prerequest",
+            "script": {
+              "id": "224f9d02-e6f7-463a-ac1e-8a30773af01f",
+              "type": "text/javascript",
+              "exec": [
+                "const now = new Date();",
+                "const checkIn = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);",
+                "const checkOut = new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000);",
+                "pm.collectionVariables.set('search_check_in', checkIn.toISOString().slice(0, 10));",
+                "pm.collectionVariables.set('search_check_out', checkOut.toISOString().slice(0, 10));"
+              ],
+              "_lastExecutionId": "5664407b-04d8-4eb7-9786-8dd495084d8a"
+            }
+          },
+          {
+            "listen": "test",
+            "script": {
+              "id": "30d11912-bc3a-492d-8f81-c8bf556ef36a",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('search 200', function () { pm.response.to.have.status(200); });",
+                "const body = pm.response.json();",
+                "pm.test('items array exists', function () { pm.expect(body.items).to.be.an('array'); });",
+                "pm.test('pagination exists', function () { pm.expect(body.pagination).to.be.an('object'); });"
+              ],
+              "_lastExecutionId": "d731c8c5-eeb1-4249-9639-e7617fab7e1e"
+            }
+          }
+        ]
+      }
+    ],
+    "event": [],
+    "variable": [],
+    "info": {
+      "_postman_id": "eff589e6-f61a-4df6-839c-9b799323c6ac",
+      "name": "TravelHub Search Contract",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+      "description": {
+        "content": "Validaciones contract/smoke para Search service.",
+        "type": "text/plain"
+      }
+    }
+  },
+  "environment": {
+    "_": {
+      "postman_variable_scope": "environment",
+      "postman_exported_at": "2026-04-11T00:00:00.000Z",
+      "postman_exported_using": "Codex"
+    },
+    "id": "1f3a5f3e-6c97-4fe2-b4db-1bbf62d8468f",
+    "name": "TravelHub Microservices Local",
+    "values": [
+      {
+        "type": "any",
+        "value": "http://localhost:8000",
+        "key": "users_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8001",
+        "key": "security_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8002",
+        "key": "reservations_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8003",
+        "key": "payments_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8004",
+        "key": "notifications_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8005",
+        "key": "properties_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8006",
+        "key": "search_base_url"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-internal-secret-key",
+        "key": "internal_api_key"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-internal-secret-key",
+        "key": "INTERNAL_API_KEY"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-jwt-secret-change-in-prod",
+        "key": "JWT_SECRET_KEY"
+      },
+      {
+        "type": "any",
+        "value": "development",
+        "key": "ENV"
+      },
+      {
+        "type": "any",
+        "value": "development",
+        "key": "APP_ENV"
+      },
+      {
+        "type": "any",
+        "value": "smtp.gmail.com",
+        "key": "SMTP_HOST"
+      },
+      {
+        "type": "any",
+        "value": "587",
+        "key": "SMTP_PORT"
+      },
+      {
+        "type": "any",
+        "value": "tu-email@gmail.com",
+        "key": "SMTP_USER"
+      },
+      {
+        "type": "any",
+        "value": "tu-app-password",
+        "key": "SMTP_PASSWORD"
+      },
+      {
+        "type": "any",
+        "value": "tu-email@gmail.com",
+        "key": "SMTP_FROM"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-payments-secret-change-in-prod",
+        "key": "PAYMENT_INTEGRITY_SECRET"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-payments-encryption-key-change-in-prod",
+        "key": "PAYMENTS_DATA_ENCRYPTION_KEY"
+      },
+      {
+        "type": "any",
+        "value": "false",
+        "key": "PAYMENTS_COMPLIANCE_MODE"
+      },
+      {
+        "type": "any",
+        "value": "true",
+        "key": "ENFORCE_TLS_HEADER"
+      },
+      {
+        "type": "any",
+        "value": "fake_stripe",
+        "key": "PAYMENT_PROVIDER"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "STRIPE_SECRET_KEY"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "STRIPE_PUBLISHABLE_KEY"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "STRIPE_WEBHOOK_SECRET"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:3000,http://127.0.0.1:3000",
+        "key": "ALLOWED_CORS_ORIGIN"
+      },
+      {
+        "type": "any",
+        "value": "us-east-1",
+        "key": "AWS_REGION"
+      },
+      {
+        "type": "any",
+        "value": "XXXX",
+        "key": "AWS_ACCESS_KEY_ID"
+      },
+      {
+        "type": "any",
+        "value": "XXXX",
+        "key": "AWS_SECRET_ACCESS_KEY"
+      },
+      {
+        "type": "any",
+        "value": "XXXX",
+        "key": "AWS_SESSION_TOKEN"
+      },
+      {
+        "type": "any",
+        "value": "arn:aws:lambda:us-east-1:ACC_ID:function:reservation-checker",
+        "key": "LAMBDA_ARN"
+      },
+      {
+        "type": "any",
+        "value": "arn:aws:iam::ACC_ID:role/EventBridgeSchedulerRole",
+        "key": "SCHEDULER_ROLE_ARN"
+      },
+      {
+        "type": "any",
+        "value": "http://reservations:8006",
+        "key": "API_BASE_URL"
+      },
+      {
+        "type": "any",
+        "value": "true",
+        "key": "RESERVATION_SCHEDULER_ENABLED"
+      },
+      {
+        "type": "any",
+        "value": "15",
+        "key": "RESERVATION_SCHEDULER_DELAY_MINUTES"
+      }
+    ]
+  },
+  "globals": {
+    "id": "60563d1a-eb87-4c46-80fe-a5ae2bf0ff3b",
+    "values": []
+  },
+  "run": {
+    "stats": {
+      "iterations": {
+        "total": 1,
+        "pending": 0,
+        "failed": 0
+      },
+      "items": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "scripts": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequests": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "requests": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "tests": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "assertions": {
+        "total": 6,
+        "pending": 0,
+        "failed": 0
+      },
+      "testScripts": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequestScripts": {
+        "total": 1,
+        "pending": 0,
+        "failed": 0
+      }
+    },
+    "timings": {
+      "responseAverage": 18.666666666666668,
+      "responseMin": 3,
+      "responseMax": 30,
+      "responseSd": 11.440668201153676,
+      "dnsAverage": 0,
+      "dnsMin": 0,
+      "dnsMax": 0,
+      "dnsSd": 0,
+      "firstByteAverage": 0,
+      "firstByteMin": 0,
+      "firstByteMax": 0,
+      "firstByteSd": 0,
+      "started": 1777254737771,
+      "completed": 1777254738069
+    },
+    "executions": [
+      {
+        "cursor": {
+          "position": 0,
+          "iteration": 0,
+          "length": 3,
+          "cycles": 1,
+          "empty": false,
+          "eof": false,
+          "bof": true,
+          "cr": false,
+          "ref": "50f4208b-a989-46a5-8034-d69f25ebb358",
+          "httpRequestId": "62b334e3-42f4-406a-a4e2-a8a892603de1"
+        },
+        "item": {
+          "id": "71472dc7-3717-4f25-86e1-99d51caa9d1e",
+          "name": "Health - Search",
+          "request": {
+            "url": {
+              "path": [
+                "health"
+              ],
+              "host": [
+                "{{search_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "c3261e6c-5389-46f1-bfc4-3585727495ff",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('health 200', function () { pm.response.to.have.status(200); });"
+                ],
+                "_lastExecutionId": "095d9dd4-b3d4-4fb5-b688-62bc1ea4c965"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8006",
+            "path": [
+              "health"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "8bbff60a-0946-4df5-b3b0-8acbb6eeb8ba",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8006",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "80f6e1d3-0683-4cd4-a74e-21c7e3a31585",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Mon, 27 Apr 2026 01:52:17 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "20"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              104,
+              101,
+              97,
+              108,
+              116,
+              104,
+              121,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 23,
+          "responseSize": 20
+        },
+        "id": "71472dc7-3717-4f25-86e1-99d51caa9d1e",
+        "assertions": [
+          {
+            "assertion": "health 200",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "1bff1970-6310-4467-b138-79e5b78e4fb6",
+          "length": 3,
+          "cycles": 1,
+          "position": 1,
+          "iteration": 0,
+          "httpRequestId": "3f4dd283-0a17-4fc7-a378-13ad94ff12a5"
+        },
+        "item": {
+          "id": "9f0a3067-83b7-4b52-a331-77ad3040d93b",
+          "name": "Search Status",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "search",
+                "status"
+              ],
+              "host": [
+                "{{search_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "f08c1020-f53a-4b7f-837f-e9cfa00b6a01",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test('service is search', function () { pm.expect(body.service).to.eql('search'); });"
+                ],
+                "_lastExecutionId": "667007f6-308e-454b-a135-b9247e87cff2"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8006",
+            "path": [
+              "api",
+              "v1",
+              "search",
+              "status"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "3579a963-6522-4879-b000-69daf8ff5c6f",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8006",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "f06b5eab-e82d-454e-ae5d-4708cda66c45",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Mon, 27 Apr 2026 01:52:17 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "34"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              101,
+              114,
+              118,
+              105,
+              99,
+              101,
+              34,
+              58,
+              34,
+              115,
+              101,
+              97,
+              114,
+              99,
+              104,
+              34,
+              44,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              111,
+              107,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 3,
+          "responseSize": 34
+        },
+        "id": "9f0a3067-83b7-4b52-a331-77ad3040d93b",
+        "assertions": [
+          {
+            "assertion": "status 200",
+            "skipped": false
+          },
+          {
+            "assertion": "service is search",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "fbd8bcce-2651-4443-9bc1-85b8775a2cb6",
+          "length": 3,
+          "cycles": 1,
+          "position": 2,
+          "iteration": 0,
+          "httpRequestId": "3fab3c2e-fefc-45de-a134-fc72d856e9e7"
+        },
+        "item": {
+          "id": "f5a14777-1fdb-411d-a55e-298f8941e5be",
+          "name": "Search Query",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "search"
+              ],
+              "host": [
+                "{{search_base_url}}"
+              ],
+              "query": [
+                {
+                  "key": "city",
+                  "value": "Bogota"
+                },
+                {
+                  "key": "check_in",
+                  "value": "{{search_check_in}}"
+                },
+                {
+                  "key": "check_out",
+                  "value": "{{search_check_out}}"
+                },
+                {
+                  "key": "guests",
+                  "value": "2"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "5"
+                }
+              ],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "224f9d02-e6f7-463a-ac1e-8a30773af01f",
+                "type": "text/javascript",
+                "exec": [
+                  "const now = new Date();",
+                  "const checkIn = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);",
+                  "const checkOut = new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000);",
+                  "pm.collectionVariables.set('search_check_in', checkIn.toISOString().slice(0, 10));",
+                  "pm.collectionVariables.set('search_check_out', checkOut.toISOString().slice(0, 10));"
+                ],
+                "_lastExecutionId": "5664407b-04d8-4eb7-9786-8dd495084d8a"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "30d11912-bc3a-492d-8f81-c8bf556ef36a",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('search 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test('items array exists', function () { pm.expect(body.items).to.be.an('array'); });",
+                  "pm.test('pagination exists', function () { pm.expect(body.pagination).to.be.an('object'); });"
+                ],
+                "_lastExecutionId": "d731c8c5-eeb1-4249-9639-e7617fab7e1e"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8006",
+            "path": [
+              "api",
+              "v1",
+              "search"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [
+              {
+                "key": "city",
+                "value": "Bogota"
+              },
+              {
+                "key": "check_in",
+                "value": "2026-04-29"
+              },
+              {
+                "key": "check_out",
+                "value": "2026-05-01"
+              },
+              {
+                "key": "guests",
+                "value": "2"
+              },
+              {
+                "key": "page",
+                "value": "1"
+              },
+              {
+                "key": "page_size",
+                "value": "5"
+              }
+            ],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "43172522-d9d5-45d9-901f-df1f2024e4b1",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8006",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "0e68f700-6e2b-40ef-b247-cde8e8d27f1b",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Mon, 27 Apr 2026 01:52:17 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "305"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              105,
+              116,
+              101,
+              109,
+              115,
+              34,
+              58,
+              91,
+              93,
+              44,
+              34,
+              112,
+              97,
+              103,
+              105,
+              110,
+              97,
+              116,
+              105,
+              111,
+              110,
+              34,
+              58,
+              123,
+              34,
+              116,
+              111,
+              116,
+              97,
+              108,
+              34,
+              58,
+              48,
+              44,
+              34,
+              112,
+              97,
+              103,
+              101,
+              34,
+              58,
+              49,
+              44,
+              34,
+              112,
+              97,
+              103,
+              101,
+              95,
+              115,
+              105,
+              122,
+              101,
+              34,
+              58,
+              53,
+              44,
+              34,
+              116,
+              111,
+              116,
+              97,
+              108,
+              95,
+              112,
+              97,
+              103,
+              101,
+              115,
+              34,
+              58,
+              48,
+              125,
+              44,
+              34,
+              101,
+              109,
+              112,
+              116,
+              121,
+              95,
+              115,
+              116,
+              97,
+              116,
+              101,
+              34,
+              58,
+              91,
+              123,
+              34,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              84,
+              82,
+              89,
+              95,
+              79,
+              84,
+              72,
+              69,
+              82,
+              95,
+              67,
+              73,
+              84,
+              89,
+              34,
+              44,
+              34,
+              109,
+              101,
+              115,
+              115,
+              97,
+              103,
+              101,
+              34,
+              58,
+              34,
+              78,
+              111,
+              32,
+              101,
+              110,
+              99,
+              111,
+              110,
+              116,
+              114,
+              97,
+              109,
+              111,
+              115,
+              32,
+              114,
+              101,
+              115,
+              117,
+              108,
+              116,
+              97,
+              100,
+              111,
+              115,
+              32,
+              101,
+              110,
+              32,
+              101,
+              115,
+              97,
+              32,
+              99,
+              105,
+              117,
+              100,
+              97,
+              100,
+              46,
+              32,
+              73,
+              110,
+              116,
+              101,
+              110,
+              116,
+              97,
+              32,
+              111,
+              116,
+              114,
+              97,
+              32,
+              99,
+              105,
+              117,
+              100,
+              97,
+              100,
+              32,
+              99,
+              101,
+              114,
+              99,
+              97,
+              110,
+              97,
+              46,
+              34,
+              125,
+              44,
+              123,
+              34,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              84,
+              82,
+              89,
+              95,
+              79,
+              84,
+              72,
+              69,
+              82,
+              95,
+              68,
+              65,
+              84,
+              69,
+              83,
+              34,
+              44,
+              34,
+              109,
+              101,
+              115,
+              115,
+              97,
+              103,
+              101,
+              34,
+              58,
+              34,
+              80,
+              114,
+              117,
+              101,
+              98,
+              97,
+              32,
+              99,
+              111,
+              110,
+              32,
+              102,
+              101,
+              99,
+              104,
+              97,
+              115,
+              32,
+              100,
+              105,
+              102,
+              101,
+              114,
+              101,
+              110,
+              116,
+              101,
+              115,
+              32,
+              112,
+              97,
+              114,
+              97,
+              32,
+              101,
+              110,
+              99,
+              111,
+              110,
+              116,
+              114,
+              97,
+              114,
+              32,
+              109,
+              97,
+              121,
+              111,
+              114,
+              32,
+              100,
+              105,
+              115,
+              112,
+              111,
+              110,
+              105,
+              98,
+              105,
+              108,
+              105,
+              100,
+              97,
+              100,
+              46,
+              34,
+              125,
+              93,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 30,
+          "responseSize": 305
+        },
+        "id": "f5a14777-1fdb-411d-a55e-298f8941e5be",
+        "assertions": [
+          {
+            "assertion": "search 200",
+            "skipped": false
+          },
+          {
+            "assertion": "items array exists",
+            "skipped": false
+          },
+          {
+            "assertion": "pagination exists",
+            "skipped": false
+          }
+        ]
+      }
+    ],
+    "transfers": {
+      "responseTotal": 359
+    },
+    "failures": [],
+    "error": null
+  }
+}
