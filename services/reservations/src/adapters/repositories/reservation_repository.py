@@ -14,6 +14,7 @@ from adapters.models.reservation import Reservation
 from core.config import settings
 from domain.ports.reservation_repository import ReservationRepository
 from domain.schemas.reservation import (
+    compute_available_actions,
     HotelReservationListItem,
     InternalNoteResponse,
     PriceBreakdown,
@@ -106,6 +107,7 @@ def _to_hotel_item(model: Reservation) -> HotelReservationListItem:
         version=model.version,
         created_at=_ensure_utc(model.created_at),
         updated_at=_ensure_utc(model.updated_at),
+        available_actions=compute_available_actions(model.status),
     )
 
 

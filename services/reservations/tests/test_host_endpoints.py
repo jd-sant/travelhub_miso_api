@@ -207,6 +207,12 @@ def test_host_listing_returns_only_my_properties(client, session, fakes_overridd
     assert body["total"] == 2
     property_ids = {item["id_property"] for item in body["items"]}
     assert property_ids == {str(PROPERTY_A), str(PROPERTY_B)}
+    actions_by_status = {
+        item["status"]: {action["action"] for action in item["available_actions"]}
+        for item in body["items"]
+    }
+    assert actions_by_status["confirmed"] == {"cancel"}
+    assert actions_by_status["pending_payment"] == {"confirm", "cancel"}
 
 
 def test_host_listing_filter_by_status_and_guest(client, session, fakes_overridden):

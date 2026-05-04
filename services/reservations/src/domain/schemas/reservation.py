@@ -71,6 +71,11 @@ class ReservationStatusUpdateRequest(BaseModel):
     status: ReservationStatus
 
 
+class AvailableAction(BaseModel):
+    action: str
+    label: str
+
+
 class HotelReservationListItem(BaseModel):
     id: UUID
     id_traveler: UUID
@@ -85,6 +90,7 @@ class HotelReservationListItem(BaseModel):
     hold_expires_at: datetime
     created_at: datetime
     updated_at: datetime
+    available_actions: list[AvailableAction] = []
 
 
 class HotelReservationConfirmationRequest(BaseModel):
@@ -251,6 +257,7 @@ class HostReservationItem(BaseModel):
     currency: str
     status: str
     created_at: datetime
+    available_actions: list[AvailableAction] = []
 
 
 class HostReservationsPage(BaseModel):
@@ -330,6 +337,7 @@ ReservationModificationPreviewResponse.model_rebuild()
 
 _CONFIRMABLE_STATUSES = frozenset({
     "pending_payment",
+    "modification_pending_payment",
     "modification_confirmed",
 })
 
@@ -354,11 +362,6 @@ class GuestInfo(BaseModel):
     full_name: str | None = None
     email: str | None = None
     phone: str | None = None
-
-
-class AvailableAction(BaseModel):
-    action: str
-    label: str
 
 
 class InternalNoteCreateRequest(BaseModel):
