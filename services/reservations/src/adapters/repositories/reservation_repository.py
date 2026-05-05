@@ -406,6 +406,35 @@ class SQLModelReservationRepository(ReservationRepository):
             statement = statement.where(Reservation.check_in_date <= end_naive)
         return [(rid, ci) for rid, ci in self.session.exec(statement).all()]
 
+    def list_confirmed_revenue_rows_by_properties(
+        self,
+        property_ids: list[UUID],
+        *,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ) -> list[tuple[UUID, datetime, Decimal, str]]:
+        if not property_ids:
+            return []
+        start_naive = _strip_tz(start_date)
+        end_naive = _strip_tz(end_date)
+        statement = select(
+            Reservation.id,
+            Reservation.check_in_date,
+            Reservation.total_price,
+            Reservation.currency,
+        ).where(
+            Reservation.id_property.in_(property_ids),
+            Reservation.status == "confirmed",
+        )
+        if start_naive is not None:
+            statement = statement.where(Reservation.check_out_date >= start_naive)
+        if end_naive is not None:
+            statement = statement.where(Reservation.check_in_date <= end_naive)
+        return [
+            (rid, check_in, total_price, currency)
+            for rid, check_in, total_price, currency in self.session.exec(statement).all()
+        ]
+
     def operational_metrics_for_properties(
         self,
         property_ids: list[UUID],

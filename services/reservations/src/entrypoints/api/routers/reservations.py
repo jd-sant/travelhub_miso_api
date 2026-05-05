@@ -277,6 +277,7 @@ def create_reservation(
 def get_host_metrics(
     start_date: datetime | None = Query(default=None),
     end_date: datetime | None = Query(default=None),
+    revenue_mode: Literal["confirmed_reservations", "collected_payments"] = Query(default="confirmed_reservations"),
     currency: str | None = Query(default=None),
     user: AuthenticatedUser = Depends(get_current_hotel_user),
     use_case: ComputeHostMetricsUseCase = Depends(get_compute_host_metrics_use_case),
@@ -286,6 +287,7 @@ def get_host_metrics(
             owner_id=user.id,
             start_date=start_date,
             end_date=end_date,
+            revenue_mode=revenue_mode,
             currency=currency,
         )
     except ServiceUnavailableError as exc:
@@ -299,6 +301,7 @@ def get_host_revenue_trends(
     start_date: datetime | None = Query(default=None),
     end_date: datetime | None = Query(default=None),
     granularity: Literal["day", "week", "month"] = Query(default="week"),
+    revenue_mode: Literal["confirmed_reservations", "collected_payments"] = Query(default="confirmed_reservations"),
     currency: str | None = Query(default=None),
     user: AuthenticatedUser = Depends(get_current_hotel_user),
     use_case: ComputeRevenueTrendsUseCase = Depends(
@@ -311,6 +314,7 @@ def get_host_revenue_trends(
             start_date=start_date,
             end_date=end_date,
             granularity=granularity,
+            revenue_mode=revenue_mode,
             currency=currency,
         )
     except ServiceUnavailableError as exc:
