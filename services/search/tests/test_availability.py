@@ -7,7 +7,7 @@ from domain.schemas.availability import PropertyAvailabilityQuery
 from domain.use_cases.check_property_availability import (
     CheckPropertyAvailabilityUseCase,
 )
-from tests.conftest import make_property
+from conftest import make_property
 
 
 SEEDED_ID = UUID("11111111-1111-1111-1111-111111111111")

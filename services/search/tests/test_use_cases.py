@@ -8,7 +8,7 @@ import pytest
 from domain.schemas.search import SearchQuery
 from domain.use_cases.search_properties import SearchPropertiesUseCase
 from errors import PropertiesServiceUnavailableError, ReservationsServiceUnavailableError
-from tests.conftest import make_property
+from conftest import make_property
 
 
 def _query(**overrides) -> SearchQuery:

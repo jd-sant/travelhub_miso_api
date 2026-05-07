@@ -8,7 +8,7 @@ from redis.exceptions import RedisError
 from adapters.cache.redis_cache import RedisCache
 from domain.schemas.search import SearchQuery
 from domain.use_cases.search_properties import SearchPropertiesUseCase
-from tests.conftest import make_property
+from conftest import make_property
 
 
 def _query(**overrides) -> SearchQuery:

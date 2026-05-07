@@ -1,7 +1,7 @@
 """End-to-end API contract tests using FastAPI's TestClient + fake services."""
 from decimal import Decimal
 
-from tests.conftest import make_property
+from conftest import make_property
 
 
 class TestSearchHealthEndpoints:
