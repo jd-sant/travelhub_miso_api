@@ -55,6 +55,20 @@ class ReservationRepository(ABC):
         pass
 
     @abstractmethod
+    def check_properties_availability(
+        self,
+        property_ids: list[UUID],
+        check_in: datetime,
+        check_out: datetime,
+    ) -> tuple[list[UUID], list[UUID]]:
+        """Return (available_ids, blocked_ids) for the given range.
+
+        A property is blocked if any of its reservations is not in a cancelled-like
+        status and overlaps [check_in, check_out).
+        """
+        pass
+
+    @abstractmethod
     def update_status(
         self,
         id: UUID,

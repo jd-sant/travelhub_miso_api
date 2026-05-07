@@ -16,6 +16,9 @@ from adapters.services.users_client import UsersServiceClient
 from core.config import settings
 from db.session import get_session
 from domain.ports.reservation_scheduler import ReservationScheduler
+from domain.use_cases.check_properties_availability import (
+    CheckPropertiesAvailabilityUseCase,
+)
 from domain.use_cases.check_reservation_status import CheckReservationStatusUseCase
 from domain.use_cases.compute_host_metrics import (
     ComputeHostMetricsUseCase,
@@ -92,6 +95,12 @@ def get_check_reservation_status_use_case(
     ),
 ) -> CheckReservationStatusUseCase:
     return CheckReservationStatusUseCase(updater)
+
+
+def get_check_properties_availability_use_case(
+    repository: SQLModelReservationRepository = Depends(get_reservation_repository),
+) -> CheckPropertiesAvailabilityUseCase:
+    return CheckPropertiesAvailabilityUseCase(repository)
 
 
 def get_list_host_reservations_use_case(
