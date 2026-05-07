@@ -5,7 +5,9 @@ from fastapi.testclient import TestClient
 
 from db.seed import (
     ALPINE_LODGE_ID,
+    ANDINO_APARTHOTEL_ID,
     BEACHFRONT_PENTHOUSE_ID,
+    CANDELARIA_HOSTEL_ID,
     CIKOS_EXECUTIVE_SUITES_ID,
     RENAISSANCE_ESTATE_ID,
     TROPICAL_VILLA_ID,
@@ -27,17 +29,23 @@ def test_search_default_returns_all_active_seeded(client: TestClient):
     response = client.get("/api/v1/properties/search")
     assert response.status_code == 200
     data = response.json()
-    # 5 seeded, all active
-    assert data["pagination"]["total"] == 5
-    assert len(data["items"]) == 5
+    # 7 seeded, all active
+    assert data["pagination"]["total"] == 7
+    assert len(data["items"]) == 7
 
 
 def test_search_filter_by_city_partial_case_insensitive(client: TestClient):
     response = client.get("/api/v1/properties/search?city=bogot")
     assert response.status_code == 200
     data = response.json()
-    assert data["pagination"]["total"] == 1
-    assert data["items"][0]["id"] == str(CIKOS_EXECUTIVE_SUITES_ID)
+    # 3 properties seeded in Bogotá
+    assert data["pagination"]["total"] == 3
+    ids = {item["id"] for item in data["items"]}
+    assert ids == {
+        str(CIKOS_EXECUTIVE_SUITES_ID),
+        str(CANDELARIA_HOSTEL_ID),
+        str(ANDINO_APARTHOTEL_ID),
+    }
 
 
 def test_search_filter_by_city_no_match(client: TestClient):
@@ -140,20 +148,27 @@ def test_search_pagination(client: TestClient):
     page1 = client.get("/api/v1/properties/search?page=1&page_size=2").json()
     page2 = client.get("/api/v1/properties/search?page=2&page_size=2").json()
     page3 = client.get("/api/v1/properties/search?page=3&page_size=2").json()
+    page4 = client.get("/api/v1/properties/search?page=4&page_size=2").json()
 
-    assert page1["pagination"]["total"] == 5
+    assert page1["pagination"]["total"] == 7
     assert page1["pagination"]["page"] == 1
     assert page1["pagination"]["page_size"] == 2
-    assert page1["pagination"]["total_pages"] == 3
+    assert page1["pagination"]["total_pages"] == 4
     assert len(page1["items"]) == 2
     assert len(page2["items"]) == 2
-    assert len(page3["items"]) == 1
+    assert len(page3["items"]) == 2
+    assert len(page4["items"]) == 1
 
     ids1 = {i["id"] for i in page1["items"]}
     ids2 = {i["id"] for i in page2["items"]}
     ids3 = {i["id"] for i in page3["items"]}
+    ids4 = {i["id"] for i in page4["items"]}
     assert ids1.isdisjoint(ids2)
     assert ids1.isdisjoint(ids3)
+    assert ids1.isdisjoint(ids4)
+    assert ids2.isdisjoint(ids3)
+    assert ids2.isdisjoint(ids4)
+    assert ids3.isdisjoint(ids4)
 
 
 def test_search_sort_by_price_asc(client: TestClient):
@@ -184,6 +199,61 @@ def test_search_sort_by_name_asc(client: TestClient):
     assert names == sorted(names)
 
 
+def test_search_city_filter_combined_with_price_asc(client: TestClient):
+    response = client.get(
+        "/api/v1/properties/search?city=Bogot&sort_by=price&sort_dir=asc"
+    )
+    data = response.json()
+    ids = [item["id"] for item in data["items"]]
+    # Bogotá properties ordered by ascending price:
+    # Hostal (95k) → Cikos (180k) → Aparthotel (320k)
+    assert ids == [
+        str(CANDELARIA_HOSTEL_ID),
+        str(CIKOS_EXECUTIVE_SUITES_ID),
+        str(ANDINO_APARTHOTEL_ID),
+    ]
+
+
+def test_search_city_filter_combined_with_price_desc(client: TestClient):
+    response = client.get(
+        "/api/v1/properties/search?city=Bogot&sort_by=price&sort_dir=desc"
+    )
+    data = response.json()
+    ids = [item["id"] for item in data["items"]]
+    assert ids == [
+        str(ANDINO_APARTHOTEL_ID),
+        str(CIKOS_EXECUTIVE_SUITES_ID),
+        str(CANDELARIA_HOSTEL_ID),
+    ]
+
+
+def test_search_city_filter_combined_with_rating_desc(client: TestClient):
+    response = client.get(
+        "/api/v1/properties/search?city=Bogot&sort_by=rating&sort_dir=desc"
+    )
+    data = response.json()
+    ids = [item["id"] for item in data["items"]]
+    # Aparthotel (4.95) → Cikos (4.84) → Hostal (4.55)
+    assert ids == [
+        str(ANDINO_APARTHOTEL_ID),
+        str(CIKOS_EXECUTIVE_SUITES_ID),
+        str(CANDELARIA_HOSTEL_ID),
+    ]
+
+
+def test_search_city_filter_combined_with_name_asc(client: TestClient):
+    response = client.get(
+        "/api/v1/properties/search?city=Bogot&sort_by=name&sort_dir=asc"
+    )
+    data = response.json()
+    names = [item["name"] for item in data["items"]]
+    assert names == [
+        "Aparthotel Andino Premium",
+        "Hostal Boutique La Candelaria",
+        "Hotel Cikos Executive Suites",
+    ]
+
+
 def test_search_invalid_page_returns_422(client: TestClient):
     response = client.get("/api/v1/properties/search?page=0")
     assert response.status_code == 422
@@ -198,10 +268,10 @@ def test_search_includes_paginated_metadata(client: TestClient):
     response = client.get("/api/v1/properties/search?page=2&page_size=2")
     data = response.json()
     assert data["pagination"] == {
-        "total": 5,
+        "total": 7,
         "page": 2,
         "page_size": 2,
-        "total_pages": 3,
+        "total_pages": 4,
     }
 
 
