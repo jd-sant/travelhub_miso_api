@@ -5,7 +5,12 @@ from pydantic import TypeAdapter, ValidationError
 
 from domain.ports.cache_port import CachePort
 from domain.ports.property_repository import PropertyRepository
-from domain.schemas.property import PropertyListResponse, PropertyResponse
+from domain.schemas.property import (
+    PropertyFilters,
+    PropertyListResponse,
+    PropertyResponse,
+    PropertySearchResponse,
+)
 from domain.schemas.property_policy import PropertyCancellationPolicyResponse
 
 _LIST_ADAPTER = TypeAdapter(list[PropertyListResponse])
@@ -37,6 +42,9 @@ class CachedPropertyRepository(PropertyRepository):
         result = self._repository.list_all(owner_id=owner_id)
         self._cache_value(key, [item.model_dump(mode="json") for item in result])
         return result
+
+    def search(self, filters: PropertyFilters) -> PropertySearchResponse:
+        return self._repository.search(filters)
 
     def get_cancellation_policy(
         self, property_id: UUID

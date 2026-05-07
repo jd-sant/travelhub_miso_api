@@ -1,4 +1,5 @@
 from datetime import date
+from enum import Enum
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -68,3 +69,40 @@ class PropertyListResponse(BaseModel):
     cleaning_fee: float
     images: list[PropertyImage] = Field(default_factory=list)
     status: int = Field(default=1, ge=0, le=1)
+
+
+class PropertySortBy(str, Enum):
+    PRICE = "price"
+    RATING = "rating"
+    NAME = "name"
+
+
+class PropertySortDir(str, Enum):
+    ASC = "asc"
+    DESC = "desc"
+
+
+class PropertyFilters(BaseModel):
+    city: str | None = None
+    min_price: float | None = Field(default=None, ge=0)
+    max_price: float | None = Field(default=None, ge=0)
+    min_guests: int | None = Field(default=None, ge=1)
+    amenities: list[str] = Field(default_factory=list)
+    ids: list[UUID] = Field(default_factory=list)
+    status: int | None = Field(default=1, ge=0, le=1)
+    page: int = Field(default=1, ge=1)
+    page_size: int = Field(default=20, ge=1, le=100)
+    sort_by: PropertySortBy = PropertySortBy.PRICE
+    sort_dir: PropertySortDir = PropertySortDir.ASC
+
+
+class PaginationMeta(BaseModel):
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+
+class PropertySearchResponse(BaseModel):
+    items: list[PropertyListResponse]
+    pagination: PaginationMeta

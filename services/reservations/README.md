@@ -99,6 +99,43 @@ Body:
 }
 ```
 
+### Verificación masiva de disponibilidad
+
+`POST /api/v1/internal/reservations/availability-check`
+
+Permite consultar, para un conjunto de propiedades y un rango de fechas, cuáles tienen reservas activas que solapan ese rango. Lo consume el microservicio `search` para filtrar resultados antes de devolverlos.
+
+Header requerido:
+
+- `X-Internal-Api-Key`
+
+Body:
+
+```json
+{
+  "property_ids": ["uuid", "..."],
+  "check_in": "2026-06-10",
+  "check_out": "2026-06-15"
+}
+```
+
+Validaciones:
+- `property_ids`: lista no vacía (1-200 ids).
+- `check_out` debe ser estrictamente posterior a `check_in` (de lo contrario `400`).
+
+Respuesta:
+
+```json
+{
+  "available": ["uuid", "..."],
+  "blocked": ["uuid", "..."]
+}
+```
+
+Una propiedad cuenta como **bloqueada** si tiene al menos una reserva con estado distinto de `cancelled`/`cancel_requested`/`refund_*`/`additional_charge_failed` cuyo intervalo `[check_in_date, check_out_date)` solape el rango consultado. Reservas en `pending_payment` también bloquean (es un hold activo).
+
+El orden de los `property_ids` de entrada se preserva en `available`.
+
 ## Notas
 
 - La validación de disponibilidad solo ignora reservas canceladas.
