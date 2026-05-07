@@ -6,6 +6,9 @@ CREATE SCHEMA IF NOT EXISTS notifications_schema;
 CREATE SCHEMA IF NOT EXISTS properties_schema;
 CREATE SCHEMA IF NOT EXISTS search_schema;
 
+-- Accent-insensitive matching for properties.location filtering by city.
+CREATE EXTENSION IF NOT EXISTS unaccent;
+
 -- Futuros microservicios:
 -- CREATE SCHEMA IF NOT EXISTS inventory_schema;
 -- CREATE SCHEMA IF NOT EXISTS currency_schema;
