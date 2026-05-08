@@ -9,6 +9,7 @@ from sqlmodel import Session, select
 
 from assembly import (
     build_cache,
+    get_pricing_management_use_case,
     get_property_availability_use_case,
     get_search_properties_use_case,
 )
@@ -22,21 +23,36 @@ from adapters.models import RatePlan
 from adapters.models import RoomType
 from adapters.models import Service
 from core.config import settings
+from core.auth import AuthenticatedUser, get_current_hotel_user
 from db.session import get_session
 from db.session import engine
 from domain.schemas import (
     EmptyStateSuggestion,
     PropertyAvailabilityQuery,
     PropertyAvailabilityResponse,
+    PricingApplyRequest,
+    PricingApplyResponse,
+    PricingHistoryItem,
+    PricingPreviewRequest,
+    PricingPreviewResponse,
+    PricingRevertResponse,
+    PricingTargetOption,
 )
 from domain.schemas import SearchPagination
 from domain.schemas import SearchQuery
 from domain.schemas import SearchResponse
 from domain.use_cases import (
     CheckPropertyAvailabilityUseCase,
+    PricingManagementUseCase,
     SearchPropertiesUseCase,
 )
-from errors import InvalidSearchRuleError
+from errors import (
+    InvalidSearchRuleError,
+    PricingAuthorizationError,
+    PricingConflictError,
+    PricingTargetNotFoundError,
+    PricingValidationError,
+)
 
 router = APIRouter(prefix="/search", tags=["search"])
 
@@ -185,6 +201,92 @@ def _calculate_total_pages(total: int, page_size: int) -> int:
     if total == 0:
         return 0
     return (total + page_size - 1) // page_size
+
+
+@router.get(
+    "/hotel/pricing/targets",
+    response_model=list[PricingTargetOption],
+    status_code=status.HTTP_200_OK,
+)
+def list_pricing_targets(
+    user: AuthenticatedUser = Depends(get_current_hotel_user),
+    use_case: PricingManagementUseCase = Depends(get_pricing_management_use_case),
+) -> list[PricingTargetOption]:
+    return use_case.list_targets(user)
+
+
+@router.post(
+    "/hotel/pricing/preview",
+    response_model=PricingPreviewResponse,
+    status_code=status.HTTP_200_OK,
+)
+def preview_pricing_change(
+    payload: PricingPreviewRequest,
+    user: AuthenticatedUser = Depends(get_current_hotel_user),
+    use_case: PricingManagementUseCase = Depends(get_pricing_management_use_case),
+) -> PricingPreviewResponse:
+    try:
+        return use_case.preview(user, payload)
+    except PricingAuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
+    except PricingTargetNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    except PricingValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+
+@router.post(
+    "/hotel/pricing/apply",
+    response_model=PricingApplyResponse,
+    status_code=status.HTTP_200_OK,
+)
+def apply_pricing_change(
+    payload: PricingApplyRequest,
+    user: AuthenticatedUser = Depends(get_current_hotel_user),
+    use_case: PricingManagementUseCase = Depends(get_pricing_management_use_case),
+) -> PricingApplyResponse:
+    try:
+        return use_case.apply(user, payload)
+    except PricingAuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
+    except PricingTargetNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    except PricingValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except PricingConflictError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+
+
+@router.get(
+    "/hotel/pricing/history",
+    response_model=list[PricingHistoryItem],
+    status_code=status.HTTP_200_OK,
+)
+def list_pricing_history(
+    user: AuthenticatedUser = Depends(get_current_hotel_user),
+    use_case: PricingManagementUseCase = Depends(get_pricing_management_use_case),
+) -> list[PricingHistoryItem]:
+    return use_case.history(user)
+
+
+@router.post(
+    "/hotel/pricing/history/{change_id}/revert",
+    response_model=PricingRevertResponse,
+    status_code=status.HTTP_200_OK,
+)
+def revert_pricing_change(
+    change_id: UUID,
+    user: AuthenticatedUser = Depends(get_current_hotel_user),
+    use_case: PricingManagementUseCase = Depends(get_pricing_management_use_case),
+) -> PricingRevertResponse:
+    try:
+        return use_case.revert(user, change_id)
+    except PricingAuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
+    except PricingTargetNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    except PricingConflictError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
 
 
 if settings.is_local_dev:

@@ -105,6 +105,25 @@ class Settings:
     def redis_connection_pool_size(self) -> int:
         return int(os.getenv("REDIS_CONNECTION_POOL_SIZE", "10"))
 
+    @property
+    def jwt_secret_key(self) -> str:
+        value = os.getenv("JWT_SECRET_KEY")
+        if value:
+            return value
+        if not self.is_local_dev and not self.is_test:
+            raise RuntimeError(
+                "JWT_SECRET_KEY debe estar configurado en entornos no locales."
+            )
+        return "travelhub-jwt-secret-change-in-prod"
+
+    @property
+    def jwt_algorithm(self) -> str:
+        return os.getenv("JWT_ALGORITHM", "HS256")
+
+    @property
+    def properties_service_url(self) -> str:
+        return os.getenv("PROPERTIES_SERVICE_URL", "http://localhost:8005").rstrip("/")
+
 
 @lru_cache
 def get_settings() -> Settings:

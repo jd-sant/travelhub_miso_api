@@ -1,15 +1,19 @@
 """Dependency providers for the Search service."""
 from typing import Optional
 
+from fastapi import Depends
 from redis import Redis
 from sqlmodel import Session
 
 from adapters.cache.redis_cache import RedisCache
-from adapters.repositories import SQLModelSearchRepository
+from adapters.repositories import SQLModelPricingManagementRepository, SQLModelSearchRepository
+from adapters.services.properties_client import PropertiesOwnershipClient
 from core.config import settings
+from db.session import get_session
 from domain.ports.cache_port import CachePort
 from domain.use_cases import (
     CheckPropertyAvailabilityUseCase,
+    PricingManagementUseCase,
     SearchPropertiesUseCase,
 )
 
@@ -42,3 +46,11 @@ def get_property_availability_use_case(
 ) -> CheckPropertyAvailabilityUseCase:
     repository = get_search_repository(session, cache)
     return CheckPropertyAvailabilityUseCase(repository)
+
+
+def get_pricing_management_use_case(
+    session: Session = Depends(get_session),
+) -> PricingManagementUseCase:
+    repository = SQLModelPricingManagementRepository(session)
+    ownership_client = PropertiesOwnershipClient()
+    return PricingManagementUseCase(repository, ownership_client)
