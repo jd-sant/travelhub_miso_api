@@ -105,6 +105,22 @@ class Settings:
     def redis_connection_pool_size(self) -> int:
         return int(os.getenv("REDIS_CONNECTION_POOL_SIZE", "10"))
 
+    @property
+    def properties_service_url(self) -> str:
+        return os.getenv("PROPERTIES_SERVICE_URL", "http://properties:8000").rstrip("/")
+
+    @property
+    def reservations_service_url(self) -> str:
+        return os.getenv("RESERVATIONS_SERVICE_URL", "http://reservations:8000").rstrip("/")
+
+    @property
+    def internal_api_key(self) -> str:
+        return os.getenv("INTERNAL_API_KEY", "")
+
+    @property
+    def service_request_timeout(self) -> float:
+        return float(os.getenv("SERVICE_REQUEST_TIMEOUT", "5.0"))
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -23,6 +23,7 @@ from domain.use_cases.get_property_detail import (
 from domain.use_cases.get_properties_list import (
     GetPropertiesListUseCase,
 )
+from domain.use_cases.search_properties import SearchPropertiesUseCase
 
 
 def build_cache(redis_client: Optional[Redis]) -> Optional[CachePort]:
@@ -50,6 +51,12 @@ def get_properties_list_use_case(
     repository: PropertyRepository = Depends(get_property_repository),
 ) -> GetPropertiesListUseCase:
     return GetPropertiesListUseCase(repository)
+
+
+def search_properties_use_case(
+    repository: PropertyRepository = Depends(get_property_repository),
+) -> SearchPropertiesUseCase:
+    return SearchPropertiesUseCase(repository)
 
 
 def get_property_cancellation_policy_use_case(

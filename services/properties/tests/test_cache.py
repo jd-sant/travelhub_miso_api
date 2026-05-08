@@ -48,6 +48,20 @@ class FakePropertyRepository(PropertyRepository):
             return self.listing
         return [item for item in self.listing if item.id_owner == owner_id]
 
+    def search(self, filters):
+        # Cache layer is a passthrough for search; return an empty paginated envelope.
+        from domain.schemas.property import PaginationMeta, PropertySearchResponse
+
+        return PropertySearchResponse(
+            items=[],
+            pagination=PaginationMeta(
+                total=0,
+                page=filters.page,
+                page_size=filters.page_size,
+                total_pages=0,
+            ),
+        )
+
     def get_cancellation_policy(self, property_id):
         self.policy_calls += 1
         return self.policy if self.policy.property_id == property_id else None

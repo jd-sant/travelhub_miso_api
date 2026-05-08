@@ -2,7 +2,12 @@ from abc import ABC, abstractmethod
 from typing import Optional
 from uuid import UUID
 
-from domain.schemas.property import PropertyResponse, PropertyListResponse
+from domain.schemas.property import (
+    PropertyFilters,
+    PropertyListResponse,
+    PropertyResponse,
+    PropertySearchResponse,
+)
 from domain.schemas.property_policy import PropertyCancellationPolicyResponse
 
 
@@ -17,6 +22,11 @@ class PropertyRepository(ABC):
         self, owner_id: Optional[UUID] = None
     ) -> list[PropertyListResponse]:
         """List properties with their images, optionally filtered by owner."""
+        pass
+
+    @abstractmethod
+    def search(self, filters: PropertyFilters) -> PropertySearchResponse:
+        """Search properties with filters, sort and pagination."""
         pass
 
     @abstractmethod

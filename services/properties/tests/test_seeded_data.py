@@ -6,7 +6,9 @@ from sqlmodel import Session
 
 from db.seed import (
     ALPINE_LODGE_ID,
+    ANDINO_APARTHOTEL_ID,
     BEACHFRONT_PENTHOUSE_ID,
+    CANDELARIA_HOSTEL_ID,
     CIKOS_EXECUTIVE_SUITES_ID,
     RENAISSANCE_ESTATE_ID,
     TROPICAL_VILLA_ID,
@@ -16,13 +18,13 @@ from db.seed import (
 def test_list_properties_returns_seeded_data(
     client: TestClient, session: Session
 ):
-    """Test that list_properties returns all 5 seeded properties"""
+    """Test that list_properties returns all 7 seeded properties"""
     response = client.get("/api/v1/properties")
 
     assert response.status_code == 200
     data = response.json()
 
-    assert len(data) == 5
+    assert len(data) == 7
 
     names = {prop["name"] for prop in data}
     expected_names = {
@@ -31,9 +33,14 @@ def test_list_properties_returns_seeded_data(
         "Refugio Alpino de Montaña",
         "Villa Paraíso Tropical",
         "Hotel Cikos Executive Suites",
+        "Hostal Boutique La Candelaria",
+        "Aparthotel Andino Premium",
     }
     assert names == expected_names
-    assert str(CIKOS_EXECUTIVE_SUITES_ID) in {prop["id"] for prop in data}
+    seeded_ids = {prop["id"] for prop in data}
+    assert str(CIKOS_EXECUTIVE_SUITES_ID) in seeded_ids
+    assert str(CANDELARIA_HOSTEL_ID) in seeded_ids
+    assert str(ANDINO_APARTHOTEL_ID) in seeded_ids
 
 
 def test_get_renaissance_estate(client: TestClient):
