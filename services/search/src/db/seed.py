@@ -58,6 +58,16 @@ PROPERTY_SEED_SPECS = (
         "currency": "USD",
         "amenities": ("wifi", "pool", "breakfast_included", "air_conditioning"),
     },
+    {
+        "id": UUID("55555555-5555-5555-5555-555555555555"),
+        "name": "Hotel Cikos Executive Suites",
+        "city": "Bogota",
+        "capacity": 24,
+        "rating": 4.84,
+        "base_price": Decimal("180000.00"),
+        "currency": "COP",
+        "amenities": ("wifi", "breakfast_included", "air_conditioning"),
+    },
 )
 
 TARGET_PROPERTY_COUNT = len(PROPERTY_SEED_SPECS)
@@ -319,3 +329,5 @@ def _ensure_amenity_catalog(session: Session) -> dict[str, object]:
         amenity_id_by_name[name] = amenity.id
 
     return amenity_id_by_name
+
+

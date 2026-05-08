@@ -251,6 +251,8 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       REDIS_CACHE_ENABLED: "true"
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-travelhub-jwt-secret-change-in-prod}
+      PROPERTIES_SERVICE_URL: ${PROPERTIES_SERVICE_URL:-http://properties:8000}
     ports:
       - "8006:8000"
     depends_on:
