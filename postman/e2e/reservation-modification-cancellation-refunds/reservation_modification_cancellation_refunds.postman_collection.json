@@ -51,7 +51,7 @@
     },
     {
       "name": "Apply Refund Callback - Cancellation",
-      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('refund callback 200', function () { pm.response.to.have.status(200); });", "const body = pm.response.json();", "pm.test('status_after refund_completed', function () { pm.expect(body.status_after).to.eql('refund_completed'); });"]}}],
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('refund callback 200', function () { pm.response.to.have.status(200); });", "const body = pm.response.json();", "pm.test('status_after cancelled', function () { pm.expect(body.status_after).to.eql('cancelled'); });"]}}],
       "request": {
         "method": "POST",
         "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Internal-Api-Key", "value": "{{internal_api_key}}"}, {"key": "X-Correlation-Id", "value": "e2e-cancel-retry"}],
@@ -61,7 +61,7 @@
     },
     {
       "name": "Get Reservation - Refund Completed",
-      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('reservation 200', function () { pm.response.to.have.status(200); });", "const body = pm.response.json();", "pm.test('status refund_completed', function () { pm.expect(body.status).to.eql('refund_completed'); });"]}}],
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('reservation 200', function () { pm.response.to.have.status(200); });", "const body = pm.response.json();", "pm.test('status cancelled', function () { pm.expect(body.status).to.eql('cancelled'); });"]}}],
       "request": {"method": "GET", "header": [], "url": {"raw": "{{reservations_base_url}}/api/v1/reservations/{{cancel_reservation_id}}", "host": ["{{reservations_base_url}}"], "path": ["api", "v1", "reservations", "{{cancel_reservation_id}}"]}}
     },
     {

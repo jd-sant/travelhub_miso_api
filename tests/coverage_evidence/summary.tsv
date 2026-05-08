@@ -1,7 +1,8 @@
-users	0	0	TOTAL                                                               756     60    92%	============================== 28 passed in 4.06s ==============================
-security	0	0	TOTAL                                                               887     78    91%	============================== 22 passed in 2.21s ==============================
-reservations	0	0	TOTAL                                                  1009     71    93%	============================== 42 passed in 1.19s ==============================
-payments	0	0	TOTAL                                                             2202    218    90%	============================= 44 passed in 14.26s ==============================
-notifications	0	0	TOTAL                                                                840     70    92%	============================== 15 passed in 2.90s ==============================
-properties	0	0	TOTAL                                                557     30    95%	============================== 16 passed in 0.84s ==============================
-search	0	2	TOTAL 1189 79 93%	======================== 49 passed, 2 skipped in 1.82s =========================
+service	pytest_summary	coverage_percent	stmts	miss	exit_code
+users	36 passed in 5.34s	92	863	65	0
+security	26 passed in 1.74s	92	936	78	0
+reservations	110 passed in 14.69s	89	3988	450	0
+payments	75 passed in 3.48s	89	3780	434	0
+notifications	27 passed in 1.47s	88	1437	171	0
+properties	34 passed in 1.87s	92	1210	100	0
+search	54 passed, 2 skipped in 1.26s	93	1301	88	0

@@ -5,11 +5,11 @@
     },
     "item": [
       {
-        "id": "1daa7f0b-7a92-4e96-8767-e20dce0562cd",
+        "id": "1b0d18f7-0dec-491d-a9ea-6d658f206f12",
         "name": "00 - Health",
         "item": [
           {
-            "id": "19222f4a-f96d-417f-9ac3-b60168a775f4",
+            "id": "42f76baf-9d93-4cee-8b0e-54b9b3a94342",
             "name": "Health - Notifications",
             "request": {
               "url": {
@@ -29,7 +29,7 @@
               {
                 "listen": "test",
                 "script": {
-                  "id": "467faeac-6dfa-40bf-8218-80e9307e00cc",
+                  "id": "53222319-62fa-4784-8195-068ddc2b8ad3",
                   "type": "text/javascript",
                   "exec": [
                     "pm.test('Health responde 200', function () {",
@@ -40,7 +40,7 @@
                     "  pm.expect(body.status).to.eql('healthy');",
                     "});"
                   ],
-                  "_lastExecutionId": "e0d20c0a-9a7e-43e1-b3bd-9e438b42c23a"
+                  "_lastExecutionId": "8e069811-8adc-496d-aef6-b891e0cc059b"
                 }
               }
             ]
@@ -49,11 +49,11 @@
         "event": []
       },
       {
-        "id": "ecfd072f-0e7f-4a7a-a225-0dc19705f34f",
+        "id": "1e7dee14-aa85-40dd-aba7-3f4bd117c272",
         "name": "01 - Contrato Interno",
         "item": [
           {
-            "id": "f5d3ade2-b8f1-46c9-9949-ffe83e9f10ca",
+            "id": "037be9b6-de89-454a-8843-f92e111876e4",
             "name": "Create Payment Confirmation - Wrong Key",
             "request": {
               "url": {
@@ -90,20 +90,20 @@
               {
                 "listen": "test",
                 "script": {
-                  "id": "ef0efa25-ee66-4ac8-8b9a-0176007f3d34",
+                  "id": "4f9394cb-dff7-4179-9b78-0f476eb02c6b",
                   "type": "text/javascript",
                   "exec": [
                     "pm.test('Create payment confirmation forbidden 403', function () {",
                     "  pm.response.to.have.status(403);",
                     "});"
                   ],
-                  "_lastExecutionId": "1f4b6fa8-606c-4452-a288-1b028f9423c2"
+                  "_lastExecutionId": "006ceab0-7eb4-4b30-b089-dee77d8cd668"
                 }
               }
             ]
           },
           {
-            "id": "54af937f-bac4-4110-837c-aa4d92b8b50b",
+            "id": "007cf445-7c97-416e-863c-ca7fcd074d0c",
             "name": "Get Notification By Id - Wrong Key",
             "request": {
               "url": {
@@ -132,31 +132,31 @@
               {
                 "listen": "prerequest",
                 "script": {
-                  "id": "fbbfa7a8-191c-47fe-998a-28f61f11da28",
+                  "id": "a2a0384d-bee0-4639-9a98-2e83cce40c8c",
                   "type": "text/javascript",
                   "exec": [
                     "pm.collectionVariables.set('notification_id', pm.variables.replaceIn('{{$randomUUID}}'));"
                   ],
-                  "_lastExecutionId": "ec30abc6-7b82-43bd-9459-e264a001147e"
+                  "_lastExecutionId": "57d6a2fe-3443-4ae1-8ca6-b4d6644722e8"
                 }
               },
               {
                 "listen": "test",
                 "script": {
-                  "id": "9bb3a563-1c7f-4e14-95d7-879655fced67",
+                  "id": "153efab5-e8e7-4790-a443-bf95129ac263",
                   "type": "text/javascript",
                   "exec": [
                     "pm.test('Get notification forbidden 403', function () {",
                     "  pm.response.to.have.status(403);",
                     "});"
                   ],
-                  "_lastExecutionId": "b83f5492-daee-4fab-aab6-0032b17e6941"
+                  "_lastExecutionId": "2e6596eb-6b97-4c3f-876f-f73059f65668"
                 }
               }
             ]
           },
           {
-            "id": "1ba40091-e692-414a-b0af-dca4076dcb18",
+            "id": "aa0e586d-f10c-4343-a654-0b905f0ee98a",
             "name": "Get Notification By Id - Not Found",
             "request": {
               "url": {
@@ -185,14 +185,14 @@
               {
                 "listen": "test",
                 "script": {
-                  "id": "2649b827-1406-4da5-9734-9101bd94c4b8",
+                  "id": "02e0d3c5-d00a-4190-a562-ef98cd3c1615",
                   "type": "text/javascript",
                   "exec": [
                     "pm.test('Get notification not found 404', function () {",
                     "  pm.response.to.have.status(404);",
                     "});"
                   ],
-                  "_lastExecutionId": "a2f31f6b-837a-4b99-92e0-a2d206e78e6d"
+                  "_lastExecutionId": "5419b2fc-9aae-4277-8f16-6b8a63785421"
                 }
               }
             ]
@@ -267,11 +267,146 @@
         "type": "any",
         "value": "travelhub-internal-secret-key",
         "key": "internal_api_key"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-internal-secret-key",
+        "key": "INTERNAL_API_KEY"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-jwt-secret-change-in-prod",
+        "key": "JWT_SECRET_KEY"
+      },
+      {
+        "type": "any",
+        "value": "development",
+        "key": "ENV"
+      },
+      {
+        "type": "any",
+        "value": "development",
+        "key": "APP_ENV"
+      },
+      {
+        "type": "any",
+        "value": "smtp.gmail.com",
+        "key": "SMTP_HOST"
+      },
+      {
+        "type": "any",
+        "value": "587",
+        "key": "SMTP_PORT"
+      },
+      {
+        "type": "any",
+        "value": "tu-email@gmail.com",
+        "key": "SMTP_USER"
+      },
+      {
+        "type": "any",
+        "value": "tu-app-password",
+        "key": "SMTP_PASSWORD"
+      },
+      {
+        "type": "any",
+        "value": "tu-email@gmail.com",
+        "key": "SMTP_FROM"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-payments-secret-change-in-prod",
+        "key": "PAYMENT_INTEGRITY_SECRET"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-payments-encryption-key-change-in-prod",
+        "key": "PAYMENTS_DATA_ENCRYPTION_KEY"
+      },
+      {
+        "type": "any",
+        "value": "false",
+        "key": "PAYMENTS_COMPLIANCE_MODE"
+      },
+      {
+        "type": "any",
+        "value": "true",
+        "key": "ENFORCE_TLS_HEADER"
+      },
+      {
+        "type": "any",
+        "value": "fake_stripe",
+        "key": "PAYMENT_PROVIDER"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "STRIPE_SECRET_KEY"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "STRIPE_PUBLISHABLE_KEY"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "STRIPE_WEBHOOK_SECRET"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:3000,http://127.0.0.1:3000",
+        "key": "ALLOWED_CORS_ORIGIN"
+      },
+      {
+        "type": "any",
+        "value": "us-east-1",
+        "key": "AWS_REGION"
+      },
+      {
+        "type": "any",
+        "value": "XXXX",
+        "key": "AWS_ACCESS_KEY_ID"
+      },
+      {
+        "type": "any",
+        "value": "XXXX",
+        "key": "AWS_SECRET_ACCESS_KEY"
+      },
+      {
+        "type": "any",
+        "value": "XXXX",
+        "key": "AWS_SESSION_TOKEN"
+      },
+      {
+        "type": "any",
+        "value": "arn:aws:lambda:us-east-1:ACC_ID:function:reservation-checker",
+        "key": "LAMBDA_ARN"
+      },
+      {
+        "type": "any",
+        "value": "arn:aws:iam::ACC_ID:role/EventBridgeSchedulerRole",
+        "key": "SCHEDULER_ROLE_ARN"
+      },
+      {
+        "type": "any",
+        "value": "http://reservations:8006",
+        "key": "API_BASE_URL"
+      },
+      {
+        "type": "any",
+        "value": "true",
+        "key": "RESERVATION_SCHEDULER_ENABLED"
+      },
+      {
+        "type": "any",
+        "value": "15",
+        "key": "RESERVATION_SCHEDULER_DELAY_MINUTES"
       }
     ]
   },
   "globals": {
-    "id": "9e8741ae-8b9c-4fad-b81c-bc558cd89827",
+    "id": "c65c5261-4566-4728-ac8f-00616f83833b",
     "values": []
   },
   "run": {
@@ -323,10 +458,10 @@
       }
     },
     "timings": {
-      "responseAverage": 13.25,
-      "responseMin": 6,
-      "responseMax": 30,
-      "responseSd": 9.730750228014282,
+      "responseAverage": 9.75,
+      "responseMin": 5,
+      "responseMax": 18,
+      "responseSd": 4.968651728587948,
       "dnsAverage": 0,
       "dnsMin": 0,
       "dnsMax": 0,
@@ -335,8 +470,8 @@
       "firstByteMin": 0,
       "firstByteMax": 0,
       "firstByteSd": 0,
-      "started": 1775938939940,
-      "completed": 1775938940084
+      "started": 1777254723682,
+      "completed": 1777254724041
     },
     "executions": [
       {
@@ -349,11 +484,11 @@
           "eof": false,
           "bof": true,
           "cr": false,
-          "ref": "f43e4bbd-2600-4816-bb22-9b2f3b1dd8aa",
-          "httpRequestId": "4099f825-0a9e-47b8-a835-99a1fd7fc6c3"
+          "ref": "0655c624-4cae-4746-9e74-374e4dd5602b",
+          "httpRequestId": "c7b47bae-b622-4964-b035-1f89f371163f"
         },
         "item": {
-          "id": "19222f4a-f96d-417f-9ac3-b60168a775f4",
+          "id": "42f76baf-9d93-4cee-8b0e-54b9b3a94342",
           "name": "Health - Notifications",
           "request": {
             "url": {
@@ -373,7 +508,7 @@
             {
               "listen": "test",
               "script": {
-                "id": "467faeac-6dfa-40bf-8218-80e9307e00cc",
+                "id": "53222319-62fa-4784-8195-068ddc2b8ad3",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Health responde 200', function () {",
@@ -384,7 +519,7 @@
                   "  pm.expect(body.status).to.eql('healthy');",
                   "});"
                 ],
-                "_lastExecutionId": "e0d20c0a-9a7e-43e1-b3bd-9e438b42c23a"
+                "_lastExecutionId": "8e069811-8adc-496d-aef6-b891e0cc059b"
               }
             }
           ]
@@ -420,7 +555,7 @@
             },
             {
               "key": "Postman-Token",
-              "value": "508018b6-0ccb-4e7d-a4c1-1bbd8a1c3fff",
+              "value": "e37d2183-71fc-4c33-afb2-73c2e0fb007b",
               "system": true
             },
             {
@@ -442,13 +577,13 @@
           "method": "GET"
         },
         "response": {
-          "id": "d36be8cf-17ba-429b-9fe3-e4dba2ec69b0",
+          "id": "bb71fe8d-949d-4637-9fde-2cc53d74b8f5",
           "status": "OK",
           "code": 200,
           "header": [
             {
               "key": "date",
-              "value": "Sat, 11 Apr 2026 20:22:19 GMT"
+              "value": "Mon, 27 Apr 2026 01:52:02 GMT"
             },
             {
               "key": "server",
@@ -489,10 +624,10 @@
             ]
           },
           "cookie": [],
-          "responseTime": 30,
+          "responseTime": 18,
           "responseSize": 20
         },
-        "id": "19222f4a-f96d-417f-9ac3-b60168a775f4",
+        "id": "42f76baf-9d93-4cee-8b0e-54b9b3a94342",
         "assertions": [
           {
             "assertion": "Health responde 200",
@@ -506,15 +641,15 @@
       },
       {
         "cursor": {
-          "ref": "9f7e6454-1dfd-4da5-a306-f548cd7ad86d",
+          "ref": "cd9a1beb-341a-4aa7-8e29-5c3f96663e42",
           "length": 4,
           "cycles": 1,
           "position": 1,
           "iteration": 0,
-          "httpRequestId": "620caac7-5552-4698-9022-8c877a444eeb"
+          "httpRequestId": "bc473f34-d5e4-4581-a0e5-6d4dcc7f4929"
         },
         "item": {
-          "id": "f5d3ade2-b8f1-46c9-9949-ffe83e9f10ca",
+          "id": "037be9b6-de89-454a-8843-f92e111876e4",
           "name": "Create Payment Confirmation - Wrong Key",
           "request": {
             "url": {
@@ -551,14 +686,14 @@
             {
               "listen": "test",
               "script": {
-                "id": "ef0efa25-ee66-4ac8-8b9a-0176007f3d34",
+                "id": "4f9394cb-dff7-4179-9b78-0f476eb02c6b",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Create payment confirmation forbidden 403', function () {",
                   "  pm.response.to.have.status(403);",
                   "});"
                 ],
-                "_lastExecutionId": "1f4b6fa8-606c-4452-a288-1b028f9423c2"
+                "_lastExecutionId": "006ceab0-7eb4-4b30-b089-dee77d8cd668"
               }
             }
           ]
@@ -605,7 +740,7 @@
             },
             {
               "key": "Postman-Token",
-              "value": "bd1c7727-09ee-42f3-bc07-0f4eef6e7888",
+              "value": "eea59d05-f756-4076-a783-ff41b0e4e273",
               "system": true
             },
             {
@@ -632,17 +767,17 @@
           "method": "POST",
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"payment_id\": \"849f3d7a-c60b-4cea-ab93-7e761f4789c9\",\n  \"source_ip\": \"127.0.0.1\"\n}"
+            "raw": "{\n  \"payment_id\": \"c961f21f-90e7-48c2-82f6-608da9401ec1\",\n  \"source_ip\": \"127.0.0.1\"\n}"
           }
         },
         "response": {
-          "id": "f2594b2b-bf01-4872-813d-48d500fe2d61",
+          "id": "016db504-4885-4512-b761-13f00b59468f",
           "status": "Forbidden",
           "code": 403,
           "header": [
             {
               "key": "date",
-              "value": "Sat, 11 Apr 2026 20:22:19 GMT"
+              "value": "Mon, 27 Apr 2026 01:52:03 GMT"
             },
             {
               "key": "server",
@@ -685,10 +820,10 @@
             ]
           },
           "cookie": [],
-          "responseTime": 9,
+          "responseTime": 7,
           "responseSize": 22
         },
-        "id": "f5d3ade2-b8f1-46c9-9949-ffe83e9f10ca",
+        "id": "037be9b6-de89-454a-8843-f92e111876e4",
         "assertions": [
           {
             "assertion": "Create payment confirmation forbidden 403",
@@ -698,15 +833,15 @@
       },
       {
         "cursor": {
-          "ref": "b608e337-2438-490e-9432-5313d794e061",
+          "ref": "fee3f5bf-82d7-4591-a8a8-5c3c80f76760",
           "length": 4,
           "cycles": 1,
           "position": 2,
           "iteration": 0,
-          "httpRequestId": "bf2c2e61-ae36-4d41-a0ea-f50c705e7569"
+          "httpRequestId": "e97841a3-f54f-43e1-b826-9ab8a7ded7fc"
         },
         "item": {
-          "id": "54af937f-bac4-4110-837c-aa4d92b8b50b",
+          "id": "007cf445-7c97-416e-863c-ca7fcd074d0c",
           "name": "Get Notification By Id - Wrong Key",
           "request": {
             "url": {
@@ -735,25 +870,25 @@
             {
               "listen": "prerequest",
               "script": {
-                "id": "fbbfa7a8-191c-47fe-998a-28f61f11da28",
+                "id": "a2a0384d-bee0-4639-9a98-2e83cce40c8c",
                 "type": "text/javascript",
                 "exec": [
                   "pm.collectionVariables.set('notification_id', pm.variables.replaceIn('{{$randomUUID}}'));"
                 ],
-                "_lastExecutionId": "ec30abc6-7b82-43bd-9459-e264a001147e"
+                "_lastExecutionId": "57d6a2fe-3443-4ae1-8ca6-b4d6644722e8"
               }
             },
             {
               "listen": "test",
               "script": {
-                "id": "9bb3a563-1c7f-4e14-95d7-879655fced67",
+                "id": "153efab5-e8e7-4790-a443-bf95129ac263",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Get notification forbidden 403', function () {",
                   "  pm.response.to.have.status(403);",
                   "});"
                 ],
-                "_lastExecutionId": "b83f5492-daee-4fab-aab6-0032b17e6941"
+                "_lastExecutionId": "2e6596eb-6b97-4c3f-876f-f73059f65668"
               }
             }
           ]
@@ -766,7 +901,7 @@
               "api",
               "v1",
               "notifications",
-              "7de734d2-a630-4c99-bc30-b8230651fb19"
+              "7ceaa825-08a8-477a-8b9e-68d57e427fdc"
             ],
             "host": [
               "localhost"
@@ -796,7 +931,7 @@
             },
             {
               "key": "Postman-Token",
-              "value": "c545ab51-a487-40a8-af99-cb0055c04d1e",
+              "value": "ccd5375c-f6e0-4a2e-aff8-2471f301b37a",
               "system": true
             },
             {
@@ -818,13 +953,13 @@
           "method": "GET"
         },
         "response": {
-          "id": "48e405ae-ff33-4a26-89f3-461ec58460fb",
+          "id": "ab967874-7907-4dd1-8136-b637c0e09bf6",
           "status": "Forbidden",
           "code": 403,
           "header": [
             {
               "key": "date",
-              "value": "Sat, 11 Apr 2026 20:22:19 GMT"
+              "value": "Mon, 27 Apr 2026 01:52:03 GMT"
             },
             {
               "key": "server",
@@ -867,10 +1002,10 @@
             ]
           },
           "cookie": [],
-          "responseTime": 6,
+          "responseTime": 5,
           "responseSize": 22
         },
-        "id": "54af937f-bac4-4110-837c-aa4d92b8b50b",
+        "id": "007cf445-7c97-416e-863c-ca7fcd074d0c",
         "assertions": [
           {
             "assertion": "Get notification forbidden 403",
@@ -880,15 +1015,15 @@
       },
       {
         "cursor": {
-          "ref": "6350f300-a83a-4ff3-b34c-4a988171ac51",
+          "ref": "96182edd-5346-4940-996a-8b289aa77823",
           "length": 4,
           "cycles": 1,
           "position": 3,
           "iteration": 0,
-          "httpRequestId": "be6b2de3-ad6b-44d7-9728-8ab70164c37f"
+          "httpRequestId": "87eef93d-039b-41d1-b228-d1ab60764b85"
         },
         "item": {
-          "id": "1ba40091-e692-414a-b0af-dca4076dcb18",
+          "id": "aa0e586d-f10c-4343-a654-0b905f0ee98a",
           "name": "Get Notification By Id - Not Found",
           "request": {
             "url": {
@@ -917,14 +1052,14 @@
             {
               "listen": "test",
               "script": {
-                "id": "2649b827-1406-4da5-9734-9101bd94c4b8",
+                "id": "02e0d3c5-d00a-4190-a562-ef98cd3c1615",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Get notification not found 404', function () {",
                   "  pm.response.to.have.status(404);",
                   "});"
                 ],
-                "_lastExecutionId": "a2f31f6b-837a-4b99-92e0-a2d206e78e6d"
+                "_lastExecutionId": "5419b2fc-9aae-4277-8f16-6b8a63785421"
               }
             }
           ]
@@ -937,7 +1072,7 @@
               "api",
               "v1",
               "notifications",
-              "7de734d2-a630-4c99-bc30-b8230651fb19"
+              "7ceaa825-08a8-477a-8b9e-68d57e427fdc"
             ],
             "host": [
               "localhost"
@@ -967,7 +1102,7 @@
             },
             {
               "key": "Postman-Token",
-              "value": "98581ef7-cb72-4787-bb8e-a4cbea3dfb51",
+              "value": "23979dd1-beee-41a5-85ec-da81ac6de9c6",
               "system": true
             },
             {
@@ -989,13 +1124,13 @@
           "method": "GET"
         },
         "response": {
-          "id": "91503ed7-8cb0-4bac-857e-5dffddac95cb",
+          "id": "1911935d-1fc2-42c1-8bfe-da1efb2a154c",
           "status": "Not Found",
           "code": 404,
           "header": [
             {
               "key": "date",
-              "value": "Sat, 11 Apr 2026 20:22:19 GMT"
+              "value": "Mon, 27 Apr 2026 01:52:03 GMT"
             },
             {
               "key": "server",
@@ -1056,10 +1191,10 @@
             ]
           },
           "cookie": [],
-          "responseTime": 8,
+          "responseTime": 9,
           "responseSize": 40
         },
-        "id": "1ba40091-e692-414a-b0af-dca4076dcb18",
+        "id": "aa0e586d-f10c-4343-a654-0b905f0ee98a",
         "assertions": [
           {
             "assertion": "Get notification not found 404",

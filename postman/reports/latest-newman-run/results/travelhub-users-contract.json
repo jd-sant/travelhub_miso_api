@@ -5,7 +5,7 @@
     },
     "item": [
       {
-        "id": "1358ba8f-2bd7-4589-a04f-f45642f65658",
+        "id": "9b492afd-cbeb-4b21-a6e3-3f01574d1313",
         "name": "Health - Users",
         "request": {
           "url": {
@@ -25,18 +25,18 @@
           {
             "listen": "test",
             "script": {
-              "id": "45f32b89-fa72-4357-8a11-9c8a8e354ece",
+              "id": "ed738402-36ff-482d-9df7-b86688fddcdd",
               "type": "text/javascript",
               "exec": [
                 "pm.test('health 200', function () { pm.response.to.have.status(200); });"
               ],
-              "_lastExecutionId": "d5bbaa6d-570b-4f6a-a46a-dd244597fdc3"
+              "_lastExecutionId": "9f4f32a4-4ade-4182-9a27-9a272664a499"
             }
           }
         ]
       },
       {
-        "id": "50091def-1650-418f-bcf0-e903e0f25bc3",
+        "id": "ea6fcf83-0c6a-4824-a082-d1412e16a174",
         "name": "Internal Verify Credentials - Wrong API Key",
         "request": {
           "url": {
@@ -73,12 +73,12 @@
           {
             "listen": "test",
             "script": {
-              "id": "f918adec-05e6-4ef0-8042-a50adbbd3491",
+              "id": "38dcd4d6-1a80-4efb-bd19-d45d6d3147dd",
               "type": "text/javascript",
               "exec": [
                 "pm.test('verify credentials forbidden 403', function () { pm.response.to.have.status(403); });"
               ],
-              "_lastExecutionId": "d33846d9-171b-4a7e-b4be-93b395556060"
+              "_lastExecutionId": "9321973e-73f0-4fe7-8e71-7150ceff8ab1"
             }
           }
         ]
@@ -144,11 +144,146 @@
         "type": "any",
         "value": "travelhub-internal-secret-key",
         "key": "internal_api_key"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-internal-secret-key",
+        "key": "INTERNAL_API_KEY"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-jwt-secret-change-in-prod",
+        "key": "JWT_SECRET_KEY"
+      },
+      {
+        "type": "any",
+        "value": "development",
+        "key": "ENV"
+      },
+      {
+        "type": "any",
+        "value": "development",
+        "key": "APP_ENV"
+      },
+      {
+        "type": "any",
+        "value": "smtp.gmail.com",
+        "key": "SMTP_HOST"
+      },
+      {
+        "type": "any",
+        "value": "587",
+        "key": "SMTP_PORT"
+      },
+      {
+        "type": "any",
+        "value": "tu-email@gmail.com",
+        "key": "SMTP_USER"
+      },
+      {
+        "type": "any",
+        "value": "tu-app-password",
+        "key": "SMTP_PASSWORD"
+      },
+      {
+        "type": "any",
+        "value": "tu-email@gmail.com",
+        "key": "SMTP_FROM"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-payments-secret-change-in-prod",
+        "key": "PAYMENT_INTEGRITY_SECRET"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-payments-encryption-key-change-in-prod",
+        "key": "PAYMENTS_DATA_ENCRYPTION_KEY"
+      },
+      {
+        "type": "any",
+        "value": "false",
+        "key": "PAYMENTS_COMPLIANCE_MODE"
+      },
+      {
+        "type": "any",
+        "value": "true",
+        "key": "ENFORCE_TLS_HEADER"
+      },
+      {
+        "type": "any",
+        "value": "fake_stripe",
+        "key": "PAYMENT_PROVIDER"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "STRIPE_SECRET_KEY"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "STRIPE_PUBLISHABLE_KEY"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "STRIPE_WEBHOOK_SECRET"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:3000,http://127.0.0.1:3000",
+        "key": "ALLOWED_CORS_ORIGIN"
+      },
+      {
+        "type": "any",
+        "value": "us-east-1",
+        "key": "AWS_REGION"
+      },
+      {
+        "type": "any",
+        "value": "XXXX",
+        "key": "AWS_ACCESS_KEY_ID"
+      },
+      {
+        "type": "any",
+        "value": "XXXX",
+        "key": "AWS_SECRET_ACCESS_KEY"
+      },
+      {
+        "type": "any",
+        "value": "XXXX",
+        "key": "AWS_SESSION_TOKEN"
+      },
+      {
+        "type": "any",
+        "value": "arn:aws:lambda:us-east-1:ACC_ID:function:reservation-checker",
+        "key": "LAMBDA_ARN"
+      },
+      {
+        "type": "any",
+        "value": "arn:aws:iam::ACC_ID:role/EventBridgeSchedulerRole",
+        "key": "SCHEDULER_ROLE_ARN"
+      },
+      {
+        "type": "any",
+        "value": "http://reservations:8006",
+        "key": "API_BASE_URL"
+      },
+      {
+        "type": "any",
+        "value": "true",
+        "key": "RESERVATION_SCHEDULER_ENABLED"
+      },
+      {
+        "type": "any",
+        "value": "15",
+        "key": "RESERVATION_SCHEDULER_DELAY_MINUTES"
       }
     ]
   },
   "globals": {
-    "id": "3a6676a9-1557-4ab5-96ac-ffa4065f802c",
+    "id": "13b053c8-ef52-40eb-9726-d4d724164890",
     "values": []
   },
   "run": {
@@ -200,10 +335,10 @@
       }
     },
     "timings": {
-      "responseAverage": 20,
-      "responseMin": 10,
-      "responseMax": 30,
-      "responseSd": 10,
+      "responseAverage": 11.5,
+      "responseMin": 6,
+      "responseMax": 17,
+      "responseSd": 5.5,
       "dnsAverage": 0,
       "dnsMin": 0,
       "dnsMax": 0,
@@ -212,8 +347,8 @@
       "firstByteMin": 0,
       "firstByteMax": 0,
       "firstByteSd": 0,
-      "started": 1775938947976,
-      "completed": 1775938948077
+      "started": 1777254741087,
+      "completed": 1777254741301
     },
     "executions": [
       {
@@ -226,11 +361,11 @@
           "eof": false,
           "bof": true,
           "cr": false,
-          "ref": "ef691313-01dc-4c1a-9a65-031c4bf130e2",
-          "httpRequestId": "09ed9bf6-4042-4e72-a89d-15fe5fa4ae77"
+          "ref": "e6b1d185-ae84-418a-acc9-f8f5f35f5073",
+          "httpRequestId": "05a52be4-0c48-486c-9c94-e35b6e1715d6"
         },
         "item": {
-          "id": "1358ba8f-2bd7-4589-a04f-f45642f65658",
+          "id": "9b492afd-cbeb-4b21-a6e3-3f01574d1313",
           "name": "Health - Users",
           "request": {
             "url": {
@@ -250,12 +385,12 @@
             {
               "listen": "test",
               "script": {
-                "id": "45f32b89-fa72-4357-8a11-9c8a8e354ece",
+                "id": "ed738402-36ff-482d-9df7-b86688fddcdd",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('health 200', function () { pm.response.to.have.status(200); });"
                 ],
-                "_lastExecutionId": "d5bbaa6d-570b-4f6a-a46a-dd244597fdc3"
+                "_lastExecutionId": "9f4f32a4-4ade-4182-9a27-9a272664a499"
               }
             }
           ]
@@ -291,7 +426,7 @@
             },
             {
               "key": "Postman-Token",
-              "value": "7fc70f09-76b6-43e7-87c4-1efdf5bec93e",
+              "value": "ac10f50e-3aa6-4f88-94bb-80317e966fcc",
               "system": true
             },
             {
@@ -313,13 +448,13 @@
           "method": "GET"
         },
         "response": {
-          "id": "596cbd4f-939c-450e-af48-57b9320418f8",
+          "id": "5a4f3331-ba12-49b1-9599-38d13cbe637a",
           "status": "OK",
           "code": 200,
           "header": [
             {
               "key": "date",
-              "value": "Sat, 11 Apr 2026 20:22:27 GMT"
+              "value": "Mon, 27 Apr 2026 01:52:20 GMT"
             },
             {
               "key": "server",
@@ -360,10 +495,10 @@
             ]
           },
           "cookie": [],
-          "responseTime": 30,
+          "responseTime": 17,
           "responseSize": 20
         },
-        "id": "1358ba8f-2bd7-4589-a04f-f45642f65658",
+        "id": "9b492afd-cbeb-4b21-a6e3-3f01574d1313",
         "assertions": [
           {
             "assertion": "health 200",
@@ -373,15 +508,15 @@
       },
       {
         "cursor": {
-          "ref": "623c1a3c-abfd-4f46-93db-d9264b672575",
+          "ref": "b68a6d03-c771-4657-b1d1-6121450a383d",
           "length": 2,
           "cycles": 1,
           "position": 1,
           "iteration": 0,
-          "httpRequestId": "f49e05df-c734-4d94-8d77-e5ca28e98a4f"
+          "httpRequestId": "2428ac4a-05f2-4f11-9048-2992ff2ab66e"
         },
         "item": {
-          "id": "50091def-1650-418f-bcf0-e903e0f25bc3",
+          "id": "ea6fcf83-0c6a-4824-a082-d1412e16a174",
           "name": "Internal Verify Credentials - Wrong API Key",
           "request": {
             "url": {
@@ -418,12 +553,12 @@
             {
               "listen": "test",
               "script": {
-                "id": "f918adec-05e6-4ef0-8042-a50adbbd3491",
+                "id": "38dcd4d6-1a80-4efb-bd19-d45d6d3147dd",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('verify credentials forbidden 403', function () { pm.response.to.have.status(403); });"
                 ],
-                "_lastExecutionId": "d33846d9-171b-4a7e-b4be-93b395556060"
+                "_lastExecutionId": "9321973e-73f0-4fe7-8e71-7150ceff8ab1"
               }
             }
           ]
@@ -470,7 +605,7 @@
             },
             {
               "key": "Postman-Token",
-              "value": "4538fc1e-2755-4975-8fab-d9aa3a52d77d",
+              "value": "936237ed-d69e-449c-ac3d-88e19fcfbe49",
               "system": true
             },
             {
@@ -501,13 +636,13 @@
           }
         },
         "response": {
-          "id": "0349da54-a48c-4f10-8650-ed2f4794da7e",
+          "id": "56471b97-152e-490d-9050-f9b9bf450689",
           "status": "Forbidden",
           "code": 403,
           "header": [
             {
               "key": "date",
-              "value": "Sat, 11 Apr 2026 20:22:27 GMT"
+              "value": "Mon, 27 Apr 2026 01:52:20 GMT"
             },
             {
               "key": "server",
@@ -550,10 +685,10 @@
             ]
           },
           "cookie": [],
-          "responseTime": 10,
+          "responseTime": 6,
           "responseSize": 22
         },
-        "id": "50091def-1650-418f-bcf0-e903e0f25bc3",
+        "id": "ea6fcf83-0c6a-4824-a082-d1412e16a174",
         "assertions": [
           {
             "assertion": "verify credentials forbidden 403",

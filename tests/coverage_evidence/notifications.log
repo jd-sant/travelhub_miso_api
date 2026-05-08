@@ -1,76 +1,98 @@
-==> notifications
-============================= test session starts ==============================
-platform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0 -- /home/diego/Documentos/miso/travelhub_miso/.venv/bin/python
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.2, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\CLIENTE\AppData\Local\Programs\Python\Python313\python.exe
 cachedir: .pytest_cache
-rootdir: /home/diego/Documentos/miso/travelhub_miso/services/notifications
-plugins: asyncio-0.21.1, anyio-3.7.1
-asyncio: mode=Mode.STRICT
-collecting ... collected 15 items
+rootdir: C:\Users\CLIENTE\Documents\MISO\PROYECTO-FINAL-2\travelhub_miso\services\notifications
+plugins: anyio-4.10.0, Faker-40.5.1, langsmith-0.5.2, asyncio-1.1.0, cov-7.0.0
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 27 items
 
-tests/test_infra_coverage.py::test_internal_router_maps_domain_errors_to_http[exc0-409] PASSED [  6%]
-tests/test_infra_coverage.py::test_internal_router_maps_domain_errors_to_http[exc1-404] PASSED [ 13%]
-tests/test_infra_coverage.py::test_internal_router_maps_domain_errors_to_http[exc2-503] PASSED [ 20%]
-tests/test_infra_coverage.py::test_internal_router_schedules_background_task_for_pending_notification PASSED [ 26%]
-tests/test_infra_coverage.py::test_payment_confirmation_client_success PASSED [ 33%]
-tests/test_infra_coverage.py::test_payment_confirmation_client_maps_404_and_transport_errors PASSED [ 40%]
-tests/test_infra_coverage.py::test_privacy_helpers_cover_sensitive_paths PASSED [ 46%]
-tests/test_notifications_api.py::test_create_payment_confirmation_persists_notification_and_audit PASSED [ 53%]
-tests/test_notifications_api.py::test_get_notification_returns_created_notification PASSED [ 60%]
-tests/test_notifications_api.py::test_get_notification_requires_internal_api_key PASSED [ 66%]
-tests/test_notifications_api.py::test_create_payment_confirmation_is_idempotent_by_payment_id PASSED [ 73%]
-tests/test_notifications_security_posture.py::test_mask_email_obfuscates_local_part PASSED [ 80%]
-tests/test_notifications_security_posture.py::test_sanitize_sensitive_data_redacts_known_financial_fields PASSED [ 86%]
-tests/test_notifications_security_posture.py::test_settings_require_https_internal_urls_in_non_dev PASSED [ 93%]
-tests/test_notifications_security_posture.py::test_backend_source_has_no_hardcoded_pan_literals PASSED [100%]
+tests/test_infra_coverage.py::test_internal_router_maps_domain_errors_to_http[exc0-409] PASSED [  3%]
+tests/test_infra_coverage.py::test_internal_router_maps_domain_errors_to_http[exc1-404] PASSED [  7%]
+tests/test_infra_coverage.py::test_internal_router_maps_domain_errors_to_http[exc2-503] PASSED [ 11%]
+tests/test_infra_coverage.py::test_internal_router_schedules_background_task_for_pending_notification PASSED [ 14%]
+tests/test_infra_coverage.py::test_payment_confirmation_client_success PASSED [ 18%]
+tests/test_infra_coverage.py::test_payment_confirmation_client_maps_404_and_transport_errors PASSED [ 22%]
+tests/test_infra_coverage.py::test_privacy_helpers_cover_sensitive_paths PASSED [ 25%]
+tests/test_notifications_api.py::test_create_payment_confirmation_persists_notification_and_audit PASSED [ 29%]
+tests/test_notifications_api.py::test_get_notification_returns_created_notification PASSED [ 33%]
+tests/test_notifications_api.py::test_get_notification_requires_internal_api_key PASSED [ 37%]
+tests/test_notifications_api.py::test_create_payment_confirmation_is_idempotent_by_payment_id PASSED [ 40%]
+tests/test_notifications_api.py::test_create_reservation_event_notification_persists_payload PASSED [ 44%]
+tests/test_notifications_api.py::test_create_reservation_event_notification_requires_internal_api_key PASSED [ 48%]
+tests/test_notifications_api.py::test_create_reservation_update_persists_reason_code_and_note PASSED [ 51%]
+tests/test_notifications_security_posture.py::test_mask_email_obfuscates_local_part PASSED [ 55%]
+tests/test_notifications_security_posture.py::test_sanitize_sensitive_data_redacts_known_financial_fields PASSED [ 59%]
+tests/test_notifications_security_posture.py::test_settings_require_https_internal_urls_in_non_dev PASSED [ 62%]
+tests/test_notifications_security_posture.py::test_backend_source_has_no_hardcoded_pan_literals PASSED [ 66%]
+tests/test_payment_confirmation_template.py::test_template_renderiza_las_cuatro_lineas_del_breakdown_canonico PASSED [ 70%]
+tests/test_payment_confirmation_template.py::test_template_cae_en_legacy_nightly_rate_si_falta_accommodation PASSED [ 74%]
+tests/test_payment_confirmation_template.py::test_template_omite_lineas_opcionales_cuando_son_cero_o_ausentes PASSED [ 77%]
+tests/test_reservation_update_template.py::test_cancellation_template_uses_card_layout_and_refund_block_in_spanish PASSED [ 81%]
+tests/test_reservation_update_template.py::test_confirmation_template_keeps_same_visual_language_without_refund PASSED [ 85%]
+tests/test_ses_and_consumer.py::test_ses_sender_envia_html PASSED        [ 88%]
+tests/test_ses_and_consumer.py::test_ses_sender_falla_sin_from_address PASSED [ 92%]
+tests/test_ses_and_consumer.py::test_send_payment_confirmation_registra_latencia PASSED [ 96%]
+tests/test_ses_and_consumer.py::test_sqs_consumer_procesa_mensaje_y_lo_elimina PASSED [100%]
 
-============================== 15 passed in 2.90s ==============================
+============================= 27 passed in 1.47s ==============================
+
 Name                                                               Stmts   Miss  Cover   Missing
 ------------------------------------------------------------------------------------------------
-src/adapters/__init__.py                                               0      0   100%
-src/adapters/models/__init__.py                                        0      0   100%
-src/adapters/models/notification.py                                   18      0   100%
-src/adapters/models/notification_audit_log.py                         14      0   100%
-src/adapters/models/notification_delivery_attempt.py                  11      0   100%
-src/adapters/repositories/__init__.py                                  0      0   100%
-src/adapters/repositories/delivery_attempt_repository.py              11      0   100%
-src/adapters/repositories/notification_audit_repository.py            12      0   100%
-src/adapters/repositories/notification_repository.py                  34      1    97%   58
-src/adapters/services/__init__.py                                      0      0   100%
-src/adapters/services/in_process_notification_delivery_runner.py      17      0   100%
-src/adapters/services/log_email_sender.py                             10      0   100%
-src/adapters/services/payment_confirmation_client.py                  20      1    95%   22
-src/assembly.py                                                       47     12    74%   34, 44-52, 56, 60-62, 85, 102
-src/core/__init__.py                                                   0      0   100%
-src/core/config.py                                                    80     13    84%   33, 39, 51, 55, 59, 63, 67, 73, 75, 88-90, 99
-src/core/privacy.py                                                   43      0   100%
-src/db/__init__.py                                                     0      0   100%
-src/db/session.py                                                     32     17    47%   24-29, 33-37, 41-46, 50-51
-src/domain/__init__.py                                                 0      0   100%
-src/domain/ports/__init__.py                                           0      0   100%
-src/domain/ports/delivery_attempt_repository.py                        6      1    83%   9
-src/domain/ports/email_sender.py                                       5      1    80%   7
-src/domain/ports/notification_audit_repository.py                      6      1    83%   9
-src/domain/ports/notification_delivery_runner.py                       6      1    83%   13
-src/domain/ports/notification_repository.py                           16      4    75%   10, 14, 18, 22
-src/domain/ports/payment_confirmation_source.py                        7      1    86%   10
-src/domain/ports/traveler_profile_source.py                            7      1    86%   10
-src/domain/schemas/__init__.py                                         0      0   100%
-src/domain/schemas/notification.py                                    71      0   100%
-src/domain/use_cases/__init__.py                                       0      0   100%
-src/domain/use_cases/base.py                                           8      1    88%   11
-src/domain/use_cases/create_payment_confirmation.py                   38      2    95%   79, 83
-src/domain/use_cases/get_notification.py                              14      1    93%   17
-src/domain/use_cases/send_payment_confirmation.py                     50      6    88%   41, 44, 57-60
-src/entrypoints/__init__.py                                            0      0   100%
-src/entrypoints/api/__init__.py                                        0      0   100%
-src/entrypoints/api/main.py                                           20      2    90%   14, 25
-src/entrypoints/api/routers/__init__.py                                0      0   100%
-src/entrypoints/api/routers/internal_notifications.py                 23      1    96%   37
-src/entrypoints/api/routers/notifications.py                          16      2    88%   24-25
-src/errors.py                                                          8      0   100%
-tests/__init__.py                                                      0      0   100%
-tests/test_infra_coverage.py                                          78      0   100%
-tests/test_notifications_api.py                                       86      0   100%
-tests/test_notifications_security_posture.py                          26      1    96%   57
+src\adapters\__init__.py                                               0      0   100%
+src\adapters\models\__init__.py                                        0      0   100%
+src\adapters\models\notification.py                                   18      0   100%
+src\adapters\models\notification_audit_log.py                         14      0   100%
+src\adapters\models\notification_delivery_attempt.py                  11      0   100%
+src\adapters\repositories\__init__.py                                  0      0   100%
+src\adapters\repositories\delivery_attempt_repository.py              11      0   100%
+src\adapters\repositories\notification_audit_repository.py            12      0   100%
+src\adapters\repositories\notification_repository.py                  37      1    97%   58
+src\adapters\services\__init__.py                                      0      0   100%
+src\adapters\services\in_process_notification_delivery_runner.py      18      0   100%
+src\adapters\services\log_email_sender.py                             10      0   100%
+src\adapters\services\payment_confirmation_client.py                  20      1    95%   22
+src\adapters\services\payment_event_client.py                         25     16    36%   13-23, 33-43
+src\adapters\services\ses_email_sender.py                             23      0   100%
+src\adapters\services\sqs_notification_consumer.py                    71     21    70%   45, 49-50, 53-63, 81-82, 91-94, 98-99, 112
+src\adapters\services\traveler_profile_client.py                      18     10    44%   13-31
+src\assembly.py                                                       60     16    73%   40, 50-62, 66, 70-72, 76, 125, 142
+src\core\__init__.py                                                   0      0   100%
+src\core\config.py                                                   101     17    83%   33, 39, 51, 55, 59, 63, 67, 73, 75, 88-90, 98, 102, 110, 115, 128
+src\core\privacy.py                                                   43      0   100%
+src\db\__init__.py                                                     0      0   100%
+src\db\session.py                                                     49     32    35%   25-30, 34-38, 42-48, 52-78, 82-83
+src\domain\__init__.py                                                 0      0   100%
+src\domain\ports\__init__.py                                           0      0   100%
+src\domain\ports\delivery_attempt_repository.py                        6      1    83%   9
+src\domain\ports\email_sender.py                                       5      1    80%   7
+src\domain\ports\notification_audit_repository.py                      6      1    83%   9
+src\domain\ports\notification_delivery_runner.py                       7      1    86%   15
+src\domain\ports\notification_repository.py                           19      5    74%   10, 14, 18, 22, 31
+src\domain\ports\payment_confirmation_source.py                        7      1    86%   10
+src\domain\ports\payment_event_source.py                              10      2    80%   10, 14
+src\domain\ports\traveler_profile_source.py                            7      1    86%   10
+src\domain\schemas\__init__.py                                         0      0   100%
+src\domain\schemas\notification.py                                   124      0   100%
+src\domain\use_cases\__init__.py                                       0      0   100%
+src\domain\use_cases\base.py                                           8      1    88%   11
+src\domain\use_cases\create_payment_confirmation.py                   38      2    95%   79, 83
+src\domain\use_cases\create_reservation_event_notification.py         50      8    84%   43-44, 50-51, 97, 102-104
+src\domain\use_cases\create_reservation_update.py                     42      5    88%   20, 24-26, 72
+src\domain\use_cases\get_notification.py                              14      1    93%   17
+src\domain\use_cases\send_payment_confirmation.py                     94     16    83%   126, 129, 142-145, 274, 278-280, 283-293
+src\entrypoints\__init__.py                                            0      0   100%
+src\entrypoints\api\__init__.py                                        0      0   100%
+src\entrypoints\api\main.py                                           20      2    90%   14, 25
+src\entrypoints\api\routers\__init__.py                                0      0   100%
+src\entrypoints\api\routers\internal_notifications.py                 47      6    87%   49, 83, 94-97
+src\entrypoints\api\routers\notifications.py                          16      2    88%   24-25
+src\errors.py                                                          8      0   100%
+tests\__init__.py                                                      0      0   100%
+tests\test_infra_coverage.py                                          78      0   100%
+tests\test_notifications_api.py                                      131      0   100%
+tests\test_notifications_security_posture.py                          26      1    96%   57
+tests\test_payment_confirmation_template.py                           36      0   100%
+tests\test_reservation_update_template.py                             22      0   100%
+tests\test_ses_and_consumer.py                                        75      0   100%
 ------------------------------------------------------------------------------------------------
-TOTAL                                                                840     70    92%
+TOTAL                                                               1437    171    88%
