@@ -670,6 +670,10 @@ class TestReservationEndpoints:
         data = response.json()
         assert len(data) == 1
         assert data[0]["id_property"] == payload["id_property"]
+        assert {action["action"] for action in data[0]["available_actions"]} == {
+            "confirm",
+            "cancel",
+        }
 
     def test_hotel_can_confirm_pending_reservation(self, client):
         payload = {

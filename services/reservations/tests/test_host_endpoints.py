@@ -207,6 +207,12 @@ def test_host_listing_returns_only_my_properties(client, session, fakes_overridd
     assert body["total"] == 2
     property_ids = {item["id_property"] for item in body["items"]}
     assert property_ids == {str(PROPERTY_A), str(PROPERTY_B)}
+    actions_by_status = {
+        item["status"]: {action["action"] for action in item["available_actions"]}
+        for item in body["items"]
+    }
+    assert actions_by_status["confirmed"] == {"cancel"}
+    assert actions_by_status["pending_payment"] == {"confirm", "cancel"}
 
 
 def test_host_listing_filter_by_status_and_guest(client, session, fakes_overridden):
@@ -264,7 +270,33 @@ def test_host_listing_pagination_and_sort(client, session, fakes_overridden):
     assert prices == ["100.00", "200.00"]
 
 
-def test_host_metrics_uses_payments_aggregate(client, session, fakes_overridden):
+def test_host_metrics_defaults_to_confirmed_reservations_amount(client, session, fakes_overridden):
+    base_check_in = datetime.now(UTC) - timedelta(days=2)
+    _seed_reservation(
+        session,
+        id_property=PROPERTY_A,
+        id_traveler=uuid4(),
+        status="confirmed",
+        check_in=base_check_in,
+        nights=3,
+        total=Decimal("400.00"),
+    )
+
+    response = client.get(
+        "/api/v1/reservations/host/me/metrics",
+        headers={"Authorization": f"Bearer {_hotel_token()}"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["revenue_amount"] == "400.00"
+    assert body["revenue_currency"] == "COP"
+    assert body["available_currencies"] == ["COP"]
+    assert body["total_nights"] >= 1
+    assert body["active_reservations"] >= 1
+    assert fakes_overridden["payments"].last_call is None
+
+
+def test_host_metrics_supports_collected_payments_mode(client, session, fakes_overridden):
     base_check_in = datetime.now(UTC) - timedelta(days=2)
     reservation = _seed_reservation(
         session,
@@ -286,7 +318,7 @@ def test_host_metrics_uses_payments_aggregate(client, session, fakes_overridden)
     }
 
     response = client.get(
-        "/api/v1/reservations/host/me/metrics",
+        "/api/v1/reservations/host/me/metrics?revenue_mode=collected_payments",
         headers={"Authorization": f"Bearer {_hotel_token()}"},
     )
     assert response.status_code == 200
@@ -294,13 +326,46 @@ def test_host_metrics_uses_payments_aggregate(client, session, fakes_overridden)
     assert body["revenue_amount"] == "75.00"
     assert body["revenue_currency"] == "COP"
     assert body["available_currencies"] == ["COP"]
-    assert body["total_nights"] >= 1
-    assert body["active_reservations"] >= 1
     call = fakes_overridden["payments"].last_call
     assert call["status"] == "confirmed"
 
 
-def test_host_revenue_trends_returns_buckets(client, session, fakes_overridden):
+def test_host_revenue_trends_defaults_to_confirmed_reservation_amounts(client, session, fakes_overridden):
+    base_check_in = datetime.now(UTC).replace(microsecond=0) - timedelta(days=4)
+    _seed_reservation(
+        session,
+        id_property=PROPERTY_A,
+        id_traveler=uuid4(),
+        status="confirmed",
+        check_in=base_check_in,
+        nights=2,
+        total=Decimal("70.00"),
+    )
+    _seed_reservation(
+        session,
+        id_property=PROPERTY_A,
+        id_traveler=uuid4(),
+        status="confirmed",
+        check_in=base_check_in + timedelta(days=1),
+        nights=2,
+        total=Decimal("50.00"),
+    )
+    response = client.get(
+        "/api/v1/reservations/host/me/revenue-trends?granularity=day",
+        headers={"Authorization": f"Bearer {_hotel_token()}"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["granularity"] == "day"
+    assert body["currency"] == "COP"
+    assert body["available_currencies"] == ["COP"]
+    assert len(body["buckets"]) == 2
+    assert body["buckets"][0]["revenue"] == "70.00"
+    assert body["buckets"][1]["revenue"] == "50.00"
+    assert fakes_overridden["payments"].last_call is None
+
+
+def test_host_revenue_trends_supports_collected_payments_mode(client, session, fakes_overridden):
     base_check_in = datetime.now(UTC).replace(microsecond=0) - timedelta(days=4)
     reservation_a = _seed_reservation(
         session,
@@ -334,7 +399,7 @@ def test_host_revenue_trends_returns_buckets(client, session, fakes_overridden):
         "available_currencies": ["COP"],
     }
     response = client.get(
-        "/api/v1/reservations/host/me/revenue-trends?granularity=day",
+        "/api/v1/reservations/host/me/revenue-trends?granularity=day&revenue_mode=collected_payments",
         headers={"Authorization": f"Bearer {_hotel_token()}"},
     )
     assert response.status_code == 200

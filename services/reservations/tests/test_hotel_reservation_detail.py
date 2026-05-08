@@ -150,6 +150,12 @@ def test_available_actions_modification_confirmed_has_confirm_and_cancel():
     assert "cancel" in actions
 
 
+def test_available_actions_modification_pending_payment_has_confirm():
+    actions = {a.action for a in compute_available_actions("modification_pending_payment")}
+    assert "confirm" in actions
+    assert "cancel" not in actions
+
+
 def test_available_actions_refund_completed_is_empty():
     actions = compute_available_actions("refund_completed")
     assert actions == []
@@ -180,6 +186,23 @@ def test_get_detail_returns_full_response(client, session):
     action_names = {a["action"] for a in data["available_actions"]}
     assert "cancel" in action_names
     assert "confirm" not in action_names
+    app.dependency_overrides.pop(get_users_client, None)
+    app.dependency_overrides.pop(get_properties_client, None)
+
+
+def test_get_detail_modification_pending_payment_exposes_confirm_action(client, session):
+    app.dependency_overrides[get_users_client] = lambda: FakeUsersClientWithData()
+    app.dependency_overrides[get_properties_client] = lambda: FakePropertiesClientOwner()
+    r = _seed_reservation(session, status="modification_pending_payment")
+    resp = client.get(
+        f"/api/v1/hotel/reservations/{r.id}",
+        headers={"Authorization": f"Bearer {_hotel_token()}"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    action_names = {a["action"] for a in data["available_actions"]}
+    assert "confirm" in action_names
+    assert "cancel" not in action_names
     app.dependency_overrides.pop(get_users_client, None)
     app.dependency_overrides.pop(get_properties_client, None)
 

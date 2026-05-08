@@ -118,6 +118,16 @@ class ReservationRepository(ABC):
         pass
 
     @abstractmethod
+    def list_confirmed_revenue_rows_by_properties(
+        self,
+        property_ids: list[UUID],
+        *,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+    ) -> list[tuple[UUID, datetime, Decimal, str]]:
+        pass
+
+    @abstractmethod
     def operational_metrics_for_properties(
         self,
         property_ids: list[UUID],

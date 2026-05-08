@@ -4,7 +4,11 @@ from uuid import UUID
 from adapters.services.properties_client import PropertiesServiceClient
 from adapters.services.users_client import UsersServiceClient
 from domain.ports.reservation_repository import ReservationRepository
-from domain.schemas.reservation import HostReservationItem, HostReservationsPage
+from domain.schemas.reservation import (
+    HostReservationItem,
+    HostReservationsPage,
+    compute_available_actions,
+)
 
 
 class ListHostReservationsUseCase:
@@ -78,6 +82,7 @@ class ListHostReservationsUseCase:
                 currency=r.currency,
                 status=r.status,
                 created_at=r.created_at,
+                available_actions=compute_available_actions(r.status),
             )
             for r in reservations
         ]
