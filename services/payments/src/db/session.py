@@ -11,7 +11,7 @@ _is_postgres = settings.database_url.startswith("postgresql")
 connect_args = (
     {"check_same_thread": False}
     if settings.database_url.startswith("sqlite")
-    else {}
+    else {"client_encoding": "utf8"}
 )
 
 engine = create_engine(
@@ -39,6 +39,7 @@ if _is_postgres:
         cursor.execute(
             f'SET search_path TO "{schema_name}", public'
         )
+        cursor.execute("SET client_encoding TO 'UTF8'")
         cursor.close()
         dbapi_connection.commit()
 

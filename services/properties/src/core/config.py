@@ -65,7 +65,7 @@ class Settings:
 
     @property
     def database_url(self) -> str:
-        return f"postgresql://{self.rds_username}:{self.rds_password}@{self.rds_hostname}:{self.rds_port}/{self.rds_db_name}"
+        return f"postgresql://{self.rds_username}:{self.rds_password}@{self.rds_hostname}:{self.rds_port}/{self.rds_db_name}?client_encoding=utf8"
 
     @property
     def redis_host(self) -> str:

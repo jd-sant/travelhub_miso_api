@@ -9,7 +9,7 @@ from core.config import settings
 
 _is_postgres = settings.database_url.startswith("postgresql")
 
-connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
+connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {"client_encoding": "utf8"}
 
 engine = create_engine(
     settings.database_url,
@@ -34,6 +34,7 @@ if _is_postgres:
         schema_name = _validated_schema_name()
         cursor = dbapi_connection.cursor()
         cursor.execute(f'SET search_path TO "{schema_name}", public')
+        cursor.execute("SET client_encoding TO 'UTF8'")
         cursor.close()
         dbapi_connection.commit()
 
