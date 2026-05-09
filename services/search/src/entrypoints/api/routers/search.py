@@ -1,19 +1,15 @@
 from datetime import date
 from decimal import Decimal
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from redis import Redis
 from sqlmodel import Session, select
 
 from assembly import (
-    build_cache,
     get_property_availability_use_case,
     get_pricing_management_use_case,
     get_search_properties_use_case,
 )
-from db.redis import get_redis_client
 from adapters.models import Amenity
 from adapters.models import InventoryCalendar
 from adapters.models import Property

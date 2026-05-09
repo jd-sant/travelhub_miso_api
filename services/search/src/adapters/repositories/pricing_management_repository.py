@@ -99,8 +99,8 @@ class SQLModelPricingManagementRepository:
             sellable_units=sellable_units,
             requires_confirmation=requires_confirmation,
             impact_summary=(
-                "Se actualizaran "
-                f"{days_affected} dias con una tarifa final de {final_price} "
+                "Se actualizarán "
+                f"{days_affected} días con una tarifa final de {final_price} "
                 f"y un ingreso proyectado de {projected_after}."
             ),
         )
@@ -246,7 +246,7 @@ class SQLModelPricingManagementRepository:
         if end_date < start_date:
             raise PricingValidationError("La fecha final debe ser posterior o igual a la inicial")
         if (end_date - start_date).days > 60:
-            raise PricingValidationError("El rango maximo permitido es de 61 dias")
+            raise PricingValidationError("El rango máximo permitido es de 61 días")
 
     def _apply_discount(
         self,

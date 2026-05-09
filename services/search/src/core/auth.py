@@ -39,12 +39,12 @@ def _decode(token: str) -> dict:
     except jwt.ExpiredSignatureError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token invalido",
+            detail="Token inválido",
         ) from exc
     except jwt.InvalidTokenError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token invalido",
+            detail="Token inválido",
         ) from exc
 
 
@@ -54,14 +54,14 @@ def get_current_hotel_user(request: Request) -> AuthenticatedUser:
     if not raw_sub:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token invalido",
+            detail="Token inválido",
         )
     try:
         user_id = UUID(raw_sub)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="sub invalido en token",
+            detail="sub inválido en token",
         ) from exc
 
     role = str(claims.get("role") or "")

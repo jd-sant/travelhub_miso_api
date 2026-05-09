@@ -12,8 +12,9 @@ from entrypoints.api.routers.search import router as search_router
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    create_db_and_tables()
-    seed_dummy_data_if_needed()
+    if not settings.is_test:
+        create_db_and_tables()
+        seed_dummy_data_if_needed()
     yield
 
 

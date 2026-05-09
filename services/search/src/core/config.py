@@ -119,11 +119,25 @@ class Settings:
 
     @property
     def internal_api_key(self) -> str:
-        return os.getenv("INTERNAL_API_KEY", "travelhub-internal-key")
+        internal_api_key = os.getenv("INTERNAL_API_KEY")
+        if internal_api_key:
+            return internal_api_key
+        if self.is_local_dev or self.is_test:
+            return "travelhub-internal-key"
+        raise ValueError(
+            "INTERNAL_API_KEY must be set outside development/test/local environments"
+        )
 
     @property
     def jwt_secret_key(self) -> str:
-        return os.getenv("JWT_SECRET_KEY", "travelhub-secret")
+        jwt_secret_key = os.getenv("JWT_SECRET_KEY")
+        if jwt_secret_key:
+            return jwt_secret_key
+        if self.is_local_dev or self.is_test:
+            return "travelhub-secret"
+        raise ValueError(
+            "JWT_SECRET_KEY must be set outside development/test/local environments"
+        )
 
     @property
     def jwt_algorithm(self) -> str:

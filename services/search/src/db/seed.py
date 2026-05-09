@@ -293,7 +293,7 @@ def seed_dummy_data_if_needed() -> None:
                 )
             )
 
-            for day_offset, seed_day in enumerate(SEED_DATES):
+            for seed_day in SEED_DATES:
                 session.add(
                     InventoryCalendar(
                         room_type_id=room_type_id,
