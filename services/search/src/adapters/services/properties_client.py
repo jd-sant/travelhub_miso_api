@@ -7,9 +7,9 @@ from errors import PricingServiceUnavailableError
 
 
 class PropertiesOwnershipClient:
-    def __init__(self, base_url: str | None = None, timeout: float = 5.0):
+    def __init__(self, base_url: str | None = None, timeout: float | None = None):
         self.base_url = (base_url or settings.properties_service_url).rstrip("/")
-        self.timeout = timeout
+        self.timeout = settings.service_request_timeout if timeout is None else timeout
 
     def list_owned_property_ids(self, owner_id: UUID) -> set[UUID]:
         url = f"{self.base_url}/api/v1/properties"

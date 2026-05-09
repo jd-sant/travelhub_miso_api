@@ -66,6 +66,14 @@ class FakePricingServiceClient(PricingServiceClient):
         return self.nightly_price, "COP"
 
 
+class FakeMismatchedCurrencyPricingClient(PricingServiceClient):
+    def __init__(self, nightly_price: Decimal):
+        self.nightly_price = nightly_price
+
+    def get_effective_price(self, property_id, check_in, check_out, guests):
+        return self.nightly_price, "USD"
+
+
 def _create_confirmed_reservation(
     reservation_repository,
     *,
@@ -168,6 +176,37 @@ class TestPreviewReservationModificationUseCase:
         # service = 108; subtotal = 1458; taxes = 0
         assert result.price_after.total_price == Decimal("1458.00")
         assert result.delta_amount == Decimal("982.00")
+
+    def test_execute_ignores_effective_price_when_currency_mismatches(
+        self, reservation_repository, reservation_event_repository, traveler_id, property_id, room_id
+    ):
+        check_in = datetime.now(UTC) + timedelta(days=5)
+        reservation, _, check_out = _create_confirmed_reservation(
+            reservation_repository,
+            traveler_id=traveler_id,
+            property_id=property_id,
+            room_id=room_id,
+            check_in=check_in,
+            nights=2,
+            currency="COP",
+        )
+        use_case = PreviewReservationModificationUseCase(
+            reservation_repository,
+            FakePropertyServiceClient(max_guests=12),
+            reservation_event_repository,
+            FakeMismatchedCurrencyPricingClient(Decimal("150")),
+        )
+
+        payload = ReservationModificationPreviewRequest(
+            check_in_date=check_in + timedelta(days=1),
+            check_out_date=check_out + timedelta(days=2),
+            number_of_guests=3,
+        )
+
+        result = use_case.execute(reservation.id, payload)
+
+        assert result.price_after.total_price == Decimal("972.00")
+        assert result.delta_amount == Decimal("496.00")
 
     def test_execute_rejects_preview_when_capacity_is_exceeded(
         self, reservation_repository, reservation_event_repository, traveler_id, property_id, room_id

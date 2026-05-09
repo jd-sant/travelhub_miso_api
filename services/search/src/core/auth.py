@@ -1,4 +1,4 @@
-﻿from uuid import UUID
+from uuid import UUID
 
 import jwt
 from fastapi import HTTPException, Request, status

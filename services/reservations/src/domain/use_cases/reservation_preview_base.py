@@ -92,6 +92,7 @@ class ReservationPreviewBaseUseCase:
             check_in=check_in,
             check_out=check_out,
             guests=guests,
+            expected_currency=currency,
         )
         service_fee_rate = Decimal(settings.service_fee_rate)
 
@@ -108,6 +109,7 @@ class ReservationPreviewBaseUseCase:
         check_in: datetime | None = None,
         check_out: datetime | None = None,
         guests: int = 1,
+        expected_currency: str | None = None,
     ) -> tuple[Decimal, Decimal, Decimal]:
         if not (property_id and self.property_client):
             return (Decimal(100), Decimal(0), Decimal("0.16"))
@@ -125,10 +127,13 @@ class ReservationPreviewBaseUseCase:
                     check_out=check_out,
                     guests=guests,
                 )
+            nightly_price = details.price_per_night
+            if effective_price is not None:
+                effective_price_amount, effective_currency = effective_price
+                if expected_currency is None or effective_currency.upper() == expected_currency.upper():
+                    nightly_price = effective_price_amount
             return (
-                effective_price[0]
-                if effective_price is not None
-                else details.price_per_night,
+                nightly_price,
                 details.cleaning_fee,
                 details.tax_rate,
             )

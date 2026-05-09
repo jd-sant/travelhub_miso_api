@@ -293,6 +293,62 @@ class TestCreateReservationUseCase:
         assert breakdown.total_in_cents == 76780
         assert result.total_price == Decimal("767.80")
 
+    def test_execute_ignores_effective_price_when_currency_mismatches(
+        self, reservation_repository, traveler_id, property_id, room_id
+    ):
+        from uuid import UUID
+        from domain.ports.property_service_client import PropertyServiceClient
+        from domain.ports.pricing_service_client import PricingServiceClient
+        from domain.schemas.property_service import PropertyDetailResponse
+
+        class StubPropertyClient(PropertyServiceClient):
+            def get_property(self, property_id: UUID) -> PropertyDetailResponse:
+                return PropertyDetailResponse(
+                    id=property_id,
+                    max_guests=4,
+                    price_per_night=Decimal("200"),
+                    cleaning_fee=Decimal("50"),
+                    tax_rate=Decimal("0.10"),
+                )
+
+            def get_cancellation_policy(self, property_id: UUID):  # pragma: no cover
+                raise NotImplementedError
+
+        class StubPricingClient(PricingServiceClient):
+            def get_effective_price(self, property_id, check_in, check_out, guests):
+                return Decimal("150"), "USD"
+
+        use_case = CreateReservationUseCase(
+            reservation_repository,
+            scheduler=None,
+            properties_client=None,
+            property_client=StubPropertyClient(),
+            pricing_client=StubPricingClient(),
+        )
+
+        check_in = datetime.now(UTC) + timedelta(days=5)
+        check_out = check_in + timedelta(days=2)
+        result = use_case.execute(
+            ReservationCreateRequest(
+                id_traveler=traveler_id,
+                id_property=property_id,
+                id_room=room_id,
+                check_in_date=check_in,
+                check_out_date=check_out,
+                number_of_guests=2,
+                currency="COP",
+            )
+        )
+
+        breakdown = result.price_breakdown
+        assert breakdown is not None
+        assert breakdown.accommodation_in_cents == 80000
+        assert breakdown.cleaning_fee_in_cents == 5000
+        assert breakdown.service_fee_in_cents == 6400
+        assert breakdown.taxes_in_cents == 9140
+        assert breakdown.total_in_cents == 100540
+        assert result.total_price == Decimal("1005.40")
+
     def test_execute_checks_room_availability(
         self, create_reservation_use_case, reservation_repository, valid_create_request
     ):

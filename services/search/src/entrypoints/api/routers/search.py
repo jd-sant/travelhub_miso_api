@@ -76,7 +76,7 @@ def search_properties(
     check_in: date = Query(),
     check_out: date = Query(),
     guests: int = Query(ge=1),
-    amenities: list[str] = Query(default=[]),
+    amenities: list[str] = Query(default_factory=list),
     min_price: Decimal | None = Query(default=None, ge=0),
     max_price: Decimal | None = Query(default=None, ge=0),
     order_by: str = Query(default="price"),

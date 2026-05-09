@@ -87,6 +87,7 @@ class CreateReservationUseCase(BaseUseCase[ReservationCreateRequest, Reservation
             normalized_payload.check_in_date,
             normalized_payload.check_out_date,
             normalized_payload.number_of_guests,
+            normalized_payload.currency,
         )
         total_price = (Decimal(breakdown.total_in_cents) / Decimal(100)).quantize(
             Decimal("0.01")
@@ -129,6 +130,7 @@ class CreateReservationUseCase(BaseUseCase[ReservationCreateRequest, Reservation
         check_in: datetime,
         check_out: datetime,
         guests: int,
+        currency: str,
     ) -> ComputedBreakdown:
         """
         Construye el desglose canónico de precio:
@@ -147,6 +149,7 @@ class CreateReservationUseCase(BaseUseCase[ReservationCreateRequest, Reservation
             check_in,
             check_out,
             guests,
+            currency,
         )
         service_fee_rate = Decimal(settings.service_fee_rate)
 
@@ -180,6 +183,7 @@ class CreateReservationUseCase(BaseUseCase[ReservationCreateRequest, Reservation
         check_in: datetime,
         check_out: datetime,
         guests: int,
+        expected_currency: str,
     ) -> tuple[Decimal, Decimal, Decimal]:
         import logging
         logger = logging.getLogger(__name__)
@@ -196,8 +200,13 @@ class CreateReservationUseCase(BaseUseCase[ReservationCreateRequest, Reservation
                     check_out=check_out,
                     guests=guests,
                 )
+            nightly_price = details.price_per_night
+            if effective_price is not None:
+                effective_price_amount, effective_currency = effective_price
+                if effective_currency.upper() == expected_currency.upper():
+                    nightly_price = effective_price_amount
             return (
-                effective_price[0] if effective_price is not None else details.price_per_night,
+                nightly_price,
                 details.cleaning_fee,
                 details.tax_rate,
             )
