@@ -12,7 +12,7 @@ from domain.schemas.pricing import (
     PricingTargetOption,
 )
 from entrypoints.api.main import app
-from errors import PricingConflictError, PricingValidationError
+from errors import PricingConflictError, PricingServiceUnavailableError, PricingValidationError
 
 
 class _FakePricingUseCase:
@@ -159,6 +159,21 @@ def test_list_pricing_targets_returns_options(client):
         app.dependency_overrides.clear()
 
 
+def test_list_pricing_targets_maps_service_unavailable(client):
+    class _FailingPricingUseCase(_FakePricingUseCase):
+        def list_targets(self, user):
+            raise PricingServiceUnavailableError("properties unavailable")
+
+    app.dependency_overrides[get_current_hotel_user] = _hotel_user
+    app.dependency_overrides[get_pricing_management_use_case] = lambda: _FailingPricingUseCase()
+    try:
+        response = client.get("/api/v1/search/hotel/pricing/targets")
+        assert response.status_code == 503
+        assert "unavailable" in response.json()["detail"]
+    finally:
+        app.dependency_overrides.clear()
+
+
 def test_preview_pricing_change_maps_validation_errors(client):
     fake = _FakePricingUseCase()
     app.dependency_overrides[get_current_hotel_user] = _hotel_user
@@ -222,5 +237,20 @@ def test_revert_pricing_change_maps_conflict(client):
         )
         assert response.status_code == 409
         assert "revertido" in response.json()["detail"]
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_list_pricing_history_maps_service_unavailable(client):
+    class _FailingPricingUseCase(_FakePricingUseCase):
+        def history(self, user):
+            raise PricingServiceUnavailableError("properties unavailable")
+
+    app.dependency_overrides[get_current_hotel_user] = _hotel_user
+    app.dependency_overrides[get_pricing_management_use_case] = lambda: _FailingPricingUseCase()
+    try:
+        response = client.get("/api/v1/search/hotel/pricing/history")
+        assert response.status_code == 503
+        assert "unavailable" in response.json()["detail"]
     finally:
         app.dependency_overrides.clear()

@@ -48,6 +48,7 @@ from errors import (
     InvalidSearchRuleError,
     PricingAuthorizationError,
     PricingConflictError,
+    PricingServiceUnavailableError,
     PricingTargetNotFoundError,
     PricingValidationError,
     PropertiesServiceUnavailableError,
@@ -177,7 +178,12 @@ def list_pricing_targets(
     user: AuthenticatedUser = Depends(get_current_hotel_user),
     use_case: PricingManagementUseCase = Depends(get_pricing_management_use_case),
 ) -> list[PricingTargetOption]:
-    return use_case.list_targets(user)
+    try:
+        return use_case.list_targets(user)
+    except PricingAuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
+    except PricingServiceUnavailableError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
 
 
 @router.post("/hotel/pricing/preview", response_model=PricingPreviewResponse)
@@ -192,6 +198,8 @@ def preview_pricing_change(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except PricingAuthorizationError as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
+    except PricingServiceUnavailableError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
     except PricingTargetNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
 
@@ -208,6 +216,8 @@ def apply_pricing_change(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except PricingAuthorizationError as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
+    except PricingServiceUnavailableError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
     except PricingConflictError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
     except PricingTargetNotFoundError as exc:
@@ -219,7 +229,12 @@ def list_pricing_history(
     user: AuthenticatedUser = Depends(get_current_hotel_user),
     use_case: PricingManagementUseCase = Depends(get_pricing_management_use_case),
 ) -> list[PricingHistoryItem]:
-    return use_case.history(user)
+    try:
+        return use_case.history(user)
+    except PricingAuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
+    except PricingServiceUnavailableError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
 
 
 @router.post("/hotel/pricing/history/{change_id}/revert", response_model=PricingRevertResponse)
@@ -232,6 +247,8 @@ def revert_pricing_change(
         return use_case.revert(user, change_id)
     except PricingAuthorizationError as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
+    except PricingServiceUnavailableError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
     except PricingConflictError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
     except PricingTargetNotFoundError as exc:

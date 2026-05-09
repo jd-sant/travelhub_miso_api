@@ -22,5 +22,9 @@ class PricingAuthorizationError(Exception):
     pass
 
 
+class PricingServiceUnavailableError(Exception):
+    pass
+
+
 class PricingTargetNotFoundError(Exception):
     pass

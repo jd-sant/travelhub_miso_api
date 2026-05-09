@@ -3,7 +3,7 @@ from uuid import UUID
 import httpx
 
 from core.config import settings
-from errors import PricingAuthorizationError
+from errors import PricingServiceUnavailableError
 
 
 class PropertiesOwnershipClient:
@@ -21,7 +21,7 @@ class PropertiesOwnershipClient:
             )
             response.raise_for_status()
         except httpx.HTTPError as exc:
-            raise PricingAuthorizationError(
-                "No se pudo validar la propiedad del hotel"
+            raise PricingServiceUnavailableError(
+                "No se pudo validar la propiedad del hotel porque el servicio de propiedades no está disponible"
             ) from exc
         return {UUID(item["id"]) for item in response.json()}
