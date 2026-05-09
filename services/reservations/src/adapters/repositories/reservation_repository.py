@@ -231,6 +231,40 @@ class SQLModelReservationRepository(ReservationRepository):
         conflicting = self.session.exec(query).first()
         return conflicting is None
 
+    def check_properties_availability(
+        self,
+        property_ids: list[UUID],
+        check_in: datetime,
+        check_out: datetime,
+    ) -> tuple[list[UUID], list[UUID]]:
+        if not property_ids:
+            return [], []
+
+        check_in_naive = _strip_tz(check_in)
+        check_out_naive = _strip_tz(check_out)
+
+        statement = (
+            select(Reservation.id_property)
+            .where(
+                Reservation.id_property.in_(property_ids),
+                Reservation.status.notin_(_CANCELLED_STATUSES),
+                Reservation.check_in_date < check_out_naive,
+                Reservation.check_out_date > check_in_naive,
+            )
+            .distinct()
+        )
+        blocked_set: set[UUID] = set(self.session.exec(statement).all())
+        # Preserve input order for both lists.
+        seen: set[UUID] = set()
+        available: list[UUID] = []
+        blocked: list[UUID] = []
+        for pid in property_ids:
+            if pid in seen:
+                continue
+            seen.add(pid)
+            (blocked if pid in blocked_set else available).append(pid)
+        return available, blocked
+
     def update_status(
         self,
         id: UUID,

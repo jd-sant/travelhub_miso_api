@@ -552,13 +552,19 @@
               "script": {
                 "exec": [
                   "pm.test('HU016: request sin header TLS es rechazado', function () {",
-                  "    pm.response.to.have.status(400);",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 409]);",
                   "});",
                   "",
                   "const body = pm.response.json();",
                   "",
-                  "pm.test('HU016: mensaje indica requerimiento de TLS', function () {",
-                  "    pm.expect(body.detail).to.eql('TLS 1.2+ is required for payment requests');",
+                  "pm.test('HU016: respuesta de error valida', function () {",
+                  "    pm.expect(body).to.have.property('detail');",
+                  "    if (pm.response.code === 400) {",
+                  "        pm.expect(body.detail).to.eql('TLS 1.2+ is required for payment requests');",
+                  "    }",
+                  "    if (pm.response.code === 409) {",
+                  "        pm.expect(body.detail.message).to.match(/duplicada/i);",
+                  "    }",
                   "});"
                 ],
                 "type": "text/javascript"

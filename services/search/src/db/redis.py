@@ -3,7 +3,7 @@ import time
 from threading import Lock
 from typing import Optional
 
-from redis import Redis, ConnectionPool
+from redis import ConnectionPool, Redis
 from redis.exceptions import RedisError
 
 from core.config import settings
@@ -17,9 +17,9 @@ _next_retry_at = 0.0
 
 
 def _build_pool() -> Optional[ConnectionPool]:
-    """Crea connection pool de Redis. Retorna None si está deshabilitado o falla."""
+    """Create Redis connection pool or return None if disabled/unavailable."""
     if not settings.redis_cache_enabled:
-        logger.info("Redis cache deshabilitado (REDIS_CACHE_ENABLED=false)")
+        logger.info("Redis cache disabled (REDIS_CACHE_ENABLED=false)")
         return None
     try:
         pool = ConnectionPool(
@@ -33,21 +33,19 @@ def _build_pool() -> Optional[ConnectionPool]:
         )
         Redis(connection_pool=pool).ping()
         logger.info(
-            "Redis conectado: %s:%d/db%d",
+            "Redis connected for search cache: %s:%d/db%d",
             settings.redis_host,
             settings.redis_port,
             settings.redis_db,
         )
         return pool
     except RedisError as exc:
-        logger.warning("Redis no disponible: %s. Búsquedas irán directo a BD.", exc)
+        logger.warning("Redis unavailable for search cache: %s.", exc)
         return None
 
+
 def get_redis_client() -> Optional[Redis]:
-    """
-    Retorna cliente Redis listo para usar, o None si Redis no está disponible.
-    None es el mecanismo de fallback: el repositorio lo maneja sin lanzar excepción.
-    """
+    """Return ready-to-use Redis client or None if unavailable."""
     global _pool
     global _next_retry_at
 
@@ -68,7 +66,6 @@ def get_redis_client() -> Optional[Redis]:
             if _pool is None:
                 _next_retry_at = now + _retry_interval_seconds
                 return None
-
             _next_retry_at = 0.0
 
         return Redis(connection_pool=_pool)

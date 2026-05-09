@@ -245,9 +245,10 @@ services:
       ENV: ${ENV:-development}
       APP_ENV: ${APP_ENV:-development}
       ALLOWED_CORS_ORIGIN: ${ALLOWED_CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
-      DATABASE_URL: postgresql://travelhub_user:travelhub_pass@postgres:5432/travelhub
-      DB_SCHEMA: search_schema
-      DB_ECHO: "False"
+      PROPERTIES_SERVICE_URL: ${PROPERTIES_SERVICE_URL:-http://properties:8000}
+      RESERVATIONS_SERVICE_URL: ${RESERVATIONS_SERVICE_URL:-http://reservations:8000}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
+      SERVICE_REQUEST_TIMEOUT: "5.0"
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       REDIS_CACHE_ENABLED: "true"
@@ -256,8 +257,10 @@ services:
     ports:
       - "8006:8000"
     depends_on:
-      postgres:
-        condition: service_healthy
+      properties:
+        condition: service_started
+      reservations:
+        condition: service_started
       redis:
         condition: service_healthy
 

@@ -8,6 +8,7 @@ from adapters.repositories.reservation_event_repository import (
     SQLModelReservationEventRepository,
 )
 from assembly import (
+    get_check_properties_availability_use_case,
     get_check_reservation_status_use_case,
     get_reservation_repository,
     get_update_reservation_status_use_case,
@@ -16,6 +17,8 @@ from core.config import settings
 from core.telemetry import resolve_correlation_id
 from db.session import get_session
 from domain.schemas.reservation import (
+    AvailabilityCheckRequest,
+    AvailabilityCheckResponse,
     ReservationAdditionalChargeResultRequest,
     ReservationCheckStatusResponse,
     ReservationRefundResultRequest,
@@ -26,6 +29,9 @@ from domain.use_cases.apply_additional_charge_result import (
     ApplyAdditionalChargeResultUseCase,
 )
 from domain.use_cases.apply_refund_result import ApplyRefundResultUseCase
+from domain.use_cases.check_properties_availability import (
+    CheckPropertiesAvailabilityUseCase,
+)
 from domain.use_cases.check_reservation_status import CheckReservationStatusUseCase
 from domain.use_cases.update_reservation import UpdateReservationStatusUseCase
 from errors import (
@@ -62,6 +68,27 @@ def _verify_api_key(x_internal_api_key: str = Header(default=None)) -> None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Forbidden",
+        )
+
+
+@router.post(
+    "/reservations/availability-check",
+    response_model=AvailabilityCheckResponse,
+    status_code=status.HTTP_200_OK,
+)
+def check_properties_availability(
+    payload: AvailabilityCheckRequest,
+    _: None = Depends(_verify_api_key),
+    use_case: CheckPropertiesAvailabilityUseCase = Depends(
+        get_check_properties_availability_use_case
+    ),
+):
+    try:
+        return use_case.execute(payload)
+    except InvalidReservationStatusError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
         )
 
 

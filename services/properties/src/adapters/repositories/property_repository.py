@@ -1,8 +1,10 @@
 import json
+import math
 from typing import Optional
 from urllib.parse import urlparse, urlunparse
 from uuid import UUID
 
+from sqlalchemy import func
 from sqlmodel import Session, select
 
 from adapters.models.property import Property
@@ -11,10 +13,15 @@ from adapters.models.property_image import PropertyImage
 from adapters.models.property_review import PropertyReview
 from domain.ports.property_repository import PropertyRepository
 from domain.schemas.property import (
+    PaginationMeta,
+    PropertyFilters,
     PropertyResponse,
     PropertyImage as PropertyImageSchema,
     PropertyReview as PropertyReviewSchema,
     PropertyListResponse,
+    PropertySearchResponse,
+    PropertySortBy,
+    PropertySortDir,
 )
 from domain.schemas.property_policy import (
     PropertyCancellationPolicyResponse,
@@ -216,6 +223,79 @@ class SQLModelPropertyRepository(PropertyRepository):
             result.append(_to_list_response(model, images))
 
         return result
+
+    def search(self, filters: PropertyFilters) -> PropertySearchResponse:
+        """Search properties with filters, sort and pagination."""
+        statement = select(Property)
+        count_statement = select(func.count()).select_from(Property)
+
+        conditions = []
+        if filters.status is not None:
+            conditions.append(Property.status == filters.status)
+        if filters.city:
+            pattern = f"%{filters.city.lower()}%"
+            dialect = self.session.bind.dialect.name if self.session.bind else ""
+            if dialect == "postgresql":
+                # Accent-insensitive: needs the `unaccent` extension (see init-schemas.sql).
+                conditions.append(
+                    func.lower(func.unaccent(Property.location)).like(
+                        func.lower(func.unaccent(pattern))
+                    )
+                )
+            else:
+                conditions.append(func.lower(Property.location).like(pattern))
+        if filters.min_price is not None:
+            conditions.append(Property.price_per_night >= filters.min_price)
+        if filters.max_price is not None:
+            conditions.append(Property.price_per_night <= filters.max_price)
+        if filters.min_guests is not None:
+            conditions.append(Property.max_guests >= filters.min_guests)
+        if filters.ids:
+            conditions.append(Property.id.in_(filters.ids))
+        for amenity in filters.amenities:
+            pattern = f"%{amenity.lower()}%"
+            conditions.append(func.lower(Property.amenities).like(pattern))
+
+        for cond in conditions:
+            statement = statement.where(cond)
+            count_statement = count_statement.where(cond)
+
+        sort_column = {
+            PropertySortBy.PRICE: Property.price_per_night,
+            PropertySortBy.RATING: Property.rating,
+            PropertySortBy.NAME: Property.name,
+        }[filters.sort_by]
+        statement = statement.order_by(
+            sort_column.desc() if filters.sort_dir == PropertySortDir.DESC else sort_column.asc()
+        )
+
+        offset = (filters.page - 1) * filters.page_size
+        statement = statement.offset(offset).limit(filters.page_size)
+
+        total = self.session.exec(count_statement).one()
+        if isinstance(total, tuple):
+            total = total[0]
+
+        models = self.session.exec(statement).all()
+        items: list[PropertyListResponse] = []
+        for model in models:
+            images = self.session.exec(
+                select(PropertyImage)
+                .where(PropertyImage.property_id == model.id)
+                .order_by(PropertyImage.position)
+            ).all()
+            items.append(_to_list_response(model, images))
+
+        total_pages = max(1, math.ceil(total / filters.page_size)) if total > 0 else 0
+        return PropertySearchResponse(
+            items=items,
+            pagination=PaginationMeta(
+                total=total,
+                page=filters.page,
+                page_size=filters.page_size,
+                total_pages=total_pages,
+            ),
+        )
 
     def get_cancellation_policy(
         self, property_id: UUID

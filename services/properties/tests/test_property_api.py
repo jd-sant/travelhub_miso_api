@@ -18,9 +18,9 @@ def test_list_properties_endpoint_success(client: TestClient):
 
     assert response.status_code == 200
     data = response.json()
-    
-    # Should have 5 seeded properties
-    assert len(data) == 5
+
+    # Should have 7 seeded properties
+    assert len(data) == 7
     
     # Check basic structure
     for prop in data:

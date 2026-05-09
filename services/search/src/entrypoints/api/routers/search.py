@@ -1,13 +1,11 @@
 from datetime import date
 from decimal import Decimal
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from redis import Redis
-from sqlmodel import Session, select
 
 from assembly import (
+<<<<<<< HEAD
     build_cache,
     get_pricing_management_use_case,
     get_property_availability_use_case,
@@ -26,10 +24,16 @@ from core.config import settings
 from core.auth import AuthenticatedUser, get_current_hotel_user
 from db.session import get_session
 from db.session import engine
+=======
+    get_property_availability_use_case,
+    get_search_properties_use_case,
+)
+>>>>>>> 223a12ea353a3ceee218651802c20c327169743e
 from domain.schemas import (
     EmptyStateSuggestion,
     PropertyAvailabilityQuery,
     PropertyAvailabilityResponse,
+<<<<<<< HEAD
     PricingApplyRequest,
     PricingApplyResponse,
     PricingHistoryItem,
@@ -37,12 +41,15 @@ from domain.schemas import (
     PricingPreviewResponse,
     PricingRevertResponse,
     PricingTargetOption,
+=======
+    SearchPagination,
+    SearchQuery,
+    SearchResponse,
+>>>>>>> 223a12ea353a3ceee218651802c20c327169743e
 )
-from domain.schemas import SearchPagination
-from domain.schemas import SearchQuery
-from domain.schemas import SearchResponse
-from domain.use_cases import (
+from domain.use_cases.check_property_availability import (
     CheckPropertyAvailabilityUseCase,
+<<<<<<< HEAD
     PricingManagementUseCase,
     SearchPropertiesUseCase,
 )
@@ -53,6 +60,16 @@ from errors import (
     PricingTargetNotFoundError,
     PricingValidationError,
 )
+=======
+)
+from domain.use_cases.search_properties import SearchPropertiesUseCase
+from errors import (
+    InvalidSearchRuleError,
+    PropertiesServiceUnavailableError,
+    ReservationsServiceUnavailableError,
+)
+
+>>>>>>> 223a12ea353a3ceee218651802c20c327169743e
 
 router = APIRouter(prefix="/search", tags=["search"])
 
@@ -68,6 +85,7 @@ def search_status() -> dict[str, str]:
     responses={
         400: {"description": "Invalid search business rules"},
         422: {"description": "Invalid or missing request fields"},
+        503: {"description": "Upstream service unavailable"},
     },
 )
 def search_properties(
@@ -75,19 +93,15 @@ def search_properties(
     check_in: date = Query(),
     check_out: date = Query(),
     guests: int = Query(ge=1),
-    amenities: list[str] = Query(default=[]),
+    amenities: list[str] = Query(default_factory=list),
     min_price: Decimal | None = Query(default=None, ge=0),
     max_price: Decimal | None = Query(default=None, ge=0),
     order_by: str = Query(default="price"),
     order_dir: str = Query(default="asc"),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=100),
-    session: Session = Depends(get_session),
-    redis: Optional[Redis] = Depends(get_redis_client),
+    use_case: SearchPropertiesUseCase = Depends(get_search_properties_use_case),
 ) -> SearchResponse:
-    cache = build_cache(redis)
-    use_case: SearchPropertiesUseCase = get_search_properties_use_case(session, cache)
-
     try:
         query = SearchQuery(
             city=city,
@@ -104,59 +118,67 @@ def search_properties(
         )
         _validate_search_rules(query)
         result = use_case.execute(query)
-        total_pages = _calculate_total_pages(result.total, result.page_size)
-
-        empty_state = []
-        if result.total == 0:
-            empty_state = [
-                EmptyStateSuggestion(
-                    code="TRY_OTHER_CITY",
-                    message="No encontramos resultados en esa ciudad. Intenta otra ciudad cercana.",
-                ),
-                EmptyStateSuggestion(
-                    code="TRY_OTHER_DATES",
-                    message="Prueba con fechas diferentes para encontrar mayor disponibilidad.",
-                ),
-            ]
-
-        return SearchResponse(
-            items=result.items,
-            pagination=SearchPagination(
-                total=result.total,
-                page=result.page,
-                page_size=result.page_size,
-                total_pages=total_pages,
-            ),
-            empty_state=empty_state,
-        )
     except InvalidSearchRuleError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except (PropertiesServiceUnavailableError, ReservationsServiceUnavailableError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        )
+
+    total_pages = _calculate_total_pages(result.total, result.page_size)
+    empty_state = []
+    if not result.items:
+        if result.total == 0:
+            empty_state.append(
+                EmptyStateSuggestion(
+                    code="TRY_OTHER_CITY",
+                    message=(
+                        "No encontramos resultados en esa ciudad. "
+                        "Intenta otra ciudad cercana."
+                    ),
+                )
+            )
+        else:
+            empty_state.append(
+                EmptyStateSuggestion(
+                    code="TRY_OTHER_DATES",
+                    message=(
+                        "Las propiedades disponibles no tienen fechas libres. "
+                        "Prueba con fechas diferentes."
+                    ),
+                )
+            )
+
+    return SearchResponse(
+        items=result.items,
+        pagination=SearchPagination(
+            total=result.total,
+            page=result.page,
+            page_size=result.page_size,
+            total_pages=total_pages,
+        ),
+        empty_state=empty_state,
+    )
 
 
 @router.get(
     "/properties/{property_id}/availability",
     response_model=PropertyAvailabilityResponse,
+    responses={503: {"description": "Upstream service unavailable"}},
 )
 def check_property_availability(
     property_id: UUID,
     check_in: date = Query(),
     check_out: date = Query(),
     guests: int = Query(ge=1),
-    session: Session = Depends(get_session),
-    redis: Optional[Redis] = Depends(get_redis_client),
+    use_case: CheckPropertyAvailabilityUseCase = Depends(
+        get_property_availability_use_case
+    ),
 ) -> PropertyAvailabilityResponse:
-    cache = build_cache(redis)
-    use_case: CheckPropertyAvailabilityUseCase = get_property_availability_use_case(session, cache)
-
     try:
-        _validate_search_rules(
-            SearchQuery(
-                city="placeholder",
-                check_in=check_in,
-                check_out=check_out,
-                guests=guests,
-            )
-        )
+        if check_out <= check_in:
+            raise InvalidSearchRuleError("check_out must be greater than check_in")
         return use_case.execute(
             PropertyAvailabilityQuery(
                 property_id=property_id,
@@ -167,6 +189,11 @@ def check_property_availability(
         )
     except InvalidSearchRuleError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except (PropertiesServiceUnavailableError, ReservationsServiceUnavailableError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        )
 
 
 def _validate_search_rules(query: SearchQuery) -> None:
@@ -201,6 +228,7 @@ def _calculate_total_pages(total: int, page_size: int) -> int:
     if total == 0:
         return 0
     return (total + page_size - 1) // page_size
+<<<<<<< HEAD
 
 
 @router.get(
@@ -336,3 +364,5 @@ if settings.is_local_dev:
                 for p in properties
             ],
         }
+=======
+>>>>>>> 223a12ea353a3ceee218651802c20c327169743e

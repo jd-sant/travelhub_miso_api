@@ -5,7 +5,7 @@
     },
     "item": [
       {
-        "id": "b5033ad5-2185-42b2-8f43-245e950f38e8",
+        "id": "71472dc7-3717-4f25-86e1-99d51caa9d1e",
         "name": "Health - Search",
         "request": {
           "url": {
@@ -25,18 +25,18 @@
           {
             "listen": "test",
             "script": {
-              "id": "4da99e2e-8a4e-48d2-9412-01658cd9267d",
+              "id": "c3261e6c-5389-46f1-bfc4-3585727495ff",
               "type": "text/javascript",
               "exec": [
                 "pm.test('health 200', function () { pm.response.to.have.status(200); });"
               ],
-              "_lastExecutionId": "7b8d9126-8a1e-4d95-ba89-849d89df7ade"
+              "_lastExecutionId": "095d9dd4-b3d4-4fb5-b688-62bc1ea4c965"
             }
           }
         ]
       },
       {
-        "id": "83ebcb75-ad93-41f1-946c-0f54e28c8229",
+        "id": "9f0a3067-83b7-4b52-a331-77ad3040d93b",
         "name": "Search Status",
         "request": {
           "url": {
@@ -59,20 +59,20 @@
           {
             "listen": "test",
             "script": {
-              "id": "bb53f747-ff6c-4286-9f12-a2c342539221",
+              "id": "f08c1020-f53a-4b7f-837f-e9cfa00b6a01",
               "type": "text/javascript",
               "exec": [
                 "pm.test('status 200', function () { pm.response.to.have.status(200); });",
                 "const body = pm.response.json();",
                 "pm.test('service is search', function () { pm.expect(body.service).to.eql('search'); });"
               ],
-              "_lastExecutionId": "21b9b9c7-a77d-463e-9e84-9822c380f2bb"
+              "_lastExecutionId": "667007f6-308e-454b-a135-b9247e87cff2"
             }
           }
         ]
       },
       {
-        "id": "9983b15e-9ce4-4187-a4c9-4aa66c01fdc4",
+        "id": "f5a14777-1fdb-411d-a55e-298f8941e5be",
         "name": "Search Query",
         "request": {
           "url": {
@@ -119,7 +119,7 @@
           {
             "listen": "prerequest",
             "script": {
-              "id": "feda54cd-4cea-4173-8a21-73a4d21d6c73",
+              "id": "224f9d02-e6f7-463a-ac1e-8a30773af01f",
               "type": "text/javascript",
               "exec": [
                 "const now = new Date();",
@@ -128,13 +128,13 @@
                 "pm.collectionVariables.set('search_check_in', checkIn.toISOString().slice(0, 10));",
                 "pm.collectionVariables.set('search_check_out', checkOut.toISOString().slice(0, 10));"
               ],
-              "_lastExecutionId": "4fa09a70-22bd-45b1-9f1e-d762714c9cff"
+              "_lastExecutionId": "5664407b-04d8-4eb7-9786-8dd495084d8a"
             }
           },
           {
             "listen": "test",
             "script": {
-              "id": "cc13da9d-89df-4ad9-8aa7-62adc8f57d23",
+              "id": "30d11912-bc3a-492d-8f81-c8bf556ef36a",
               "type": "text/javascript",
               "exec": [
                 "pm.test('search 200', function () { pm.response.to.have.status(200); });",
@@ -142,7 +142,7 @@
                 "pm.test('items array exists', function () { pm.expect(body.items).to.be.an('array'); });",
                 "pm.test('pagination exists', function () { pm.expect(body.pagination).to.be.an('object'); });"
               ],
-              "_lastExecutionId": "fc89b1b0-ca90-4fb5-a48a-2775f4c27509"
+              "_lastExecutionId": "d731c8c5-eeb1-4249-9639-e7617fab7e1e"
             }
           }
         ]
@@ -208,11 +208,146 @@
         "type": "any",
         "value": "travelhub-internal-secret-key",
         "key": "internal_api_key"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-internal-secret-key",
+        "key": "INTERNAL_API_KEY"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-jwt-secret-change-in-prod",
+        "key": "JWT_SECRET_KEY"
+      },
+      {
+        "type": "any",
+        "value": "development",
+        "key": "ENV"
+      },
+      {
+        "type": "any",
+        "value": "development",
+        "key": "APP_ENV"
+      },
+      {
+        "type": "any",
+        "value": "smtp.gmail.com",
+        "key": "SMTP_HOST"
+      },
+      {
+        "type": "any",
+        "value": "587",
+        "key": "SMTP_PORT"
+      },
+      {
+        "type": "any",
+        "value": "tu-email@gmail.com",
+        "key": "SMTP_USER"
+      },
+      {
+        "type": "any",
+        "value": "tu-app-password",
+        "key": "SMTP_PASSWORD"
+      },
+      {
+        "type": "any",
+        "value": "tu-email@gmail.com",
+        "key": "SMTP_FROM"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-payments-secret-change-in-prod",
+        "key": "PAYMENT_INTEGRITY_SECRET"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-payments-encryption-key-change-in-prod",
+        "key": "PAYMENTS_DATA_ENCRYPTION_KEY"
+      },
+      {
+        "type": "any",
+        "value": "false",
+        "key": "PAYMENTS_COMPLIANCE_MODE"
+      },
+      {
+        "type": "any",
+        "value": "true",
+        "key": "ENFORCE_TLS_HEADER"
+      },
+      {
+        "type": "any",
+        "value": "fake_stripe",
+        "key": "PAYMENT_PROVIDER"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "STRIPE_SECRET_KEY"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "STRIPE_PUBLISHABLE_KEY"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "STRIPE_WEBHOOK_SECRET"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:3000,http://127.0.0.1:3000",
+        "key": "ALLOWED_CORS_ORIGIN"
+      },
+      {
+        "type": "any",
+        "value": "us-east-1",
+        "key": "AWS_REGION"
+      },
+      {
+        "type": "any",
+        "value": "XXXX",
+        "key": "AWS_ACCESS_KEY_ID"
+      },
+      {
+        "type": "any",
+        "value": "XXXX",
+        "key": "AWS_SECRET_ACCESS_KEY"
+      },
+      {
+        "type": "any",
+        "value": "XXXX",
+        "key": "AWS_SESSION_TOKEN"
+      },
+      {
+        "type": "any",
+        "value": "arn:aws:lambda:us-east-1:ACC_ID:function:reservation-checker",
+        "key": "LAMBDA_ARN"
+      },
+      {
+        "type": "any",
+        "value": "arn:aws:iam::ACC_ID:role/EventBridgeSchedulerRole",
+        "key": "SCHEDULER_ROLE_ARN"
+      },
+      {
+        "type": "any",
+        "value": "http://reservations:8006",
+        "key": "API_BASE_URL"
+      },
+      {
+        "type": "any",
+        "value": "true",
+        "key": "RESERVATION_SCHEDULER_ENABLED"
+      },
+      {
+        "type": "any",
+        "value": "15",
+        "key": "RESERVATION_SCHEDULER_DELAY_MINUTES"
       }
     ]
   },
   "globals": {
-    "id": "8d6c7797-d212-4f38-9e4c-9f9f4ae9dec4",
+    "id": "60563d1a-eb87-4c46-80fe-a5ae2bf0ff3b",
     "values": []
   },
   "run": {
@@ -264,10 +399,10 @@
       }
     },
     "timings": {
-      "responseAverage": 16.333333333333332,
-      "responseMin": 5,
+      "responseAverage": 18.666666666666668,
+      "responseMin": 3,
       "responseMax": 30,
-      "responseSd": 10.338708279513883,
+      "responseSd": 11.440668201153676,
       "dnsAverage": 0,
       "dnsMin": 0,
       "dnsMax": 0,
@@ -276,8 +411,8 @@
       "firstByteMin": 0,
       "firstByteMax": 0,
       "firstByteSd": 0,
-      "started": 1775938946025,
-      "completed": 1775938946149
+      "started": 1777254737771,
+      "completed": 1777254738069
     },
     "executions": [
       {
@@ -290,11 +425,11 @@
           "eof": false,
           "bof": true,
           "cr": false,
-          "ref": "ff0f86b5-7999-4bb5-932d-18cd0d7f529e",
-          "httpRequestId": "6f2371de-50f1-488e-9286-08ab1daefe7f"
+          "ref": "50f4208b-a989-46a5-8034-d69f25ebb358",
+          "httpRequestId": "62b334e3-42f4-406a-a4e2-a8a892603de1"
         },
         "item": {
-          "id": "b5033ad5-2185-42b2-8f43-245e950f38e8",
+          "id": "71472dc7-3717-4f25-86e1-99d51caa9d1e",
           "name": "Health - Search",
           "request": {
             "url": {
@@ -314,12 +449,12 @@
             {
               "listen": "test",
               "script": {
-                "id": "4da99e2e-8a4e-48d2-9412-01658cd9267d",
+                "id": "c3261e6c-5389-46f1-bfc4-3585727495ff",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('health 200', function () { pm.response.to.have.status(200); });"
                 ],
-                "_lastExecutionId": "7b8d9126-8a1e-4d95-ba89-849d89df7ade"
+                "_lastExecutionId": "095d9dd4-b3d4-4fb5-b688-62bc1ea4c965"
               }
             }
           ]
@@ -355,7 +490,7 @@
             },
             {
               "key": "Postman-Token",
-              "value": "ac879004-72e8-40c0-bd2b-87100458239a",
+              "value": "8bbff60a-0946-4df5-b3b0-8acbb6eeb8ba",
               "system": true
             },
             {
@@ -377,13 +512,13 @@
           "method": "GET"
         },
         "response": {
-          "id": "2870ee12-6f6b-466a-98d7-baf79db37da5",
+          "id": "80f6e1d3-0683-4cd4-a74e-21c7e3a31585",
           "status": "OK",
           "code": 200,
           "header": [
             {
               "key": "date",
-              "value": "Sat, 11 Apr 2026 20:22:26 GMT"
+              "value": "Mon, 27 Apr 2026 01:52:17 GMT"
             },
             {
               "key": "server",
@@ -424,10 +559,10 @@
             ]
           },
           "cookie": [],
-          "responseTime": 30,
+          "responseTime": 23,
           "responseSize": 20
         },
-        "id": "b5033ad5-2185-42b2-8f43-245e950f38e8",
+        "id": "71472dc7-3717-4f25-86e1-99d51caa9d1e",
         "assertions": [
           {
             "assertion": "health 200",
@@ -437,15 +572,15 @@
       },
       {
         "cursor": {
-          "ref": "71f5bfac-5742-44ea-9f43-dcb9f7c93acc",
+          "ref": "1bff1970-6310-4467-b138-79e5b78e4fb6",
           "length": 3,
           "cycles": 1,
           "position": 1,
           "iteration": 0,
-          "httpRequestId": "ac5e8d87-3863-4275-80c2-c45f8a353b0b"
+          "httpRequestId": "3f4dd283-0a17-4fc7-a378-13ad94ff12a5"
         },
         "item": {
-          "id": "83ebcb75-ad93-41f1-946c-0f54e28c8229",
+          "id": "9f0a3067-83b7-4b52-a331-77ad3040d93b",
           "name": "Search Status",
           "request": {
             "url": {
@@ -468,14 +603,14 @@
             {
               "listen": "test",
               "script": {
-                "id": "bb53f747-ff6c-4286-9f12-a2c342539221",
+                "id": "f08c1020-f53a-4b7f-837f-e9cfa00b6a01",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('status 200', function () { pm.response.to.have.status(200); });",
                   "const body = pm.response.json();",
                   "pm.test('service is search', function () { pm.expect(body.service).to.eql('search'); });"
                 ],
-                "_lastExecutionId": "21b9b9c7-a77d-463e-9e84-9822c380f2bb"
+                "_lastExecutionId": "667007f6-308e-454b-a135-b9247e87cff2"
               }
             }
           ]
@@ -514,7 +649,7 @@
             },
             {
               "key": "Postman-Token",
-              "value": "220c9b5f-1c8c-42cd-92c4-cd5fa90d6b2f",
+              "value": "3579a963-6522-4879-b000-69daf8ff5c6f",
               "system": true
             },
             {
@@ -536,13 +671,13 @@
           "method": "GET"
         },
         "response": {
-          "id": "7ef4a649-2f4f-4072-84eb-c17cf07917b4",
+          "id": "f06b5eab-e82d-454e-ae5d-4708cda66c45",
           "status": "OK",
           "code": 200,
           "header": [
             {
               "key": "date",
-              "value": "Sat, 11 Apr 2026 20:22:26 GMT"
+              "value": "Mon, 27 Apr 2026 01:52:17 GMT"
             },
             {
               "key": "server",
@@ -597,10 +732,10 @@
             ]
           },
           "cookie": [],
-          "responseTime": 5,
+          "responseTime": 3,
           "responseSize": 34
         },
-        "id": "83ebcb75-ad93-41f1-946c-0f54e28c8229",
+        "id": "9f0a3067-83b7-4b52-a331-77ad3040d93b",
         "assertions": [
           {
             "assertion": "status 200",
@@ -614,15 +749,15 @@
       },
       {
         "cursor": {
-          "ref": "b1c998c3-97a9-4719-afae-f07491c21634",
+          "ref": "fbd8bcce-2651-4443-9bc1-85b8775a2cb6",
           "length": 3,
           "cycles": 1,
           "position": 2,
           "iteration": 0,
-          "httpRequestId": "0393ee37-ec2e-459b-bf1d-aef84a194101"
+          "httpRequestId": "3fab3c2e-fefc-45de-a134-fc72d856e9e7"
         },
         "item": {
-          "id": "9983b15e-9ce4-4187-a4c9-4aa66c01fdc4",
+          "id": "f5a14777-1fdb-411d-a55e-298f8941e5be",
           "name": "Search Query",
           "request": {
             "url": {
@@ -669,7 +804,7 @@
             {
               "listen": "prerequest",
               "script": {
-                "id": "feda54cd-4cea-4173-8a21-73a4d21d6c73",
+                "id": "224f9d02-e6f7-463a-ac1e-8a30773af01f",
                 "type": "text/javascript",
                 "exec": [
                   "const now = new Date();",
@@ -678,13 +813,13 @@
                   "pm.collectionVariables.set('search_check_in', checkIn.toISOString().slice(0, 10));",
                   "pm.collectionVariables.set('search_check_out', checkOut.toISOString().slice(0, 10));"
                 ],
-                "_lastExecutionId": "4fa09a70-22bd-45b1-9f1e-d762714c9cff"
+                "_lastExecutionId": "5664407b-04d8-4eb7-9786-8dd495084d8a"
               }
             },
             {
               "listen": "test",
               "script": {
-                "id": "cc13da9d-89df-4ad9-8aa7-62adc8f57d23",
+                "id": "30d11912-bc3a-492d-8f81-c8bf556ef36a",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('search 200', function () { pm.response.to.have.status(200); });",
@@ -692,7 +827,7 @@
                   "pm.test('items array exists', function () { pm.expect(body.items).to.be.an('array'); });",
                   "pm.test('pagination exists', function () { pm.expect(body.pagination).to.be.an('object'); });"
                 ],
-                "_lastExecutionId": "fc89b1b0-ca90-4fb5-a48a-2775f4c27509"
+                "_lastExecutionId": "d731c8c5-eeb1-4249-9639-e7617fab7e1e"
               }
             }
           ]
@@ -716,11 +851,11 @@
               },
               {
                 "key": "check_in",
-                "value": "2026-04-13"
+                "value": "2026-04-29"
               },
               {
                 "key": "check_out",
-                "value": "2026-04-15"
+                "value": "2026-05-01"
               },
               {
                 "key": "guests",
@@ -755,7 +890,7 @@
             },
             {
               "key": "Postman-Token",
-              "value": "0f009d5d-566c-45cc-bad9-9f854471bae0",
+              "value": "43172522-d9d5-45d9-901f-df1f2024e4b1",
               "system": true
             },
             {
@@ -777,13 +912,13 @@
           "method": "GET"
         },
         "response": {
-          "id": "95dc6fdc-667a-479a-93da-94be120eceab",
+          "id": "0e68f700-6e2b-40ef-b247-cde8e8d27f1b",
           "status": "OK",
           "code": 200,
           "header": [
             {
               "key": "date",
-              "value": "Sat, 11 Apr 2026 20:22:26 GMT"
+              "value": "Mon, 27 Apr 2026 01:52:17 GMT"
             },
             {
               "key": "server",
@@ -1109,10 +1244,10 @@
             ]
           },
           "cookie": [],
-          "responseTime": 14,
+          "responseTime": 30,
           "responseSize": 305
         },
-        "id": "9983b15e-9ce4-4187-a4c9-4aa66c01fdc4",
+        "id": "f5a14777-1fdb-411d-a55e-298f8941e5be",
         "assertions": [
           {
             "assertion": "search 200",

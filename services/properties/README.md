@@ -131,6 +131,41 @@ Obtiene el detalle completo de una propiedad específica incluyendo reseñas.
 }
 ```
 
+### GET /api/v1/properties/search
+
+Búsqueda paginada con filtros (utilizada por el microservicio `search` y por clientes que necesiten paginación / filtros básicos).
+
+**Query params (todos opcionales):**
+
+| Param | Tipo | Filtro |
+|-------|------|--------|
+| `city` | str | `LOWER(location) LIKE '%city%'` (substring case-insensitive) |
+| `min_price` | decimal ≥ 0 | `price_per_night >= min_price` |
+| `max_price` | decimal ≥ 0 | `price_per_night <= max_price` |
+| `min_guests` | int ≥ 1 | `max_guests >= min_guests` |
+| `amenities` | repeatable str | cada una matchea con `LOWER(amenities) LIKE '%amenity%'`, AND-eadas |
+| `ids` | repeatable UUID | `id IN (...)` |
+| `status` | int (default 1) | `status = ?` |
+| `page` | int ≥ 1 (default 1) | offset = (page-1)*page_size |
+| `page_size` | int 1-100 (default 20) | limit |
+| `sort_by` | enum: `price` \| `rating` \| `name` (default `price`) | order by |
+| `sort_dir` | enum: `asc` \| `desc` (default `asc`) | direction |
+
+**Respuesta:**
+```json
+{
+  "items": [PropertyListResponse, ...],
+  "pagination": {
+    "total": 5,
+    "page": 1,
+    "page_size": 20,
+    "total_pages": 1
+  }
+}
+```
+
+`items[*]` tiene la misma forma que la respuesta de `GET /api/v1/properties`. El endpoint `GET /api/v1/properties` (lista plana) se conserva sin cambios para consumidores existentes.
+
 ## Ejecución local
 
 ```bash

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 from uuid import UUID
@@ -375,6 +375,17 @@ class InternalNoteResponse(BaseModel):
     author_user_id: UUID
     author_name: str | None = None
     created_at: datetime
+
+
+class AvailabilityCheckRequest(BaseModel):
+    property_ids: list[UUID] = Field(min_length=1, max_length=200)
+    check_in: date
+    check_out: date
+
+
+class AvailabilityCheckResponse(BaseModel):
+    available: list[UUID]
+    blocked: list[UUID]
 
 
 class HotelReservationDetailResponse(BaseModel):

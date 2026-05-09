@@ -1,64 +1,97 @@
-==> properties
-============================= test session starts ==============================
-platform linux -- Python 3.12.3, pytest-8.4.2, pluggy-1.6.0 -- /home/diego/Documentos/miso/travelhub_miso/.venv/bin/python
+﻿============================= test session starts =============================
+platform win32 -- Python 3.13.2, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\CLIENTE\AppData\Local\Programs\Python\Python313\python.exe
 cachedir: .pytest_cache
-rootdir: /home/diego/Documentos/miso/travelhub_miso/services/properties
-plugins: asyncio-0.21.1, anyio-3.7.1
-asyncio: mode=Mode.STRICT
-collecting ... collected 16 items
+rootdir: C:\Users\CLIENTE\Documents\MISO\PROYECTO-FINAL-2\travelhub_miso\services\properties
+configfile: pytest.ini
+plugins: anyio-4.10.0, Faker-40.5.1, langsmith-0.5.2, asyncio-1.1.0, cov-7.0.0
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 34 items
 
-tests/test_get_detail.py::test_list_properties_success PASSED            [  6%]
-tests/test_get_detail.py::test_get_property_detail_with_images_and_reviews PASSED [ 12%]
-tests/test_get_detail.py::test_get_property_detail_not_found PASSED      [ 18%]
-tests/test_get_detail.py::test_property_detail_has_all_fields PASSED     [ 25%]
-tests/test_property_api.py::test_list_properties_endpoint_success PASSED [ 31%]
-tests/test_property_api.py::test_list_properties_endpoint_empty_filter PASSED [ 37%]
-tests/test_property_api.py::test_get_property_endpoint_with_seeded_data PASSED [ 43%]
-tests/test_property_api.py::test_get_property_endpoint_not_found PASSED  [ 50%]
-tests/test_property_api.py::test_get_property_endpoint_multiple_properties PASSED [ 56%]
-tests/test_property_api.py::test_health_check PASSED                     [ 62%]
-tests/test_seeded_data.py::test_list_properties_returns_seeded_data PASSED [ 68%]
-tests/test_seeded_data.py::test_get_renaissance_estate PASSED            [ 75%]
-tests/test_seeded_data.py::test_get_beachfront_penthouse PASSED          [ 81%]
-tests/test_seeded_data.py::test_get_alpine_lodge PASSED                  [ 87%]
-tests/test_seeded_data.py::test_get_tropical_villa PASSED                [ 93%]
+tests/test_asset_cdn.py::test_rewrite_asset_url_returns_original_when_cdn_disabled PASSED [  2%]
+tests/test_asset_cdn.py::test_rewrite_asset_url_swaps_host_to_cdn PASSED [  5%]
+tests/test_cache.py::test_property_detail_uses_cache_after_first_load PASSED [  8%]
+tests/test_cache.py::test_property_list_uses_cache_after_first_load PASSED [ 11%]
+tests/test_cache.py::test_property_policy_uses_cache_after_first_load PASSED [ 14%]
+tests/test_cache.py::test_invalid_cached_detail_is_treated_as_miss PASSED [ 17%]
+tests/test_get_detail.py::test_list_properties_success PASSED            [ 20%]
+tests/test_get_detail.py::test_get_property_detail_with_images_and_reviews PASSED [ 23%]
+tests/test_get_detail.py::test_get_property_detail_not_found PASSED      [ 26%]
+tests/test_get_detail.py::test_property_detail_has_all_fields PASSED     [ 29%]
+tests/test_performance.py::test_detail_p95_bajo_500ms PASSED             [ 32%]
+tests/test_property_api.py::test_list_properties_endpoint_success PASSED [ 35%]
+tests/test_property_api.py::test_list_properties_endpoint_empty_filter PASSED [ 38%]
+tests/test_property_api.py::test_get_property_endpoint_with_seeded_data PASSED [ 41%]
+tests/test_property_api.py::test_get_property_endpoint_not_found PASSED  [ 44%]
+tests/test_property_api.py::test_get_property_endpoint_multiple_properties PASSED [ 47%]
+tests/test_property_api.py::test_health_check PASSED                     [ 50%]
+tests/test_property_api.py::test_list_properties_filter_by_owner PASSED  [ 52%]
+tests/test_property_api.py::test_list_properties_filter_by_owner_isolation PASSED [ 55%]
+tests/test_property_api.py::test_list_properties_filter_by_unknown_owner PASSED [ 58%]
+tests/test_property_api.py::test_list_properties_includes_id_owner_in_payload PASSED [ 61%]
+tests/test_property_policy.py::test_repository_returns_seeded_cancellation_policy PASSED [ 64%]
+tests/test_property_policy.py::test_repository_returns_none_for_unknown_property_policy PASSED [ 67%]
+tests/test_property_policy.py::test_internal_policy_endpoint_returns_policy PASSED [ 70%]
+tests/test_property_policy.py::test_internal_policy_endpoint_forbids_invalid_key PASSED [ 73%]
+tests/test_seed.py::test_seed_includes_cikos_property_for_demo_hotel_a PASSED [ 76%]
+tests/test_seed.py::test_seed_adds_missing_demo_property_even_when_database_is_not_empty PASSED [ 79%]
+tests/test_seed.py::test_seed_updates_existing_demo_review_and_image_text PASSED [ 82%]
+tests/test_seeded_data.py::test_list_properties_returns_seeded_data PASSED [ 85%]
+tests/test_seeded_data.py::test_get_renaissance_estate PASSED            [ 88%]
+tests/test_seeded_data.py::test_get_beachfront_penthouse PASSED          [ 91%]
+tests/test_seeded_data.py::test_get_alpine_lodge PASSED                  [ 94%]
+tests/test_seeded_data.py::test_get_tropical_villa PASSED                [ 97%]
 tests/test_seeded_data.py::test_property_amenities_loaded_correctly PASSED [100%]
 
-============================== 16 passed in 0.84s ==============================
-Name                                               Stmts   Miss  Cover   Missing
---------------------------------------------------------------------------------
-src/adapters/__init__.py                               0      0   100%
-src/adapters/models/__init__.py                        0      0   100%
-src/adapters/models/property.py                       19      0   100%
-src/adapters/models/property_image.py                 11      0   100%
-src/adapters/models/property_review.py                13      0   100%
-src/adapters/repositories/__init__.py                  0      0   100%
-src/adapters/repositories/property_repository.py      43      4    91%   29-30, 86-87
-src/assembly.py                                       13      0   100%
-src/core/__init__.py                                   0      0   100%
-src/core/config.py                                    39      3    92%   28, 38, 47
-src/db/__init__.py                                     0      0   100%
-src/db/seed.py                                        34      4    88%   172, 226-228
-src/db/session.py                                     26     13    50%   27-32, 36-46, 50-51
-src/domain/__init__.py                                 0      0   100%
-src/domain/ports/__init__.py                           0      0   100%
-src/domain/ports/property_repository.py               11      2    82%   12, 17
-src/domain/schemas/__init__.py                         0      0   100%
-src/domain/schemas/property.py                        49      0   100%
-src/domain/use_cases/__init__.py                       0      0   100%
-src/domain/use_cases/base.py                           8      1    88%   11
-src/domain/use_cases/get_properties_list.py            8      0   100%
-src/domain/use_cases/get_property_detail.py           13      0   100%
-src/entrypoints/__init__.py                            0      0   100%
-src/entrypoints/api/__init__.py                        0      0   100%
-src/entrypoints/api/main.py                           19      2    89%   15-16
-src/entrypoints/api/routers/__init__.py                0      0   100%
-src/entrypoints/api/routers/properties.py             17      0   100%
-src/errors.py                                          2      0   100%
-tests/__init__.py                                      0      0   100%
-tests/conftest.py                                     32      1    97%   15
-tests/test_get_detail.py                              56      0   100%
-tests/test_property_api.py                            58      0   100%
-tests/test_seeded_data.py                             86      0   100%
---------------------------------------------------------------------------------
-TOTAL                                                557     30    95%
+============================= 34 passed in 1.87s ==============================
+
+Name                                                       Stmts   Miss  Cover   Missing
+----------------------------------------------------------------------------------------
+src\adapters\__init__.py                                       0      0   100%
+src\adapters\cache\__init__.py                                 2      0   100%
+src\adapters\cache\redis_cache.py                             36     23    36%   20-21, 24-33, 36-40, 43-47, 50
+src\adapters\models\__init__.py                                5      0   100%
+src\adapters\models\property.py                               23      0   100%
+src\adapters\models\property_cancellation_policy.py           15      0   100%
+src\adapters\models\property_image.py                         13      0   100%
+src\adapters\models\property_review.py                        13      0   100%
+src\adapters\repositories\__init__.py                          2      0   100%
+src\adapters\repositories\cached_property_repository.py       65      3    95%   74-76
+src\adapters\repositories\property_repository.py              63      5    92%   33, 57-58, 120-121
+src\assembly.py                                               29      1    97%   32
+src\core\__init__.py                                           0      0   100%
+src\core\config.py                                            87     14    84%   16, 18, 45, 53-56, 62, 72, 76, 80, 88, 92, 108
+src\db\__init__.py                                             0      0   100%
+src\db\redis.py                                               42     23    45%   21-44, 55-56, 60-71
+src\db\seed.py                                                95      5    95%   323-325, 330, 394
+src\db\session.py                                             29     15    48%   28-33, 37-49, 53-54
+src\domain\__init__.py                                         0      0   100%
+src\domain\ports\__init__.py                                   2      0   100%
+src\domain\ports\cache_port.py                                11      0   100%
+src\domain\ports\property_repository.py                       15      3    80%   13, 20, 27
+src\domain\schemas\__init__.py                                 0      0   100%
+src\domain\schemas\property.py                                60      0   100%
+src\domain\schemas\property_policy.py                         21      0   100%
+src\domain\use_cases\__init__.py                               0      0   100%
+src\domain\use_cases\base.py                                   8      1    88%   11
+src\domain\use_cases\get_properties_list.py                    9      0   100%
+src\domain\use_cases\get_property_cancellation_policy.py      13      1    92%   18
+src\domain\use_cases\get_property_detail.py                   13      0   100%
+src\entrypoints\__init__.py                                    0      0   100%
+src\entrypoints\api\__init__.py                                0      0   100%
+src\entrypoints\api\main.py                                   21      2    90%   16-17
+src\entrypoints\api\routers\__init__.py                        0      0   100%
+src\entrypoints\api\routers\internal.py                       18      2    89%   41-42
+src\entrypoints\api\routers\properties.py                     17      0   100%
+src\errors.py                                                  2      0   100%
+tests\__init__.py                                              0      0   100%
+tests\conftest.py                                             32      1    97%   15
+tests\test_asset_cdn.py                                       17      0   100%
+tests\test_cache.py                                           91      1    99%   49
+tests\test_get_detail.py                                      56      0   100%
+tests\test_performance.py                                     25      0   100%
+tests\test_property_api.py                                    83      0   100%
+tests\test_property_policy.py                                 27      0   100%
+tests\test_seed.py                                            58      0   100%
+tests\test_seeded_data.py                                     92      0   100%
+----------------------------------------------------------------------------------------
+TOTAL                                                       1210    100    92%

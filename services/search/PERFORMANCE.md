@@ -1,71 +1,40 @@
-# Search Service Performance Evidence (Newman)
+# Search Service - Performance Notes
 
-Fecha: 2026-04-10
-Objetivo SLO local: p95 < 800 ms para `GET /api/v1/search`.
+## Estado actual (post-refactor stateless)
 
-## 1) Alcance de la medicion
+A partir de la versión 2.0 el servicio dejó de tener base de datos local (SQLite/Postgres). Cada request encadena dos llamadas HTTP internas (`properties` + `reservations`), por lo que el baseline anterior — **p95 ≈ 21 ms con la DB local** — ya no aplica.
 
-- Metodo: benchmark con Newman (Postman collection).
-- Entorno: Docker Compose local, `APP_ENV=development`.
-- Dataset: seed activo en development.
-- Endpoint bajo prueba:
-  - `GET /api/v1/search?city=Bogota&check_in=2026-04-10&check_out=2026-04-12&guests=2&page=1&page_size=10`
+El nuevo baseline depende de:
 
-## 2) Verificacion del volumen de datos
+- Latencia de la red interna entre los servicios (en docker-compose suele ser ≪1 ms; en ECS dentro de la misma VPC suele ser <5 ms).
+- Latencia de cada servicio downstream (properties y reservations).
+- Hit ratio del cache Redis. En cache hit, la latencia es comparable a la implementación previa (no hay llamadas HTTP).
 
-Comando ejecutado:
+## Cómo medir
 
-```bash
-curl -s http://localhost:8006/api/v1/search/test-dataset | jq '{count_properties:(.properties|length), first:(.properties[0].name), last:(.properties[-1].name)}'
-```
-
-Resultado:
-
-- `count_properties`: 1000
-- `first`: `Hotel Demo Search 01`
-- `last`: `Hotel Demo Search 1000`
-
-## 3) Ejecucion reproducible
-
-Comando del proyecto:
+Con el stack levantado:
 
 ```bash
-make search-perf
+docker-compose up -d postgres redis properties reservations search
+
+# Smoke
+curl -s "http://localhost:8006/api/v1/search?city=Bogot%C3%A1&check_in=2026-06-10&check_out=2026-06-15&guests=2&page=1&page_size=10" | jq
+
+# Newman benchmark con la collection de Postman (ver carpeta benchmarks/)
+newman run benchmarks/search.postman_collection.json -n 150
 ```
 
-Comando interno que ejecuta el target:
+Targets sugeridos (a re-validar tras el refactor):
 
-```bash
-npx --yes newman run postman/e2e/search-p95/search_p95.postman_collection.json --env-var base_url=http://localhost:8006 --iteration-count 130 --reporters cli
-```
+| Métrica | Target |
+|---------|--------|
+| p95 cache miss | ≤ 800 ms |
+| p95 cache hit | ≤ 200 ms |
+| 100 búsquedas concurrentes p99 | ≤ 1200 ms |
+| Tasa de error | < 1% |
 
-Notas de la corrida:
+Si properties o reservations caen, search devuelve `503` (no degrada silenciosamente).
 
-- Iteraciones totales: 130
-- Ventana efectiva para metricas custom: 120 requests (descarta warmup inicial)
-- Assertions: 131 ejecutadas, 0 fallidas
+## Re-baseline pendiente
 
-## 4) Resultados Newman (corrida actual)
-
-Metricas custom reportadas por la coleccion:
-
-- requests: 120
-- avg_ms: 17.05
-- p50_ms: 17.00
-- p95_ms: 21.00
-- p99_ms: 23.00
-- regla de aceptacion: PASS (`p95 < 800 ms`)
-
-Resumen global del CLI de Newman:
-
-- average response time: 10 ms
-- min: 8 ms
-- max: 52 ms
-- standard deviation: 3 ms
-- failed requests: 0
-
-## 5) Conclusiones
-
-- El objetivo de performance se cumple ampliamente: `p95=21 ms` << `800 ms`.
-- Con dataset de 1000 propiedades, el endpoint mantiene latencia baja y estable en esta carga secuencial local.
-- Esta evidencia queda como baseline actual para detectar regresiones en cambios futuros de filtros, joins o indices.
+El primer despliegue post-refactor debe documentar aquí el nuevo p95 medido para fijar el SLO real. Con cache habilitado y los servicios sanos en docker-compose local se espera un p95 cache miss en el rango **20-80 ms** (dos saltos HTTP cortos). En ECS con los servicios en la misma VPC el p95 esperado es **40-150 ms**.

@@ -16,6 +16,8 @@ BEACHFRONT_PENTHOUSE_ID = UUID("22222222-2222-2222-2222-222222222222")
 ALPINE_LODGE_ID = UUID("33333333-3333-3333-3333-333333333333")
 TROPICAL_VILLA_ID = UUID("44444444-4444-4444-4444-444444444444")
 CIKOS_EXECUTIVE_SUITES_ID = UUID("55555555-5555-5555-5555-555555555555")
+CANDELARIA_HOSTEL_ID = UUID("66666666-6666-6666-6666-666666666666")
+ANDINO_APARTHOTEL_ID = UUID("77777777-7777-7777-7777-777777777777")
 
 # Demo hotel owner IDs — must match user IDs seeded in the users service.
 DEMO_HOTEL_A_OWNER_ID = UUID("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
@@ -223,6 +225,86 @@ PROPERTIES_DATA = [
             ("Andrés Melo", 5, date(2024, 8, 27), "Muy buena ubicación, internet estable y espacios comunes impecables. Ideal para combinar reuniones y descanso."),
         ],
     },
+    {
+        "id": CANDELARIA_HOSTEL_ID,
+        "id_owner": DEMO_HOTEL_B_OWNER_ID,
+        "name": "Hostal Boutique La Candelaria",
+        "description": "Hostal boutique en pleno casco histórico de Bogotá, a pasos del Museo del Oro y la Plaza de Bolívar. Una casa colonial restaurada con patios interiores, café de autor y habitaciones acogedoras pensadas para mochileros y viajeros que buscan ambiente local. Cuenta con áreas comunes amplias, terraza con vista a los cerros y un equipo bilingüe que organiza tours guiados a precios económicos.",
+        "location": "Bogotá, Colombia",
+        "latitude": 4.5969,
+        "longitude": -74.0728,
+        "price_per_night": 95000.0,
+        "currency": "COP",
+        "rating": 4.55,
+        "review_count": 18,
+        "bedrooms": 4,
+        "bathrooms": 4.0,
+        "max_guests": 8,
+        "amenities": [
+            "WiFi Compartido",
+            "Desayuno Casero",
+            "Tours Guiados",
+            "Cocina Compartida",
+            "Terraza con Vista",
+            "Recepción Bilingüe",
+            "Lavandería",
+            "Café de Autor",
+        ],
+        "cancellation_policy": "Cancelación gratuita hasta 48 horas antes del check-in. Sin reembolso después.",
+        "tax_rate": 0.19,
+        "cleaning_fee": 12000.0,
+        "images": [
+            ("1", "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=800&q=80", "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=1920&q=90", "Patio Colonial Hostal Candelaria", 0, True),
+            ("2", "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800&q=80", "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=1920&q=90", "Habitación Doble", 1, False),
+            ("3", "https://images.unsplash.com/photo-1551776235-dde6c46def96?w=800&q=80", "https://images.unsplash.com/photo-1551776235-dde6c46def96?w=1920&q=90", "Cocina Compartida", 2, False),
+            ("4", "https://images.unsplash.com/photo-1499678329028-101435549a4e?w=800&q=80", "https://images.unsplash.com/photo-1499678329028-101435549a4e?w=1920&q=90", "Terraza con vista a los cerros", 3, False),
+            ("5", "https://images.unsplash.com/photo-1517840901100-8179e982acb7?w=800&q=80", "https://images.unsplash.com/photo-1517840901100-8179e982acb7?w=1920&q=90", "Sala común", 4, False),
+        ],
+        "reviews": [
+            ("Camila Restrepo", 5, date(2024, 9, 25), "Ubicación inmejorable, atención cálida y desayuno delicioso. Ideal para conocer la Candelaria caminando."),
+            ("Tomás Vargas", 4, date(2024, 7, 12), "Muy buena relación calidad-precio. Las habitaciones son básicas pero limpias y el ambiente es genial."),
+        ],
+    },
+    {
+        "id": ANDINO_APARTHOTEL_ID,
+        "id_owner": DEMO_HOTEL_B_OWNER_ID,
+        "name": "Aparthotel Andino Premium",
+        "description": "Aparthotel ejecutivo en la zona financiera de Bogotá, a una cuadra del Centro Comercial Andino y rodeado de restaurantes premium. Las suites cuentan con cocina equipada, sala-comedor independiente y estaciones de trabajo ergonómicas, ideales para estancias largas o proyectos de consultoría. La propiedad incluye gimnasio 24 horas, sauna, salón ejecutivo y servicio de housekeeping diario.",
+        "location": "Bogotá, Colombia",
+        "latitude": 4.6680,
+        "longitude": -74.0539,
+        "price_per_night": 320000.0,
+        "currency": "COP",
+        "rating": 4.95,
+        "review_count": 47,
+        "bedrooms": 3,
+        "bathrooms": 3.0,
+        "max_guests": 6,
+        "amenities": [
+            "WiFi Empresarial",
+            "Cocina Equipada",
+            "Gimnasio 24 Horas",
+            "Sauna y Spa",
+            "Salón Ejecutivo",
+            "Estación de Trabajo",
+            "Housekeeping Diario",
+            "Parqueadero Cubierto",
+        ],
+        "cancellation_policy": "Cancelación gratuita hasta 72 horas antes del check-in. Cancelación al 50% entre 24 y 72 horas.",
+        "tax_rate": 0.19,
+        "cleaning_fee": 45000.0,
+        "images": [
+            ("1", "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&q=80", "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1920&q=90", "Fachada Aparthotel Andino", 0, True),
+            ("2", "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&q=80", "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=1920&q=90", "Suite ejecutiva con cocina", 1, False),
+            ("3", "https://images.unsplash.com/photo-1540541338287-41700207dee6?w=800&q=80", "https://images.unsplash.com/photo-1540541338287-41700207dee6?w=1920&q=90", "Estación de trabajo", 2, False),
+            ("4", "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800&q=80", "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=1920&q=90", "Gimnasio 24 horas", 3, False),
+            ("5", "https://images.unsplash.com/photo-1545158535-c3f7168c28b6?w=800&q=80", "https://images.unsplash.com/photo-1545158535-c3f7168c28b6?w=1920&q=90", "Salón ejecutivo", 4, False),
+        ],
+        "reviews": [
+            ("Daniela Ortiz", 5, date(2024, 10, 2), "La mejor opción para viaje de negocios largo en Bogotá. La suite parece un apartamento real y el gimnasio está impecable."),
+            ("Felipe Hernández", 5, date(2024, 9, 5), "Servicio cinco estrellas, ubicación premium y muy silencioso a pesar de estar en plena Zona T."),
+        ],
+    },
 ]
 
 
@@ -366,6 +448,20 @@ def sync_property_policies_seed(session: Session) -> None:
             "policy_type": "full_refund",
             "minimum_notice_hours": 24,
             "penalty_percentage": 0,
+            "timezone": "America/Bogota",
+        },
+        {
+            "property_id": CANDELARIA_HOSTEL_ID,
+            "policy_type": "full_refund",
+            "minimum_notice_hours": 48,
+            "penalty_percentage": 0,
+            "timezone": "America/Bogota",
+        },
+        {
+            "property_id": ANDINO_APARTHOTEL_ID,
+            "policy_type": "partial_refund",
+            "minimum_notice_hours": 72,
+            "penalty_percentage": 50,
             "timezone": "America/Bogota",
         },
     ]
