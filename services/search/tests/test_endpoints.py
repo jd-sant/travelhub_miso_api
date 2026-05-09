@@ -102,7 +102,8 @@ class TestSearchEndpoint:
         codes = [s["code"] for s in payload["empty_state"]]
         assert "TRY_OTHER_DATES" in codes
 
-    def test_missing_required_returns_422(self, client):
+    def test_missing_city_and_bbox_returns_400(self, client):
+        # city is now optional, but at least one of city / bbox must be provided.
         response = client.get(
             "/api/v1/search",
             params={
@@ -111,7 +112,7 @@ class TestSearchEndpoint:
                 "guests": 2,
             },
         )
-        assert response.status_code == 422
+        assert response.status_code == 400
 
     def test_invalid_dates_rule_returns_400(self, client):
         response = client.get(
