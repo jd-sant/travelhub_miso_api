@@ -14,6 +14,7 @@ from adapters.repositories.reservation_event_repository import (
     SQLModelReservationEventRepository,
 )
 from adapters.services.property_service_client import HttpPropertyServiceClient
+from adapters.services.search_pricing_client import HttpSearchPricingClient
 from adapters.services.payment_service_client import HttpPaymentServiceClient
 from adapters.services.scheduler_service import (
     EventBridgeReservationScheduler,
@@ -32,6 +33,7 @@ from core.telemetry import resolve_correlation_id
 from db.session import get_session
 from domain.ports.property_service_client import PropertyServiceClient
 from domain.ports.payment_service_client import PaymentServiceClient
+from domain.ports.pricing_service_client import PricingServiceClient
 from domain.ports.reservation_scheduler import ReservationScheduler
 from domain.schemas.reservation import (
     HostMetrics,
@@ -105,6 +107,10 @@ def get_payment_service_client() -> PaymentServiceClient:
     return HttpPaymentServiceClient()
 
 
+def get_pricing_service_client() -> PricingServiceClient:
+    return HttpSearchPricingClient()
+
+
 @lru_cache
 def get_reservation_scheduler() -> ReservationScheduler:
     if not settings.reservation_scheduler_enabled or settings.is_local_dev:
@@ -130,36 +136,42 @@ def get_create_reservation_use_case(
     repository=Depends(get_reservation_repository),
     scheduler: ReservationScheduler = Depends(get_reservation_scheduler),
     property_client: PropertyServiceClient = Depends(get_property_service_client),
+    pricing_client: PricingServiceClient = Depends(get_pricing_service_client),
 ):
     return CreateReservationUseCase(
         repository,
         scheduler,
         properties_client=None,
         property_client=property_client,
+        pricing_client=pricing_client,
     )
 
 
 def get_preview_modification_use_case(
     repository=Depends(get_reservation_repository),
     property_client: PropertyServiceClient = Depends(get_property_service_client),
+    pricing_client: PricingServiceClient = Depends(get_pricing_service_client),
     event_repository=Depends(get_reservation_event_repository),
 ):
     return PreviewReservationModificationUseCase(
         repository,
         property_client,
         event_repository,
+        pricing_client,
     )
 
 
 def get_preview_cancellation_use_case(
     repository=Depends(get_reservation_repository),
     property_client: PropertyServiceClient = Depends(get_property_service_client),
+    pricing_client: PricingServiceClient = Depends(get_pricing_service_client),
     event_repository=Depends(get_reservation_event_repository),
 ):
     return PreviewReservationCancellationUseCase(
         repository,
         property_client,
         event_repository,
+        pricing_client,
     )
 
 

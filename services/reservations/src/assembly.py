@@ -7,7 +7,9 @@ from adapters.repositories.reservation_repository import SQLModelReservationRepo
 from adapters.services.payments_client import PaymentsServiceClient
 from adapters.services.properties_client import PropertiesServiceClient
 from adapters.services.property_service_client import HttpPropertyServiceClient
+from adapters.services.search_pricing_client import HttpSearchPricingClient
 from domain.ports.property_service_client import PropertyServiceClient
+from domain.ports.pricing_service_client import PricingServiceClient
 from adapters.services.scheduler_service import (
     EventBridgeReservationScheduler,
     NoOpReservationScheduler,
@@ -63,6 +65,9 @@ def get_properties_client() -> PropertiesServiceClient:
 def get_property_service_client() -> PropertyServiceClient:
     return HttpPropertyServiceClient()
 
+def get_pricing_service_client() -> PricingServiceClient:
+    return HttpSearchPricingClient()
+
 
 def get_users_client() -> UsersServiceClient:
     return UsersServiceClient()
@@ -77,9 +82,10 @@ def get_create_reservation_use_case(
     scheduler: ReservationScheduler = Depends(get_reservation_scheduler),
     properties_client: PropertiesServiceClient = Depends(get_properties_client),
     property_client: PropertyServiceClient = Depends(get_property_service_client),
+    pricing_client: PricingServiceClient = Depends(get_pricing_service_client),
 ) -> CreateReservationUseCase:
     return CreateReservationUseCase(
-        repository, scheduler, properties_client, property_client
+        repository, scheduler, properties_client, property_client, pricing_client
     )
 
 

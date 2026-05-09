@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from domain.ports.properties_service import PropertiesServicePort
 from domain.ports.reservations_service import ReservationsServicePort
+from domain.ports.search_catalog import SearchCatalogPort
 from domain.schemas.availability import (
     PropertyAvailabilityQuery,
     PropertyAvailabilityResponse,
@@ -17,11 +18,16 @@ class CheckPropertyAvailabilityUseCase(
         self,
         properties: PropertiesServicePort,
         reservations: ReservationsServicePort,
+        catalog: SearchCatalogPort | None = None,
     ):
         self._properties = properties
         self._reservations = reservations
+        self._catalog = catalog
 
     def execute(self, query: PropertyAvailabilityQuery) -> PropertyAvailabilityResponse:
+        if self._catalog is not None:
+            return self._catalog.check_availability(query)
+
         prop = self._properties.get_by_id(query.property_id)
         unavailable = PropertyAvailabilityResponse(
             property_id=query.property_id,

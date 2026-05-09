@@ -10,6 +10,7 @@ from domain.ports.reservation_scheduler import ReservationScheduler
 from domain.schemas.reservation import ReservationCreateRequest, ReservationResponse
 from domain.use_cases.base import BaseUseCase
 from domain.ports.property_service_client import PropertyServiceClient
+from domain.ports.pricing_service_client import PricingServiceClient
 from errors import (
     InvalidReservationDateError,
     ReservationSchedulingError,
@@ -43,11 +44,13 @@ class CreateReservationUseCase(BaseUseCase[ReservationCreateRequest, Reservation
         scheduler: ReservationScheduler | None = None,
         properties_client: PropertiesServiceClient | None = None,
         property_client: PropertyServiceClient | None = None,
+        pricing_client: PricingServiceClient | None = None,
     ):
         self.repository = repository
         self.scheduler = scheduler
         self.properties_client = properties_client
         self.property_client = property_client
+        self.pricing_client = pricing_client
 
     def execute(self, payload: ReservationCreateRequest) -> ReservationResponse:
         reservation_id = uuid4()
@@ -140,7 +143,10 @@ class CreateReservationUseCase(BaseUseCase[ReservationCreateRequest, Reservation
         nights = max(1, (check_out - check_in).days)
         guests = max(1, guests)
         price_per_night, cleaning_fee, tax_rate = self._fetch_property_pricing(
-            id_property
+            id_property,
+            check_in,
+            check_out,
+            guests,
         )
         service_fee_rate = Decimal(settings.service_fee_rate)
 
@@ -169,7 +175,11 @@ class CreateReservationUseCase(BaseUseCase[ReservationCreateRequest, Reservation
         )
 
     def _fetch_property_pricing(
-        self, property_id: UUID
+        self,
+        property_id: UUID,
+        check_in: datetime,
+        check_out: datetime,
+        guests: int,
     ) -> tuple[Decimal, Decimal, Decimal]:
         import logging
         logger = logging.getLogger(__name__)
@@ -178,8 +188,16 @@ class CreateReservationUseCase(BaseUseCase[ReservationCreateRequest, Reservation
             return (Decimal(100), Decimal(0), Decimal("0.16"))
         try:
             details = self.property_client.get_property(property_id)
+            effective_price = None
+            if self.pricing_client is not None:
+                effective_price = self.pricing_client.get_effective_price(
+                    property_id=property_id,
+                    check_in=check_in,
+                    check_out=check_out,
+                    guests=guests,
+                )
             return (
-                details.price_per_night,
+                effective_price[0] if effective_price is not None else details.price_per_night,
                 details.cleaning_fee,
                 details.tax_rate,
             )

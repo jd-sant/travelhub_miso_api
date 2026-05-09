@@ -20,6 +20,7 @@ from domain.use_cases.preview_reservation_cancellation import (
 from domain.use_cases.preview_reservation_modification import (
     PreviewReservationModificationUseCase,
 )
+from domain.ports.pricing_service_client import PricingServiceClient
 
 
 class FakePropertyServiceClient:
@@ -55,6 +56,14 @@ class FakePropertyServiceClient:
             created_at=now,
             updated_at=now,
         )
+
+
+class FakePricingServiceClient(PricingServiceClient):
+    def __init__(self, nightly_price: Decimal):
+        self.nightly_price = nightly_price
+
+    def get_effective_price(self, property_id, check_in, check_out, guests):
+        return self.nightly_price, "COP"
 
 
 def _create_confirmed_reservation(
@@ -127,6 +136,38 @@ class TestPreviewReservationModificationUseCase:
         assert len(events) == 1
         assert events[0].event_type == "modification_previewed"
         assert events[0].result == "success"
+
+    def test_execute_uses_effective_price_from_search_for_preview(
+        self, reservation_repository, reservation_event_repository, traveler_id, property_id, room_id
+    ):
+        check_in = datetime.now(UTC) + timedelta(days=5)
+        reservation, _, check_out = _create_confirmed_reservation(
+            reservation_repository,
+            traveler_id=traveler_id,
+            property_id=property_id,
+            room_id=room_id,
+            check_in=check_in,
+            nights=2,
+        )
+        use_case = PreviewReservationModificationUseCase(
+            reservation_repository,
+            FakePropertyServiceClient(max_guests=12),
+            reservation_event_repository,
+            FakePricingServiceClient(Decimal("150")),
+        )
+
+        payload = ReservationModificationPreviewRequest(
+            check_in_date=check_in + timedelta(days=1),
+            check_out_date=check_out + timedelta(days=2),
+            number_of_guests=3,
+        )
+
+        result = use_case.execute(reservation.id, payload)
+
+        # 3 noches * 3 huéspedes * 150 = 1350
+        # service = 108; subtotal = 1458; taxes = 0
+        assert result.price_after.total_price == Decimal("1458.00")
+        assert result.delta_amount == Decimal("982.00")
 
     def test_execute_rejects_preview_when_capacity_is_exceeded(
         self, reservation_repository, reservation_event_repository, traveler_id, property_id, room_id

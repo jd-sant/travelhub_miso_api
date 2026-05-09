@@ -1,4 +1,4 @@
-from datetime import date
+﻿from datetime import date
 from decimal import Decimal
 from uuid import UUID, uuid4
 
@@ -20,7 +20,7 @@ from db.session import engine
 PROPERTY_SEED_SPECS = (
     {
         "id": UUID("11111111-1111-1111-1111-111111111111"),
-        "name": "Mansión Renacentista & Viñedo Privado",
+        "name": "Mansion Renacentista & Vinedo Privado",
         "city": "Bogota",
         "capacity": 12,
         "rating": 4.98,
@@ -40,7 +40,7 @@ PROPERTY_SEED_SPECS = (
     },
     {
         "id": UUID("33333333-3333-3333-3333-333333333333"),
-        "name": "Refugio Alpino de Montaña",
+        "name": "Refugio Alpino de Montana",
         "city": "Cali",
         "capacity": 14,
         "rating": 4.92,
@@ -50,7 +50,7 @@ PROPERTY_SEED_SPECS = (
     },
     {
         "id": UUID("44444444-4444-4444-4444-444444444444"),
-        "name": "Villa Paraíso Tropical",
+        "name": "Villa Paraiso Tropical",
         "city": "Santa Marta",
         "capacity": 10,
         "rating": 4.99,
@@ -329,5 +329,7 @@ def _ensure_amenity_catalog(session: Session) -> dict[str, object]:
         amenity_id_by_name[name] = amenity.id
 
     return amenity_id_by_name
+
+
 
 

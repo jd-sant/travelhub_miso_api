@@ -7,6 +7,7 @@ from typing import Optional
 from domain.ports.cache_port import CachePort
 from domain.ports.properties_service import PropertiesServicePort, PropertyQuery
 from domain.ports.reservations_service import ReservationsServicePort
+from domain.ports.search_catalog import SearchCatalogPort
 from domain.schemas.search import (
     PropertySearchItem,
     SearchQuery,
@@ -23,12 +24,17 @@ class SearchPropertiesUseCase(BaseUseCase[SearchQuery, SearchResult]):
         properties: PropertiesServicePort,
         reservations: ReservationsServicePort,
         cache: Optional[CachePort] = None,
+        catalog: SearchCatalogPort | None = None,
     ):
         self._properties = properties
         self._reservations = reservations
         self._cache = cache
+        self._catalog = catalog
 
     def execute(self, payload: SearchQuery) -> SearchResult:
+        if self._catalog is not None:
+            return self._catalog.search(payload)
+
         cache_key = self._cache_key(payload)
         if self._cache is not None:
             cached = self._cache.get(cache_key)

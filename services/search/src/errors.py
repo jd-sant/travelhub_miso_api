@@ -2,12 +2,11 @@ class InvalidSearchRuleError(Exception):
     pass
 
 
-<<<<<<< HEAD
-class PricingAuthorizationError(Exception):
+class PropertiesServiceUnavailableError(Exception):
     pass
 
 
-class PricingTargetNotFoundError(Exception):
+class ReservationsServiceUnavailableError(Exception):
     pass
 
 
@@ -16,15 +15,12 @@ class PricingValidationError(Exception):
 
 
 class PricingConflictError(Exception):
-=======
-class PropertyNotFoundError(Exception):
     pass
 
 
-class PropertiesServiceUnavailableError(Exception):
+class PricingAuthorizationError(Exception):
     pass
 
 
-class ReservationsServiceUnavailableError(Exception):
->>>>>>> 223a12ea353a3ceee218651802c20c327169743e
+class PricingTargetNotFoundError(Exception):
     pass

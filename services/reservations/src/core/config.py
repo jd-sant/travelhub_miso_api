@@ -57,14 +57,6 @@ class Settings:
         return os.getenv("API_BASE_URL", "")
 
     @property
-    def properties_service_url(self) -> str:
-        return os.getenv("PROPERTIES_SERVICE_URL", "http://localhost:8005")
-
-    @property
-    def payments_service_url(self) -> str:
-        return os.getenv("PAYMENTS_SERVICE_URL", "http://localhost:8003")
-
-    @property
     def scheduler_group_name(self) -> str:
         return os.getenv("SCHEDULER_GROUP_NAME", "default")
 
@@ -132,6 +124,10 @@ class Settings:
     @property
     def payments_service_url(self) -> str:
         return os.getenv("PAYMENTS_SERVICE_URL", "http://payments:8000").rstrip("/")
+
+    @property
+    def search_service_url(self) -> str:
+        return os.getenv("SEARCH_SERVICE_URL", "http://search:8000").rstrip("/")
 
     @property
     def notifications_service_url(self) -> str:

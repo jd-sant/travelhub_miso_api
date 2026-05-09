@@ -4,6 +4,7 @@ from uuid import UUID
 
 from core.config import settings
 from domain.ports.property_service_client import PropertyServiceClient
+from domain.ports.pricing_service_client import PricingServiceClient
 from domain.ports.reservation_event_repository import ReservationEventRepository
 from domain.ports.reservation_repository import ReservationRepository
 from domain.schemas.property_service import (
@@ -28,10 +29,12 @@ class ReservationPreviewBaseUseCase:
         reservation_repository: ReservationRepository,
         property_client: PropertyServiceClient,
         event_repository: ReservationEventRepository,
+        pricing_client: PricingServiceClient | None = None,
     ):
         self.reservation_repository = reservation_repository
         self.property_client = property_client
         self.event_repository = event_repository
+        self.pricing_client = pricing_client
 
     def _get_reservation(self, reservation_id: UUID) -> ReservationResponse:
         reservation = self.reservation_repository.get_by_id(reservation_id)
@@ -68,7 +71,12 @@ class ReservationPreviewBaseUseCase:
         return value.astimezone(UTC).replace(tzinfo=None)
 
     def _calculate_price_with_taxes(
-        self, currency: str, check_in: datetime, check_out: datetime, number_of_guests: int, property_id: UUID | None = None
+        self,
+        currency: str,
+        check_in: datetime,
+        check_out: datetime,
+        number_of_guests: int,
+        property_id: UUID | None = None,
     ) -> Decimal:
         """Espejo de la fórmula canónica de `CreateReservationUseCase`:
             accommodation = price_per_night × nights × guests
@@ -80,7 +88,10 @@ class ReservationPreviewBaseUseCase:
         nights = max(1, (check_out - check_in).days)
         guests = max(1, number_of_guests)
         price_per_night, cleaning_fee, tax_rate = self._fetch_property_pricing(
-            property_id
+            property_id=property_id,
+            check_in=check_in,
+            check_out=check_out,
+            guests=guests,
         )
         service_fee_rate = Decimal(settings.service_fee_rate)
 
@@ -92,14 +103,32 @@ class ReservationPreviewBaseUseCase:
         return (subtotal + taxes).quantize(Decimal("0.01"))
 
     def _fetch_property_pricing(
-        self, property_id: UUID | None
+        self,
+        property_id: UUID | None,
+        check_in: datetime | None = None,
+        check_out: datetime | None = None,
+        guests: int = 1,
     ) -> tuple[Decimal, Decimal, Decimal]:
         if not (property_id and self.property_client):
             return (Decimal(100), Decimal(0), Decimal("0.16"))
         try:
             details = self.property_client.get_property(property_id)
+            effective_price = None
+            if (
+                self.pricing_client is not None
+                and check_in is not None
+                and check_out is not None
+            ):
+                effective_price = self.pricing_client.get_effective_price(
+                    property_id=property_id,
+                    check_in=check_in,
+                    check_out=check_out,
+                    guests=guests,
+                )
             return (
-                details.price_per_night,
+                effective_price[0]
+                if effective_price is not None
+                else details.price_per_night,
                 details.cleaning_fee,
                 details.tax_rate,
             )

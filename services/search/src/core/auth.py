@@ -1,4 +1,4 @@
-from uuid import UUID
+﻿from uuid import UUID
 
 import jwt
 from fastapi import HTTPException, Request, status
@@ -39,12 +39,12 @@ def _decode(token: str) -> dict:
     except jwt.ExpiredSignatureError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token expirado",
+            detail="Token invalido",
         ) from exc
     except jwt.InvalidTokenError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token inválido",
+            detail="Token invalido",
         ) from exc
 
 
@@ -54,14 +54,14 @@ def get_current_hotel_user(request: Request) -> AuthenticatedUser:
     if not raw_sub:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token sin sujeto",
+            detail="Token invalido",
         )
     try:
         user_id = UUID(raw_sub)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="sub inválido en token",
+            detail="sub invalido en token",
         ) from exc
 
     role = str(claims.get("role") or "")
@@ -77,3 +77,5 @@ def get_current_hotel_user(request: Request) -> AuthenticatedUser:
         role=role,
         raw_claims=claims,
     )
+
+

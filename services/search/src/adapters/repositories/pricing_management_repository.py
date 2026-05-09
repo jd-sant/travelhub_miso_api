@@ -99,7 +99,8 @@ class SQLModelPricingManagementRepository:
             sellable_units=sellable_units,
             requires_confirmation=requires_confirmation,
             impact_summary=(
-                f"Se actualizarán {days_affected} días con una tarifa final de {final_price} "
+                "Se actualizaran "
+                f"{days_affected} dias con una tarifa final de {final_price} "
                 f"y un ingreso proyectado de {projected_after}."
             ),
         )
@@ -168,6 +169,10 @@ class SQLModelPricingManagementRepository:
             raise PricingTargetNotFoundError("Cambio no encontrado")
         if change.reverted_at is not None:
             raise PricingConflictError("Este cambio ya fue revertido")
+        if self._has_newer_active_overlapping_change(change):
+            raise PricingConflictError(
+                "No puedes revertir este cambio porque existe un ajuste posterior activo sobre el mismo rango"
+            )
 
         rate_plan = self.session.get(RatePlan, change.rate_plan_id)
         if rate_plan is None:
@@ -201,6 +206,18 @@ class SQLModelPricingManagementRepository:
         self.session.refresh(change)
         return self._map_history(change)
 
+    def _has_newer_active_overlapping_change(self, change: PricingChangeLog) -> bool:
+        candidates = self.session.exec(
+            select(PricingChangeLog)
+            .where(PricingChangeLog.rate_plan_id == change.rate_plan_id)
+            .where(PricingChangeLog.reverted_at.is_(None))
+            .where(PricingChangeLog.created_at > change.created_at)
+        ).all()
+        for candidate in candidates:
+            if candidate.start_date <= change.end_date and candidate.end_date >= change.start_date:
+                return True
+        return False
+
     def _get_target(self, property_id: UUID, rate_plan_id: UUID, owned_property_ids: set[UUID]) -> dict:
         if property_id not in owned_property_ids:
             raise PricingAuthorizationError("No puedes gestionar tarifas de esta propiedad")
@@ -229,7 +246,7 @@ class SQLModelPricingManagementRepository:
         if end_date < start_date:
             raise PricingValidationError("La fecha final debe ser posterior o igual a la inicial")
         if (end_date - start_date).days > 60:
-            raise PricingValidationError("El rango máximo permitido es de 61 días")
+            raise PricingValidationError("El rango maximo permitido es de 61 dias")
 
     def _apply_discount(
         self,

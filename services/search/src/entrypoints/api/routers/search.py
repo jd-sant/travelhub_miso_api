@@ -1,14 +1,16 @@
 from datetime import date
 from decimal import Decimal
+from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from redis import Redis
+from sqlmodel import Session, select
 
 from assembly import (
-<<<<<<< HEAD
     build_cache,
-    get_pricing_management_use_case,
     get_property_availability_use_case,
+    get_pricing_management_use_case,
     get_search_properties_use_case,
 )
 from db.redis import get_redis_client
@@ -20,20 +22,19 @@ from adapters.models import RateCalendar
 from adapters.models import RatePlan
 from adapters.models import RoomType
 from adapters.models import Service
-from core.config import settings
 from core.auth import AuthenticatedUser, get_current_hotel_user
+from core.config import settings
 from db.session import get_session
 from db.session import engine
-=======
-    get_property_availability_use_case,
-    get_search_properties_use_case,
-)
->>>>>>> 223a12ea353a3ceee218651802c20c327169743e
 from domain.schemas import (
     EmptyStateSuggestion,
     PropertyAvailabilityQuery,
     PropertyAvailabilityResponse,
-<<<<<<< HEAD
+)
+from domain.schemas import SearchPagination
+from domain.schemas import SearchQuery
+from domain.schemas import SearchResponse
+from domain.schemas.pricing import (
     PricingApplyRequest,
     PricingApplyResponse,
     PricingHistoryItem,
@@ -41,15 +42,9 @@ from domain.schemas import (
     PricingPreviewResponse,
     PricingRevertResponse,
     PricingTargetOption,
-=======
-    SearchPagination,
-    SearchQuery,
-    SearchResponse,
->>>>>>> 223a12ea353a3ceee218651802c20c327169743e
 )
-from domain.use_cases.check_property_availability import (
+from domain.use_cases import (
     CheckPropertyAvailabilityUseCase,
-<<<<<<< HEAD
     PricingManagementUseCase,
     SearchPropertiesUseCase,
 )
@@ -59,17 +54,9 @@ from errors import (
     PricingConflictError,
     PricingTargetNotFoundError,
     PricingValidationError,
-)
-=======
-)
-from domain.use_cases.search_properties import SearchPropertiesUseCase
-from errors import (
-    InvalidSearchRuleError,
     PropertiesServiceUnavailableError,
     ReservationsServiceUnavailableError,
 )
-
->>>>>>> 223a12ea353a3ceee218651802c20c327169743e
 
 router = APIRouter(prefix="/search", tags=["search"])
 
@@ -85,7 +72,6 @@ def search_status() -> dict[str, str]:
     responses={
         400: {"description": "Invalid search business rules"},
         422: {"description": "Invalid or missing request fields"},
-        503: {"description": "Upstream service unavailable"},
     },
 )
 def search_properties(
@@ -93,7 +79,7 @@ def search_properties(
     check_in: date = Query(),
     check_out: date = Query(),
     guests: int = Query(ge=1),
-    amenities: list[str] = Query(default_factory=list),
+    amenities: list[str] = Query(default=[]),
     min_price: Decimal | None = Query(default=None, ge=0),
     max_price: Decimal | None = Query(default=None, ge=0),
     order_by: str = Query(default="price"),
@@ -118,67 +104,64 @@ def search_properties(
         )
         _validate_search_rules(query)
         result = use_case.execute(query)
+        total_pages = _calculate_total_pages(result.total, result.page_size)
+
+        empty_state = []
+        if result.total == 0:
+            empty_state = [
+                EmptyStateSuggestion(
+                    code="TRY_OTHER_CITY",
+                    message="No encontramos resultados en esa ciudad. Intenta otra ciudad cercana.",
+                ),
+                EmptyStateSuggestion(
+                    code="TRY_OTHER_DATES",
+                    message="Prueba con fechas diferentes para encontrar mayor disponibilidad.",
+                ),
+            ]
+        elif not result.items:
+            empty_state = [
+                EmptyStateSuggestion(
+                    code="TRY_OTHER_DATES",
+                    message="Prueba con fechas diferentes para encontrar mayor disponibilidad.",
+                ),
+            ]
+
+        return SearchResponse(
+            items=result.items,
+            pagination=SearchPagination(
+                total=result.total,
+                page=result.page,
+                page_size=result.page_size,
+                total_pages=total_pages,
+            ),
+            empty_state=empty_state,
+        )
     except InvalidSearchRuleError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except (PropertiesServiceUnavailableError, ReservationsServiceUnavailableError) as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=str(exc),
-        )
-
-    total_pages = _calculate_total_pages(result.total, result.page_size)
-    empty_state = []
-    if not result.items:
-        if result.total == 0:
-            empty_state.append(
-                EmptyStateSuggestion(
-                    code="TRY_OTHER_CITY",
-                    message=(
-                        "No encontramos resultados en esa ciudad. "
-                        "Intenta otra ciudad cercana."
-                    ),
-                )
-            )
-        else:
-            empty_state.append(
-                EmptyStateSuggestion(
-                    code="TRY_OTHER_DATES",
-                    message=(
-                        "Las propiedades disponibles no tienen fechas libres. "
-                        "Prueba con fechas diferentes."
-                    ),
-                )
-            )
-
-    return SearchResponse(
-        items=result.items,
-        pagination=SearchPagination(
-            total=result.total,
-            page=result.page,
-            page_size=result.page_size,
-            total_pages=total_pages,
-        ),
-        empty_state=empty_state,
-    )
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
 
 
 @router.get(
     "/properties/{property_id}/availability",
     response_model=PropertyAvailabilityResponse,
-    responses={503: {"description": "Upstream service unavailable"}},
 )
 def check_property_availability(
     property_id: UUID,
     check_in: date = Query(),
     check_out: date = Query(),
     guests: int = Query(ge=1),
-    use_case: CheckPropertyAvailabilityUseCase = Depends(
-        get_property_availability_use_case
-    ),
+    use_case: CheckPropertyAvailabilityUseCase = Depends(get_property_availability_use_case),
 ) -> PropertyAvailabilityResponse:
     try:
-        if check_out <= check_in:
-            raise InvalidSearchRuleError("check_out must be greater than check_in")
+        _validate_search_rules(
+            SearchQuery(
+                city="placeholder",
+                check_in=check_in,
+                check_out=check_out,
+                guests=guests,
+            )
+        )
         return use_case.execute(
             PropertyAvailabilityQuery(
                 property_id=property_id,
@@ -190,10 +173,73 @@ def check_property_availability(
     except InvalidSearchRuleError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except (PropertiesServiceUnavailableError, ReservationsServiceUnavailableError) as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=str(exc),
-        )
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
+
+
+@router.get("/hotel/pricing/targets", response_model=list[PricingTargetOption])
+def list_pricing_targets(
+    user: AuthenticatedUser = Depends(get_current_hotel_user),
+    use_case: PricingManagementUseCase = Depends(get_pricing_management_use_case),
+) -> list[PricingTargetOption]:
+    return use_case.list_targets(user)
+
+
+@router.post("/hotel/pricing/preview", response_model=PricingPreviewResponse)
+def preview_pricing_change(
+    payload: PricingPreviewRequest,
+    user: AuthenticatedUser = Depends(get_current_hotel_user),
+    use_case: PricingManagementUseCase = Depends(get_pricing_management_use_case),
+) -> PricingPreviewResponse:
+    try:
+        return use_case.preview(user, payload)
+    except PricingValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except PricingAuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
+    except PricingTargetNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+
+
+@router.post("/hotel/pricing/apply", response_model=PricingApplyResponse)
+def apply_pricing_change(
+    payload: PricingApplyRequest,
+    user: AuthenticatedUser = Depends(get_current_hotel_user),
+    use_case: PricingManagementUseCase = Depends(get_pricing_management_use_case),
+) -> PricingApplyResponse:
+    try:
+        return use_case.apply(user, payload)
+    except PricingValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except PricingAuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
+    except PricingConflictError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+    except PricingTargetNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+
+
+@router.get("/hotel/pricing/history", response_model=list[PricingHistoryItem])
+def list_pricing_history(
+    user: AuthenticatedUser = Depends(get_current_hotel_user),
+    use_case: PricingManagementUseCase = Depends(get_pricing_management_use_case),
+) -> list[PricingHistoryItem]:
+    return use_case.history(user)
+
+
+@router.post("/hotel/pricing/history/{change_id}/revert", response_model=PricingRevertResponse)
+def revert_pricing_change(
+    change_id: UUID,
+    user: AuthenticatedUser = Depends(get_current_hotel_user),
+    use_case: PricingManagementUseCase = Depends(get_pricing_management_use_case),
+) -> PricingRevertResponse:
+    try:
+        return use_case.revert(user, change_id)
+    except PricingAuthorizationError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
+    except PricingConflictError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+    except PricingTargetNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
 
 
 def _validate_search_rules(query: SearchQuery) -> None:
@@ -228,93 +274,6 @@ def _calculate_total_pages(total: int, page_size: int) -> int:
     if total == 0:
         return 0
     return (total + page_size - 1) // page_size
-<<<<<<< HEAD
-
-
-@router.get(
-    "/hotel/pricing/targets",
-    response_model=list[PricingTargetOption],
-    status_code=status.HTTP_200_OK,
-)
-def list_pricing_targets(
-    user: AuthenticatedUser = Depends(get_current_hotel_user),
-    use_case: PricingManagementUseCase = Depends(get_pricing_management_use_case),
-) -> list[PricingTargetOption]:
-    return use_case.list_targets(user)
-
-
-@router.post(
-    "/hotel/pricing/preview",
-    response_model=PricingPreviewResponse,
-    status_code=status.HTTP_200_OK,
-)
-def preview_pricing_change(
-    payload: PricingPreviewRequest,
-    user: AuthenticatedUser = Depends(get_current_hotel_user),
-    use_case: PricingManagementUseCase = Depends(get_pricing_management_use_case),
-) -> PricingPreviewResponse:
-    try:
-        return use_case.preview(user, payload)
-    except PricingAuthorizationError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
-    except PricingTargetNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
-    except PricingValidationError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
-
-
-@router.post(
-    "/hotel/pricing/apply",
-    response_model=PricingApplyResponse,
-    status_code=status.HTTP_200_OK,
-)
-def apply_pricing_change(
-    payload: PricingApplyRequest,
-    user: AuthenticatedUser = Depends(get_current_hotel_user),
-    use_case: PricingManagementUseCase = Depends(get_pricing_management_use_case),
-) -> PricingApplyResponse:
-    try:
-        return use_case.apply(user, payload)
-    except PricingAuthorizationError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
-    except PricingTargetNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
-    except PricingValidationError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
-    except PricingConflictError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
-
-
-@router.get(
-    "/hotel/pricing/history",
-    response_model=list[PricingHistoryItem],
-    status_code=status.HTTP_200_OK,
-)
-def list_pricing_history(
-    user: AuthenticatedUser = Depends(get_current_hotel_user),
-    use_case: PricingManagementUseCase = Depends(get_pricing_management_use_case),
-) -> list[PricingHistoryItem]:
-    return use_case.history(user)
-
-
-@router.post(
-    "/hotel/pricing/history/{change_id}/revert",
-    response_model=PricingRevertResponse,
-    status_code=status.HTTP_200_OK,
-)
-def revert_pricing_change(
-    change_id: UUID,
-    user: AuthenticatedUser = Depends(get_current_hotel_user),
-    use_case: PricingManagementUseCase = Depends(get_pricing_management_use_case),
-) -> PricingRevertResponse:
-    try:
-        return use_case.revert(user, change_id)
-    except PricingAuthorizationError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
-    except PricingTargetNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
-    except PricingConflictError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
 
 
 if settings.is_local_dev:
@@ -364,5 +323,3 @@ if settings.is_local_dev:
                 for p in properties
             ],
         }
-=======
->>>>>>> 223a12ea353a3ceee218651802c20c327169743e

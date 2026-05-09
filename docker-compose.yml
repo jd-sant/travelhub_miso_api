@@ -244,6 +244,8 @@ services:
       PYTHONPATH: /app/src
       ENV: ${ENV:-development}
       APP_ENV: ${APP_ENV:-development}
+      DATABASE_URL: postgresql://${RDS_USERNAME:-travelhub_user}:${RDS_PASSWORD:-travelhub_pass}@postgres:5432/${RDS_DB_NAME:-travelhub}
+      DB_SCHEMA: ${SEARCH_DB_SCHEMA:-search_schema}
       ALLOWED_CORS_ORIGIN: ${ALLOWED_CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
       PROPERTIES_SERVICE_URL: ${PROPERTIES_SERVICE_URL:-http://properties:8000}
       RESERVATIONS_SERVICE_URL: ${RESERVATIONS_SERVICE_URL:-http://reservations:8000}
@@ -253,7 +255,6 @@ services:
       REDIS_PORT: "6379"
       REDIS_CACHE_ENABLED: "true"
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-travelhub-jwt-secret-change-in-prod}
-      PROPERTIES_SERVICE_URL: ${PROPERTIES_SERVICE_URL:-http://properties:8000}
     ports:
       - "8006:8000"
     depends_on:

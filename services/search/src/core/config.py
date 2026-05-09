@@ -106,25 +106,6 @@ class Settings:
         return int(os.getenv("REDIS_CONNECTION_POOL_SIZE", "10"))
 
     @property
-<<<<<<< HEAD
-    def jwt_secret_key(self) -> str:
-        value = os.getenv("JWT_SECRET_KEY")
-        if value:
-            return value
-        if not self.is_local_dev and not self.is_test:
-            raise RuntimeError(
-                "JWT_SECRET_KEY debe estar configurado en entornos no locales."
-            )
-        return "travelhub-jwt-secret-change-in-prod"
-
-    @property
-    def jwt_algorithm(self) -> str:
-        return os.getenv("JWT_ALGORITHM", "HS256")
-
-    @property
-    def properties_service_url(self) -> str:
-        return os.getenv("PROPERTIES_SERVICE_URL", "http://localhost:8005").rstrip("/")
-=======
     def properties_service_url(self) -> str:
         return os.getenv("PROPERTIES_SERVICE_URL", "http://properties:8000").rstrip("/")
 
@@ -133,13 +114,20 @@ class Settings:
         return os.getenv("RESERVATIONS_SERVICE_URL", "http://reservations:8000").rstrip("/")
 
     @property
-    def internal_api_key(self) -> str:
-        return os.getenv("INTERNAL_API_KEY", "")
-
-    @property
     def service_request_timeout(self) -> float:
         return float(os.getenv("SERVICE_REQUEST_TIMEOUT", "5.0"))
->>>>>>> 223a12ea353a3ceee218651802c20c327169743e
+
+    @property
+    def internal_api_key(self) -> str:
+        return os.getenv("INTERNAL_API_KEY", "travelhub-internal-key")
+
+    @property
+    def jwt_secret_key(self) -> str:
+        return os.getenv("JWT_SECRET_KEY", "travelhub-secret")
+
+    @property
+    def jwt_algorithm(self) -> str:
+        return os.getenv("JWT_ALGORITHM", "HS256")
 
 
 @lru_cache
