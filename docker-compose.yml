@@ -229,6 +229,7 @@ services:
       REDIS_PORT: "6379"
       REDIS_CACHE_ENABLED: "true"
       REDIS_CACHE_TTL_SECONDS: "300"
+      SEED_MAP_CLUSTERS: "true"
     ports:
       - "8005:8000"
     depends_on:

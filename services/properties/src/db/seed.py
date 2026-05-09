@@ -1,5 +1,6 @@
 """Database initialization utilities for properties service."""
 import json
+import math
 from datetime import date
 from uuid import UUID
 
@@ -9,6 +10,7 @@ from adapters.models.property import Property
 from adapters.models.property_cancellation_policy import PropertyCancellationPolicy
 from adapters.models.property_image import PropertyImage
 from adapters.models.property_review import PropertyReview
+from core.config import settings
 
 
 RENAISSANCE_ESTATE_ID = UUID("11111111-1111-1111-1111-111111111111")
@@ -306,6 +308,204 @@ PROPERTIES_DATA = [
         ],
     },
 ]
+
+
+# Map-search clusters: 8 properties per city, dispersed within ~3-5km of city center,
+# so a Compose Maps viewport at zoom 12-13 surfaces 4-8 pins per area.
+_MAP_CLUSTER_CITIES = (
+    {
+        "city": "Bogotá",
+        "country": "Colombia",
+        "uuid_prefix": "10000001",
+        "center": (4.7110, -74.0721),
+        "spread": (0.030, 0.040),
+        "currency": "COP",
+        "base_price": 280000.0,
+        "cleaning_fee": 25000.0,
+        "tax_rate": 0.19,
+        "name_pool": (
+            "Hotel Zona T Boutique",
+            "Suites Chapinero Premium",
+            "Casa Quinta Usaquén",
+            "Apartahotel Salitre",
+            "Hostal Macarena Arte",
+            "Hotel Centro Internacional",
+            "Loft Parque 93",
+            "Hotel Modelia Confort",
+        ),
+    },
+    {
+        "city": "Medellín",
+        "country": "Colombia",
+        "uuid_prefix": "10000002",
+        "center": (6.2476, -75.5658),
+        "spread": (0.030, 0.040),
+        "currency": "COP",
+        "base_price": 240000.0,
+        "cleaning_fee": 22000.0,
+        "tax_rate": 0.19,
+        "name_pool": (
+            "Hotel El Poblado Lifestyle",
+            "Suites Laureles Selva",
+            "Casa Provenza Diseño",
+            "Apartahotel Las Palmas",
+            "Hostal Comuna 13 Color",
+            "Hotel Centro Botero",
+            "Loft Envigado Verde",
+            "Hotel Sabaneta Familiar",
+        ),
+    },
+    {
+        "city": "Cartagena",
+        "country": "Colombia",
+        "uuid_prefix": "10000003",
+        "center": (10.3997, -75.5144),
+        "spread": (0.025, 0.035),
+        "currency": "COP",
+        "base_price": 420000.0,
+        "cleaning_fee": 35000.0,
+        "tax_rate": 0.19,
+        "name_pool": (
+            "Hotel Ciudad Amurallada",
+            "Casa Getsemaní Boutique",
+            "Suites Bocagrande Mar",
+            "Apartamento Castillogrande",
+            "Hostal San Diego Colonial",
+            "Hotel Manga Tradicional",
+            "Loft Crespo Aeropuerto",
+            "Hotel Laguito Vista",
+        ),
+    },
+    {
+        "city": "Pasto",
+        "country": "Colombia",
+        "uuid_prefix": "10000004",
+        "center": (1.2136, -77.2811),
+        "spread": (0.020, 0.025),
+        "currency": "COP",
+        "base_price": 180000.0,
+        "cleaning_fee": 18000.0,
+        "tax_rate": 0.19,
+        "name_pool": (
+            "Hotel Galeras Centro",
+            "Casa Colonial San Felipe",
+        ),
+    },
+)
+
+
+def _generate_map_cluster_entries() -> list[dict]:
+    """
+    Build a deterministic set of seed entries clustered in the major Colombian
+    cities. Used to populate the mobile map-search feature with realistic pins.
+    """
+    entries: list[dict] = []
+    owners = (DEMO_HOTEL_A_OWNER_ID, DEMO_HOTEL_B_OWNER_ID)
+    # Rotated through deterministically by (city_idx, n). Each tuple is an
+    # Unsplash photo id; the seed builds the 800w (cover) and 1920w (hires)
+    # URLs from it. Mix of hotel exteriors, lobbies, suites and pools so the
+    # map cards don't all look like the same property.
+    image_ids = (
+        "1551882547-ff40c63fe5fa",  # contemporary hotel facade
+        "1566073771259-6a8506099945",  # boutique hotel exterior
+        "1582719478250-c89cae4dc85b",  # urban hotel building
+        "1564013799919-ab600027ffc6",  # luxury suite
+        "1505693416388-ac5ce068fe85",  # modern bedroom
+        "1522708323590-d24dbb6b0267",  # design bedroom
+        "1559827260-dc66d52bef19",  # beachfront / outdoor
+        "1571508601155-8a95d1df991c",  # cozy living room
+        "1542314831-068cd1dbfeeb",  # rooftop terrace
+        "1455587734955-081b22074882",  # pool
+        "1551776235-dde6c46def96",  # apartment kitchen
+        "1540541338287-41700207dee6",  # workstation / executive
+    )
+    img_count = len(image_ids)
+
+    for city_idx, spec in enumerate(_MAP_CLUSTER_CITIES):
+        center_lat, center_lng = spec["center"]
+        lat_spread, lng_spread = spec["spread"]
+        for n, name in enumerate(spec["name_pool"]):
+            seq = n + 1
+            uid_hex = f"{spec['uuid_prefix']}-0000-0000-0000-{seq:012d}"
+            # Deterministic angular spread around center: 8 points around a circle,
+            # alternating two radii so they don't sit on a single ring.
+            angle = (2 * math.pi * n) / len(spec["name_pool"])
+            radius_factor = 0.6 if n % 2 == 0 else 1.0
+            latitude = round(center_lat + radius_factor * lat_spread * math.cos(angle), 6)
+            longitude = round(center_lng + radius_factor * lng_spread * math.sin(angle), 6)
+            owner = owners[(city_idx + n) % len(owners)]
+            entries.append(
+                {
+                    "id": UUID(uid_hex),
+                    "id_owner": owner,
+                    "name": name,
+                    "description": (
+                        f"{name} en {spec['city']}. Propiedad de prueba para "
+                        "la búsqueda avanzada en mapa: incluye pin con coordenadas "
+                        "geográficas reales y datos completos."
+                    ),
+                    "location": f"{spec['city']}, {spec['country']}",
+                    "latitude": latitude,
+                    "longitude": longitude,
+                    "price_per_night": spec["base_price"] + n * 35000.0,
+                    "currency": spec["currency"],
+                    "rating": round(4.2 + (n % 5) * 0.15, 2),
+                    "review_count": 12 + n,
+                    "bedrooms": 1 + (n % 3),
+                    "bathrooms": float(1 + (n % 2)),
+                    "max_guests": 2 + (n % 4),
+                    "amenities": [
+                        "WiFi de Alta Velocidad",
+                        "Recepción 24 Horas",
+                        "Aire Acondicionado",
+                        "Desayuno Incluido",
+                    ],
+                    "cancellation_policy": (
+                        "Cancelación gratuita hasta 24 horas antes del check-in."
+                    ),
+                    "tax_rate": spec["tax_rate"],
+                    "cleaning_fee": spec["cleaning_fee"],
+                    "images": [
+                        (
+                            str(slot + 1),
+                            f"https://images.unsplash.com/photo-{photo_id}?w=800&q=80",
+                            f"https://images.unsplash.com/photo-{photo_id}?w=1920&q=90",
+                            alt_text,
+                            slot,
+                            slot == 0,
+                        )
+                        for slot, (photo_id, alt_text) in enumerate(
+                            (
+                                (
+                                    image_ids[(city_idx * 3 + n) % img_count],
+                                    f"Vista principal {name}",
+                                ),
+                                (
+                                    image_ids[(city_idx * 3 + n + 4) % img_count],
+                                    f"Habitación {name}",
+                                ),
+                                (
+                                    image_ids[(city_idx * 3 + n + 8) % img_count],
+                                    f"Áreas comunes {name}",
+                                ),
+                            )
+                        )
+                    ],
+                    "reviews": [
+                        (
+                            "Cliente Verificado",
+                            5,
+                            date(2024, 9, 1),
+                            f"Estancia agradable en {spec['city']}, ubicación práctica para moverse en la ciudad.",
+                        ),
+                    ],
+                }
+            )
+    return entries
+
+
+if settings.seed_map_clusters:
+    PROPERTIES_DATA.extend(_generate_map_cluster_entries())
 
 
 def sync_demo_properties_seed(session: Session) -> None:
