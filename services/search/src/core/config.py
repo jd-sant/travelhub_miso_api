@@ -54,7 +54,7 @@ class Settings:
 
         return (
             f"postgresql://{self.rds_username}:{self.rds_password}"
-            f"@{self.rds_hostname}:{self.rds_port}/{self.rds_db_name}"
+            f"@{self.rds_hostname}:{self.rds_port}/{self.rds_db_name}?client_encoding=utf8"
         )
 
     @property

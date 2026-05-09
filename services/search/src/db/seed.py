@@ -20,8 +20,9 @@ from db.session import engine
 PROPERTY_SEED_SPECS = (
     {
         "id": UUID("11111111-1111-1111-1111-111111111111"),
-        "name": "Mansion Renacentista & Vinedo Privado",
-        "city": "Bogota",
+        "name": "Mansión Renacentista & Viñedo Privado",
+        "city": "Fiesole",
+        "country": "Italia",
         "capacity": 12,
         "rating": 4.98,
         "base_price": Decimal("1240.00"),
@@ -31,7 +32,8 @@ PROPERTY_SEED_SPECS = (
     {
         "id": UUID("22222222-2222-2222-2222-222222222222"),
         "name": "Penthouse Moderno Frente a la Playa",
-        "city": "Cartagena",
+        "city": "Miami",
+        "country": "Estados Unidos",
         "capacity": 8,
         "rating": 4.87,
         "base_price": Decimal("2150.00"),
@@ -40,8 +42,9 @@ PROPERTY_SEED_SPECS = (
     },
     {
         "id": UUID("33333333-3333-3333-3333-333333333333"),
-        "name": "Refugio Alpino de Montana",
-        "city": "Cali",
+        "name": "Refugio Alpino de Montaña",
+        "city": "Chamonix",
+        "country": "Francia",
         "capacity": 14,
         "rating": 4.92,
         "base_price": Decimal("890.00"),
@@ -50,8 +53,9 @@ PROPERTY_SEED_SPECS = (
     },
     {
         "id": UUID("44444444-4444-4444-4444-444444444444"),
-        "name": "Villa Paraiso Tropical",
-        "city": "Santa Marta",
+        "name": "Villa Paraíso Tropical",
+        "city": "Bora Bora",
+        "country": "Polinesia Francesa",
         "capacity": 10,
         "rating": 4.99,
         "base_price": Decimal("1650.00"),
@@ -62,11 +66,34 @@ PROPERTY_SEED_SPECS = (
         "id": UUID("55555555-5555-5555-5555-555555555555"),
         "name": "Hotel Cikos Executive Suites",
         "city": "Bogota",
+        "country": "Colombia",
         "capacity": 24,
         "rating": 4.84,
         "base_price": Decimal("180000.00"),
         "currency": "COP",
         "amenities": ("wifi", "breakfast_included", "air_conditioning"),
+    },
+    {
+        "id": UUID("66666666-6666-6666-6666-666666666666"),
+        "name": "Hostal Boutique La Candelaria",
+        "city": "Bogota",
+        "country": "Colombia",
+        "capacity": 8,
+        "rating": 4.55,
+        "base_price": Decimal("95000.00"),
+        "currency": "COP",
+        "amenities": ("wifi", "breakfast_included", "parking"),
+    },
+    {
+        "id": UUID("77777777-7777-7777-7777-777777777777"),
+        "name": "Aparthotel Andino Premium",
+        "city": "Bogota",
+        "country": "Colombia",
+        "capacity": 6,
+        "rating": 4.95,
+        "base_price": Decimal("320000.00"),
+        "currency": "COP",
+        "amenities": ("wifi", "gym", "parking", "spa"),
     },
 )
 
@@ -101,11 +128,10 @@ AMENITY_CATALOG = [
 
 CITIES = [
     "Bogota",
-    "Cali",
-    "Cartagena",
-    "Barranquilla",
-    "Santa Marta",
-    "Bucaramanga",
+    "Fiesole",
+    "Miami",
+    "Chamonix",
+    "Bora Bora",
 ]
 
 def _is_seed_enabled() -> bool:
@@ -160,6 +186,8 @@ def _has_seed_metadata_drift(session: Session) -> bool:
         if prop.name != spec["name"]:
             return True
         if prop.city != spec["city"]:
+            return True
+        if prop.country != spec["country"]:
             return True
         if int(prop.max_capacity) != int(spec["capacity"]):
             return True
@@ -232,7 +260,7 @@ def seed_dummy_data_if_needed() -> None:
                     id=property_id,
                     name=spec["name"],
                     city=city,
-                    country="Colombia",
+                    country=spec["country"],
                     address=f"Carrera {20 + idx} #10-{40 + idx}",
                     description="Dummy property for local Postman and API tests.",
                     is_active=True,

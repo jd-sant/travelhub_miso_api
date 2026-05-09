@@ -17,10 +17,11 @@ def _quote_identifier(identifier: str) -> str:
         raise ValueError(f"Invalid database schema name: {identifier!r}")
     return f'"{identifier}"'
 
+
 connect_args = (
     {"check_same_thread": False}
     if settings.database_url.startswith("sqlite")
-    else {}
+    else {"client_encoding": "utf8"}
 )
 
 engine_kwargs = {
@@ -41,6 +42,9 @@ if _is_postgres:
         cursor = dbapi_connection.cursor()
         quoted_schema = _quote_identifier(settings.db_schema)
         cursor.execute(f"SET search_path TO {quoted_schema}, public")
+        cursor.execute("SET client_encoding TO 'UTF8'")
+        if hasattr(dbapi_connection, 'set_client_encoding'):
+            dbapi_connection.set_client_encoding('UTF8')
         cursor.close()
         dbapi_connection.commit()
 

@@ -5,6 +5,7 @@ services:
       POSTGRES_DB: travelhub
       POSTGRES_USER: travelhub_user
       POSTGRES_PASSWORD: travelhub_pass
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
@@ -95,7 +96,7 @@ services:
       RDS_PORT: "5432"
       DB_SCHEMA: reservations_schema
       DB_ECHO: "False"
-      DATABASE_URL: postgresql://travelhub_user:travelhub_pass@postgres:5432/travelhub
+      DATABASE_URL: postgresql://travelhub_user:travelhub_pass@postgres:5432/travelhub?client_encoding=utf8
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-travelhub-jwt-secret-change-in-prod}
       USERS_SERVICE_URL: http://users:8000
@@ -229,6 +230,8 @@ services:
       REDIS_PORT: "6379"
       REDIS_CACHE_ENABLED: "true"
       REDIS_CACHE_TTL_SECONDS: "300"
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
+      PGCLIENTENCODING: "UTF8"
     ports:
       - "8005:8000"
     depends_on:
@@ -244,7 +247,7 @@ services:
       PYTHONPATH: /app/src
       ENV: ${ENV:-development}
       APP_ENV: ${APP_ENV:-development}
-      DATABASE_URL: postgresql://${RDS_USERNAME:-travelhub_user}:${RDS_PASSWORD:-travelhub_pass}@postgres:5432/${RDS_DB_NAME:-travelhub}
+      DATABASE_URL: postgresql://${RDS_USERNAME:-travelhub_user}:${RDS_PASSWORD:-travelhub_pass}@postgres:5432/${RDS_DB_NAME:-travelhub}?client_encoding=utf8
       DB_SCHEMA: ${SEARCH_DB_SCHEMA:-search_schema}
       ALLOWED_CORS_ORIGIN: ${ALLOWED_CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
       PROPERTIES_SERVICE_URL: ${PROPERTIES_SERVICE_URL:-http://properties:8000}
@@ -255,6 +258,7 @@ services:
       REDIS_PORT: "6379"
       REDIS_CACHE_ENABLED: "true"
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-travelhub-jwt-secret-change-in-prod}
+      PGCLIENTENCODING: "UTF8"
     ports:
       - "8006:8000"
     depends_on:
