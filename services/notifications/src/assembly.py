@@ -29,6 +29,7 @@ from domain.ports.payment_confirmation_source import PaymentConfirmationSource
 from domain.ports.payment_event_source import PaymentEventSource
 from domain.ports.push_sender import PushSender
 from domain.ports.traveler_profile_source import TravelerProfileSource
+from domain.services.push_notifier import PushNotifier
 from domain.use_cases.create_reservation_event_notification import (
     CreateReservationEventNotificationUseCase,
 )
@@ -107,17 +108,35 @@ def get_push_sender() -> PushSender:
     return LogPushSender()
 
 
+def get_push_notifier(
+    device_token_repository: DeviceTokenRepository = Depends(get_device_token_repository),
+    preference_repository: NotificationPreferenceRepository = Depends(
+        get_notification_preference_repository
+    ),
+    push_sender: PushSender = Depends(get_push_sender),
+    audit_repository: NotificationAuditRepository = Depends(get_notification_audit_repository),
+) -> PushNotifier:
+    return PushNotifier(
+        device_token_repository=device_token_repository,
+        preference_repository=preference_repository,
+        push_sender=push_sender,
+        audit_repository=audit_repository,
+    )
+
+
 def get_create_payment_confirmation_use_case(
     notification_repository: NotificationRepository = Depends(get_notification_repository),
     audit_repository: NotificationAuditRepository = Depends(get_notification_audit_repository),
     payment_confirmation_source: PaymentConfirmationSource = Depends(get_payment_confirmation_source),
     traveler_profile_source: TravelerProfileSource = Depends(get_traveler_profile_source),
+    push_notifier: PushNotifier = Depends(get_push_notifier),
 ) -> CreatePaymentConfirmationUseCase:
     return CreatePaymentConfirmationUseCase(
         notification_repository,
         audit_repository,
         payment_confirmation_source,
         traveler_profile_source,
+        push_notifier=push_notifier,
     )
 
 
@@ -125,11 +144,13 @@ def get_create_reservation_update_use_case(
     notification_repository: NotificationRepository = Depends(get_notification_repository),
     audit_repository: NotificationAuditRepository = Depends(get_notification_audit_repository),
     traveler_profile_source: TravelerProfileSource = Depends(get_traveler_profile_source),
+    push_notifier: PushNotifier = Depends(get_push_notifier),
 ) -> CreateReservationUpdateUseCase:
     return CreateReservationUpdateUseCase(
         notification_repository,
         audit_repository,
         traveler_profile_source,
+        push_notifier=push_notifier,
     )
 
 

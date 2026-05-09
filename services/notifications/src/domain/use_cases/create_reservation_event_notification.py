@@ -178,7 +178,7 @@ class CreateReservationEventNotificationUseCase(
                         "platform": device.platform,
                         "error": result.error,
                         "title": title,
-                        "body": body,
+                        "message": body,
                         "deep_link": deep_link,
                     },
                     created_at=now,

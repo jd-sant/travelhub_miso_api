@@ -100,7 +100,7 @@ def list_notifications(
     for r in rows:
         payload = r.payload or {}
         title = payload.get("title") or _action_to_title(r.action)
-        body = payload.get("body") or ""
+        body = payload.get("message") or payload.get("body") or ""
         items.append(
             NotificationListItem(
                 id=r.id,
