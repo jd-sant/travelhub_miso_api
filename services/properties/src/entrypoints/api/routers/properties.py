@@ -1,11 +1,13 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
 
 from assembly import (
     get_property_detail_use_case,
     get_properties_list_use_case,
     search_properties_use_case,
+    upsert_seasonal_pricing_use_case,
+    get_seasonal_pricing_use_case,
 )
 from domain.schemas.property import (
     PropertyFilters,
@@ -14,6 +16,9 @@ from domain.schemas.property import (
     PropertySearchResponse,
     PropertySortBy,
     PropertySortDir,
+    SeasonalPricingCreateRequest,
+    SeasonalPricingResponse,
+    SeasonalPricingListResponse,
 )
 from domain.use_cases.get_property_detail import (
     GetPropertyDetailUseCase,
@@ -22,7 +27,15 @@ from domain.use_cases.get_properties_list import (
     GetPropertiesListUseCase,
 )
 from domain.use_cases.search_properties import SearchPropertiesUseCase
-from errors import PropertyNotFoundError
+from domain.use_cases.upsert_seasonal_pricing import UpsertSeasonalPricingUseCase
+from domain.use_cases.get_seasonal_pricing import GetSeasonalPricingUseCase
+from errors import (
+    PropertyNotFoundError,
+    PricingSignatureVerificationError,
+    PricingOwnershipError,
+    PricingIntegrityLockedError,
+    SeasonalPricingNotFoundError,
+)
 
 router = APIRouter(prefix="/properties", tags=["properties"])
 
@@ -103,3 +116,136 @@ def get_property_detail(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Property with id {property_id} not found",
         )
+
+
+# ===== Seasonal Pricing Endpoints (Admin) =====
+
+def _get_admin_id_and_ip(request: Request) -> tuple[str | None, str | None]:
+    """Extract admin ID from Authorization header and IP from request."""
+    admin_id = None
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        # Simple extraction; in real scenario, parse JWT
+        admin_id = auth.split(" ")[1][:36]  # UUID-like format
+    
+    ip = request.client.host if request.client else None
+    return admin_id, ip
+
+
+@router.post(
+    "/{property_id}/seasonal-pricing",
+    response_model=SeasonalPricingResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_seasonal_pricing(
+    property_id: UUID,
+    request_body: SeasonalPricingCreateRequest,
+    request: Request,
+    use_case: UpsertSeasonalPricingUseCase = Depends(upsert_seasonal_pricing_use_case),
+) -> SeasonalPricingResponse:
+    """
+    Create seasonal pricing with digital signature.
+    
+    Admin-only endpoint. Signature is auto-generated and verified before persistence.
+    """
+    admin_id, source_ip = _get_admin_id_and_ip(request)
+    
+    try:
+        return use_case.execute(
+            property_id=property_id,
+            admin_id=admin_id,
+            source_ip=source_ip,
+            request=request_body,
+            seasonal_price_id=None,  # Create new
+        )
+    except PropertyNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except PricingOwnershipError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except PricingSignatureVerificationError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.patch(
+    "/{property_id}/seasonal-pricing/{seasonal_price_id}",
+    response_model=SeasonalPricingResponse,
+    status_code=status.HTTP_200_OK,
+)
+def update_seasonal_pricing(
+    property_id: UUID,
+    seasonal_price_id: UUID,
+    request_body: SeasonalPricingCreateRequest,
+    request: Request,
+    use_case: UpsertSeasonalPricingUseCase = Depends(upsert_seasonal_pricing_use_case),
+) -> SeasonalPricingResponse:
+    """
+    Update seasonal pricing with digital signature.
+    
+    Admin-only endpoint. Cannot update if pricing is locked due to integrity failure.
+    """
+    admin_id, source_ip = _get_admin_id_and_ip(request)
+    
+    try:
+        return use_case.execute(
+            property_id=property_id,
+            admin_id=admin_id,
+            source_ip=source_ip,
+            request=request_body,
+            seasonal_price_id=seasonal_price_id,  # Update existing
+        )
+    except PropertyNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except PricingOwnershipError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except PricingSignatureVerificationError as e:
+        # 423 Locked si está locked, 400 Bad Request si es otra razón
+        if "locked" in str(e).lower():
+            raise HTTPException(status_code=status.HTTP_423_LOCKED, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.get(
+    "/{property_id}/seasonal-pricing",
+    response_model=SeasonalPricingListResponse,
+    status_code=status.HTTP_200_OK,
+)
+def list_seasonal_pricing(
+    property_id: UUID,
+    use_case: GetSeasonalPricingUseCase = Depends(get_seasonal_pricing_use_case),
+) -> SeasonalPricingListResponse:
+    """
+    List all seasonal pricing for a property.
+    
+    Validates signature on every read (100% coverage). Locks if tampering detected.
+    """
+    try:
+        return use_case.execute(property_id=property_id, seasonal_price_id=None)
+    except PropertyNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.get(
+    "/{property_id}/seasonal-pricing/{seasonal_price_id}",
+    response_model=SeasonalPricingResponse,
+    status_code=status.HTTP_200_OK,
+)
+def get_seasonal_pricing(
+    property_id: UUID,
+    seasonal_price_id: UUID,
+    use_case: GetSeasonalPricingUseCase = Depends(get_seasonal_pricing_use_case),
+) -> SeasonalPricingResponse:
+    """
+    Get single seasonal pricing record.
+    
+    Validates signature on read. Locks if tampering detected.
+    """
+    try:
+        result = use_case.execute(property_id=property_id, seasonal_price_id=seasonal_price_id)
+        # If it's a list response, return first item (shouldn't happen with seasonal_price_id set)
+        if isinstance(result, SeasonalPricingListResponse):
+            if result.items:
+                return result.items[0]
+            raise SeasonalPricingNotFoundError("Seasonal pricing not found")
+        return result
+    except SeasonalPricingNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

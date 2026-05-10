@@ -104,6 +104,21 @@ class Settings:
         parsed = urlparse(base_url)
         return bool(parsed.scheme and parsed.netloc)
 
+    @property
+    def pricing_integrity_secret(self) -> str:
+        value = os.getenv("PRICING_INTEGRITY_SECRET")
+        if value:
+            return value
+        if not self.is_local_dev:
+            raise RuntimeError(
+                "PRICING_INTEGRITY_SECRET debe estar configurado en entornos de producción."
+            )
+        return "dev-pricing-secret-change-me"
+
+    @property
+    def pricing_signature_algo(self) -> str:
+        return os.getenv("PRICING_SIGNATURE_ALGO", "HMAC-SHA256")
+
     def load(self):
         pass
 

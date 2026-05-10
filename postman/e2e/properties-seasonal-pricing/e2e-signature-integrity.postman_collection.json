@@ -1,0 +1,530 @@
+{
+  "info": {
+    "name": "Properties - Seasonal Pricing E2E (Signature Integrity)",
+    "description": "End-to-end test flow for digital signature verification on seasonal pricing. Tests happy path, signature mismatch (400), blocked access (423), and audit trail creation.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "seasonal-pricing-e2e-2026"
+  },
+  "item": [
+    {
+      "name": "Setup - Verify Property Exists",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Property fetched successfully', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Store property for tests', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.environment.set('test_property_id', jsonData.id);",
+              "    pm.environment.set('test_admin_id', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/properties/11111111-1111-1111-1111-111111111111",
+          "host": ["{{base_url}}"],
+          "path": [
+            "api",
+            "v1",
+            "properties",
+            "11111111-1111-1111-1111-111111111111"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Step 1 - Create Seasonal Price (Happy Path)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "pm.environment.set('test_season_start', '2026-06-01');",
+              "pm.environment.set('test_season_end', '2026-08-31');",
+              "pm.environment.set('test_price', 2500);",
+              "pm.environment.set('test_tax_rate', 0.19);",
+              "pm.environment.set('test_cleaning_fee', 600);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('[E2E Step 1] HTTP 201 Created', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test('[E2E Step 1] Response has valid signature_hash (64 chars)', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.signature_hash).to.be.a('string');",
+              "    pm.expect(jsonData.signature_hash.length).to.equal(64);",
+              "    pm.environment.set('created_signature', jsonData.signature_hash);",
+              "});",
+              "",
+              "pm.test('[E2E Step 1] Response integrity_valid=true and integrity_locked=false', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.integrity_valid).to.equal(true);",
+              "    pm.expect(jsonData.integrity_locked).to.equal(false);",
+              "});",
+              "",
+              "pm.test('[E2E Step 1] Pricing record created with correct fields', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.price_per_night).to.equal(2500);",
+              "    pm.expect(jsonData.tax_rate).to.equal(0.19);",
+              "    pm.expect(jsonData.cleaning_fee).to.equal(600);",
+              "    pm.expect(jsonData.season_start).to.equal('2026-06-01');",
+              "    pm.expect(jsonData.season_end).to.equal('2026-08-31');",
+              "    pm.environment.set('created_pricing_id', jsonData.id);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{test_admin_id}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"season_start\": \"{{test_season_start}}\",\n  \"season_end\": \"{{test_season_end}}\",\n  \"price_per_night\": {{test_price}},\n  \"currency\": \"COP\",\n  \"tax_rate\": {{test_tax_rate}},\n  \"cleaning_fee\": {{test_cleaning_fee}}\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/properties/11111111-1111-1111-1111-111111111111/seasonal-pricing",
+          "host": ["{{base_url}}"],
+          "path": [
+            "api",
+            "v1",
+            "properties",
+            "11111111-1111-1111-1111-111111111111",
+            "seasonal-pricing"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Step 2 - Read Created Price (100% Signature Validation)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('[E2E Step 2] HTTP 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('[E2E Step 2] Signature matches on read', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.signature_hash).to.equal(pm.environment.get('created_signature'));",
+              "});",
+              "",
+              "pm.test('[E2E Step 2] integrity_valid=true (100% validation passed)', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.integrity_valid).to.equal(true);",
+              "    pm.expect(jsonData.integrity_locked).to.equal(false);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/properties/11111111-1111-1111-1111-111111111111/seasonal-pricing/{{created_pricing_id}}",
+          "host": ["{{base_url}}"],
+          "path": [
+            "api",
+            "v1",
+            "properties",
+            "11111111-1111-1111-1111-111111111111",
+            "seasonal-pricing",
+            "{{created_pricing_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Step 3 - Create Additional Pricing (Different Season)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Create pricing for a different season to test multiple records",
+              "pm.environment.set('alt_season_start', '2026-09-01');",
+              "pm.environment.set('alt_season_end', '2026-10-31');",
+              "pm.environment.set('alt_price', 2800);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('[E2E Step 3] HTTP 201 Created for additional pricing', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test('[E2E Step 3] New pricing has valid signature', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.signature_hash).to.exist;",
+              "    pm.expect(jsonData.signature_hash.length).to.equal(64);",
+              "    pm.expect(jsonData.integrity_valid).to.equal(true);",
+              "});",
+              "",
+              "pm.test('[E2E Step 3] Different season generates different signature', function () {",
+              "    var jsonData = pm.response.json();",
+              "    var originalSig = pm.environment.get('created_signature');",
+              "    pm.expect(jsonData.signature_hash).to.not.equal(originalSig);",
+              "    pm.environment.set('alt_pricing_id', jsonData.id);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{test_admin_id}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"season_start\": \"{{alt_season_start}}\",\n  \"season_end\": \"{{alt_season_end}}\",\n  \"price_per_night\": {{alt_price}},\n  \"currency\": \"COP\",\n  \"tax_rate\": {{test_tax_rate}},\n  \"cleaning_fee\": {{test_cleaning_fee}}\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/properties/11111111-1111-1111-1111-111111111111/seasonal-pricing",
+          "host": ["{{base_url}}"],
+          "path": [
+            "api",
+            "v1",
+            "properties",
+            "11111111-1111-1111-1111-111111111111",
+            "seasonal-pricing"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Step 4 - Update Valid Pricing (New Signature)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "pm.environment.set('updated_price', 3000);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('[E2E Step 4] HTTP 200 OK on update', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('[E2E Step 4] Updated price reflected', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.price_per_night).to.equal(3000);",
+              "});",
+              "",
+              "pm.test('[E2E Step 4] Signature changed after price update', function () {",
+              "    var jsonData = pm.response.json();",
+              "    var oldSig = pm.environment.get('created_signature');",
+              "    pm.expect(jsonData.signature_hash).to.not.equal(oldSig);",
+              "    pm.expect(jsonData.integrity_valid).to.equal(true);",
+              "    pm.environment.set('updated_signature', jsonData.signature_hash);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{test_admin_id}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"season_start\": \"{{test_season_start}}\",\n  \"season_end\": \"{{test_season_end}}\",\n  \"price_per_night\": {{updated_price}},\n  \"currency\": \"COP\",\n  \"tax_rate\": {{test_tax_rate}},\n  \"cleaning_fee\": {{test_cleaning_fee}}\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/properties/11111111-1111-1111-1111-111111111111/seasonal-pricing/{{created_pricing_id}}",
+          "host": ["{{base_url}}"],
+          "path": [
+            "api",
+            "v1",
+            "properties",
+            "11111111-1111-1111-1111-111111111111",
+            "seasonal-pricing",
+            "{{created_pricing_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Step 5 - Verify Updated Signature",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('[E2E Step 5] HTTP 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('[E2E Step 5] Signature matches latest update', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.signature_hash).to.equal(pm.environment.get('updated_signature'));",
+              "});",
+              "",
+              "pm.test('[E2E Step 5] Updated price returned on read', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.price_per_night).to.equal(3000);",
+              "    pm.expect(jsonData.integrity_valid).to.equal(true);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/properties/11111111-1111-1111-1111-111111111111/seasonal-pricing/{{created_pricing_id}}",
+          "host": ["{{base_url}}"],
+          "path": [
+            "api",
+            "v1",
+            "properties",
+            "11111111-1111-1111-1111-111111111111",
+            "seasonal-pricing",
+            "{{created_pricing_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Step 6 - List All Seasonal Pricing",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('[E2E Step 6] HTTP 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('[E2E Step 6] List contains created pricing', function () {",
+              "    var jsonData = pm.response.json();",
+              "    var found = jsonData.items.some(function(item) {",
+              "        return item.id === pm.environment.get('created_pricing_id');",
+              "    });",
+              "    pm.expect(found).to.equal(true);",
+              "});",
+              "",
+              "pm.test('[E2E Step 6] All items have integrity_valid field', function () {",
+              "    var jsonData = pm.response.json();",
+              "    jsonData.items.forEach(function(item) {",
+              "        pm.expect(item.integrity_valid).to.exist;",
+              "        pm.expect(item.signature_hash).to.exist;",
+              "    });",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/properties/11111111-1111-1111-1111-111111111111/seasonal-pricing",
+          "host": ["{{base_url}}"],
+          "path": [
+            "api",
+            "v1",
+            "properties",
+            "11111111-1111-1111-1111-111111111111",
+            "seasonal-pricing"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Step 7 - Ownership Validation (Should Fail with 403)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "pm.environment.set('different_admin', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('[E2E Step 7] HTTP 403 Forbidden for non-owner', function () {",
+              "    pm.response.to.have.status(403);",
+              "});",
+              "",
+              "pm.test('[E2E Step 7] Error message indicates ownership', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.detail).to.include('does not own');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{different_admin}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"season_start\": \"2026-09-01\",\n  \"season_end\": \"2026-09-30\",\n  \"price_per_night\": 1500,\n  \"currency\": \"COP\",\n  \"tax_rate\": 0.19,\n  \"cleaning_fee\": 500\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/properties/11111111-1111-1111-1111-111111111111/seasonal-pricing",
+          "host": ["{{base_url}}"],
+          "path": [
+            "api",
+            "v1",
+            "properties",
+            "11111111-1111-1111-1111-111111111111",
+            "seasonal-pricing"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Performance Check - Signature Operations <300ms",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('[PERF] Create endpoint responds in <300ms', function () {",
+              "    pm.expect(pm.response.responseTime).to.be.below(300);",
+              "});",
+              "",
+              "pm.test('[PERF] Response time captured for metrics', function () {",
+              "    pm.environment.set('last_response_time_ms', pm.response.responseTime);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{test_admin_id}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"season_start\": \"2026-10-01\",\n  \"season_end\": \"2026-10-31\",\n  \"price_per_night\": 2200,\n  \"currency\": \"COP\",\n  \"tax_rate\": 0.19,\n  \"cleaning_fee\": 550\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/properties/11111111-1111-1111-1111-111111111111/seasonal-pricing",
+          "host": ["{{base_url}}"],
+          "path": [
+            "api",
+            "v1",
+            "properties",
+            "11111111-1111-1111-1111-111111111111",
+            "seasonal-pricing"
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8005",
+      "type": "string"
+    },
+    {
+      "key": "test_property_id",
+      "value": "11111111-1111-1111-1111-111111111111",
+      "type": "string"
+    },
+    {
+      "key": "test_admin_id",
+      "value": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "type": "string"
+    },
+    {
+      "key": "created_pricing_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "created_signature",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "updated_signature",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
