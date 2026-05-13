@@ -79,6 +79,7 @@ services:
       ALLOWED_CORS_ORIGIN: ${ALLOWED_CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
       RESERVATION_SCHEDULER_ENABLED: ${RESERVATION_SCHEDULER_ENABLED:-false}
       RESERVATION_SCHEDULER_DELAY_MINUTES: ${RESERVATION_SCHEDULER_DELAY_MINUTES:-15}
+      ARRIVAL_REMINDER_LEAD_MINUTES: ${ARRIVAL_REMINDER_LEAD_MINUTES:-1440}
       AWS_REGION: ${AWS_REGION:-us-east-1}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
@@ -159,6 +160,8 @@ services:
       DB_SCHEMA: notifications_schema
       DB_ECHO: "False"
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-travelhub-jwt-secret-change-in-prod}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
       PAYMENTS_SERVICE_URL: http://payments:8000
       USERS_SERVICE_URL: http://users:8000
       SMTP_HOST: ${SMTP_HOST:-}
@@ -173,6 +176,8 @@ services:
       SES_FROM_ADDRESS: ${SES_FROM_ADDRESS:-}
       SES_REGION: ${SES_REGION:-}
       NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-}
+      FCM_PROJECT_ID: ${FCM_PROJECT_ID:-}
+      FCM_SERVICE_ACCOUNT_JSON: ${FCM_SERVICE_ACCOUNT_JSON:-}
     ports:
       - "8004:8000"
     depends_on:
@@ -229,6 +234,7 @@ services:
       REDIS_PORT: "6379"
       REDIS_CACHE_ENABLED: "true"
       REDIS_CACHE_TTL_SECONDS: "300"
+      SEED_MAP_CLUSTERS: "true"
     ports:
       - "8005:8000"
     depends_on:

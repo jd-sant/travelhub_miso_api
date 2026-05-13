@@ -3,6 +3,7 @@ import json
 import logging
 from decimal import Decimal
 from typing import Optional
+from uuid import UUID
 
 from domain.ports.cache_port import CachePort
 from domain.ports.properties_service import PropertiesServicePort, PropertyQuery
@@ -46,6 +47,10 @@ class SearchPropertiesUseCase(BaseUseCase[SearchQuery, SearchResult]):
                 max_price=payload.max_price,
                 min_guests=payload.guests,
                 amenities=payload.amenities,
+                min_lat=payload.min_lat,
+                max_lat=payload.max_lat,
+                min_lng=payload.min_lng,
+                max_lng=payload.max_lng,
                 sort_by=payload.order_by,
                 sort_dir=payload.order_dir,
                 page=payload.page,
@@ -53,15 +58,18 @@ class SearchPropertiesUseCase(BaseUseCase[SearchQuery, SearchResult]):
             )
         )
 
-        property_ids = [item.id for item in page.items]
-        availability = self._reservations.availability_check(
-            property_ids, payload.check_in, payload.check_out
-        )
-        available_set = set(availability.available)
+        if payload.check_in is not None and payload.check_out is not None:
+            property_ids = [item.id for item in page.items]
+            availability = self._reservations.availability_check(
+                property_ids, payload.check_in, payload.check_out
+            )
+            available_set: set[UUID] | None = set(availability.available)
+        else:
+            available_set = None
 
         items: list[PropertySearchItem] = []
         for prop in page.items:
-            if prop.id not in available_set:
+            if available_set is not None and prop.id not in available_set:
                 continue
             city, country = prop.split_location()
             items.append(
@@ -76,6 +84,8 @@ class SearchPropertiesUseCase(BaseUseCase[SearchQuery, SearchResult]):
                     price_from=Decimal(str(prop.price_per_night)),
                     currency=prop.currency,
                     amenities=prop.amenities,
+                    latitude=prop.latitude,
+                    longitude=prop.longitude,
                 )
             )
 
@@ -98,13 +108,17 @@ class SearchPropertiesUseCase(BaseUseCase[SearchQuery, SearchResult]):
         return ":".join(
             [
                 "search",
-                q.city.lower(),
-                q.check_in.isoformat(),
-                q.check_out.isoformat(),
+                q.city.lower() if q.city else "_",
+                q.check_in.isoformat() if q.check_in else "_",
+                q.check_out.isoformat() if q.check_out else "_",
                 str(q.guests),
                 amenities_part,
                 str(q.min_price) if q.min_price is not None else "_",
                 str(q.max_price) if q.max_price is not None else "_",
+                f"{q.min_lat:.5f}" if q.min_lat is not None else "_",
+                f"{q.max_lat:.5f}" if q.max_lat is not None else "_",
+                f"{q.min_lng:.5f}" if q.min_lng is not None else "_",
+                f"{q.max_lng:.5f}" if q.max_lng is not None else "_",
                 q.order_by,
                 q.order_dir,
                 str(q.page),

@@ -23,6 +23,8 @@ class PropertyMetadata(BaseModel):
     amenities: list[str] = Field(default_factory=list)
     status: int = 1
     images: list[PropertyImage] = Field(default_factory=list)
+    latitude: float | None = None
+    longitude: float | None = None
 
     def cover_image_url(self) -> str | None:
         for img in self.images:

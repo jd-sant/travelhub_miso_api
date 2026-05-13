@@ -28,6 +28,14 @@ class HttpPropertiesServiceClient(PropertiesServicePort):
             params.append(("amenities", amenity))
         for pid in query.ids:
             params.append(("ids", str(pid)))
+        if query.min_lat is not None:
+            params.append(("min_lat", str(query.min_lat)))
+        if query.max_lat is not None:
+            params.append(("max_lat", str(query.max_lat)))
+        if query.min_lng is not None:
+            params.append(("min_lng", str(query.min_lng)))
+        if query.max_lng is not None:
+            params.append(("max_lng", str(query.max_lng)))
         params.append(("page", str(query.page)))
         params.append(("page_size", str(query.page_size)))
         params.append(("sort_by", query.sort_by))
