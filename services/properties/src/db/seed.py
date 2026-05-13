@@ -682,6 +682,29 @@ def sync_property_policies_seed(session: Session) -> None:
         existing.timezone = policy_data["timezone"]
         existing.is_active = True
 
+    explicit_property_ids = {p["property_id"] for p in policies}
+    all_property_ids = session.exec(select(Property.id)).all()
+    for property_id in all_property_ids:
+        if property_id in explicit_property_ids:
+            continue
+        existing = session.exec(
+            select(PropertyCancellationPolicy).where(
+                PropertyCancellationPolicy.property_id == property_id
+            )
+        ).first()
+        if existing is not None:
+            continue
+        session.add(
+            PropertyCancellationPolicy(
+                property_id=property_id,
+                policy_type="full_refund",
+                minimum_notice_hours=48,
+                penalty_percentage=0,
+                timezone="America/Bogota",
+                is_active=True,
+            )
+        )
+
     session.commit()
 
 
