@@ -24,6 +24,10 @@ class HttpPropertiesServiceClient(PropertiesServicePort):
             params.append(("max_price", str(query.max_price)))
         if query.min_guests is not None:
             params.append(("min_guests", str(query.min_guests)))
+        if query.check_in:
+            params.append(("check_in", query.check_in))
+        if query.check_out:
+            params.append(("check_out", query.check_out))
         for amenity in query.amenities:
             params.append(("amenities", amenity))
         for pid in query.ids:

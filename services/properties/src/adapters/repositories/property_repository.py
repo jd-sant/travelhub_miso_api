@@ -11,6 +11,7 @@ from adapters.models.property import Property
 from adapters.models.property_cancellation_policy import PropertyCancellationPolicy
 from adapters.models.property_image import PropertyImage
 from adapters.models.property_review import PropertyReview
+from adapters.models.property_seasonal_price import PropertySeasonalPrice
 from domain.ports.property_repository import PropertyRepository
 from domain.schemas.property import (
     PaginationMeta,
@@ -118,6 +119,7 @@ def _to_response(
 def _to_list_response(
     model: Property,
     images: list[PropertyImage] | None = None,
+    price_override: float | None = None,
 ) -> PropertyListResponse:
     """Convert Property model to PropertyListResponse (without reviews)"""
     # Parse amenities from JSON string
@@ -140,6 +142,8 @@ def _to_list_response(
         for img in (images or [])
     ]
 
+    effective_price = price_override if price_override is not None else model.price_per_night
+
     return PropertyListResponse(
         id=model.id,
         id_owner=model.id_owner,
@@ -148,7 +152,7 @@ def _to_list_response(
         location=model.location,
         latitude=model.latitude,
         longitude=model.longitude,
-        price_per_night=model.price_per_night,
+        price_per_night=effective_price,
         currency=model.currency,
         rating=model.rating,
         review_count=model.review_count,
@@ -278,13 +282,33 @@ class SQLModelPropertyRepository(PropertyRepository):
 
         models = self.session.exec(statement).all()
         items: list[PropertyListResponse] = []
+
+        # Load seasonal pricing overrides if check_in/check_out are provided
+        seasonal_override: dict[UUID, float] = {}
+        if filters.check_in and filters.check_out:
+            seasonal_rows = self.session.exec(
+                select(PropertySeasonalPrice)
+                .where(PropertySeasonalPrice.property_id.in_([m.id for m in models]))
+                .where(PropertySeasonalPrice.season_start <= filters.check_in)
+                .where(PropertySeasonalPrice.season_end >= filters.check_out)
+                .where(PropertySeasonalPrice.integrity_locked == False)
+            ).all()
+            for row in seasonal_rows:
+                if row.property_id not in seasonal_override:
+                    seasonal_override[row.property_id] = row.price_per_night
+
         for model in models:
             images = self.session.exec(
                 select(PropertyImage)
                 .where(PropertyImage.property_id == model.id)
                 .order_by(PropertyImage.position)
             ).all()
-            items.append(_to_list_response(model, images))
+            items.append(
+                _to_list_response(
+                    model, images,
+                    price_override=seasonal_override.get(model.id),
+                )
+            )
 
         total_pages = max(1, math.ceil(total / filters.page_size)) if total > 0 else 0
         return PropertySearchResponse(

@@ -134,6 +134,21 @@ class Settings:
     def jwt_algorithm(self) -> str:
         return os.getenv("JWT_ALGORITHM", "HS256")
 
+    @property
+    def search_service_url(self) -> str:
+        return os.getenv("SEARCH_SERVICE_URL", "http://search:8000").rstrip("/")
+
+    @property
+    def internal_api_key(self) -> str:
+        value = os.getenv("INTERNAL_API_KEY")
+        if value:
+            return value
+        if not self.is_local_dev:
+            raise RuntimeError(
+                "INTERNAL_API_KEY debe estar configurado en entornos de producción."
+            )
+        return "dev-internal-key-change-me"
+
     def load(self):
         pass
 

@@ -46,6 +46,8 @@ class SearchPropertiesUseCase(BaseUseCase[SearchQuery, SearchResult]):
                 max_price=payload.max_price,
                 min_guests=payload.guests,
                 amenities=payload.amenities,
+                check_in=payload.check_in.isoformat(),
+                check_out=payload.check_out.isoformat(),
                 sort_by=payload.order_by,
                 sort_dir=payload.order_dir,
                 page=payload.page,

@@ -1,7 +1,11 @@
+import logging
 from uuid import UUID
 from datetime import datetime, UTC
 
+import httpx
 from sqlmodel import Session
+
+logger = logging.getLogger(__name__)
 
 from adapters.models.property_seasonal_price import PropertySeasonalPrice
 from adapters.models.property_pricing_audit_log import PropertyPricingAuditLog
@@ -160,5 +164,15 @@ class UpsertSeasonalPricingUseCase(BaseUseCase):
         # Invalidate property cache after successful write
         if hasattr(self.property_repository, 'invalidate_property_caches'):
             self.property_repository.invalidate_property_caches(property_id)
+
+        # Invalidate search service cache so future queries reflect the new pricing
+        try:
+            with httpx.Client(timeout=3.0) as client:
+                client.post(
+                    f"{settings.search_service_url}/api/v1/search/internal/cache/invalidate",
+                    headers={"X-API-Key": settings.internal_api_key},
+                )
+        except Exception as exc:
+            logger.warning("Failed to invalidate search cache: %s", exc)
         
         return _to_response(model)

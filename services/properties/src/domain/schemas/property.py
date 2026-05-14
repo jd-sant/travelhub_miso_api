@@ -90,6 +90,8 @@ class PropertyFilters(BaseModel):
     amenities: list[str] = Field(default_factory=list)
     ids: list[UUID] = Field(default_factory=list)
     status: int | None = Field(default=1, ge=0, le=1)
+    check_in: str | None = Field(default=None, description="ISO date YYYY-MM-DD for seasonal pricing lookup")
+    check_out: str | None = Field(default=None, description="ISO date YYYY-MM-DD for seasonal pricing lookup")
     page: int = Field(default=1, ge=1)
     page_size: int = Field(default=20, ge=1, le=100)
     sort_by: PropertySortBy = PropertySortBy.PRICE

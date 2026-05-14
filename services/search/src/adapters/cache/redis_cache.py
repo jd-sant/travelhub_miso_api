@@ -46,5 +46,18 @@ class RedisCache(CachePort):
         except RedisError as exc:
             logger.warning("Redis DELETE failed for %s: %s", key, exc)
 
+    def flush_by_pattern(self, pattern: str) -> None:
+        try:
+            cursor = 0
+            while True:
+                cursor, keys = self._client.scan(cursor=cursor, match=pattern, count=100)
+                if keys:
+                    self._client.delete(*keys)
+                if cursor == 0:
+                    break
+            logger.debug("cache flush pattern: %s", pattern)
+        except RedisError as exc:
+            logger.warning("Redis FLUSH by pattern failed for %s: %s", pattern, exc)
+
     def get_ttl(self) -> int:
         return self._ttl
