@@ -2,6 +2,22 @@ import hmac
 import hashlib
 from typing import Any
 
+import jwt
+
+from core.config import settings
+
+
+def decode_jwt_token(token: str) -> dict | None:
+    try:
+        return jwt.decode(
+            token,
+            settings.jwt_secret_key,
+            algorithms=[settings.jwt_algorithm],
+            options={"verify_exp": True},
+        )
+    except jwt.PyJWTError:
+        return None
+
 
 def canonicalize_pricing_payload(
     property_id: str,

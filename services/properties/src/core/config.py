@@ -119,6 +119,21 @@ class Settings:
     def pricing_signature_algo(self) -> str:
         return os.getenv("PRICING_SIGNATURE_ALGO", "HMAC-SHA256")
 
+    @property
+    def jwt_secret_key(self) -> str:
+        value = os.getenv("JWT_SECRET_KEY")
+        if value:
+            return value
+        if not self.is_local_dev:
+            raise RuntimeError(
+                "JWT_SECRET_KEY debe estar configurado en entornos de producción."
+            )
+        return "travelhub-jwt-secret-change-in-prod"
+
+    @property
+    def jwt_algorithm(self) -> str:
+        return os.getenv("JWT_ALGORITHM", "HS256")
+
     def load(self):
         pass
 

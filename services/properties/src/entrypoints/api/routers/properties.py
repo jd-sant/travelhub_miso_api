@@ -2,6 +2,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
 
+from core.security import decode_jwt_token
+
 from assembly import (
     get_property_detail_use_case,
     get_properties_list_use_case,
@@ -120,15 +122,16 @@ def get_property_detail(
 
 # ===== Seasonal Pricing Endpoints (Admin) =====
 
+
 def _get_admin_id_and_ip(request: Request) -> tuple[str | None, str | None]:
-    """Extract admin ID from Authorization header and IP from request."""
+    """Extract admin ID from JWT Authorization header and IP from request."""
     admin_id = None
+    ip = request.client.host if request.client else None
     auth = request.headers.get("Authorization", "")
     if auth.startswith("Bearer "):
-        # Simple extraction; in real scenario, parse JWT
-        admin_id = auth.split(" ")[1][:36]  # UUID-like format
-    
-    ip = request.client.host if request.client else None
+        payload = decode_jwt_token(auth.split(" ")[1])
+        if payload is not None:
+            admin_id = payload.get("sub")
     return admin_id, ip
 
 
