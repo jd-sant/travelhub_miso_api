@@ -17,8 +17,12 @@ class DeliveryAttemptStatus(str, Enum):
 
 
 class ReservationNotificationType(str, Enum):
+    booking_confirmed = "booking_confirmed"
     modification_confirmed = "modification_confirmed"
     cancellation_confirmed = "cancellation_confirmed"
+    checkin_registered = "checkin_registered"
+    checkout_registered = "checkout_registered"
+    arrival_reminder = "arrival_reminder"
     refund_initiated = "refund_initiated"
     refund_succeeded = "refund_succeeded"
     refund_failed = "refund_failed"
@@ -145,6 +149,10 @@ class NotificationAuditLogRecord(BaseModel):
     ip_address: str | None = None
     payload: dict
     created_at: datetime
+    channel: str = "email"
+    provider_message_id: str | None = None
+    delivery_status: str = "queued"
+    opened_at: datetime | None = None
 
 
 class NotificationResponse(BaseModel):

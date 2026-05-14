@@ -117,6 +117,22 @@ class CreateReservationUseCase(BaseUseCase[ReservationCreateRequest, Reservation
                     pass
             raise
 
+        # Programar recordatorio de llegada (default 24h antes del check-in,
+        # parametrizable vía ARRIVAL_REMINDER_LEAD_MINUTES). No bloquea la
+        # creación de la reserva si falla.
+        if self.scheduler is not None:
+            try:
+                from datetime import timedelta
+
+                fire_at = normalized_payload.check_in_date - timedelta(
+                    minutes=settings.arrival_reminder_lead_minutes
+                )
+                self.scheduler.schedule_arrival_reminder(
+                    str(reservation_id), fire_at
+                )
+            except Exception:
+                pass
+
         return reservation
 
     def _normalize_datetime(self, value: datetime) -> datetime:

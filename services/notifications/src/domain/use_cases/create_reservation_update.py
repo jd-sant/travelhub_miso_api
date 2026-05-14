@@ -4,6 +4,7 @@ from uuid import uuid4
 from domain.ports.notification_audit_repository import NotificationAuditRepository
 from domain.ports.notification_repository import NotificationRepository
 from domain.ports.traveler_profile_source import TravelerProfileSource
+from domain.services.push_notifier import PushNotifier
 from core.privacy import mask_email
 from domain.schemas.notification import (
     NotificationAuditLogRecord,
@@ -53,10 +54,12 @@ class CreateReservationUpdateUseCase(
         notification_repository: NotificationRepository,
         audit_repository: NotificationAuditRepository,
         traveler_profile_source: TravelerProfileSource,
+        push_notifier: PushNotifier | None = None,
     ):
         self.notification_repository = notification_repository
         self.audit_repository = audit_repository
         self.traveler_profile_source = traveler_profile_source
+        self.push_notifier = push_notifier
 
     def execute(self, payload: ReservationUpdateRequest) -> NotificationResponse:
         template_code = (
@@ -120,6 +123,18 @@ class CreateReservationUpdateUseCase(
                 created_at=stored.created_at,
             )
         )
+        if self.push_notifier is not None:
+            event_type = (
+                "cancellation_confirmed"
+                if payload.status == "cancelled"
+                else "booking_confirmed"
+            )
+            self.push_notifier.dispatch(
+                notification=stored,
+                event_type=event_type,
+                source_ip=payload.source_ip,
+                now=now,
+            )
         return self._to_response(stored)
 
     def _to_response(self, notification: NotificationRecord) -> NotificationResponse:

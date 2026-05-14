@@ -1,6 +1,7 @@
 from hmac import compare_digest
 from uuid import UUID
 
+import httpx
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlmodel import Session
 
@@ -206,6 +207,62 @@ def apply_refund_result(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Reservation not found",
         )
+
+
+@router.post(
+    "/reservations/{reservation_id}/fire-arrival-reminder",
+    status_code=status.HTTP_200_OK,
+)
+def fire_arrival_reminder(
+    reservation_id: str,
+    _: None = Depends(_verify_api_key),
+    repository=Depends(get_reservation_repository),
+):
+    """Disparado por el EventBridge Scheduler cuando llega T-N minutos del check-in.
+
+    Resuelve la reserva, valida que siga activa, y publica el evento
+    `arrival_reminder` al servicio notifications. Idempotente y tolerante a
+    cancelaciones (no envía si la reserva ya está cancelada).
+    """
+    try:
+        reservation_uuid = UUID(reservation_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid reservation ID format",
+        )
+
+    reservation = repository.get_by_id(reservation_uuid)
+    if reservation is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found"
+        )
+
+    if reservation.status in ("cancelled", "expired"):
+        return {"skipped": True, "reason": f"reservation_{reservation.status}"}
+
+    if not settings.notifications_service_url:
+        return {"skipped": True, "reason": "notifications_service_not_configured"}
+
+    try:
+        response = httpx.post(
+            f"{settings.notifications_service_url}/api/v1/internal/reservation-events",
+            json={
+                "reservation_id": str(reservation.id),
+                "traveler_id": str(reservation.id_traveler),
+                "event_type": "arrival_reminder",
+            },
+            headers={"X-Internal-Api-Key": settings.internal_api_key},
+            timeout=10.0,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Notifications service error: {exc}",
+        )
+
+    return {"dispatched": True, "reservation_id": str(reservation.id)}
 
 
 @router.post(

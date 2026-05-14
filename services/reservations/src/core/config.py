@@ -41,6 +41,14 @@ class Settings:
         return int(os.getenv("RESERVATION_SCHEDULER_DELAY_MINUTES", "15"))
 
     @property
+    def arrival_reminder_lead_minutes(self) -> int:
+        """Minutos antes del check-in para disparar el recordatorio (default 1440 = 24h).
+
+        Bajar a 1-5 en pruebas para ver el push casi inmediato.
+        """
+        return int(os.getenv("ARRIVAL_REMINDER_LEAD_MINUTES", "1440"))
+
+    @property
     def aws_region(self) -> str:
         return os.getenv("AWS_REGION", "us-east-1")
 

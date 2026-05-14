@@ -106,8 +106,8 @@ class SearchPropertiesUseCase(BaseUseCase[SearchQuery, SearchResult]):
                     price_from=effective_price,
                     currency=effective_currency,
                     amenities=prop.amenities,
-                    latitude=getattr(prop, "latitude", None),
-                    longitude=getattr(prop, "longitude", None),
+                    latitude=prop.latitude,
+                    longitude=prop.longitude,
                 )
             )
 
