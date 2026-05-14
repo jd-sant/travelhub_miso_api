@@ -1,7 +1,7 @@
 from datetime import date
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from sqlmodel import Session, select
 
 from assembly import (
@@ -18,6 +18,7 @@ from adapters.models import RoomType
 from adapters.models import Service
 from core.auth import AuthenticatedUser, get_current_hotel_user
 from core.config import settings
+from core.pricing_integrity import build_pricing_checksum, extract_client_ip
 from db.session import get_session
 from db.session import engine
 from domain.schemas import PropertyAvailabilityQuery, PropertyAvailabilityResponse
@@ -44,6 +45,21 @@ from errors import (
 )
 
 router = APIRouter(prefix="/inventory", tags=["inventory"])
+
+
+def _validate_pricing_checksum(payload, checksum: str | None) -> str:
+    if not checksum:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="X-Pricing-Checksum es requerido",
+        )
+    expected_checksum = build_pricing_checksum(payload)
+    if checksum.strip().lower() != expected_checksum:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El checksum del ajuste no es válido",
+        )
+    return expected_checksum
 
 
 @router.get("/status")
@@ -93,10 +109,12 @@ def list_pricing_targets(
 @router.post("/hotel/pricing/preview", response_model=PricingPreviewResponse)
 def preview_pricing_change(
     payload: PricingPreviewRequest,
+    request_checksum: str | None = Header(default=None, alias="X-Pricing-Checksum"),
     user: AuthenticatedUser = Depends(get_current_hotel_user),
     use_case: PricingManagementUseCase = Depends(get_pricing_management_use_case),
 ) -> PricingPreviewResponse:
     try:
+        _validate_pricing_checksum(payload, request_checksum)
         return use_case.preview(user, payload)
     except PricingValidationError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
@@ -111,11 +129,19 @@ def preview_pricing_change(
 @router.post("/hotel/pricing/apply", response_model=PricingApplyResponse)
 def apply_pricing_change(
     payload: PricingApplyRequest,
+    request: Request,
+    request_checksum: str | None = Header(default=None, alias="X-Pricing-Checksum"),
     user: AuthenticatedUser = Depends(get_current_hotel_user),
     use_case: PricingManagementUseCase = Depends(get_pricing_management_use_case),
 ) -> PricingApplyResponse:
     try:
-        return use_case.apply(user, payload)
+        validated_checksum = _validate_pricing_checksum(payload, request_checksum)
+        return use_case.apply(
+            user,
+            payload,
+            actor_ip=extract_client_ip(request),
+            request_checksum=validated_checksum,
+        )
     except PricingValidationError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except PricingAuthorizationError as exc:

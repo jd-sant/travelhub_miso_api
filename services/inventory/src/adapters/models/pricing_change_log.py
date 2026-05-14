@@ -27,8 +27,10 @@ class PricingChangeLog(SQLModel, table=True):
     projected_revenue_after: str
     actor_user_id: UUID = Field(index=True)
     actor_email: str = Field(max_length=160)
+    actor_ip: str | None = Field(default=None, max_length=120)
     device_label: str | None = Field(default=None, max_length=120)
     device_platform: str | None = Field(default=None, max_length=80)
+    request_checksum: str | None = Field(default=None, max_length=64)
     previous_calendar_snapshot: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     reverted_at: datetime | None = None

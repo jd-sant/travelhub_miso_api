@@ -111,6 +111,8 @@ class SQLModelPricingManagementRepository:
         owned_property_ids: set[UUID],
         actor_user_id: UUID,
         actor_email: str,
+        actor_ip: str | None = None,
+        request_checksum: str | None = None,
     ) -> tuple[PricingPreviewResponse, PricingHistoryItem]:
         preview = self.build_preview(payload, owned_property_ids)
         if preview.requires_confirmation and not payload.confirmation_acknowledged:
@@ -143,8 +145,10 @@ class SQLModelPricingManagementRepository:
             projected_revenue_after=str(preview.projected_revenue_after),
             actor_user_id=actor_user_id,
             actor_email=actor_email,
+            actor_ip=actor_ip,
             device_label=payload.device_label,
             device_platform=payload.device_platform,
+            request_checksum=request_checksum,
             previous_calendar_snapshot=json.dumps(previous_snapshot),
         )
         self.session.add(change_log)
@@ -334,8 +338,10 @@ class SQLModelPricingManagementRepository:
             projected_revenue_after=Decimal(item.projected_revenue_after),
             actor_user_id=item.actor_user_id,
             actor_email=item.actor_email,
+            actor_ip=item.actor_ip,
             device_label=item.device_label,
             device_platform=item.device_platform,
+            request_checksum=item.request_checksum,
             created_at=item.created_at,
             reverted_at=item.reverted_at,
             can_revert=item.reverted_at is None,

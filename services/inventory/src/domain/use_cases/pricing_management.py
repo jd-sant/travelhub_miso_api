@@ -29,13 +29,21 @@ class PricingManagementUseCase:
             raise PricingAuthorizationError("No tienes propiedades para gestionar")
         return self.repository.build_preview(payload, owned_property_ids)
 
-    def apply(self, user: AuthenticatedUser, payload: PricingApplyRequest) -> PricingApplyResponse:
+    def apply(
+        self,
+        user: AuthenticatedUser,
+        payload: PricingApplyRequest,
+        actor_ip: str | None = None,
+        request_checksum: str | None = None,
+    ) -> PricingApplyResponse:
         owned_property_ids = self.ownership_client.list_owned_property_ids(user.id)
         preview, history = self.repository.apply_pricing(
             payload,
             owned_property_ids,
             actor_user_id=user.id,
             actor_email=user.email,
+            actor_ip=actor_ip,
+            request_checksum=request_checksum,
         )
         return PricingApplyResponse(preview=preview, history_entry=history)
 

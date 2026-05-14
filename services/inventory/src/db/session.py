@@ -56,6 +56,21 @@ def create_db_and_tables() -> None:
             conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {quoted_schema}"))
             conn.commit()
     SQLModel.metadata.create_all(engine)
+    _apply_schema_upgrades()
+
+
+def _apply_schema_upgrades() -> None:
+    if not _is_postgres:
+        return
+    quoted_schema = _quote_identifier(settings.db_schema)
+    statements = [
+        f"ALTER TABLE IF EXISTS {quoted_schema}.pricing_change_log ADD COLUMN IF NOT EXISTS actor_ip VARCHAR(120)",
+        f"ALTER TABLE IF EXISTS {quoted_schema}.pricing_change_log ADD COLUMN IF NOT EXISTS request_checksum VARCHAR(64)",
+    ]
+    with engine.connect() as conn:
+        for statement in statements:
+            conn.execute(text(statement))
+        conn.commit()
 
 
 def get_session() -> Generator[Session, None, None]:

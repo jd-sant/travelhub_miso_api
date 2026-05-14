@@ -4,9 +4,12 @@ from uuid import UUID, uuid4
 
 from assembly import get_pricing_management_use_case
 from core.auth import AuthenticatedUser, get_current_hotel_user
+from core.pricing_integrity import build_pricing_checksum
 from domain.schemas.pricing import (
+    PricingApplyRequest,
     PricingApplyResponse,
     PricingHistoryItem,
+    PricingPreviewRequest,
     PricingPreviewResponse,
     PricingRevertResponse,
     PricingTargetOption,
@@ -20,6 +23,8 @@ class _FakePricingUseCase:
         self.preview_payload = None
         self.apply_payload = None
         self.last_change_id = None
+        self.actor_ip = None
+        self.request_checksum = None
 
     def list_targets(self, user):
         return [
@@ -63,8 +68,10 @@ class _FakePricingUseCase:
             impact_summary="Se actualizarán 3 días con una tarifa final promocional.",
         )
 
-    def apply(self, user, payload):
+    def apply(self, user, payload, actor_ip=None, request_checksum=None):
         self.apply_payload = payload
+        self.actor_ip = actor_ip
+        self.request_checksum = request_checksum
         if not payload.confirmation_acknowledged:
             raise PricingConflictError("se requiere confirmación")
         preview = self.preview(user, payload)
@@ -89,8 +96,10 @@ class _FakePricingUseCase:
                 projected_revenue_after=Decimal("1764.00"),
                 actor_user_id=user.id,
                 actor_email=user.email,
+                actor_ip=actor_ip,
                 device_label=payload.device_label,
                 device_platform=payload.device_platform,
+                request_checksum=request_checksum,
                 created_at=datetime(2026, 5, 6, 12, 0, tzinfo=timezone.utc),
                 reverted_at=None,
                 can_revert=True,
@@ -118,8 +127,10 @@ class _FakePricingUseCase:
                 projected_revenue_after=Decimal("1656.00"),
                 actor_user_id=user.id,
                 actor_email=user.email,
+                actor_ip="10.0.0.5",
                 device_label="Pixel 9",
                 device_platform="Android API 36",
+                request_checksum="abc123",
                 created_at=datetime(2026, 5, 6, 12, 0, tzinfo=timezone.utc),
                 reverted_at=None,
                 can_revert=True,
@@ -145,6 +156,14 @@ def _hotel_user():
     )
 
 
+def _preview_headers(payload: dict) -> dict[str, str]:
+    return {"X-Pricing-Checksum": build_pricing_checksum(PricingPreviewRequest(**payload))}
+
+
+def _apply_headers(payload: dict) -> dict[str, str]:
+    return {"X-Pricing-Checksum": build_pricing_checksum(PricingApplyRequest(**payload))}
+
+
 def test_list_pricing_targets_returns_options(client):
     fake = _FakePricingUseCase()
     app.dependency_overrides[get_current_hotel_user] = _hotel_user
@@ -163,19 +182,21 @@ def test_preview_pricing_change_maps_validation_errors(client):
     fake = _FakePricingUseCase()
     app.dependency_overrides[get_current_hotel_user] = _hotel_user
     app.dependency_overrides[get_pricing_management_use_case] = lambda: fake
+    payload = {
+        "property_id": "11111111-1111-1111-1111-111111111111",
+        "rate_plan_id": "33333333-3333-3333-3333-333333333333",
+        "start_date": "2026-11-24",
+        "end_date": "2026-11-30",
+        "proposed_base_price": 245,
+        "discount_type": "percentage",
+        "discount_value": 20,
+        "rule_name": "bad-rule",
+    }
     try:
         response = client.post(
             "/api/v1/inventory/hotel/pricing/preview",
-            json={
-                "property_id": "11111111-1111-1111-1111-111111111111",
-                "rate_plan_id": "33333333-3333-3333-3333-333333333333",
-                "start_date": "2026-11-24",
-                "end_date": "2026-11-30",
-                "proposed_base_price": 245,
-                "discount_type": "percentage",
-                "discount_value": 20,
-                "rule_name": "bad-rule",
-            },
+            headers=_preview_headers(payload),
+            json=payload,
         )
         assert response.status_code == 400
         assert "inválida" in response.json()["detail"]
@@ -184,6 +205,39 @@ def test_preview_pricing_change_maps_validation_errors(client):
 
 
 def test_apply_pricing_change_returns_history_entry(client):
+    fake = _FakePricingUseCase()
+    app.dependency_overrides[get_current_hotel_user] = _hotel_user
+    app.dependency_overrides[get_pricing_management_use_case] = lambda: fake
+    payload = {
+        "property_id": "11111111-1111-1111-1111-111111111111",
+        "rate_plan_id": "33333333-3333-3333-3333-333333333333",
+        "start_date": "2026-11-24",
+        "end_date": "2026-11-30",
+        "proposed_base_price": 230,
+        "discount_type": "percentage",
+        "discount_value": 20,
+        "rule_name": "Black Friday",
+        "confirmation_acknowledged": True,
+        "device_label": "Pixel 9",
+        "device_platform": "Android API 36",
+    }
+    try:
+        response = client.post(
+            "/api/v1/inventory/hotel/pricing/apply",
+            headers=_apply_headers(payload),
+            json=payload,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["preview"]["requires_confirmation"] is True
+        assert data["history_entry"]["device_label"] == "Pixel 9"
+        assert data["history_entry"]["actor_ip"] == "testclient"
+        assert data["history_entry"]["request_checksum"]
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_apply_pricing_change_rejects_missing_checksum(client):
     fake = _FakePricingUseCase()
     app.dependency_overrides[get_current_hotel_user] = _hotel_user
     app.dependency_overrides[get_pricing_management_use_case] = lambda: fake
@@ -196,18 +250,11 @@ def test_apply_pricing_change_returns_history_entry(client):
                 "start_date": "2026-11-24",
                 "end_date": "2026-11-30",
                 "proposed_base_price": 230,
-                "discount_type": "percentage",
-                "discount_value": 20,
-                "rule_name": "Black Friday",
                 "confirmation_acknowledged": True,
-                "device_label": "Pixel 9",
-                "device_platform": "Android API 36",
             },
         )
-        assert response.status_code == 200
-        payload = response.json()
-        assert payload["preview"]["requires_confirmation"] is True
-        assert payload["history_entry"]["device_label"] == "Pixel 9"
+        assert response.status_code == 400
+        assert "Checksum" in response.json()["detail"]
     finally:
         app.dependency_overrides.clear()
 

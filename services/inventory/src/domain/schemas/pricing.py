@@ -80,8 +80,10 @@ class PricingHistoryItem(BaseModel):
     projected_revenue_after: Decimal
     actor_user_id: UUID
     actor_email: str
+    actor_ip: str | None = None
     device_label: str | None = None
     device_platform: str | None = None
+    request_checksum: str | None = None
     created_at: datetime
     reverted_at: datetime | None = None
     can_revert: bool = True
