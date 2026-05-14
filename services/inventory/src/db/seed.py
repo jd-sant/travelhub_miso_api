@@ -102,14 +102,17 @@ TARGET_PROPERTY_COUNT = len(PROPERTY_SEED_SPECS)
 
 def _build_seed_dates() -> tuple[date, ...]:
     """
-    Build contiguous availability windows across the year.
-    We seed days 10-16 for every month in 2026 so short stays
-    (e.g. 10->12) work consistently in E2E tests.
+    Build contiguous availability windows across the whole year so
+    pricing preview and traveler booking behave consistently in local
+    dev and E2E validation.
     """
     days: list[date] = []
     for month in range(1, 13):
-        for day in range(10, 17):
-            days.append(date(2026, month, day))
+        for day in range(1, 32):
+            try:
+                days.append(date(2026, month, day))
+            except ValueError:
+                continue
     return tuple(days)
 
 

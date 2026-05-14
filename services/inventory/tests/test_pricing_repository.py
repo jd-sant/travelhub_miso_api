@@ -6,11 +6,12 @@ import pytest
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
-from adapters.models import PricingChangeLog, Property, RateCalendar, RatePlan, RoomType
+from adapters.models import InventoryCalendar, PricingChangeLog, Property, RateCalendar, RatePlan, RoomType
 from adapters.repositories.pricing_management_repository import (
     SQLModelPricingManagementRepository,
 )
-from errors import PricingConflictError
+from domain.schemas.pricing import PricingPreviewRequest
+from errors import PricingConflictError, PricingValidationError
 
 
 @pytest.fixture
@@ -111,3 +112,65 @@ def test_revert_change_rejects_when_newer_active_overlapping_change_exists(sessi
 
     with pytest.raises(PricingConflictError):
         repository.revert_change(older.id, {property_id})
+
+
+def test_build_preview_rejects_ranges_without_full_inventory_coverage(session: Session):
+    property_id = uuid4()
+    room_type_id = uuid4()
+    rate_plan_id = uuid4()
+
+    session.add(
+        Property(
+            id=property_id,
+            name="Hotel Test",
+            city="Bogota",
+            country="Colombia",
+            max_capacity=2,
+        )
+    )
+    session.add(
+        RoomType(
+            id=room_type_id,
+            property_id=property_id,
+            name="Standard",
+            capacity=2,
+        )
+    )
+    session.add(
+        RatePlan(
+            id=rate_plan_id,
+            room_type_id=room_type_id,
+            name="Standard",
+            currency="COP",
+            base_price=Decimal("180000.00"),
+        )
+    )
+    session.add(
+        InventoryCalendar(
+            room_type_id=room_type_id,
+            date=date(2026, 5, 28),
+            available_units=8,
+            blocked_units=0,
+        )
+    )
+    session.add(
+        RateCalendar(
+            rate_plan_id=rate_plan_id,
+            date=date(2026, 5, 28),
+            price=Decimal("180000.00"),
+        )
+    )
+    session.commit()
+
+    repository = SQLModelPricingManagementRepository(session)
+    payload = PricingPreviewRequest(
+        property_id=property_id,
+        rate_plan_id=rate_plan_id,
+        start_date=date(2026, 5, 28),
+        end_date=date(2026, 5, 29),
+        discount_type="percentage",
+        discount_value=Decimal("10"),
+    )
+
+    with pytest.raises(PricingValidationError, match="No hay inventario configurado"):
+        repository.build_preview(payload, {property_id})

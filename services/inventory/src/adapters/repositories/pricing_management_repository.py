@@ -67,8 +67,13 @@ class SQLModelPricingManagementRepository:
             payload.discount_type,
             payload.discount_value,
         )
-        sellable_units = self._sellable_units(target["room_type"].id, payload.start_date, payload.end_date)
         days_affected = (payload.end_date - payload.start_date).days + 1
+        inventory_rows = self._inventory_rows(target["room_type"].id, payload.start_date, payload.end_date)
+        if len(inventory_rows) != days_affected:
+            raise PricingValidationError(
+                "No hay inventario configurado para todas las fechas del rango seleccionado"
+            )
+        sellable_units = sum(max(0, row.available_units - row.blocked_units) for row in inventory_rows)
         projected_before = current_base * sellable_units
         projected_after = final_price * sellable_units
         delta = projected_after - projected_before
@@ -271,17 +276,14 @@ class SQLModelPricingManagementRepository:
             raise PricingValidationError("La tarifa final debe ser mayor a cero")
         return final_price.quantize(Decimal("0.01"))
 
-    def _sellable_units(self, room_type_id: UUID, start_date: date, end_date: date) -> int:
+    def _inventory_rows(self, room_type_id: UUID, start_date: date, end_date: date) -> list[InventoryCalendar]:
         statement = (
             select(InventoryCalendar)
             .where(InventoryCalendar.room_type_id == room_type_id)
             .where(InventoryCalendar.date >= start_date)
             .where(InventoryCalendar.date <= end_date)
         )
-        rows = self.session.exec(statement).all()
-        if not rows:
-            return 0
-        return sum(max(0, row.available_units - row.blocked_units) for row in rows)
+        return self.session.exec(statement).all()
 
     def _snapshot_calendar(self, rate_plan_id: UUID, start_date: date, end_date: date) -> list[dict]:
         snapshot: list[dict] = []
