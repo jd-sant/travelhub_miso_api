@@ -10,5 +10,5 @@ CREATE SCHEMA IF NOT EXISTS search_schema;
 CREATE EXTENSION IF NOT EXISTS unaccent;
 
 -- Futuros microservicios:
--- CREATE SCHEMA IF NOT EXISTS inventory_schema;
+CREATE SCHEMA IF NOT EXISTS inventory_schema;
 -- CREATE SCHEMA IF NOT EXISTS currency_schema;

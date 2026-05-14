@@ -16,16 +16,22 @@ class PropertySearchItem(BaseModel):
     price_from: Decimal
     currency: str
     amenities: list[str] = Field(default_factory=list)
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 class SearchQuery(BaseModel):
-    city: str = Field(min_length=2, max_length=120)
-    check_in: date
-    check_out: date
+    city: str | None = Field(default=None, min_length=2, max_length=120)
+    check_in: date | None = None
+    check_out: date | None = None
     guests: int = Field(ge=1)
     amenities: list[str] = Field(default_factory=list)
     min_price: Decimal | None = Field(default=None, ge=0)
     max_price: Decimal | None = Field(default=None, ge=0)
+    min_lat: float | None = Field(default=None, ge=-90, le=90)
+    max_lat: float | None = Field(default=None, ge=-90, le=90)
+    min_lng: float | None = Field(default=None, ge=-180, le=180)
+    max_lng: float | None = Field(default=None, ge=-180, le=180)
     order_by: str = Field(default="price")
     order_dir: str = Field(default="asc")
     page: int = Field(default=1, ge=1)

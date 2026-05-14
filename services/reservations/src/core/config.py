@@ -126,8 +126,8 @@ class Settings:
         return os.getenv("PAYMENTS_SERVICE_URL", "http://payments:8000").rstrip("/")
 
     @property
-    def search_service_url(self) -> str:
-        return os.getenv("SEARCH_SERVICE_URL", "http://search:8000").rstrip("/")
+    def inventory_service_url(self) -> str:
+        return os.getenv("INVENTORY_SERVICE_URL", "http://inventory:8000").rstrip("/")
 
     @property
     def notifications_service_url(self) -> str:

@@ -7,7 +7,7 @@ from adapters.repositories.reservation_repository import SQLModelReservationRepo
 from adapters.services.payments_client import PaymentsServiceClient
 from adapters.services.properties_client import PropertiesServiceClient
 from adapters.services.property_service_client import HttpPropertyServiceClient
-from adapters.services.search_pricing_client import HttpSearchPricingClient
+from adapters.services.inventory_pricing_client import HttpInventoryPricingClient
 from domain.ports.property_service_client import PropertyServiceClient
 from domain.ports.pricing_service_client import PricingServiceClient
 from adapters.services.scheduler_service import (
@@ -66,7 +66,7 @@ def get_property_service_client() -> PropertyServiceClient:
     return HttpPropertyServiceClient()
 
 def get_pricing_service_client() -> PricingServiceClient:
-    return HttpSearchPricingClient()
+    return HttpInventoryPricingClient()
 
 
 def get_users_client() -> UsersServiceClient:

@@ -8,7 +8,7 @@ from core.config import settings
 from domain.ports.pricing_service_client import PricingServiceClient
 
 
-class HttpSearchPricingClient(PricingServiceClient):
+class HttpInventoryPricingClient(PricingServiceClient):
     def get_effective_price(
         self,
         property_id: UUID,
@@ -16,7 +16,7 @@ class HttpSearchPricingClient(PricingServiceClient):
         check_out: datetime,
         guests: int,
     ) -> tuple[Decimal, str] | None:
-        url = f"{settings.search_service_url}/api/v1/search/properties/{property_id}/availability"
+        url = f"{settings.inventory_service_url}/api/v1/inventory/properties/{property_id}/availability"
         params = {
             "check_in": check_in.date().isoformat(),
             "check_out": check_out.date().isoformat(),

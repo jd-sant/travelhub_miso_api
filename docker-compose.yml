@@ -101,11 +101,14 @@ services:
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-travelhub-jwt-secret-change-in-prod}
       USERS_SERVICE_URL: http://users:8000
       NOTIFICATIONS_SERVICE_URL: http://notifications:8000
+      INVENTORY_SERVICE_URL: ${INVENTORY_SERVICE_URL:-http://inventory:8000}
     ports:
       - "8002:8000"
     depends_on:
       postgres:
         condition: service_healthy
+      inventory:
+        condition: service_started
 
   payments:
     build:
@@ -240,6 +243,30 @@ services:
       redis:
         condition: service_healthy
 
+  inventory:
+    build:
+      context: ./services/inventory
+    environment:
+      PYTHONPATH: /app/src
+      ENV: ${ENV:-development}
+      APP_ENV: ${APP_ENV:-development}
+      DATABASE_URL: postgresql://${RDS_USERNAME:-travelhub_user}:${RDS_PASSWORD:-travelhub_pass}@postgres:5432/${RDS_DB_NAME:-travelhub}?client_encoding=utf8
+      DB_SCHEMA: ${INVENTORY_DB_SCHEMA:-inventory_schema}
+      ALLOWED_CORS_ORIGIN: ${ALLOWED_CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
+      PROPERTIES_SERVICE_URL: ${PROPERTIES_SERVICE_URL:-http://properties:8000}
+      RESERVATIONS_SERVICE_URL: ${RESERVATIONS_SERVICE_URL:-http://reservations:8000}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
+      SERVICE_REQUEST_TIMEOUT: "5.0"
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-travelhub-jwt-secret-change-in-prod}
+      PGCLIENTENCODING: "UTF8"
+    ports:
+      - "8007:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      properties:
+        condition: service_started
+
   search:
     build:
       context: ./services/search
@@ -247,22 +274,21 @@ services:
       PYTHONPATH: /app/src
       ENV: ${ENV:-development}
       APP_ENV: ${APP_ENV:-development}
-      DATABASE_URL: postgresql://${RDS_USERNAME:-travelhub_user}:${RDS_PASSWORD:-travelhub_pass}@postgres:5432/${RDS_DB_NAME:-travelhub}?client_encoding=utf8
-      DB_SCHEMA: ${SEARCH_DB_SCHEMA:-search_schema}
       ALLOWED_CORS_ORIGIN: ${ALLOWED_CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
       PROPERTIES_SERVICE_URL: ${PROPERTIES_SERVICE_URL:-http://properties:8000}
       RESERVATIONS_SERVICE_URL: ${RESERVATIONS_SERVICE_URL:-http://reservations:8000}
+      INVENTORY_SERVICE_URL: ${INVENTORY_SERVICE_URL:-http://inventory:8000}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
       SERVICE_REQUEST_TIMEOUT: "5.0"
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       REDIS_CACHE_ENABLED: "true"
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-travelhub-jwt-secret-change-in-prod}
-      PGCLIENTENCODING: "UTF8"
     ports:
       - "8006:8000"
     depends_on:
       properties:
+        condition: service_started
+      inventory:
         condition: service_started
       reservations:
         condition: service_started

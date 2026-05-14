@@ -8,8 +8,10 @@ from uuid import UUID, uuid4
 import pytest
 from fastapi.testclient import TestClient
 
+from domain.ports.inventory_service import InventoryServicePort
 from domain.ports.properties_service import PropertiesServicePort, PropertyQuery
 from domain.ports.reservations_service import ReservationsServicePort
+from domain.schemas.availability import PropertyAvailabilityResponse
 from domain.schemas.external import (
     AvailabilityResult,
     PropertiesPage,
@@ -88,6 +90,22 @@ class FakePropertiesServiceClient(PropertiesServicePort):
         if query.ids:
             id_set = set(query.ids)
             items = [it for it in items if it.id in id_set]
+        if query.min_lat is not None:
+            items = [
+                it for it in items if it.latitude is not None and it.latitude >= query.min_lat
+            ]
+        if query.max_lat is not None:
+            items = [
+                it for it in items if it.latitude is not None and it.latitude <= query.max_lat
+            ]
+        if query.min_lng is not None:
+            items = [
+                it for it in items if it.longitude is not None and it.longitude >= query.min_lng
+            ]
+        if query.max_lng is not None:
+            items = [
+                it for it in items if it.longitude is not None and it.longitude <= query.max_lng
+            ]
         items = [it for it in items if it.status == 1]
         reverse = query.sort_dir == "desc"
         if query.sort_by == "price":
@@ -140,6 +158,8 @@ def make_property(
     amenities: Iterable[str] = ("wifi",),
     status: int = 1,
     images: Iterable[PropertyImage] | None = None,
+    latitude: float | None = None,
+    longitude: float | None = None,
 ) -> PropertyMetadata:
     return PropertyMetadata(
         id=id or uuid4(),
@@ -152,6 +172,8 @@ def make_property(
         amenities=list(amenities),
         status=status,
         images=list(images or [PropertyImage(url="https://x/cover.jpg", is_cover=True)]),
+        latitude=latitude,
+        longitude=longitude,
     )
 
 
@@ -165,11 +187,50 @@ def fake_reservations() -> FakeReservationsServiceClient:
     return FakeReservationsServiceClient()
 
 
+@dataclass
+class FakeInventoryServiceClient(InventoryServicePort):
+    properties_client: FakePropertiesServiceClient
+    reservations_client: FakeReservationsServiceClient
+    raises: Exception | None = None
+
+    def get_availability(
+        self,
+        property_id: UUID,
+        check_in: date,
+        check_out: date,
+        guests: int,
+    ) -> PropertyAvailabilityResponse:
+        if self.raises is not None:
+            raise self.raises
+        prop = self.properties_client.get_by_id(property_id)
+        available = (
+            prop is not None
+            and prop.status == 1
+            and prop.max_guests >= guests
+            and property_id not in self.reservations_client.blocked_ids
+        )
+        return PropertyAvailabilityResponse(
+            property_id=property_id,
+            check_in=check_in,
+            check_out=check_out,
+            guests=guests,
+            available=available,
+            price_from=prop.price_per_night if available and prop is not None else None,
+            currency=prop.currency if available and prop is not None else None,
+        )
+
+
 @pytest.fixture
-def client(fake_properties, fake_reservations):
+def fake_inventory(fake_properties, fake_reservations) -> FakeInventoryServiceClient:
+    return FakeInventoryServiceClient(fake_properties, fake_reservations)
+
+
+@pytest.fixture
+def client(fake_properties, fake_reservations, fake_inventory):
     """TestClient with the HTTP dependencies overridden by in-memory fakes."""
     from assembly import (
         get_cache,
+        get_inventory_client,
         get_properties_client,
         get_reservations_client,
     )
@@ -177,6 +238,7 @@ def client(fake_properties, fake_reservations):
 
     app.dependency_overrides[get_properties_client] = lambda: fake_properties
     app.dependency_overrides[get_reservations_client] = lambda: fake_reservations
+    app.dependency_overrides[get_inventory_client] = lambda: fake_inventory
     app.dependency_overrides[get_cache] = lambda: None
     test_client = TestClient(app)
     yield test_client

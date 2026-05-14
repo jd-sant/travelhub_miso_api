@@ -54,7 +54,7 @@ class Settings:
 
         return (
             f"postgresql://{self.rds_username}:{self.rds_password}"
-            f"@{self.rds_hostname}:{self.rds_port}/{self.rds_db_name}?client_encoding=utf8"
+            f"@{self.rds_hostname}:{self.rds_port}/{self.rds_db_name}"
         )
 
     @property
@@ -114,34 +114,16 @@ class Settings:
         return os.getenv("RESERVATIONS_SERVICE_URL", "http://reservations:8000").rstrip("/")
 
     @property
-    def service_request_timeout(self) -> float:
-        return float(os.getenv("SERVICE_REQUEST_TIMEOUT", "5.0"))
+    def inventory_service_url(self) -> str:
+        return os.getenv("INVENTORY_SERVICE_URL", "http://inventory:8000").rstrip("/")
 
     @property
     def internal_api_key(self) -> str:
-        internal_api_key = os.getenv("INTERNAL_API_KEY")
-        if internal_api_key:
-            return internal_api_key
-        if self.is_local_dev or self.is_test:
-            return "travelhub-internal-key"
-        raise ValueError(
-            "INTERNAL_API_KEY must be set outside development/test/local environments"
-        )
+        return os.getenv("INTERNAL_API_KEY", "")
 
     @property
-    def jwt_secret_key(self) -> str:
-        jwt_secret_key = os.getenv("JWT_SECRET_KEY")
-        if jwt_secret_key:
-            return jwt_secret_key
-        if self.is_local_dev or self.is_test:
-            return "travelhub-secret"
-        raise ValueError(
-            "JWT_SECRET_KEY must be set outside development/test/local environments"
-        )
-
-    @property
-    def jwt_algorithm(self) -> str:
-        return os.getenv("JWT_ALGORITHM", "HS256")
+    def service_request_timeout(self) -> float:
+        return float(os.getenv("SERVICE_REQUEST_TIMEOUT", "5.0"))
 
 
 @lru_cache

@@ -14,7 +14,7 @@ from adapters.repositories.reservation_event_repository import (
     SQLModelReservationEventRepository,
 )
 from adapters.services.property_service_client import HttpPropertyServiceClient
-from adapters.services.search_pricing_client import HttpSearchPricingClient
+from adapters.services.inventory_pricing_client import HttpInventoryPricingClient
 from adapters.services.payment_service_client import HttpPaymentServiceClient
 from adapters.services.scheduler_service import (
     EventBridgeReservationScheduler,
@@ -108,7 +108,7 @@ def get_payment_service_client() -> PaymentServiceClient:
 
 
 def get_pricing_service_client() -> PricingServiceClient:
-    return HttpSearchPricingClient()
+    return HttpInventoryPricingClient()
 
 
 @lru_cache

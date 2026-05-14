@@ -1,9 +1,9 @@
 """CheckPropertyAvailabilityUseCase: combines properties.status with reservations overlap."""
 from decimal import Decimal
 
+from domain.ports.inventory_service import InventoryServicePort
 from domain.ports.properties_service import PropertiesServicePort
 from domain.ports.reservations_service import ReservationsServicePort
-from domain.ports.search_catalog import SearchCatalogPort
 from domain.schemas.availability import (
     PropertyAvailabilityQuery,
     PropertyAvailabilityResponse,
@@ -18,15 +18,20 @@ class CheckPropertyAvailabilityUseCase(
         self,
         properties: PropertiesServicePort,
         reservations: ReservationsServicePort,
-        catalog: SearchCatalogPort | None = None,
+        inventory: InventoryServicePort | None = None,
     ):
         self._properties = properties
         self._reservations = reservations
-        self._catalog = catalog
+        self._inventory = inventory
 
     def execute(self, query: PropertyAvailabilityQuery) -> PropertyAvailabilityResponse:
-        if self._catalog is not None:
-            return self._catalog.check_availability(query)
+        if self._inventory is not None:
+            return self._inventory.get_availability(
+                query.property_id,
+                query.check_in,
+                query.check_out,
+                query.guests,
+            )
 
         prop = self._properties.get_by_id(query.property_id)
         unavailable = PropertyAvailabilityResponse(

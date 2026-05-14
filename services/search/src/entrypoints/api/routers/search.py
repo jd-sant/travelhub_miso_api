@@ -3,57 +3,30 @@ from decimal import Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlmodel import Session, select
 
 from assembly import (
     get_property_availability_use_case,
-    get_pricing_management_use_case,
     get_search_properties_use_case,
 )
-from adapters.models import Amenity
-from adapters.models import InventoryCalendar
-from adapters.models import Property
-from adapters.models import PropertyAmenity
-from adapters.models import RateCalendar
-from adapters.models import RatePlan
-from adapters.models import RoomType
-from adapters.models import Service
-from core.auth import AuthenticatedUser, get_current_hotel_user
-from core.config import settings
-from db.session import get_session
-from db.session import engine
 from domain.schemas import (
     EmptyStateSuggestion,
     PropertyAvailabilityQuery,
     PropertyAvailabilityResponse,
+    SearchPagination,
+    SearchQuery,
+    SearchResponse,
 )
-from domain.schemas import SearchPagination
-from domain.schemas import SearchQuery
-from domain.schemas import SearchResponse
-from domain.schemas.pricing import (
-    PricingApplyRequest,
-    PricingApplyResponse,
-    PricingHistoryItem,
-    PricingPreviewRequest,
-    PricingPreviewResponse,
-    PricingRevertResponse,
-    PricingTargetOption,
-)
-from domain.use_cases import (
+from domain.use_cases.check_property_availability import (
     CheckPropertyAvailabilityUseCase,
-    PricingManagementUseCase,
-    SearchPropertiesUseCase,
 )
+from domain.use_cases.search_properties import SearchPropertiesUseCase
 from errors import (
+    InventoryServiceUnavailableError,
     InvalidSearchRuleError,
-    PricingAuthorizationError,
-    PricingConflictError,
-    PricingServiceUnavailableError,
-    PricingTargetNotFoundError,
-    PricingValidationError,
     PropertiesServiceUnavailableError,
     ReservationsServiceUnavailableError,
 )
+
 
 router = APIRouter(prefix="/search", tags=["search"])
 
@@ -69,16 +42,21 @@ def search_status() -> dict[str, str]:
     responses={
         400: {"description": "Invalid search business rules"},
         422: {"description": "Invalid or missing request fields"},
+        503: {"description": "Upstream service unavailable"},
     },
 )
 def search_properties(
-    city: str = Query(min_length=2, max_length=120),
-    check_in: date = Query(),
-    check_out: date = Query(),
+    city: str | None = Query(default=None, min_length=2, max_length=120),
+    check_in: date | None = Query(default=None),
+    check_out: date | None = Query(default=None),
     guests: int = Query(ge=1),
     amenities: list[str] = Query(default_factory=list),
     min_price: Decimal | None = Query(default=None, ge=0),
     max_price: Decimal | None = Query(default=None, ge=0),
+    min_lat: float | None = Query(default=None, ge=-90, le=90),
+    max_lat: float | None = Query(default=None, ge=-90, le=90),
+    min_lng: float | None = Query(default=None, ge=-180, le=180),
+    max_lng: float | None = Query(default=None, ge=-180, le=180),
     order_by: str = Query(default="price"),
     order_dir: str = Query(default="asc"),
     page: int = Query(default=1, ge=1),
@@ -94,6 +72,10 @@ def search_properties(
             amenities=amenities,
             min_price=min_price,
             max_price=max_price,
+            min_lat=min_lat,
+            max_lat=max_lat,
+            min_lng=min_lng,
+            max_lng=max_lng,
             order_by=order_by,
             order_dir=order_dir,
             page=page,
@@ -101,64 +83,83 @@ def search_properties(
         )
         _validate_search_rules(query)
         result = use_case.execute(query)
-        total_pages = _calculate_total_pages(result.total, result.page_size)
-
-        empty_state = []
-        if result.total == 0:
-            empty_state = [
-                EmptyStateSuggestion(
-                    code="TRY_OTHER_CITY",
-                    message="No encontramos resultados en esa ciudad. Intenta otra ciudad cercana.",
-                ),
-                EmptyStateSuggestion(
-                    code="TRY_OTHER_DATES",
-                    message="Prueba con fechas diferentes para encontrar mayor disponibilidad.",
-                ),
-            ]
-        elif not result.items:
-            empty_state = [
-                EmptyStateSuggestion(
-                    code="TRY_OTHER_DATES",
-                    message="Prueba con fechas diferentes para encontrar mayor disponibilidad.",
-                ),
-            ]
-
-        return SearchResponse(
-            items=result.items,
-            pagination=SearchPagination(
-                total=result.total,
-                page=result.page,
-                page_size=result.page_size,
-                total_pages=total_pages,
-            ),
-            empty_state=empty_state,
-        )
     except InvalidSearchRuleError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
-    except (PropertiesServiceUnavailableError, ReservationsServiceUnavailableError) as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
+    except (
+        PropertiesServiceUnavailableError,
+        ReservationsServiceUnavailableError,
+        InventoryServiceUnavailableError,
+    ) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        )
+
+    total_pages = _calculate_total_pages(result.total, result.page_size)
+    empty_state = []
+    used_bbox = query.min_lat is not None
+    if not result.items:
+        if result.total == 0:
+            if used_bbox:
+                empty_state.append(
+                    EmptyStateSuggestion(
+                        code="TRY_OTHER_AREA",
+                        message=(
+                            "No encontramos resultados en esta zona. "
+                            "Mueve el mapa para explorar otras áreas."
+                        ),
+                    )
+                )
+            else:
+                empty_state.append(
+                    EmptyStateSuggestion(
+                        code="TRY_OTHER_CITY",
+                        message=(
+                            "No encontramos resultados en esa ciudad. "
+                            "Intenta otra ciudad cercana."
+                        ),
+                    )
+                )
+        else:
+            empty_state.append(
+                EmptyStateSuggestion(
+                    code="TRY_OTHER_DATES",
+                    message=(
+                        "Las propiedades disponibles no tienen fechas libres. "
+                        "Prueba con fechas diferentes."
+                    ),
+                )
+            )
+
+    return SearchResponse(
+        items=result.items,
+        pagination=SearchPagination(
+            total=result.total,
+            page=result.page,
+            page_size=result.page_size,
+            total_pages=total_pages,
+        ),
+        empty_state=empty_state,
+    )
 
 
 @router.get(
     "/properties/{property_id}/availability",
     response_model=PropertyAvailabilityResponse,
+    responses={503: {"description": "Upstream service unavailable"}},
 )
 def check_property_availability(
     property_id: UUID,
     check_in: date = Query(),
     check_out: date = Query(),
     guests: int = Query(ge=1),
-    use_case: CheckPropertyAvailabilityUseCase = Depends(get_property_availability_use_case),
+    use_case: CheckPropertyAvailabilityUseCase = Depends(
+        get_property_availability_use_case
+    ),
 ) -> PropertyAvailabilityResponse:
     try:
-        _validate_search_rules(
-            SearchQuery(
-                city="placeholder",
-                check_in=check_in,
-                check_out=check_out,
-                guests=guests,
-            )
-        )
+        if check_out <= check_in:
+            raise InvalidSearchRuleError("check_out must be greater than check_in")
         return use_case.execute(
             PropertyAvailabilityQuery(
                 property_id=property_id,
@@ -169,94 +170,43 @@ def check_property_availability(
         )
     except InvalidSearchRuleError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
-    except (PropertiesServiceUnavailableError, ReservationsServiceUnavailableError) as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
-
-
-@router.get("/hotel/pricing/targets", response_model=list[PricingTargetOption])
-def list_pricing_targets(
-    user: AuthenticatedUser = Depends(get_current_hotel_user),
-    use_case: PricingManagementUseCase = Depends(get_pricing_management_use_case),
-) -> list[PricingTargetOption]:
-    try:
-        return use_case.list_targets(user)
-    except PricingAuthorizationError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
-    except PricingServiceUnavailableError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
-
-
-@router.post("/hotel/pricing/preview", response_model=PricingPreviewResponse)
-def preview_pricing_change(
-    payload: PricingPreviewRequest,
-    user: AuthenticatedUser = Depends(get_current_hotel_user),
-    use_case: PricingManagementUseCase = Depends(get_pricing_management_use_case),
-) -> PricingPreviewResponse:
-    try:
-        return use_case.preview(user, payload)
-    except PricingValidationError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
-    except PricingAuthorizationError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
-    except PricingServiceUnavailableError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
-    except PricingTargetNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
-
-
-@router.post("/hotel/pricing/apply", response_model=PricingApplyResponse)
-def apply_pricing_change(
-    payload: PricingApplyRequest,
-    user: AuthenticatedUser = Depends(get_current_hotel_user),
-    use_case: PricingManagementUseCase = Depends(get_pricing_management_use_case),
-) -> PricingApplyResponse:
-    try:
-        return use_case.apply(user, payload)
-    except PricingValidationError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
-    except PricingAuthorizationError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
-    except PricingServiceUnavailableError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
-    except PricingConflictError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
-    except PricingTargetNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
-
-
-@router.get("/hotel/pricing/history", response_model=list[PricingHistoryItem])
-def list_pricing_history(
-    user: AuthenticatedUser = Depends(get_current_hotel_user),
-    use_case: PricingManagementUseCase = Depends(get_pricing_management_use_case),
-) -> list[PricingHistoryItem]:
-    try:
-        return use_case.history(user)
-    except PricingAuthorizationError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
-    except PricingServiceUnavailableError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
-
-
-@router.post("/hotel/pricing/history/{change_id}/revert", response_model=PricingRevertResponse)
-def revert_pricing_change(
-    change_id: UUID,
-    user: AuthenticatedUser = Depends(get_current_hotel_user),
-    use_case: PricingManagementUseCase = Depends(get_pricing_management_use_case),
-) -> PricingRevertResponse:
-    try:
-        return use_case.revert(user, change_id)
-    except PricingAuthorizationError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
-    except PricingServiceUnavailableError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
-    except PricingConflictError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
-    except PricingTargetNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    except (
+        PropertiesServiceUnavailableError,
+        ReservationsServiceUnavailableError,
+        InventoryServiceUnavailableError,
+    ) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        )
 
 
 def _validate_search_rules(query: SearchQuery) -> None:
-    if query.check_out <= query.check_in:
+    bbox_values = (query.min_lat, query.max_lat, query.min_lng, query.max_lng)
+    bbox_provided = sum(v is not None for v in bbox_values)
+    if 0 < bbox_provided < 4:
+        raise InvalidSearchRuleError(
+            "bbox requires all four of min_lat, max_lat, min_lng, max_lng"
+        )
+    has_bbox = bbox_provided == 4
+    if has_bbox:
+        if query.min_lat >= query.max_lat:
+            raise InvalidSearchRuleError("min_lat must be less than max_lat")
+        if query.min_lng >= query.max_lng:
+            raise InvalidSearchRuleError("min_lng must be less than max_lng")
+
+    if not has_bbox and not query.city:
+        raise InvalidSearchRuleError(
+            "city is required when bbox is not provided"
+        )
+
+    if query.check_in is None and query.check_out is None:
+        pass
+    elif query.check_in is None or query.check_out is None:
+        raise InvalidSearchRuleError(
+            "check_in and check_out must be provided together"
+        )
+    elif query.check_out <= query.check_in:
         raise InvalidSearchRuleError(
             "check_out must be greater than check_in"
         )
@@ -287,52 +237,3 @@ def _calculate_total_pages(total: int, page_size: int) -> int:
     if total == 0:
         return 0
     return (total + page_size - 1) // page_size
-
-
-if settings.is_local_dev:
-
-    @router.get("/test-dataset")
-    def list_test_dataset(
-        session: Session = Depends(get_session),
-    ) -> dict:
-        db_url = str(engine.url)
-        enabled = db_url.startswith("sqlite") or db_url.startswith("postgresql")
-        if not enabled:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Endpoint available only for local development test data",
-            )
-
-        properties = session.exec(select(Property)).all()
-        room_types = session.exec(select(RoomType)).all()
-        rate_plans = session.exec(select(RatePlan)).all()
-        inventory_calendar = session.exec(select(InventoryCalendar)).all()
-        rate_calendar = session.exec(select(RateCalendar)).all()
-        amenities = session.exec(select(Amenity)).all()
-        services = session.exec(select(Service)).all()
-        property_amenity = session.exec(select(PropertyAmenity)).all()
-
-        return {
-            "counts": {
-                "properties": len(properties),
-                "room_types": len(room_types),
-                "rate_plans": len(rate_plans),
-                "inventory_calendar": len(inventory_calendar),
-                "rate_calendar": len(rate_calendar),
-                "amenities": len(amenities),
-                "services": len(services),
-                "property_amenity": len(property_amenity),
-            },
-            "properties": [
-                {
-                    "id": str(p.id),
-                    "name": p.name,
-                    "city": p.city,
-                    "country": p.country,
-                    "max_capacity": p.max_capacity,
-                    "main_image_url": p.main_image_url,
-                    "rating": p.rating,
-                }
-                for p in properties
-            ],
-        }

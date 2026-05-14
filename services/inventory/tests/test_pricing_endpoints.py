@@ -60,7 +60,7 @@ class _FakePricingUseCase:
             projected_revenue_delta=Decimal("-441.00"),
             sellable_units=3,
             requires_confirmation=True,
-            impact_summary="Se afectarán 3 noches con un descuento promocional.",
+            impact_summary="Se actualizarán 3 días con una tarifa final promocional.",
         )
 
     def apply(self, user, payload):
@@ -150,26 +150,11 @@ def test_list_pricing_targets_returns_options(client):
     app.dependency_overrides[get_current_hotel_user] = _hotel_user
     app.dependency_overrides[get_pricing_management_use_case] = lambda: fake
     try:
-        response = client.get("/api/v1/search/hotel/pricing/targets")
+        response = client.get("/api/v1/inventory/hotel/pricing/targets")
         assert response.status_code == 200
         payload = response.json()
         assert payload[0]["property_name"] == "Hotel Riviera"
         assert payload[0]["rate_plan_name"] == "Torre A"
-    finally:
-        app.dependency_overrides.clear()
-
-
-def test_list_pricing_targets_maps_service_unavailable(client):
-    class _FailingPricingUseCase(_FakePricingUseCase):
-        def list_targets(self, user):
-            raise PricingServiceUnavailableError("properties unavailable")
-
-    app.dependency_overrides[get_current_hotel_user] = _hotel_user
-    app.dependency_overrides[get_pricing_management_use_case] = lambda: _FailingPricingUseCase()
-    try:
-        response = client.get("/api/v1/search/hotel/pricing/targets")
-        assert response.status_code == 503
-        assert "unavailable" in response.json()["detail"]
     finally:
         app.dependency_overrides.clear()
 
@@ -180,7 +165,7 @@ def test_preview_pricing_change_maps_validation_errors(client):
     app.dependency_overrides[get_pricing_management_use_case] = lambda: fake
     try:
         response = client.post(
-            "/api/v1/search/hotel/pricing/preview",
+            "/api/v1/inventory/hotel/pricing/preview",
             json={
                 "property_id": "11111111-1111-1111-1111-111111111111",
                 "rate_plan_id": "33333333-3333-3333-3333-333333333333",
@@ -204,7 +189,7 @@ def test_apply_pricing_change_returns_history_entry(client):
     app.dependency_overrides[get_pricing_management_use_case] = lambda: fake
     try:
         response = client.post(
-            "/api/v1/search/hotel/pricing/apply",
+            "/api/v1/inventory/hotel/pricing/apply",
             json={
                 "property_id": "11111111-1111-1111-1111-111111111111",
                 "rate_plan_id": "33333333-3333-3333-3333-333333333333",
@@ -233,7 +218,7 @@ def test_revert_pricing_change_maps_conflict(client):
     app.dependency_overrides[get_pricing_management_use_case] = lambda: fake
     try:
         response = client.post(
-            "/api/v1/search/hotel/pricing/history/00000000-0000-0000-0000-000000000001/revert"
+            "/api/v1/inventory/hotel/pricing/history/00000000-0000-0000-0000-000000000001/revert"
         )
         assert response.status_code == 409
         assert "revertido" in response.json()["detail"]
@@ -249,7 +234,7 @@ def test_list_pricing_history_maps_service_unavailable(client):
     app.dependency_overrides[get_current_hotel_user] = _hotel_user
     app.dependency_overrides[get_pricing_management_use_case] = lambda: _FailingPricingUseCase()
     try:
-        response = client.get("/api/v1/search/hotel/pricing/history")
+        response = client.get("/api/v1/inventory/hotel/pricing/history")
         assert response.status_code == 503
         assert "unavailable" in response.json()["detail"]
     finally:

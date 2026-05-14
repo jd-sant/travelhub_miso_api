@@ -14,6 +14,10 @@ class PropertyQuery(BaseModel):
     min_guests: int | None = None
     amenities: list[str] = Field(default_factory=list)
     ids: list[UUID] = Field(default_factory=list)
+    min_lat: float | None = None
+    max_lat: float | None = None
+    min_lng: float | None = None
+    max_lng: float | None = None
     sort_by: str = "price"
     sort_dir: str = "asc"
     page: int = 1
