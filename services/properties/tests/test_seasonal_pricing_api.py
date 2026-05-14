@@ -1,16 +1,27 @@
 """Integration tests for seasonal pricing endpoints"""
+import jwt
 import pytest
-from uuid import uuid4
+from uuid import UUID, uuid4
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
+from core.config import settings
 from db.seed import RENAISSANCE_ESTATE_ID, DEMO_HOTEL_A_OWNER_ID
 from domain.schemas.property import SeasonalPricingCreateRequest
 
 
+def jwt_for_admin(admin_id: str | UUID) -> str:
+    """Generate a valid JWT for a given admin ID for testing."""
+    return jwt.encode(
+        {"sub": str(admin_id)},
+        settings.jwt_secret_key,
+        algorithm=settings.jwt_algorithm,
+    )
+
+
 def test_create_seasonal_pricing_success(client: TestClient, session: Session):
     """Successfully create seasonal pricing with auto-generated signature"""
-    admin_bearer = f"Bearer {DEMO_HOTEL_A_OWNER_ID}"
+    admin_bearer = f"Bearer {jwt_for_admin(DEMO_HOTEL_A_OWNER_ID)}"
     
     payload = {
         "season_start": "2026-06-01",
@@ -38,7 +49,7 @@ def test_create_seasonal_pricing_success(client: TestClient, session: Session):
 
 def test_create_seasonal_pricing_missing_property(client: TestClient):
     """Fail to create pricing for non-existent property"""
-    admin_bearer = f"Bearer {DEMO_HOTEL_A_OWNER_ID}"
+    admin_bearer = f"Bearer {jwt_for_admin(DEMO_HOTEL_A_OWNER_ID)}"
     non_existent_id = uuid4()
     
     payload = {
@@ -85,7 +96,7 @@ def test_create_seasonal_pricing_ownership_check(client: TestClient):
 def test_get_seasonal_pricing_list(client: TestClient):
     """Successfully retrieve list of seasonal pricing for property"""
     # First, create one
-    admin_bearer = f"Bearer {DEMO_HOTEL_A_OWNER_ID}"
+    admin_bearer = f"Bearer {jwt_for_admin(DEMO_HOTEL_A_OWNER_ID)}"
     payload = {
         "season_start": "2026-06-01",
         "season_end": "2026-08-31",
@@ -118,7 +129,7 @@ def test_get_seasonal_pricing_list(client: TestClient):
 def test_get_seasonal_pricing_single(client: TestClient):
     """Successfully retrieve single seasonal pricing record"""
     # Create first
-    admin_bearer = f"Bearer {DEMO_HOTEL_A_OWNER_ID}"
+    admin_bearer = f"Bearer {jwt_for_admin(DEMO_HOTEL_A_OWNER_ID)}"
     payload = {
         "season_start": "2026-12-01",
         "season_end": "2026-12-31",
@@ -151,7 +162,7 @@ def test_get_seasonal_pricing_single(client: TestClient):
 def test_update_seasonal_pricing_success(client: TestClient):
     """Successfully update seasonal pricing"""
     # Create first
-    admin_bearer = f"Bearer {DEMO_HOTEL_A_OWNER_ID}"
+    admin_bearer = f"Bearer {jwt_for_admin(DEMO_HOTEL_A_OWNER_ID)}"
     payload_create = {
         "season_start": "2026-07-01",
         "season_end": "2026-07-31",
@@ -206,7 +217,7 @@ def test_audit_log_created_on_pricing_write(client: TestClient, session: Session
     """Verify audit log entry created on pricing update"""
     from adapters.models.property_pricing_audit_log import PropertyPricingAuditLog
     
-    admin_bearer = f"Bearer {DEMO_HOTEL_A_OWNER_ID}"
+    admin_bearer = f"Bearer {jwt_for_admin(DEMO_HOTEL_A_OWNER_ID)}"
     payload = {
         "season_start": "2026-08-01",
         "season_end": "2026-08-15",
@@ -239,7 +250,7 @@ def test_audit_log_created_on_pricing_write(client: TestClient, session: Session
 def test_all_reads_validate_signature(client: TestClient):
     """Every read-path call validates signature (100% coverage)"""
     # Create
-    admin_bearer = f"Bearer {DEMO_HOTEL_A_OWNER_ID}"
+    admin_bearer = f"Bearer {jwt_for_admin(DEMO_HOTEL_A_OWNER_ID)}"
     payload = {
         "season_start": "2026-09-01",
         "season_end": "2026-09-30",

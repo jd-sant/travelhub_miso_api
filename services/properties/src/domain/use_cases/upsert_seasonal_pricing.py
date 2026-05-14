@@ -68,10 +68,11 @@ class UpsertSeasonalPricingUseCase(BaseUseCase):
         if prop is None:
             raise PropertyNotFoundError(f"Property {property_id} not found")
         
-        # Verificar ownership si existe admin_id
-        if admin_id:
-            if str(prop.id_owner) != admin_id:
-                raise PricingOwnershipError(f"Admin {admin_id} does not own property {property_id}")
+        # Verificar ownership — rechazar si no hay admin_id o no es el dueño
+        if not admin_id or str(prop.id_owner) != admin_id:
+            raise PricingOwnershipError(
+                f"Admin {admin_id or 'unknown'} does not own property {property_id}"
+            )
         
         # Build canonical payload
         canonical = canonicalize_pricing_payload(

@@ -1,10 +1,22 @@
 """Performance tests for property detail endpoint"""
 import time
+from uuid import UUID
 
+import jwt
 import pytest
 from fastapi.testclient import TestClient
 
+from core.config import settings
 from db.seed import RENAISSANCE_ESTATE_ID, DEMO_HOTEL_A_OWNER_ID
+
+
+def jwt_for_admin(admin_id: str | UUID) -> str:
+    """Generate a valid JWT for a given admin ID for testing."""
+    return jwt.encode(
+        {"sub": str(admin_id)},
+        settings.jwt_secret_key,
+        algorithm=settings.jwt_algorithm,
+    )
 
 
 @pytest.mark.performance
@@ -41,7 +53,7 @@ def test_seasonal_pricing_signature_p95_under_300ms(client: TestClient):
     HU CA: P95 latency for seasonal pricing signature generation/verification
     must be under 300ms (goal: <300ms extremo a extremo).
     """
-    admin_bearer = f"Bearer {DEMO_HOTEL_A_OWNER_ID}"
+    admin_bearer = f"Bearer {jwt_for_admin(DEMO_HOTEL_A_OWNER_ID)}"
     payload = {
         "season_start": "2026-06-01",
         "season_end": "2026-08-31",

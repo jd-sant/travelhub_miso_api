@@ -1,7 +1,9 @@
 import os
 import sys
+from uuid import UUID
 from pathlib import Path
 
+import jwt
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
@@ -14,9 +16,19 @@ SRC_PATH = Path(__file__).resolve().parents[1] / "src"
 if str(SRC_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_PATH))
 
+from core.config import settings
 from db.session import get_session
 from db.seed import sync_demo_properties_seed
 from entrypoints.api.main import app
+
+
+def jwt_for_admin(admin_id: str | UUID) -> str:
+    """Generate a valid JWT for a given admin ID for testing."""
+    return jwt.encode(
+        {"sub": str(admin_id)},
+        settings.jwt_secret_key,
+        algorithm=settings.jwt_algorithm,
+    )
 
 
 @pytest.fixture(name="session")
