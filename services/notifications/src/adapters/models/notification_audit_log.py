@@ -15,3 +15,7 @@ class NotificationAuditLog(SQLModel, table=True):
     ip_address: str | None = Field(default=None, max_length=64)
     payload: dict = Field(default_factory=dict, sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), index=True)
+    channel: str = Field(default="email", max_length=16, index=True)
+    provider_message_id: str | None = Field(default=None, max_length=255)
+    delivery_status: str = Field(default="queued", max_length=32, index=True)
+    opened_at: datetime | None = Field(default=None, index=True)

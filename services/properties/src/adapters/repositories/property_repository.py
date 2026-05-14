@@ -256,6 +256,14 @@ class SQLModelPropertyRepository(PropertyRepository):
             conditions.append(Property.max_guests >= filters.min_guests)
         if filters.ids:
             conditions.append(Property.id.in_(filters.ids))
+        if filters.min_lat is not None:
+            conditions.append(Property.latitude >= filters.min_lat)
+        if filters.max_lat is not None:
+            conditions.append(Property.latitude <= filters.max_lat)
+        if filters.min_lng is not None:
+            conditions.append(Property.longitude >= filters.min_lng)
+        if filters.max_lng is not None:
+            conditions.append(Property.longitude <= filters.max_lng)
         for amenity in filters.amenities:
             pattern = f"%{amenity.lower()}%"
             conditions.append(func.lower(Property.amenities).like(pattern))

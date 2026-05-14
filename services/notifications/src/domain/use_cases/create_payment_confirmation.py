@@ -5,6 +5,7 @@ from domain.ports.notification_audit_repository import NotificationAuditReposito
 from domain.ports.notification_repository import NotificationRepository
 from domain.ports.payment_confirmation_source import PaymentConfirmationSource
 from domain.ports.traveler_profile_source import TravelerProfileSource
+from domain.services.push_notifier import PushNotifier
 from core.privacy import mask_email
 from domain.schemas.notification import (
     NotificationAuditLogRecord,
@@ -27,11 +28,13 @@ class CreatePaymentConfirmationUseCase(
         audit_repository: NotificationAuditRepository,
         payment_confirmation_source: PaymentConfirmationSource,
         traveler_profile_source: TravelerProfileSource,
+        push_notifier: PushNotifier | None = None,
     ):
         self.notification_repository = notification_repository
         self.audit_repository = audit_repository
         self.payment_confirmation_source = payment_confirmation_source
         self.traveler_profile_source = traveler_profile_source
+        self.push_notifier = push_notifier
 
     def execute(self, payload: PaymentConfirmationRequest) -> NotificationResponse:
         existing = self.notification_repository.get_by_payment_id(payload.payment_id)
@@ -72,6 +75,13 @@ class CreatePaymentConfirmationUseCase(
                 created_at=now,
             )
         )
+        if self.push_notifier is not None:
+            self.push_notifier.dispatch(
+                notification=stored,
+                event_type="booking_confirmed",
+                source_ip=payload.source_ip,
+                now=now,
+            )
         return self._to_response(stored)
 
     def _assert_confirmed_payment(self, confirmation: PaymentConfirmationSourceRecord) -> None:

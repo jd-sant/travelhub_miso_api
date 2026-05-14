@@ -115,6 +115,27 @@ class Settings:
         return os.getenv("SERVICE_MODE", "api").strip().lower()
 
     @property
+    def fcm_project_id(self) -> str:
+        return os.getenv("FCM_PROJECT_ID", "").strip()
+
+    @property
+    def fcm_service_account_json(self) -> str:
+        return os.getenv("FCM_SERVICE_ACCOUNT_JSON", "").strip()
+
+    @property
+    def jwt_secret_key(self) -> str:
+        value = os.getenv("JWT_SECRET_KEY", "").strip()
+        if value:
+            return value
+        if self.app_env not in ("development", "dev", "test"):
+            raise RuntimeError("JWT_SECRET_KEY debe estar configurado en producción.")
+        return "travelhub-jwt-secret-change-in-prod"
+
+    @property
+    def jwt_algorithm(self) -> str:
+        return os.getenv("JWT_ALGORITHM", "HS256").strip()
+
+    @property
     def sqs_poll_wait_seconds(self) -> int:
         return int(os.getenv("SQS_POLL_WAIT_SECONDS", "20"))
 

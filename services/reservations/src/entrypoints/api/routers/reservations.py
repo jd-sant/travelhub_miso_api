@@ -13,6 +13,10 @@ from adapters.repositories.reservation_repository import SQLModelReservationRepo
 from adapters.repositories.reservation_event_repository import (
     SQLModelReservationEventRepository,
 )
+from adapters.services.hotel_side_effects import (
+    HttpReservationNotificationDispatcher,
+    NoOpReservationNotificationDispatcher,
+)
 from adapters.services.property_service_client import HttpPropertyServiceClient
 from adapters.services.payment_service_client import HttpPaymentServiceClient
 from adapters.services.scheduler_service import (
@@ -30,6 +34,7 @@ from core.auth import AuthenticatedUser, get_current_hotel_user
 from core.config import settings
 from core.telemetry import resolve_correlation_id
 from db.session import get_session
+from domain.ports.hotel_side_effects import ReservationNotificationDispatcher
 from domain.ports.property_service_client import PropertyServiceClient
 from domain.ports.payment_service_client import PaymentServiceClient
 from domain.ports.reservation_scheduler import ReservationScheduler
@@ -103,6 +108,13 @@ def get_property_service_client() -> PropertyServiceClient:
 
 def get_payment_service_client() -> PaymentServiceClient:
     return HttpPaymentServiceClient()
+
+
+@lru_cache
+def get_reservation_notification_dispatcher() -> ReservationNotificationDispatcher:
+    if settings.notifications_service_url:
+        return HttpReservationNotificationDispatcher()
+    return NoOpReservationNotificationDispatcher()
 
 
 @lru_cache
@@ -497,6 +509,9 @@ def confirm_reservation_cancellation(
     use_case: ConfirmReservationCancellationUseCase = Depends(
         get_confirm_cancellation_use_case
     ),
+    notification_dispatcher: ReservationNotificationDispatcher = Depends(
+        get_reservation_notification_dispatcher
+    ),
 ):
     try:
         reservation_uuid = UUID(reservation_id)
@@ -508,13 +523,22 @@ def confirm_reservation_cancellation(
 
     source_ip = request.client.host if request.client else None
     try:
-        return use_case.execute(
+        result = use_case.execute(
             reservation_uuid,
             payload,
             actor_user_id=actor_user_id,
             source_ip=source_ip,
             correlation_id=correlation_id,
         )
+        notification_dispatcher.dispatch_reservation_update(
+            traveler_id=result.reservation.id_traveler,
+            reservation_id=result.reservation.id,
+            status="cancelled",
+            reason=payload.reason or "Cancelacion solicitada por el viajero",
+            locale=None,
+            source_ip=source_ip,
+        )
+        return result
     except ReservationNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ReservationOwnershipError as e:

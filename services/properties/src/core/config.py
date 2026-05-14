@@ -56,6 +56,15 @@ class Settings:
         return value.lower() == "true"
 
     @property
+    def seed_map_clusters(self) -> bool:
+        """
+        Off by default so unit tests that assert the canonical 7-property dataset
+        keep working. Turned on in docker-compose and in the AWS task definition
+        so the mobile map view has realistic pins.
+        """
+        return os.getenv("SEED_MAP_CLUSTERS", "false").strip().lower() in {"1", "true", "yes"}
+
+    @property
     def allowed_cors_origins(self) -> list[str]:
         raw_origins = os.getenv("ALLOWED_CORS_ORIGIN")
         if raw_origins:

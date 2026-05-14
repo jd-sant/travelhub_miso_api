@@ -20,6 +20,10 @@ class SQLModelNotificationAuditRepository(NotificationAuditRepository):
             ip_address=log.ip_address,
             payload=sanitize_sensitive_data(log.payload),
             created_at=log.created_at,
+            channel=log.channel,
+            provider_message_id=log.provider_message_id,
+            delivery_status=log.delivery_status,
+            opened_at=log.opened_at,
         )
         self.session.add(model)
         self.session.commit()

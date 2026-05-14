@@ -88,6 +88,22 @@ class FakePropertiesServiceClient(PropertiesServicePort):
         if query.ids:
             id_set = set(query.ids)
             items = [it for it in items if it.id in id_set]
+        if query.min_lat is not None:
+            items = [
+                it for it in items if it.latitude is not None and it.latitude >= query.min_lat
+            ]
+        if query.max_lat is not None:
+            items = [
+                it for it in items if it.latitude is not None and it.latitude <= query.max_lat
+            ]
+        if query.min_lng is not None:
+            items = [
+                it for it in items if it.longitude is not None and it.longitude >= query.min_lng
+            ]
+        if query.max_lng is not None:
+            items = [
+                it for it in items if it.longitude is not None and it.longitude <= query.max_lng
+            ]
         items = [it for it in items if it.status == 1]
         reverse = query.sort_dir == "desc"
         if query.sort_by == "price":
@@ -140,6 +156,8 @@ def make_property(
     amenities: Iterable[str] = ("wifi",),
     status: int = 1,
     images: Iterable[PropertyImage] | None = None,
+    latitude: float | None = None,
+    longitude: float | None = None,
 ) -> PropertyMetadata:
     return PropertyMetadata(
         id=id or uuid4(),
@@ -152,6 +170,8 @@ def make_property(
         amenities=list(amenities),
         status=status,
         images=list(images or [PropertyImage(url="https://x/cover.jpg", is_cover=True)]),
+        latitude=latitude,
+        longitude=longitude,
     )
 
 
