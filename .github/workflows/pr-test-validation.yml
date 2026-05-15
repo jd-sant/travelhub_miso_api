@@ -53,6 +53,7 @@ jobs:
       payments: ${{ steps.filter.outputs.payments }}
       notifications: ${{ steps.filter.outputs.notifications }}
       properties: ${{ steps.filter.outputs.properties }}
+      inventory: ${{ steps.filter.outputs.inventory }}
       search: ${{ steps.filter.outputs.search }}
     steps:
       - uses: actions/checkout@v4
@@ -72,6 +73,8 @@ jobs:
               - 'services/notifications/**'
             properties:
               - 'services/properties/**'
+            inventory:
+              - 'services/inventory/**'
             search:
               - 'services/search/**'
 
@@ -215,6 +218,25 @@ jobs:
       - name: Run properties tests
         run: PYTHONPATH=services/properties/src pytest services/properties/tests/ -v
 
+  test-inventory:
+    needs: [validate-pr-description, detect-changes]
+    if: needs.detect-changes.outputs.inventory == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r services/inventory/requirements.txt
+
+      - name: Run inventory tests
+        run: PYTHONPATH=services/inventory/src pytest services/inventory/tests/ -v
+
   test-search:
     needs: [validate-pr-description, detect-changes]
     if: needs.detect-changes.outputs.search == 'true'
@@ -246,6 +268,7 @@ jobs:
       - test-reservations
       - test-notifications
       - test-properties
+      - test-inventory
       - test-search
     if: always()
     runs-on: ubuntu-latest
@@ -261,6 +284,7 @@ jobs:
           echo "test-reservations: ${{ needs.test-reservations.result }}"
           echo "test-notifications: ${{ needs.test-notifications.result }}"
           echo "test-properties: ${{ needs.test-properties.result }}"
+          echo "test-inventory: ${{ needs.test-inventory.result }}"
           echo "test-search: ${{ needs.test-search.result }}"
 
           if [[ "${{ needs.validate-pr-description.result }}" != "success" ]]; then
@@ -300,6 +324,11 @@ jobs:
 
           if [[ "${{ needs.test-properties.result }}" == "failure" || "${{ needs.test-properties.result }}" == "cancelled" ]]; then
             echo "El job test-properties termino en estado ${{ needs.test-properties.result }}"
+            exit 1
+          fi
+
+          if [[ "${{ needs.test-inventory.result }}" == "failure" || "${{ needs.test-inventory.result }}" == "cancelled" ]]; then
+            echo "El job test-inventory termino en estado ${{ needs.test-inventory.result }}"
             exit 1
           fi
 
