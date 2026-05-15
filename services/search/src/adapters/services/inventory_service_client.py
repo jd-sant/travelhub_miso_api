@@ -1,4 +1,5 @@
 from datetime import date
+import json
 from uuid import UUID
 
 import httpx
@@ -33,8 +34,9 @@ class HttpInventoryServiceClient(InventoryServicePort):
                 timeout=self._timeout,
             )
             response.raise_for_status()
-        except httpx.HTTPError as exc:
+            payload = response.json()
+            return PropertyAvailabilityResponse(**payload)
+        except (httpx.HTTPError, json.JSONDecodeError, ValueError, TypeError) as exc:
             raise InventoryServiceUnavailableError(
                 "Could not reach the inventory service"
             ) from exc
-        return PropertyAvailabilityResponse(**response.json())

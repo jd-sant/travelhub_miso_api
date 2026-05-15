@@ -73,6 +73,7 @@ def get_property_service_client() -> PropertyServiceClient:
         return NoOpPropertyServiceClient()
     return HttpPropertyServiceClient()
 
+
 def get_pricing_service_client() -> PricingServiceClient:
     if settings.is_test:
         return NoOpInventoryPricingClient()

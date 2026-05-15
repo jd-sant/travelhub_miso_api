@@ -130,7 +130,8 @@ class ReservationPreviewBaseUseCase:
             nightly_price = details.price_per_night
             if effective_price is not None:
                 effective_price_amount, effective_currency = effective_price
-                if expected_currency is None or effective_currency.upper() == expected_currency.upper():
+                property_currency = (expected_currency or "").upper()
+                if property_currency and effective_currency.upper() == property_currency:
                     nightly_price = effective_price_amount
             return (
                 nightly_price,

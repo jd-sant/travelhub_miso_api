@@ -21,8 +21,8 @@ from domain.use_cases.check_property_availability import (
 )
 from domain.use_cases.search_properties import SearchPropertiesUseCase
 from errors import (
-    InventoryServiceUnavailableError,
     InvalidSearchRuleError,
+    InventoryServiceUnavailableError,
     PropertiesServiceUnavailableError,
     ReservationsServiceUnavailableError,
 )
@@ -97,7 +97,10 @@ def search_properties(
 
     total_pages = _calculate_total_pages(result.total, result.page_size)
     empty_state = []
-    used_bbox = query.min_lat is not None
+    used_bbox = all(
+        value is not None
+        for value in (query.min_lat, query.max_lat, query.min_lng, query.max_lng)
+    )
     if not result.items:
         if result.total == 0:
             if used_bbox:
