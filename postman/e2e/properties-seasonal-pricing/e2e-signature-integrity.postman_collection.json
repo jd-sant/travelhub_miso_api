@@ -409,7 +409,8 @@
               "",
               "pm.test('[E2E Step 7] Error message indicates ownership', function () {",
               "    var jsonData = pm.response.json();",
-              "    pm.expect(jsonData.detail).to.include('does not own');"
+              "    pm.expect(jsonData.detail).to.include('does not own');",
+              "});"
             ]
           }
         }

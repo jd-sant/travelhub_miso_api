@@ -164,6 +164,8 @@ def create_seasonal_pricing(
     Admin-only endpoint. Signature is auto-generated and verified before persistence.
     """
     admin_id, source_ip = _get_admin_id_and_ip(request)
+    if admin_id is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
     
     try:
         return use_case.execute(
@@ -199,6 +201,8 @@ def update_seasonal_pricing(
     Admin-only endpoint. Cannot update if pricing is locked due to integrity failure.
     """
     admin_id, source_ip = _get_admin_id_and_ip(request)
+    if admin_id is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
     
     try:
         return use_case.execute(

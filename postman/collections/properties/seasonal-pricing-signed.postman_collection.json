@@ -243,7 +243,8 @@
               "",
               "pm.test('Response indicates ownership error', function () {",
               "    var jsonData = pm.response.json();",
-              "    pm.expect(jsonData.detail).to.include('does not own');"
+              "    pm.expect(jsonData.detail).to.include('does not own');",
+              "});"
             ]
           }
         }

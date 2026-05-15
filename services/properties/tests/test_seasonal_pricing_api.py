@@ -72,8 +72,8 @@ def test_create_seasonal_pricing_missing_property(client: TestClient):
 
 def test_create_seasonal_pricing_ownership_check(client: TestClient):
     """Fail to create pricing if admin doesn't own the property"""
-    other_admin_id = str(uuid4())
-    admin_bearer = f"Bearer {other_admin_id}"
+    other_admin_id = uuid4()
+    admin_bearer = f"Bearer {jwt_for_admin(other_admin_id)}"
     
     payload = {
         "season_start": "2026-06-01",

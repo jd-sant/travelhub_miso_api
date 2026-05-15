@@ -2,6 +2,7 @@ from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
+import hmac
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
 
 from assembly import (
@@ -48,8 +49,10 @@ def invalidate_search_cache(
     cache: CachePort | None = Depends(get_cache),
 ) -> dict[str, str]:
     """Invalidate all search cache entries. Internal endpoint called by other services."""
+    if not settings.internal_api_key:
+        raise HTTPException(status_code=500, detail="Server misconfiguration: internal_api_key not set")
     api_key = request.headers.get("X-API-Key", "")
-    if api_key != settings.internal_api_key:
+    if not api_key or not hmac.compare_digest(api_key.strip(), settings.internal_api_key):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key")
     if cache is not None:
         cache.flush_by_pattern("search:*")

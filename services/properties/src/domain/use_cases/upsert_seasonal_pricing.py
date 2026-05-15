@@ -100,7 +100,8 @@ class UpsertSeasonalPricingUseCase(BaseUseCase):
         if seasonal_price_id:
             # Update existing
             existing = self.session.query(PropertySeasonalPrice).filter(
-                PropertySeasonalPrice.id == seasonal_price_id
+                PropertySeasonalPrice.id == seasonal_price_id,
+                PropertySeasonalPrice.property_id == property_id,
             ).first()
             if not existing:
                 raise PropertyNotFoundError(f"Seasonal pricing {seasonal_price_id} not found")
@@ -150,7 +151,7 @@ class UpsertSeasonalPricingUseCase(BaseUseCase):
         }
         
         audit_log = PropertyPricingAuditLog(
-            property_id=property_id,
+            property_id=model.property_id,
             seasonal_price_id=model.id,
             action=action,
             signature_hash=signature,
