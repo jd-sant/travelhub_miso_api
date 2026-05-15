@@ -235,6 +235,8 @@ services:
       REDIS_CACHE_ENABLED: "true"
       REDIS_CACHE_TTL_SECONDS: "300"
       SEED_MAP_CLUSTERS: "true"
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-travelhub-jwt-secret-change-in-prod}
+      SEARCH_SERVICE_URL: ${SEARCH_SERVICE_URL:-http://search:8000}
     ports:
       - "8005:8000"
     depends_on:

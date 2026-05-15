@@ -94,6 +94,8 @@ class PropertyFilters(BaseModel):
     min_lng: float | None = Field(default=None, ge=-180, le=180)
     max_lng: float | None = Field(default=None, ge=-180, le=180)
     status: int | None = Field(default=1, ge=0, le=1)
+    check_in: str | None = Field(default=None, description="ISO date YYYY-MM-DD for seasonal pricing lookup")
+    check_out: str | None = Field(default=None, description="ISO date YYYY-MM-DD for seasonal pricing lookup")
     page: int = Field(default=1, ge=1)
     page_size: int = Field(default=20, ge=1, le=100)
     sort_by: PropertySortBy = PropertySortBy.PRICE
@@ -110,3 +112,48 @@ class PaginationMeta(BaseModel):
 class PropertySearchResponse(BaseModel):
     items: list[PropertyListResponse]
     pagination: PaginationMeta
+
+
+# ===== Seasonal Pricing Schemas (Firmado) =====
+
+class SeasonalPricingCreateRequest(BaseModel):
+    """Request para crear pricing estacional firmado"""
+    season_start: str = Field(..., description="Fecha inicio YYYY-MM-DD")
+    season_end: str = Field(..., description="Fecha fin YYYY-MM-DD")
+    price_per_night: float = Field(..., ge=0)
+    currency: str = Field(default="COP", min_length=3, max_length=3)
+    tax_rate: float = Field(default=0.0, ge=0.0)
+    cleaning_fee: float = Field(default=0.0, ge=0.0)
+
+
+class SeasonalPricingResponse(BaseModel):
+    """Response de pricing estacional con estado de integridad"""
+    id: UUID
+    property_id: UUID
+    season_start: str
+    season_end: str
+    price_per_night: float
+    currency: str
+    tax_rate: float
+    cleaning_fee: float
+    signature_hash: str
+    signature_algo: str
+    integrity_locked: bool
+    integrity_checked_at: str | None = None
+    created_at: str
+    updated_at: str
+    integrity_valid: bool = True  # Resultado de verificacion en lectura
+
+
+class SeasonalPricingListResponse(BaseModel):
+    """Lista de precios estacionales de una propiedad"""
+    items: list[SeasonalPricingResponse]
+    total: int
+
+
+class IntegrityCheckResult(BaseModel):
+    """Resultado de verificacion de integridad"""
+    is_valid: bool
+    signature_hash: str
+    locked: bool
+    message: str

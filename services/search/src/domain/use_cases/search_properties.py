@@ -51,6 +51,8 @@ class SearchPropertiesUseCase(BaseUseCase[SearchQuery, SearchResult]):
                 max_lat=payload.max_lat,
                 min_lng=payload.min_lng,
                 max_lng=payload.max_lng,
+                check_in=payload.check_in.isoformat() if payload.check_in else None,
+                check_out=payload.check_out.isoformat() if payload.check_out else None,
                 sort_by=payload.order_by,
                 sort_dir=payload.order_dir,
                 page=payload.page,

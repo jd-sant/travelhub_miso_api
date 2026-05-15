@@ -27,6 +27,13 @@ class CachePort(ABC):
         """
 
     @abstractmethod
+    def flush_by_pattern(self, pattern: str) -> None:
+        """
+        Deletes all keys matching the glob pattern.
+        Silent failure: must not raise exceptions.
+        """
+
+    @abstractmethod
     def get_ttl(self) -> int:
         """
         Returns the default TTL (time-to-live) in seconds for cache entries.

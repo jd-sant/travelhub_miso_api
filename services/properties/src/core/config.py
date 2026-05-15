@@ -113,6 +113,51 @@ class Settings:
         parsed = urlparse(base_url)
         return bool(parsed.scheme and parsed.netloc)
 
+    @property
+    def pricing_integrity_secret(self) -> str:
+        value = os.getenv("PRICING_INTEGRITY_SECRET")
+        if value:
+            return value
+        if not self.is_local_dev:
+            raise RuntimeError(
+                "PRICING_INTEGRITY_SECRET debe estar configurado en entornos de producción."
+            )
+        return "dev-pricing-secret-change-me"
+
+    @property
+    def pricing_signature_algo(self) -> str:
+        return os.getenv("PRICING_SIGNATURE_ALGO", "HMAC-SHA256")
+
+    @property
+    def jwt_secret_key(self) -> str:
+        value = os.getenv("JWT_SECRET_KEY")
+        if value:
+            return value
+        if not self.is_local_dev:
+            raise RuntimeError(
+                "JWT_SECRET_KEY debe estar configurado en entornos de producción."
+            )
+        return "travelhub-jwt-secret-change-in-prod"
+
+    @property
+    def jwt_algorithm(self) -> str:
+        return os.getenv("JWT_ALGORITHM", "HS256")
+
+    @property
+    def search_service_url(self) -> str:
+        return os.getenv("SEARCH_SERVICE_URL", "http://search:8000").rstrip("/")
+
+    @property
+    def internal_api_key(self) -> str:
+        value = os.getenv("INTERNAL_API_KEY")
+        if value:
+            return value
+        if not self.is_local_dev:
+            raise RuntimeError(
+                "INTERNAL_API_KEY debe estar configurado en entornos de producción."
+            )
+        return "dev-internal-key-change-me"
+
     def load(self):
         pass
 

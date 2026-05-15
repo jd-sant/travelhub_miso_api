@@ -87,3 +87,15 @@ class CachedPropertyRepository(PropertyRepository):
         if self._cache is None:
             return
         self._cache.set(key, value, ttl=self._cache.get_ttl())
+
+    def invalidate_property_caches(self, property_id: UUID) -> None:
+        """Invalidate all caches related to a property (used when pricing is updated)."""
+        if self._cache is None:
+            return
+        # Invalidate detail cache
+        self._cache.delete(f"properties:detail:{property_id}")
+        # Invalidate list cache (all owners)
+        self._cache.delete(f"properties:list:all")
+        # Note: Full pattern deletion requires cache.pattern_delete(), 
+        # which depends on cache backend (Redis supports it, in-memory doesn't).
+        # For in-memory cache, we invalidate the most likely patterns above.

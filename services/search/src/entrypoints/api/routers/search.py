@@ -2,12 +2,16 @@ from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+import hmac
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
 
 from assembly import (
     get_property_availability_use_case,
     get_search_properties_use_case,
+    get_cache,
 )
+from core.config import settings
+from domain.ports.cache_port import CachePort
 from domain.schemas import (
     EmptyStateSuggestion,
     PropertyAvailabilityQuery,
@@ -33,6 +37,26 @@ router = APIRouter(prefix="/search", tags=["search"])
 @router.get("/status")
 def search_status() -> dict[str, str]:
     return {"service": "search", "status": "ok"}
+
+
+@router.post(
+    "/internal/cache/invalidate",
+    status_code=status.HTTP_200_OK,
+    include_in_schema=False,
+)
+def invalidate_search_cache(
+    request: Request,
+    cache: CachePort | None = Depends(get_cache),
+) -> dict[str, str]:
+    """Invalidate all search cache entries. Internal endpoint called by other services."""
+    if not settings.internal_api_key:
+        raise HTTPException(status_code=500, detail="Server misconfiguration: internal_api_key not set")
+    api_key = request.headers.get("X-API-Key", "")
+    if not api_key or not hmac.compare_digest(api_key.strip(), settings.internal_api_key):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key")
+    if cache is not None:
+        cache.flush_by_pattern("search:*")
+    return {"status": "invalidated"}
 
 
 @router.get(

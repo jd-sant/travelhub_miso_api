@@ -24,6 +24,8 @@ from domain.use_cases.get_properties_list import (
     GetPropertiesListUseCase,
 )
 from domain.use_cases.search_properties import SearchPropertiesUseCase
+from domain.use_cases.upsert_seasonal_pricing import UpsertSeasonalPricingUseCase
+from domain.use_cases.get_seasonal_pricing import GetSeasonalPricingUseCase
 
 
 def build_cache(redis_client: Optional[Redis]) -> Optional[CachePort]:
@@ -63,3 +65,16 @@ def get_property_cancellation_policy_use_case(
     repository: PropertyRepository = Depends(get_property_repository),
 ) -> GetPropertyCancellationPolicyUseCase:
     return GetPropertyCancellationPolicyUseCase(repository)
+
+
+def upsert_seasonal_pricing_use_case(
+    session: Session = Depends(get_session),
+    repository: PropertyRepository = Depends(get_property_repository),
+) -> UpsertSeasonalPricingUseCase:
+    return UpsertSeasonalPricingUseCase(session, repository)
+
+
+def get_seasonal_pricing_use_case(
+    session: Session = Depends(get_session),
+) -> GetSeasonalPricingUseCase:
+    return GetSeasonalPricingUseCase(session)

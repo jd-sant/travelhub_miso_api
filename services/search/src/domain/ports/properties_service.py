@@ -18,6 +18,8 @@ class PropertyQuery(BaseModel):
     max_lat: float | None = None
     min_lng: float | None = None
     max_lng: float | None = None
+    check_in: str | None = Field(default=None, description="ISO date YYYY-MM-DD")
+    check_out: str | None = Field(default=None, description="ISO date YYYY-MM-DD")
     sort_by: str = "price"
     sort_dir: str = "asc"
     page: int = 1
