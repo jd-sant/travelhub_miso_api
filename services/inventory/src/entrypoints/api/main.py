@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from core.config import settings
 from db.seed import seed_dummy_data_if_needed
 from db.session import create_db_and_tables
-from entrypoints.api.routers.search import router as inventory_router
+from entrypoints.api.routers.inventory import router as inventory_router
 
 
 @asynccontextmanager

@@ -8,6 +8,10 @@ class Settings:
         return os.getenv("ENV", os.getenv("APP_ENV", "development")).lower()
 
     @property
+    def is_test(self) -> bool:
+        return self.environment == "test" or "PYTEST_CURRENT_TEST" in os.environ
+
+    @property
     def jwt_secret_key(self) -> str:
         value = os.getenv("JWT_SECRET_KEY")
         if value:
@@ -29,8 +33,7 @@ class Settings:
 
     @property
     def is_local_dev(self) -> bool:
-        env = os.getenv("ENV", os.getenv("APP_ENV", "development")).lower()
-        return env in ("development", "dev", "test", "local")
+        return self.environment in ("development", "dev", "test", "local")
 
     @property
     def reservation_scheduler_enabled(self) -> bool:

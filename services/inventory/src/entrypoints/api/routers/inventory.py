@@ -20,7 +20,6 @@ from core.auth import AuthenticatedUser, get_current_hotel_user
 from core.config import settings
 from core.pricing_integrity import build_pricing_checksum, extract_client_ip
 from db.session import get_session
-from db.session import engine
 from domain.schemas import PropertyAvailabilityQuery, PropertyAvailabilityResponse
 from domain.schemas.pricing import (
     PricingApplyRequest,
@@ -191,6 +190,8 @@ if settings.is_local_dev:
     def list_test_dataset(
         session: Session = Depends(get_session),
     ) -> dict:
+        from db.session import engine
+
         db_url = str(engine.url)
         enabled = db_url.startswith("sqlite") or db_url.startswith("postgresql")
         if not enabled:

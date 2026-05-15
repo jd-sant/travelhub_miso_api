@@ -6,8 +6,14 @@ from sqlmodel import Session
 from adapters.repositories.reservation_repository import SQLModelReservationRepository
 from adapters.services.payments_client import PaymentsServiceClient
 from adapters.services.properties_client import PropertiesServiceClient
-from adapters.services.property_service_client import HttpPropertyServiceClient
-from adapters.services.inventory_pricing_client import HttpInventoryPricingClient
+from adapters.services.property_service_client import (
+    HttpPropertyServiceClient,
+    NoOpPropertyServiceClient,
+)
+from adapters.services.inventory_pricing_client import (
+    HttpInventoryPricingClient,
+    NoOpInventoryPricingClient,
+)
 from domain.ports.property_service_client import PropertyServiceClient
 from domain.ports.pricing_service_client import PricingServiceClient
 from adapters.services.scheduler_service import (
@@ -63,9 +69,13 @@ def get_properties_client() -> PropertiesServiceClient:
 
 
 def get_property_service_client() -> PropertyServiceClient:
+    if settings.is_test:
+        return NoOpPropertyServiceClient()
     return HttpPropertyServiceClient()
 
 def get_pricing_service_client() -> PricingServiceClient:
+    if settings.is_test:
+        return NoOpInventoryPricingClient()
     return HttpInventoryPricingClient()
 
 

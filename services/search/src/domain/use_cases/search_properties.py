@@ -15,6 +15,7 @@ from domain.schemas.search import (
     SearchResult,
 )
 from domain.use_cases.base import BaseUseCase
+from errors import InventoryServiceUnavailableError
 
 logger = logging.getLogger(__name__)
 
@@ -81,18 +82,22 @@ class SearchPropertiesUseCase(BaseUseCase[SearchQuery, SearchResult]):
                 and payload.check_in is not None
                 and payload.check_out is not None
             ):
-                availability_detail = self._inventory.get_availability(
-                    prop.id,
-                    payload.check_in,
-                    payload.check_out,
-                    payload.guests,
-                )
-                if not availability_detail.available:
-                    continue
-                if availability_detail.price_from is not None:
-                    effective_price = availability_detail.price_from
-                if availability_detail.currency:
-                    effective_currency = availability_detail.currency
+                try:
+                    availability_detail = self._inventory.get_availability(
+                        prop.id,
+                        payload.check_in,
+                        payload.check_out,
+                        payload.guests,
+                    )
+                except InventoryServiceUnavailableError:
+                    availability_detail = None
+                if availability_detail is not None:
+                    if not availability_detail.available:
+                        continue
+                    if availability_detail.price_from is not None:
+                        effective_price = availability_detail.price_from
+                    if availability_detail.currency:
+                        effective_currency = availability_detail.currency
             city, country = prop.split_location()
             items.append(
                 PropertySearchItem(

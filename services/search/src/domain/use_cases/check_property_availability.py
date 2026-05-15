@@ -9,6 +9,7 @@ from domain.schemas.availability import (
     PropertyAvailabilityResponse,
 )
 from domain.use_cases.base import BaseUseCase
+from errors import InventoryServiceUnavailableError
 
 
 class CheckPropertyAvailabilityUseCase(
@@ -26,12 +27,15 @@ class CheckPropertyAvailabilityUseCase(
 
     def execute(self, query: PropertyAvailabilityQuery) -> PropertyAvailabilityResponse:
         if self._inventory is not None:
-            return self._inventory.get_availability(
-                query.property_id,
-                query.check_in,
-                query.check_out,
-                query.guests,
-            )
+            try:
+                return self._inventory.get_availability(
+                    query.property_id,
+                    query.check_in,
+                    query.check_out,
+                    query.guests,
+                )
+            except InventoryServiceUnavailableError:
+                pass
 
         prop = self._properties.get_by_id(query.property_id)
         unavailable = PropertyAvailabilityResponse(

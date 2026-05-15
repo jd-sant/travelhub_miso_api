@@ -12,6 +12,20 @@ from domain.schemas.property_service import (
 from errors import PropertyNotFoundError, PropertyServiceUnavailableError
 
 
+class NoOpPropertyServiceClient(PropertyServiceClient):
+    def get_property(self, property_id: UUID) -> PropertyDetailResponse:
+        raise PropertyServiceUnavailableError(
+            "No se pudo consultar el servicio de propiedades"
+        )
+
+    def get_cancellation_policy(
+        self, property_id: UUID
+    ) -> PropertyCancellationPolicyResponse:
+        raise PropertyServiceUnavailableError(
+            "No se pudo consultar la politica de cancelacion"
+        )
+
+
 class HttpPropertyServiceClient(PropertyServiceClient):
     def get_property(self, property_id: UUID) -> PropertyDetailResponse:
         url = f"{settings.properties_service_url}/api/v1/properties/{property_id}"
