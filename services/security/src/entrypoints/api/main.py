@@ -1,11 +1,13 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 
 from core.auth_middleware import AuthMiddleware
 from core.config import settings
-from db.session import create_db_and_tables
+from db.session import create_db_and_tables, engine
 from entrypoints.api.routers.auth import router as auth_router
 
 
@@ -29,6 +31,11 @@ def create_application() -> FastAPI:
 
     @app.get("/health")
     def health_check() -> dict[str, str]:
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+        except SQLAlchemyError as exc:
+            raise HTTPException(status_code=503, detail="database unavailable") from exc
         return {"status": "healthy"}
 
     return app
