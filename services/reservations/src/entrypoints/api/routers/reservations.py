@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 from functools import lru_cache
 from typing import Literal
 from typing import Optional
@@ -93,6 +94,7 @@ from errors import (
 )
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def get_reservation_repository(session: Session = Depends(get_session)):
@@ -543,14 +545,20 @@ def confirm_reservation_cancellation(
             source_ip=source_ip,
             correlation_id=correlation_id,
         )
-        notification_dispatcher.dispatch_reservation_update(
-            traveler_id=result.reservation.id_traveler,
-            reservation_id=result.reservation.id,
-            status="cancelled",
-            reason=payload.reason or "Cancelacion solicitada por el viajero",
-            locale=None,
-            source_ip=source_ip,
-        )
+        try:
+            notification_dispatcher.dispatch_reservation_update(
+                traveler_id=result.reservation.id_traveler,
+                reservation_id=result.reservation.id,
+                status="cancelled",
+                reason=payload.reason or "Cancelacion solicitada por el viajero",
+                locale=None,
+                source_ip=source_ip,
+            )
+        except Exception:
+            logger.exception(
+                "failed_to_dispatch_traveler_cancellation_notification",
+                extra={"reservation_id": str(result.reservation.id)},
+            )
         return result
     except ReservationNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

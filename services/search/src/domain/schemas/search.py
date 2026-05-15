@@ -43,6 +43,7 @@ class SearchResult(BaseModel):
     total: int
     page: int
     page_size: int
+    matched_total_before_availability: int | None = None
 
 
 class SearchPagination(BaseModel):

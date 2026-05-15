@@ -26,17 +26,6 @@ class CheckPropertyAvailabilityUseCase(
         self._inventory = inventory
 
     def execute(self, query: PropertyAvailabilityQuery) -> PropertyAvailabilityResponse:
-        if self._inventory is not None:
-            try:
-                return self._inventory.get_availability(
-                    query.property_id,
-                    query.check_in,
-                    query.check_out,
-                    query.guests,
-                )
-            except InventoryServiceUnavailableError:
-                pass
-
         prop = self._properties.get_by_id(query.property_id)
         unavailable = PropertyAvailabilityResponse(
             property_id=query.property_id,
@@ -45,6 +34,7 @@ class CheckPropertyAvailabilityUseCase(
             guests=query.guests,
             available=False,
         )
+
         if prop is None or prop.status != 1 or prop.max_guests < query.guests:
             return unavailable
 
@@ -53,6 +43,20 @@ class CheckPropertyAvailabilityUseCase(
         )
         if query.property_id not in set(availability.available):
             return unavailable
+
+        if self._inventory is not None:
+            try:
+                inventory_response = self._inventory.get_availability(
+                    query.property_id,
+                    query.check_in,
+                    query.check_out,
+                    query.guests,
+                )
+                if not inventory_response.available:
+                    return unavailable
+                return inventory_response
+            except InventoryServiceUnavailableError:
+                pass
 
         return PropertyAvailabilityResponse(
             property_id=query.property_id,

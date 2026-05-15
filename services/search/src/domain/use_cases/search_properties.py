@@ -44,23 +44,35 @@ class SearchPropertiesUseCase(BaseUseCase[SearchQuery, SearchResult]):
                     logger.warning("malformed cache for %s: %s", cache_key, exc)
                     self._cache.delete(cache_key)
 
-        page = self._properties.search(
-            PropertyQuery(
-                city=payload.city,
-                min_price=payload.min_price,
-                max_price=payload.max_price,
-                min_guests=payload.guests,
-                amenities=payload.amenities,
-                min_lat=payload.min_lat,
-                max_lat=payload.max_lat,
-                min_lng=payload.min_lng,
-                max_lng=payload.max_lng,
-                sort_by=payload.order_by,
-                sort_dir=payload.order_dir,
-                page=payload.page,
-                page_size=payload.page_size,
-            )
+        property_query = PropertyQuery(
+            city=payload.city,
+            min_price=payload.min_price,
+            max_price=payload.max_price,
+            min_guests=payload.guests,
+            amenities=payload.amenities,
+            min_lat=payload.min_lat,
+            max_lat=payload.max_lat,
+            min_lng=payload.min_lng,
+            max_lng=payload.max_lng,
+            sort_by=payload.order_by,
+            sort_dir=payload.order_dir,
+            page=payload.page,
+            page_size=payload.page_size,
         )
+
+        page = self._properties.search(property_query)
+
+        if (
+            self._inventory is not None
+            and payload.check_in is not None
+            and payload.check_out is not None
+        ):
+            result = self._search_with_inventory_pagination(payload, property_query, page)
+            if self._cache is not None:
+                self._cache.set(
+                    cache_key, result.model_dump(mode="json"), self._cache.get_ttl()
+                )
+            return result
 
         if payload.check_in is not None and payload.check_out is not None:
             property_ids = [item.id for item in page.items]
@@ -121,6 +133,7 @@ class SearchPropertiesUseCase(BaseUseCase[SearchQuery, SearchResult]):
             total=page.total,
             page=page.page,
             page_size=page.page_size,
+            matched_total_before_availability=page.total,
         )
 
         if self._cache is not None:
@@ -128,6 +141,77 @@ class SearchPropertiesUseCase(BaseUseCase[SearchQuery, SearchResult]):
                 cache_key, result.model_dump(mode="json"), self._cache.get_ttl()
             )
         return result
+
+    def _search_with_inventory_pagination(
+        self,
+        payload: SearchQuery,
+        property_query: PropertyQuery,
+        first_page,
+    ) -> SearchResult:
+        candidate_items = list(first_page.items)
+        for page_number in range(2, first_page.total_pages + 1):
+            next_page = self._properties.search(
+                property_query.model_copy(update={"page": page_number})
+            )
+            candidate_items.extend(next_page.items)
+
+        property_ids = [item.id for item in candidate_items]
+        availability = self._reservations.availability_check(
+            property_ids, payload.check_in, payload.check_out
+        )
+        available_set = set(availability.available)
+
+        available_items: list[PropertySearchItem] = []
+        for prop in candidate_items:
+            if prop.id not in available_set:
+                continue
+            try:
+                availability_detail = self._inventory.get_availability(
+                    prop.id,
+                    payload.check_in,
+                    payload.check_out,
+                    payload.guests,
+                )
+            except InventoryServiceUnavailableError:
+                availability_detail = None
+
+            if availability_detail is None or not availability_detail.available:
+                continue
+
+            effective_price = (
+                availability_detail.price_from
+                if availability_detail.price_from is not None
+                else Decimal(str(prop.price_per_night))
+            )
+            effective_currency = availability_detail.currency or prop.currency
+            city, country = prop.split_location()
+            available_items.append(
+                PropertySearchItem(
+                    id=prop.id,
+                    name=prop.name,
+                    city=city,
+                    country=country,
+                    max_capacity=prop.max_guests,
+                    main_image_url=prop.cover_image_url(),
+                    rating=prop.rating,
+                    price_from=effective_price,
+                    currency=effective_currency,
+                    amenities=prop.amenities,
+                    latitude=prop.latitude,
+                    longitude=prop.longitude,
+                )
+            )
+
+        total_available = len(available_items)
+        offset = max(0, (payload.page - 1) * payload.page_size)
+        paged_items = available_items[offset : offset + payload.page_size]
+        return SearchResult(
+            items=paged_items,
+            total=total_available,
+            page=payload.page,
+            page_size=payload.page_size,
+            matched_total_before_availability=len(candidate_items),
+        )
 
     @staticmethod
     def _cache_key(q: SearchQuery) -> str:

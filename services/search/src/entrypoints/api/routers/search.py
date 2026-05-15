@@ -101,8 +101,21 @@ def search_properties(
         value is not None
         for value in (query.min_lat, query.max_lat, query.min_lng, query.max_lng)
     )
+    had_candidates_before_availability = (
+        (result.matched_total_before_availability or 0) > 0
+    )
     if not result.items:
-        if result.total == 0:
+        if had_candidates_before_availability and query.check_in is not None and query.check_out is not None:
+            empty_state.append(
+                EmptyStateSuggestion(
+                    code="TRY_OTHER_DATES",
+                    message=(
+                        "Las propiedades disponibles no tienen fechas libres. "
+                        "Prueba con fechas diferentes."
+                    ),
+                )
+            )
+        elif result.total == 0:
             if used_bbox:
                 empty_state.append(
                     EmptyStateSuggestion(
