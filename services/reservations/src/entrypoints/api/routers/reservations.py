@@ -18,10 +18,6 @@ from adapters.services.hotel_side_effects import (
     HttpReservationNotificationDispatcher,
     NoOpReservationNotificationDispatcher,
 )
-from adapters.services.property_service_client import (
-    HttpPropertyServiceClient,
-    NoOpPropertyServiceClient,
-)
 from adapters.services.payment_service_client import HttpPaymentServiceClient
 from adapters.services.scheduler_service import (
     EventBridgeReservationScheduler,
@@ -32,6 +28,7 @@ from assembly import (
     get_compute_revenue_trends_use_case,
     get_create_reservation_use_case,
     get_list_host_reservations_use_case,
+    get_property_service_client,
     get_pricing_service_client,
     get_reservation_repository,
 )
@@ -107,13 +104,6 @@ def get_reservation_event_repository(session: Session = Depends(get_session)):
 
 def get_reservation_command_log_repository(session: Session = Depends(get_session)):
     return SQLModelReservationCommandLogRepository(session)
-
-
-def get_property_service_client() -> PropertyServiceClient:
-    if settings.is_test:
-        return NoOpPropertyServiceClient()
-    return HttpPropertyServiceClient()
-
 
 def get_payment_service_client() -> PaymentServiceClient:
     return HttpPaymentServiceClient()

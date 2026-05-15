@@ -1,5 +1,5 @@
 from datetime import datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 import logging
 from uuid import UUID
 
@@ -43,7 +43,16 @@ class HttpInventoryPricingClient(PricingServiceClient):
             logger.warning("inventory pricing lookup failed for property %s: %s", property_id, exc)
             return None
 
-        payload = response.json()
+        try:
+            payload = response.json()
+        except ValueError as exc:
+            logger.warning(
+                "inventory pricing response was not valid JSON for property %s: %s",
+                property_id,
+                exc,
+            )
+            return None
+
         if not payload.get("available") or payload.get("price_from") is None:
             return None
         currency = payload.get("currency")
@@ -56,4 +65,12 @@ class HttpInventoryPricingClient(PricingServiceClient):
             )
             return None
 
-        return Decimal(str(payload["price_from"])), str(currency)
+        try:
+            return Decimal(str(payload["price_from"])), str(currency)
+        except (InvalidOperation, TypeError, ValueError, KeyError) as exc:
+            logger.warning(
+                "inventory pricing response had invalid price payload for property %s: %s",
+                property_id,
+                exc,
+            )
+            return None
