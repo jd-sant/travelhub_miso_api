@@ -84,6 +84,12 @@ class SearchPropertiesUseCase(BaseUseCase[SearchQuery, SearchResult]):
                     main_image_url=prop.cover_image_url(),
                     rating=prop.rating,
                     price_from=Decimal(str(prop.price_per_night)),
+                    base_price_from=(
+                        Decimal(str(prop.base_price_per_night))
+                        if prop.base_price_per_night is not None
+                        else None
+                    ),
+                    has_seasonal_discount=prop.has_seasonal_discount,
                     currency=prop.currency,
                     amenities=prop.amenities,
                     latitude=prop.latitude,
