@@ -59,3 +59,13 @@ PYTHONPATH=services/users/src pytest services/users/tests/ -v
 | `RDS_DB_NAME` | `travelhub` | Nombre de la BD |
 | `DB_SCHEMA` | `users_schema` | Schema de PostgreSQL |
 | `INTERNAL_API_KEY` | - | Clave para el endpoint interno |
+
+## HU036 - PII, auditoria y residencia
+
+Users es la fuente de verdad del perfil de usuario y por eso aplica los controles de privacidad de HU036:
+
+- `USERS_PII_ENCRYPTION_ENABLED=true` cifra `email`, `phone`, `full_name` y `hotel_name` con AES-256-GCM antes de persistirlos.
+- `email_lookup_hash` permite login y deteccion de duplicados sin depender del email en texto plano.
+- `country_code` y `data_region` se calculan desde `DATA_RESIDENCY_POLICIES` para soportar residencia de datos por pais.
+- Los endpoints que acceden, crean o exportan PII emiten auditoria central al Security Service cuando `PRIVACY_AUDIT_ENABLED=true`.
+- En entornos no dev/test, `ENFORCE_TLS_HEADER=true` rechaza operaciones PII sin `X-Forwarded-Proto: https`.

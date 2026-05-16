@@ -10,6 +10,7 @@ class UserCreateRequest(BaseModel):
     password: str = Field(min_length=8)
     full_name: str = Field(min_length=2, max_length=100)
     hotel_name: Optional[str] = Field(default=None, max_length=100)
+    country_code: str = Field(default="CO", min_length=2, max_length=2)
     role: Optional[str] = Field(default=None, max_length=32)
     status: int = Field(default=1, ge=0, le=1)
 
@@ -20,6 +21,8 @@ class UserResponse(BaseModel):
     phone: str
     full_name: str
     hotel_name: Optional[str]
+    country_code: str
+    data_region: str
     status: int
 
 
