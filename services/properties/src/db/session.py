@@ -3,7 +3,14 @@ from collections.abc import Generator
 from sqlalchemy import event, text
 from sqlmodel import Session, SQLModel, create_engine
 
-from adapters.models import Property, PropertyCancellationPolicy, PropertyImage, PropertyReview
+from adapters.models import (
+    Property,
+    PropertyCancellationPolicy,
+    PropertyImage,
+    PropertyPricingAuditLog,
+    PropertyReview,
+    PropertySeasonalPrice,
+)
 from core.config import settings
 from db.seed import sync_demo_properties_seed
 
@@ -40,7 +47,14 @@ def create_db_and_tables() -> None:
                 text(f"CREATE SCHEMA IF NOT EXISTS {settings.db_schema}")
             )
             conn.commit()
-    _ = (Property, PropertyCancellationPolicy, PropertyImage, PropertyReview)
+    _ = (
+        Property,
+        PropertyCancellationPolicy,
+        PropertyImage,
+        PropertyPricingAuditLog,
+        PropertyReview,
+        PropertySeasonalPrice,
+    )
     SQLModel.metadata.create_all(engine)
     
     # Create or sync demo properties and assets only in allowed environments.
