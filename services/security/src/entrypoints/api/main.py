@@ -7,6 +7,7 @@ from core.auth_middleware import AuthMiddleware
 from core.config import settings
 from db.session import create_db_and_tables
 from entrypoints.api.routers.auth import router as auth_router
+from entrypoints.api.routers.privacy import router as privacy_router
 
 
 @asynccontextmanager
@@ -26,6 +27,7 @@ def create_application() -> FastAPI:
         allow_headers=["Authorization", "Content-Type"],
     )
     app.include_router(auth_router, prefix="/api/v1")
+    app.include_router(privacy_router, prefix="/api/v1")
 
     @app.get("/health")
     def health_check() -> dict[str, str]:

@@ -90,3 +90,12 @@ PYTHONPATH=services/security/src pytest services/security/tests/ -v
 ## Dependencias entre servicios
 
 Este servicio se comunica con **Users Service** mediante HTTP para verificar credenciales (`POST /api/v1/internal/verify-credentials`), autenticado con `INTERNAL_API_KEY`.
+
+## HU036 - Proteccion de datos sensibles
+
+El servicio de seguridad centraliza los controles transversales de privacidad:
+
+- `POST /api/v1/internal/privacy/audit` registra eventos append-only de acceso, modificacion o exportacion de PII, incluyendo actor, timestamp, IP, accion, recurso, campos PII y pais.
+- Cada evento queda encadenado con `previous_hash` y `entry_hash`, lo que permite detectar alteraciones en la bitacora.
+- `GET /api/v1/internal/privacy/residency?country_code=CO` resuelve la region de residencia usando `DATA_RESIDENCY_POLICIES`.
+- `PII_DATA_ENCRYPTION_KEY` habilita helpers AES-256-GCM para cifrado de datos sensibles en servicios que persisten PII.
