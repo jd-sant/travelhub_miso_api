@@ -15,6 +15,7 @@ os.environ.setdefault("INTERNAL_API_KEY", "test-internal-key")
 from adapters.models.audit_log import AuditLog
 from adapters.models.login_attempt import LoginAttempt
 from adapters.models.otp_code import OtpCode
+from adapters.models.sensitive_data_audit_log import SensitiveDataAuditLog
 from adapters.models.user_lock import UserLock
 from db.session import get_session
 from domain.ports.auth_repository import AuthRepository
@@ -64,6 +65,7 @@ def _clean_tables(test_engine):
         session.execute(sa_delete(OtpCode))
         session.execute(sa_delete(LoginAttempt))
         session.execute(sa_delete(AuditLog))
+        session.execute(sa_delete(SensitiveDataAuditLog))
         session.execute(sa_delete(UserLock))
         session.commit()
 

@@ -2,6 +2,9 @@ from fastapi import Depends
 from sqlmodel import Session
 
 from adapters.repositories.audit_repository import SQLModelAuditRepository
+from adapters.repositories.privacy_audit_repository import (
+    SQLModelPrivacyAuditRepository,
+)
 from adapters.repositories.login_attempt_repository import (
     SQLModelLoginAttemptRepository,
 )
@@ -18,6 +21,7 @@ from domain.ports.auth_repository import AuthRepository
 from domain.ports.login_attempt_repository import LoginAttemptRepository
 from domain.ports.otp_repository import OtpRepository
 from domain.ports.otp_sender import OtpSender
+from domain.ports.privacy_audit_repository import PrivacyAuditRepository
 from domain.ports.user_lock_repository import UserLockRepository
 from domain.use_cases.login import LoginUseCase
 from domain.use_cases.validate_token import ValidateTokenUseCase
@@ -44,6 +48,12 @@ def get_audit_repository(
     session: Session = Depends(get_session),
 ) -> AuditRepository:
     return SQLModelAuditRepository(session)
+
+
+def get_privacy_audit_repository(
+    session: Session = Depends(get_session),
+) -> PrivacyAuditRepository:
+    return SQLModelPrivacyAuditRepository(session)
 
 
 def get_user_lock_repository(
