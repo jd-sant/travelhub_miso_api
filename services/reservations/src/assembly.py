@@ -20,6 +20,7 @@ from domain.use_cases.check_properties_availability import (
     CheckPropertiesAvailabilityUseCase,
 )
 from domain.use_cases.check_reservation_status import CheckReservationStatusUseCase
+from domain.use_cases.generate_checkin_qr import GenerateCheckInQrUseCase
 from domain.use_cases.compute_host_metrics import (
     ComputeHostMetricsUseCase,
     ComputeRevenueTrendsUseCase,
@@ -125,6 +126,14 @@ def get_compute_revenue_trends_use_case(
     payments_client: PaymentsServiceClient = Depends(get_payments_client),
 ) -> ComputeRevenueTrendsUseCase:
     return ComputeRevenueTrendsUseCase(repository, properties_client, payments_client)
+
+
+def get_generate_checkin_qr_use_case(
+    repository: SQLModelReservationRepository = Depends(get_reservation_repository),
+    users_client: UsersServiceClient = Depends(get_users_client),
+    property_client: PropertyServiceClient = Depends(get_property_service_client),
+) -> GenerateCheckInQrUseCase:
+    return GenerateCheckInQrUseCase(repository, users_client, property_client)
 
 
 

@@ -112,6 +112,7 @@ services:
       DATABASE_URL: postgresql://travelhub_user:travelhub_pass@postgres:5432/travelhub
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-travelhub-jwt-secret-change-in-prod}
+      CHECKIN_QR_SECRET_KEY: ${CHECKIN_QR_SECRET_KEY:-dev-checkin-qr-secret-key-change-me}
       USERS_SERVICE_URL: http://users:8000
       NOTIFICATIONS_SERVICE_URL: http://notifications:8000
     ports:

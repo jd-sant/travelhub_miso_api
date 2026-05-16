@@ -332,6 +332,30 @@ class ReservationWithDetailsResponse(BaseModel):
     property_cover_image_url: str | None = None
 
 
+class CheckInQrPayload(BaseModel):
+    reservation_id: UUID
+    traveler_id: UUID
+    holder_email: str
+    holder_full_name: str | None = None
+    issued_at_epoch_ms: int
+
+
+class CheckInQrResponse(BaseModel):
+    reservation_id: UUID
+    reservation_status: str
+    reservation_fingerprint: str
+    property_name: str | None = None
+    property_cover_image_url: str | None = None
+    check_in_date: datetime
+    check_out_date: datetime
+    number_of_guests: int
+    holder_email: str
+    holder_full_name: str | None = None
+    traveler_id: UUID
+    encrypted_payload: str
+    issued_at_epoch_ms: int
+
+
 ReservationModificationPreviewResponse.model_rebuild()
 
 

@@ -138,6 +138,17 @@ class Settings:
         return "dev-internal-key-change-me"
 
     @property
+    def checkin_qr_secret_key(self) -> str:
+        value = os.getenv("CHECKIN_QR_SECRET_KEY")
+        if value:
+            return value
+        if not self.is_local_dev:
+            raise RuntimeError(
+                "CHECKIN_QR_SECRET_KEY debe estar configurado en entornos de producciÃ³n."
+            )
+        return "dev-checkin-qr-secret-key-change-me"
+
+    @property
     def payments_service_url(self) -> str:
         return os.getenv("PAYMENTS_SERVICE_URL", "http://payments:8000").rstrip("/")
 
