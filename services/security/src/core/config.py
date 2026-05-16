@@ -1,8 +1,21 @@
 import os
 from functools import lru_cache
 
+from core.privacy import load_residency_policies
+
 
 class Settings:
+    @property
+    def app_env(self) -> str:
+        return os.getenv("ENV", os.getenv("APP_ENV", "development")).lower()
+
+    @property
+    def privacy_compliance_mode(self) -> bool:
+        raw = os.getenv("PRIVACY_COMPLIANCE_MODE")
+        if raw is not None:
+            return raw.lower() == "true"
+        return self.app_env not in ("development", "dev", "test")
+
     @property
     def rds_hostname(self) -> str:
         return os.getenv("RDS_HOSTNAME", "localhost")
@@ -140,6 +153,25 @@ class Settings:
     @property
     def smtp_from(self) -> str:
         return os.getenv("SMTP_FROM", "noreply@travelhub.com")
+
+    @property
+    def pii_data_encryption_key(self) -> str:
+        value = os.getenv("PII_DATA_ENCRYPTION_KEY")
+        if value:
+            return value
+        if self.privacy_compliance_mode:
+            raise RuntimeError(
+                "PII_DATA_ENCRYPTION_KEY debe estar configurado en modo de cumplimiento."
+            )
+        return "dev-pii-encryption-key-change-me"
+
+    @property
+    def data_residency_policies(self) -> dict[str, str]:
+        return load_residency_policies(os.getenv("DATA_RESIDENCY_POLICIES"))
+
+    @property
+    def default_data_region(self) -> str:
+        return os.getenv("DEFAULT_DATA_REGION", "aws-us-east-1")
 
 
 @lru_cache

@@ -1,8 +1,21 @@
 import os
 from functools import lru_cache
 
+from core.privacy import load_residency_policies
+
 
 class Settings:
+    @property
+    def app_env(self) -> str:
+        return os.getenv("ENV", os.getenv("APP_ENV", "development")).lower()
+
+    @property
+    def privacy_compliance_mode(self) -> bool:
+        raw = os.getenv("PRIVACY_COMPLIANCE_MODE")
+        if raw is not None:
+            return raw.lower() == "true"
+        return self.app_env not in ("development", "dev", "test")
+
     @property
     def rds_hostname(self) -> str:
         return os.getenv("RDS_HOSTNAME", "localhost")
@@ -72,6 +85,65 @@ class Settings:
                 "INTERNAL_API_KEY debe estar configurado en entornos de producción."
             )
         return "dev-internal-key-change-me"
+
+    @property
+    def users_pii_encryption_enabled(self) -> bool:
+        raw = os.getenv("USERS_PII_ENCRYPTION_ENABLED")
+        if raw is not None:
+            return raw.lower() == "true"
+        return self.privacy_compliance_mode
+
+    @property
+    def users_pii_encryption_key(self) -> str:
+        value = os.getenv("USERS_PII_ENCRYPTION_KEY") or os.getenv("PII_DATA_ENCRYPTION_KEY")
+        if value:
+            return value
+        if self.users_pii_encryption_enabled:
+            raise RuntimeError(
+                "USERS_PII_ENCRYPTION_KEY debe estar configurado para cifrar PII."
+            )
+        return "dev-users-pii-encryption-key-change-me"
+
+    @property
+    def users_email_lookup_hash_secret(self) -> str:
+        value = os.getenv("USERS_EMAIL_LOOKUP_HASH_SECRET")
+        if value:
+            return value
+        if self.privacy_compliance_mode:
+            raise RuntimeError(
+                "USERS_EMAIL_LOOKUP_HASH_SECRET debe estar configurado en modo de cumplimiento."
+            )
+        return "dev-users-email-lookup-hash-secret-change-me"
+
+    @property
+    def default_data_region(self) -> str:
+        return os.getenv("DEFAULT_DATA_REGION", "aws-us-east-1")
+
+    @property
+    def data_residency_policies(self) -> dict[str, str]:
+        return load_residency_policies(os.getenv("DATA_RESIDENCY_POLICIES"))
+
+    @property
+    def privacy_audit_enabled(self) -> bool:
+        raw = os.getenv("PRIVACY_AUDIT_ENABLED")
+        if raw is not None:
+            return raw.lower() == "true"
+        return self.privacy_compliance_mode
+
+    @property
+    def security_service_url(self) -> str:
+        return os.getenv("SECURITY_SERVICE_URL", "http://security:8000").rstrip("/")
+
+    @property
+    def service_request_timeout(self) -> float:
+        return float(os.getenv("SERVICE_REQUEST_TIMEOUT", "5.0"))
+
+    @property
+    def enforce_tls_header(self) -> bool:
+        raw = os.getenv("ENFORCE_TLS_HEADER")
+        if raw is not None:
+            return raw.lower() == "true"
+        return self.privacy_compliance_mode
 
 
 @lru_cache

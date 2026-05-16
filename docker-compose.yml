@@ -31,6 +31,15 @@ services:
       DB_ECHO: "False"
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
       DEMO_SEED_ENABLED: ${DEMO_SEED_ENABLED:-false}
+      PRIVACY_COMPLIANCE_MODE: ${PRIVACY_COMPLIANCE_MODE:-false}
+      USERS_PII_ENCRYPTION_ENABLED: ${USERS_PII_ENCRYPTION_ENABLED:-false}
+      USERS_PII_ENCRYPTION_KEY: ${USERS_PII_ENCRYPTION_KEY:-dev-users-pii-encryption-key-change-me}
+      USERS_EMAIL_LOOKUP_HASH_SECRET: ${USERS_EMAIL_LOOKUP_HASH_SECRET:-dev-users-email-lookup-hash-secret-change-me}
+      DEFAULT_DATA_REGION: ${DEFAULT_DATA_REGION:-aws-us-east-1}
+      DATA_RESIDENCY_POLICIES: ${DATA_RESIDENCY_POLICIES:-}
+      SECURITY_SERVICE_URL: http://security:8000
+      PRIVACY_AUDIT_ENABLED: ${PRIVACY_AUDIT_ENABLED:-false}
+      ENFORCE_TLS_HEADER: ${ENFORCE_TLS_HEADER:-false}
     ports:
       - "8000:8000"
     depends_on:
@@ -61,6 +70,10 @@ services:
       DEMO_SEED_ENABLED: ${DEMO_SEED_ENABLED:-false}
       DEMO_HOTEL_EMAILS: ${DEMO_HOTEL_EMAILS:-}
       DEMO_OTP_CODE: ${DEMO_OTP_CODE:-}
+      PRIVACY_COMPLIANCE_MODE: ${PRIVACY_COMPLIANCE_MODE:-false}
+      PII_DATA_ENCRYPTION_KEY: ${PII_DATA_ENCRYPTION_KEY:-dev-pii-encryption-key-change-me}
+      DEFAULT_DATA_REGION: ${DEFAULT_DATA_REGION:-aws-us-east-1}
+      DATA_RESIDENCY_POLICIES: ${DATA_RESIDENCY_POLICIES:-}
     ports:
       - "8001:8000"
     depends_on:

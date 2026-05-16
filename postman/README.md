@@ -11,6 +11,7 @@ Archivos listos para probar el MVP de `payments` desde Postman y validar los cri
 - `collections/notifications/travelhub-notifications-contract.postman_collection.json`
 - `collections/users/travelhub-users-contract.postman_collection.json`
 - `collections/security/travelhub-security-contract.postman_collection.json`
+- `collections/privacy/travelhub-privacy-contract.postman_collection.json`
 - `collections/reservations/travelhub-reservations-contract.postman_collection.json`
 - `collections/properties/travelhub-properties-contract.postman_collection.json`
 - `collections/search/travelhub-search-contract.postman_collection.json`
@@ -70,6 +71,7 @@ Colecciones:
 
 - `collections/users/travelhub-users-contract.postman_collection.json`
 - `collections/security/travelhub-security-contract.postman_collection.json`
+- `collections/privacy/travelhub-privacy-contract.postman_collection.json`
 - `collections/reservations/travelhub-reservations-contract.postman_collection.json`
 - `collections/payments/travelhub-payments-contract.postman_collection.json`
 - `collections/notifications/travelhub-notifications-contract.postman_collection.json`
