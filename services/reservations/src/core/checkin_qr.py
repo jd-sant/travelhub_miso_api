@@ -25,7 +25,10 @@ def encode_checkin_qr_payload(payload: CheckInQrPayload, secret: str) -> str:
 
 
 def decode_checkin_qr_payload_for_test(encoded: str, secret: str) -> CheckInQrPayload:
-    prefix_removed = encoded.removeprefix(f"{_CHECKIN_QR_PREFIX}.")
+    expected_prefix = f"{_CHECKIN_QR_PREFIX}."
+    if not encoded.startswith(expected_prefix):
+        raise ValueError(f"Invalid QR payload format: expected prefix {expected_prefix}")
+    prefix_removed = encoded.removeprefix(expected_prefix)
     raw = base64.urlsafe_b64decode(prefix_removed.encode("utf-8"))
     nonce, ciphertext = raw[:_IV_SIZE_BYTES], raw[_IV_SIZE_BYTES:]
     plaintext = AESGCM(_derive_key(secret)).decrypt(nonce, ciphertext, None)

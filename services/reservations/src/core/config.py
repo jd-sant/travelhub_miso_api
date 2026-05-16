@@ -144,7 +144,7 @@ class Settings:
             return value
         if not self.is_local_dev:
             raise RuntimeError(
-                "CHECKIN_QR_SECRET_KEY debe estar configurado en entornos de producciÃ³n."
+                "CHECKIN_QR_SECRET_KEY debe estar configurado en entornos de producción."
             )
         return "dev-checkin-qr-secret-key-change-me"
 
