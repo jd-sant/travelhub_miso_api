@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from core.config import settings
+from core.health import health_router
 from entrypoints.api.routers.search import router as search_router
 
 
@@ -17,6 +18,7 @@ def create_application() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.include_router(health_router)
     app.include_router(search_router, prefix="/api/v1")
 
     @app.get("/health")

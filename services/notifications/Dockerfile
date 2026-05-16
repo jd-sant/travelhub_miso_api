@@ -19,8 +19,11 @@ RUN chmod +x /app/entrypoint.sh
 
 ENV PYTHONPATH=/app/src
 ENV PYTHONUNBUFFERED=1
+ENV NEW_RELIC_CONFIG_FILE=/app/newrelic.ini
+ENV NEW_RELIC_LOG=stdout
+ENV NEW_RELIC_LOG_LEVEL=warning
 ENV SERVICE_MODE=api
 
 EXPOSE 8000
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+ENTRYPOINT ["newrelic-admin", "run-program", "/app/entrypoint.sh"]

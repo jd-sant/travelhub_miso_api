@@ -17,7 +17,10 @@ COPY --from=base /app/src/ /app/src/
 
 ENV PYTHONPATH=/app/src
 ENV PYTHONUNBUFFERED=1
+ENV NEW_RELIC_CONFIG_FILE=/app/newrelic.ini
+ENV NEW_RELIC_LOG=stdout
+ENV NEW_RELIC_LOG_LEVEL=warning
 
 EXPOSE 8000
 
-CMD ["uvicorn", "entrypoints.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["newrelic-admin", "run-program", "uvicorn", "entrypoints.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

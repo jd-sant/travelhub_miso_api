@@ -40,6 +40,10 @@ services:
       SECURITY_SERVICE_URL: http://security:8000
       PRIVACY_AUDIT_ENABLED: ${PRIVACY_AUDIT_ENABLED:-false}
       ENFORCE_TLS_HEADER: ${ENFORCE_TLS_HEADER:-false}
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY:-}
+      NEW_RELIC_APP_NAME: users
+    volumes:
+      - ./newrelic.ini:/app/newrelic.ini:ro
     ports:
       - "8000:8000"
     depends_on:
@@ -74,6 +78,10 @@ services:
       PII_DATA_ENCRYPTION_KEY: ${PII_DATA_ENCRYPTION_KEY:-dev-pii-encryption-key-change-me}
       DEFAULT_DATA_REGION: ${DEFAULT_DATA_REGION:-aws-us-east-1}
       DATA_RESIDENCY_POLICIES: ${DATA_RESIDENCY_POLICIES:-}
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY:-}
+      NEW_RELIC_APP_NAME: security
+    volumes:
+      - ./newrelic.ini:/app/newrelic.ini:ro
     ports:
       - "8001:8000"
     depends_on:
@@ -114,6 +122,10 @@ services:
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-travelhub-jwt-secret-change-in-prod}
       USERS_SERVICE_URL: http://users:8000
       NOTIFICATIONS_SERVICE_URL: http://notifications:8000
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY:-}
+      NEW_RELIC_APP_NAME: reservations
+    volumes:
+      - ./newrelic.ini:/app/newrelic.ini:ro
     ports:
       - "8002:8000"
     depends_on:
@@ -153,6 +165,10 @@ services:
       NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-}
       NOTIFICATIONS_DISPATCH_MODE: ${NOTIFICATIONS_DISPATCH_MODE:-}
       DEFAULT_CANCELLATION_POLICY: ${DEFAULT_CANCELLATION_POLICY:-Cancelacion gratuita hasta 48 horas antes del check-in. Despues se cobra la primera noche.}
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY:-}
+      NEW_RELIC_APP_NAME: payments
+    volumes:
+      - ./newrelic.ini:/app/newrelic.ini:ro
     ports:
       - "8003:8000"
     depends_on:
@@ -191,6 +207,10 @@ services:
       NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-}
       FCM_PROJECT_ID: ${FCM_PROJECT_ID:-}
       FCM_SERVICE_ACCOUNT_JSON: ${FCM_SERVICE_ACCOUNT_JSON:-}
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY:-}
+      NEW_RELIC_APP_NAME: notifications
+    volumes:
+      - ./newrelic.ini:/app/newrelic.ini:ro
     ports:
       - "8004:8000"
     depends_on:
@@ -225,6 +245,10 @@ services:
       SES_FROM_ADDRESS: ${SES_FROM_ADDRESS:-}
       SES_REGION: ${SES_REGION:-}
       NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-}
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY:-}
+      NEW_RELIC_APP_NAME: notifications-worker
+    volumes:
+      - ./newrelic.ini:/app/newrelic.ini:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -251,6 +275,10 @@ services:
       PRICING_INTEGRITY_SECRET: ${PRICING_INTEGRITY_SECRET:-dev-pricing-secret-change-me}
       SECURITY_SERVICE_URL: ${SECURITY_SERVICE_URL:-http://security:8000}
       SEARCH_SERVICE_URL: ${SEARCH_SERVICE_URL:-http://search:8000}
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY:-}
+      NEW_RELIC_APP_NAME: properties
+    volumes:
+      - ./newrelic.ini:/app/newrelic.ini:ro
     ports:
       - "8005:8000"
     depends_on:
@@ -274,6 +302,10 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       REDIS_CACHE_ENABLED: "true"
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY:-}
+      NEW_RELIC_APP_NAME: search
+    volumes:
+      - ./newrelic.ini:/app/newrelic.ini:ro
     ports:
       - "8006:8000"
     depends_on:
