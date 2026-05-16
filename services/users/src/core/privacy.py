@@ -2,6 +2,7 @@ import base64
 import json
 import os
 from hashlib import sha256
+from hmac import new as hmac_new
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
@@ -46,9 +47,13 @@ def decrypt_sensitive_value(value: str | None, secret: str) -> str | None:
     return plaintext.decode("utf-8")
 
 
-def build_lookup_hash(value: str) -> str:
+def build_lookup_hash(value: str, secret: str) -> str:
     normalized = value.strip().lower()
-    return sha256(normalized.encode("utf-8")).hexdigest()
+    return hmac_new(
+        secret.encode("utf-8"),
+        normalized.encode("utf-8"),
+        sha256,
+    ).hexdigest()
 
 
 def normalize_country_code(value: str | None) -> str:

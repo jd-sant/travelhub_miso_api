@@ -1,3 +1,5 @@
+from hmac import compare_digest
+
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 
 from assembly import get_privacy_audit_repository
@@ -14,7 +16,10 @@ router = APIRouter(prefix="/internal/privacy", tags=["privacy"])
 
 
 def _verify_api_key(x_internal_api_key: str = Header(default=None)) -> None:
-    if x_internal_api_key != settings.internal_api_key:
+    if not x_internal_api_key or not compare_digest(
+        x_internal_api_key,
+        settings.internal_api_key,
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Forbidden",

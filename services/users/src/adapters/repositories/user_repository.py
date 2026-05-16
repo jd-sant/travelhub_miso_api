@@ -42,7 +42,7 @@ def _to_response(model: User) -> UserResponse:
 
 
 def _email_filter(email: str):
-    email_hash = build_lookup_hash(email)
+    email_hash = build_lookup_hash(email, settings.users_email_lookup_hash_secret)
     return or_(User.email_lookup_hash == email_hash, User.email == email)
 
 
@@ -58,7 +58,15 @@ class SQLModelUserRepository(UserRepository):
             default_region=settings.default_data_region,
         )
         email = str(payload.email)
-        email_lookup_hash = build_lookup_hash(email)
+        email_lookup_hash = build_lookup_hash(
+            email,
+            settings.users_email_lookup_hash_secret,
+        )
+        existing_user = self.session.exec(
+            select(User.id).where(_email_filter(email)).limit(1)
+        ).first()
+        if existing_user is not None:
+            raise UserConflictError("Conflict while creating user")
         pii_encrypted = settings.users_pii_encryption_enabled
         encryption_key = settings.users_pii_encryption_key
         user = User(
@@ -129,7 +137,11 @@ class SQLModelUserRepository(UserRepository):
 
         return UserCredentialsData(
             id=user.id,
-            email=decrypt_sensitive_value(user.email, settings.users_pii_encryption_key) or "",
+            email=decrypt_sensitive_value(
+                user.email,
+                settings.users_pii_encryption_key,
+            )
+            or "",
             password=user.password,
             status=user.status,
             roles=role_names,
@@ -185,8 +197,16 @@ class SQLModelUserRepository(UserRepository):
         return [
             UserSummary(
                 id=u.id,
-                full_name=decrypt_sensitive_value(u.full_name, settings.users_pii_encryption_key) or "",
-                email=decrypt_sensitive_value(u.email, settings.users_pii_encryption_key) or "",
+                full_name=decrypt_sensitive_value(
+                    u.full_name,
+                    settings.users_pii_encryption_key,
+                )
+                or "",
+                email=decrypt_sensitive_value(
+                    u.email,
+                    settings.users_pii_encryption_key,
+                )
+                or "",
             )
             for u in rows
         ]
@@ -198,8 +218,16 @@ class SQLModelUserRepository(UserRepository):
         return [
             UserSummary(
                 id=u.id,
-                full_name=decrypt_sensitive_value(u.full_name, settings.users_pii_encryption_key) or "",
-                email=decrypt_sensitive_value(u.email, settings.users_pii_encryption_key) or "",
+                full_name=decrypt_sensitive_value(
+                    u.full_name,
+                    settings.users_pii_encryption_key,
+                )
+                or "",
+                email=decrypt_sensitive_value(
+                    u.email,
+                    settings.users_pii_encryption_key,
+                )
+                or "",
             )
             for u in rows
         ]

@@ -1,3 +1,4 @@
+from sqlalchemy import text
 from sqlmodel import Session, desc, select
 
 from adapters.models.sensitive_data_audit_log import SensitiveDataAuditLog
@@ -12,6 +13,7 @@ class SQLModelPrivacyAuditRepository(PrivacyAuditRepository):
         self.session = session
 
     def record(self, payload: SensitiveDataAuditRequest) -> SensitiveDataAuditResponse:
+        self._acquire_chain_lock()
         latest = self.session.exec(
             select(SensitiveDataAuditLog).order_by(
                 desc(SensitiveDataAuditLog.created_at),
@@ -68,3 +70,9 @@ class SQLModelPrivacyAuditRepository(PrivacyAuditRepository):
             entry_hash=entry.entry_hash,
             created_at=entry.created_at,
         )
+
+    def _acquire_chain_lock(self) -> None:
+        bind = self.session.get_bind()
+        if bind is None or bind.dialect.name != "postgresql":
+            return
+        self.session.exec(text("SELECT pg_advisory_xact_lock(91357821)"))

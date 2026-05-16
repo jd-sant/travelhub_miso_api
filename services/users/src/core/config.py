@@ -105,6 +105,17 @@ class Settings:
         return "dev-users-pii-encryption-key-change-me"
 
     @property
+    def users_email_lookup_hash_secret(self) -> str:
+        value = os.getenv("USERS_EMAIL_LOOKUP_HASH_SECRET")
+        if value:
+            return value
+        if self.privacy_compliance_mode:
+            raise RuntimeError(
+                "USERS_EMAIL_LOOKUP_HASH_SECRET debe estar configurado en modo de cumplimiento."
+            )
+        return "dev-users-email-lookup-hash-secret-change-me"
+
+    @property
     def default_data_region(self) -> str:
         return os.getenv("DEFAULT_DATA_REGION", "aws-us-east-1")
 

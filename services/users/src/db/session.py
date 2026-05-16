@@ -4,8 +4,11 @@ import re
 
 from sqlalchemy import event, text
 from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import select
 
+from adapters.models.user import User
 from core.config import settings
+from core.privacy import build_lookup_hash, decrypt_sensitive_value
 
 _is_postgres = settings.database_url.startswith("postgresql")
 
@@ -66,6 +69,23 @@ def _apply_schema_upgrades() -> None:
         for statement in statements:
             conn.execute(text(statement))
         conn.commit()
+    with Session(engine) as session:
+        users = session.exec(
+            select(User).where(User.email_lookup_hash.is_(None))
+        ).all()
+        for user in users:
+            clear_email = decrypt_sensitive_value(
+                user.email,
+                settings.users_pii_encryption_key,
+            ) or user.email
+            if not clear_email:
+                continue
+            user.email_lookup_hash = build_lookup_hash(
+                clear_email,
+                settings.users_email_lookup_hash_secret,
+            )
+            session.add(user)
+        session.commit()
 
 
 def _quote_identifier(value: str) -> str:
