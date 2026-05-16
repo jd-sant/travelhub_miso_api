@@ -8,20 +8,20 @@ from adapters.models.property_pricing_audit_log import PropertyPricingAuditLog
 from adapters.models.property_seasonal_price import PropertySeasonalPrice
 from core.config import settings
 from core.security import (
+    SIGNATURE_ALGO,
+    build_pricing_signature,
     canonicalize_pricing_payload,
-    verify_pricing_signature,
 )
-from domain.schemas.property import (
-    SeasonalPricingListResponse,
-    SeasonalPricingResponse,
+from domain.ports.property_repository import PropertyRepository
+from domain.schemas.property import SeasonalPricingResponse
+from errors import (
+    PricingOwnershipError,
+    PropertyNotFoundError,
+    SeasonalPricingNotFoundError,
 )
-from domain.use_cases.base import BaseUseCase
-from errors import SeasonalPricingNotFoundError
 
 
-def _to_response(
-    model: PropertySeasonalPrice, integrity_valid: bool
-) -> SeasonalPricingResponse:
+def _to_response(model: PropertySeasonalPrice) -> SeasonalPricingResponse:
     return SeasonalPricingResponse(
         id=model.id,
         property_id=model.property_id,
@@ -41,31 +41,38 @@ def _to_response(
         ),
         created_at=model.created_at.isoformat(),
         updated_at=model.updated_at.isoformat(),
-        integrity_valid=integrity_valid,
+        integrity_valid=True,
     )
 
 
-class GetSeasonalPricingUseCase(BaseUseCase):
-    """Retrieve seasonal pricing for a property.
+class UnlockSeasonalPricingUseCase:
+    """Admin recovery action for a locked seasonal pricing record.
 
-    Validates signature on every read (100% coverage, HU-ARQ-06) and locks the
-    record if tampering is detected. Reads that pass integrity do not write to
-    the DB so GETs remain side-effect-free in the happy path.
+    Re-signs the record's current state (the locked signature is by definition
+    stale or tampered) and emits an audit event with the operator-supplied
+    reason. Ownership is enforced.
     """
 
-    def __init__(self, session: Session):
+    def __init__(self, session: Session, property_repository: PropertyRepository):
         self.session = session
+        self.property_repository = property_repository
 
     def execute(
-        self, property_id: UUID, seasonal_price_id: UUID | None = None
-    ) -> SeasonalPricingResponse | SeasonalPricingListResponse:
-        if seasonal_price_id is not None:
-            return self._get_single(property_id, seasonal_price_id)
-        return self._get_list(property_id)
-
-    def _get_single(
-        self, property_id: UUID, seasonal_price_id: UUID
+        self,
+        property_id: UUID,
+        seasonal_price_id: UUID,
+        admin_id: str,
+        source_ip: str | None,
+        reason: str,
     ) -> SeasonalPricingResponse:
+        prop = self.property_repository.get_by_id(property_id)
+        if prop is None:
+            raise PropertyNotFoundError(f"Property {property_id} not found")
+        if not admin_id or str(prop.id_owner) != admin_id:
+            raise PricingOwnershipError(
+                f"Admin {admin_id or 'unknown'} does not own property {property_id}"
+            )
+
         model = self.session.exec(
             select(PropertySeasonalPrice)
             .where(PropertySeasonalPrice.id == seasonal_price_id)
@@ -75,26 +82,7 @@ class GetSeasonalPricingUseCase(BaseUseCase):
             raise SeasonalPricingNotFoundError(
                 f"Seasonal pricing {seasonal_price_id} not found"
             )
-        integrity_valid = self._check_integrity(model)
-        return _to_response(model, integrity_valid)
 
-    def _get_list(self, property_id: UUID) -> SeasonalPricingListResponse:
-        models = self.session.exec(
-            select(PropertySeasonalPrice).where(
-                PropertySeasonalPrice.property_id == property_id
-            )
-        ).all()
-        items = [
-            _to_response(model, self._check_integrity(model)) for model in models
-        ]
-        return SeasonalPricingListResponse(items=items, total=len(items))
-
-    def _check_integrity(self, model: PropertySeasonalPrice) -> bool:
-        """Verify signature; lock the record (+ audit) if tampering is detected.
-
-        Returns whether the current signature is valid. Only writes to DB when
-        a new lock is being applied — happy path is purely read.
-        """
         canonical = canonicalize_pricing_payload(
             property_id=str(model.property_id),
             season_start=model.season_start.isoformat(),
@@ -104,26 +92,26 @@ class GetSeasonalPricingUseCase(BaseUseCase):
             tax_rate=model.tax_rate,
             cleaning_fee=model.cleaning_fee,
         )
-        is_valid = verify_pricing_signature(
-            canonical,
-            model.signature_hash,
-            settings.pricing_integrity_secret,
-            model.signature_algo,
+        model.signature_hash = build_pricing_signature(
+            canonical, settings.pricing_integrity_secret
         )
-
-        if is_valid or model.integrity_locked:
-            return is_valid
-
-        model.integrity_locked = True
+        model.signature_algo = SIGNATURE_ALGO
+        model.integrity_locked = False
         model.integrity_checked_at = datetime.now(UTC)
+        model.updated_at = datetime.now(UTC)
+        self.session.add(model)
+
         audit_log = PropertyPricingAuditLog(
             property_id=model.property_id,
             seasonal_price_id=model.id,
-            action="integrity_failed",
+            action="pricing_unlocked",
             signature_hash=model.signature_hash,
             signature_algo=model.signature_algo,
+            actor_admin_id=admin_id,
+            source_ip=source_ip,
             payload_snapshot_json=json.dumps(
                 {
+                    "reason": reason,
                     "property_id": str(model.property_id),
                     "season_start": model.season_start.isoformat(),
                     "season_end": model.season_end.isoformat(),
@@ -133,4 +121,5 @@ class GetSeasonalPricingUseCase(BaseUseCase):
         )
         self.session.add(audit_log)
         self.session.commit()
-        return False
+        self.property_repository.invalidate_property_caches(property_id)
+        return _to_response(model)
