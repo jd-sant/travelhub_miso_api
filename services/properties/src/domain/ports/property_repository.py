@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import date
 from typing import Optional
 from uuid import UUID
 
@@ -13,8 +14,18 @@ from domain.schemas.property_policy import PropertyCancellationPolicyResponse
 
 class PropertyRepository(ABC):
     @abstractmethod
-    def get_by_id(self, property_id: UUID) -> Optional[PropertyResponse]:
-        """Get a property by ID with all related data including images and reviews"""
+    def get_by_id(
+        self,
+        property_id: UUID,
+        check_in: date | None = None,
+        check_out: date | None = None,
+    ) -> Optional[PropertyResponse]:
+        """Get a property by ID with all related data including images and reviews.
+
+        When `check_in` / `check_out` are provided, applies the active seasonal
+        pricing override so the response matches what the customer would be
+        charged for that range.
+        """
         pass
 
     @abstractmethod
@@ -35,3 +46,7 @@ class PropertyRepository(ABC):
     ) -> Optional[PropertyCancellationPolicyResponse]:
         """Get the active cancellation policy for a property"""
         pass
+
+    def invalidate_property_caches(self, property_id: UUID) -> None:
+        """Invalidate cached views of a property (no-op when no cache layer is wired)."""
+        return None

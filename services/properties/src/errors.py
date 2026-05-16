@@ -14,10 +14,15 @@ class PricingSignatureVerificationError(Exception):
 
 
 class PricingIntegrityLockedError(Exception):
-    """Exception raised when pricing record is locked due to integrity failure"""
+    """Exception raised when an update is attempted on a locked pricing record"""
     pass
 
 
 class PricingOwnershipError(Exception):
     """Exception raised when user doesn't own the property"""
+    pass
+
+
+class AuthenticationError(Exception):
+    """Exception raised when admin authentication fails (invalid/expired token)"""
     pass

@@ -56,6 +56,7 @@ def _to_response(
     model: Property,
     images: list[PropertyImage] | None = None,
     reviews: list[PropertyReview] | None = None,
+    price_override: float | None = None,
 ) -> PropertyResponse:
     """Convert Property model to PropertyResponse"""
     # Parse amenities from JSON string
@@ -91,6 +92,11 @@ def _to_response(
         for rev in (reviews or [])
     ]
 
+    has_discount = price_override is not None and price_override < model.price_per_night
+    effective_price = (
+        price_override if price_override is not None else model.price_per_night
+    )
+
     return PropertyResponse(
         id=model.id,
         id_owner=model.id_owner,
@@ -99,7 +105,9 @@ def _to_response(
         location=model.location,
         latitude=model.latitude,
         longitude=model.longitude,
-        price_per_night=model.price_per_night,
+        price_per_night=effective_price,
+        base_price_per_night=model.price_per_night if has_discount else None,
+        has_seasonal_discount=has_discount,
         currency=model.currency,
         rating=model.rating,
         review_count=model.review_count,
@@ -142,6 +150,7 @@ def _to_list_response(
         for img in (images or [])
     ]
 
+    has_discount = price_override is not None and price_override < model.price_per_night
     effective_price = price_override if price_override is not None else model.price_per_night
 
     return PropertyListResponse(
@@ -153,6 +162,8 @@ def _to_list_response(
         latitude=model.latitude,
         longitude=model.longitude,
         price_per_night=effective_price,
+        base_price_per_night=model.price_per_night if has_discount else None,
+        has_seasonal_discount=has_discount,
         currency=model.currency,
         rating=model.rating,
         review_count=model.review_count,
@@ -185,12 +196,47 @@ class SQLModelPropertyRepository(PropertyRepository):
     def __init__(self, session: Session):
         self.session = session
 
-    def get_by_id(self, property_id: UUID) -> Optional[PropertyResponse]:
-        """Get property with all related data (images and reviews)"""
+    def _resolve_seasonal_overrides(
+        self,
+        property_ids: list[UUID],
+        check_in,  # date | None
+        check_out,  # date | None
+    ) -> dict[UUID, float]:
+        """Return {property_id -> overridden price_per_night} for the given range.
+
+        Hierarchy: when several non-locked rules cover the range,
+        the cheapest one wins (best for the customer). Locked rules are skipped.
+        """
+        if check_in is None or check_out is None or not property_ids:
+            return {}
+        rows = self.session.exec(
+            select(PropertySeasonalPrice)
+            .where(PropertySeasonalPrice.property_id.in_(property_ids))
+            .where(PropertySeasonalPrice.season_start <= check_in)
+            .where(PropertySeasonalPrice.season_end >= check_out)
+            .where(PropertySeasonalPrice.integrity_locked == False)  # noqa: E712
+        ).all()
+        overrides: dict[UUID, float] = {}
+        for row in rows:
+            current = overrides.get(row.property_id)
+            if current is None or row.price_per_night < current:
+                overrides[row.property_id] = row.price_per_night
+        return overrides
+
+    def get_by_id(
+        self,
+        property_id: UUID,
+        check_in=None,  # date | None
+        check_out=None,  # date | None
+    ) -> Optional[PropertyResponse]:
+        """Get property with all related data. When `check_in`/`check_out` are
+        provided, applies the same seasonal override logic as `search()` so the
+        detail page reflects the price the customer would actually be charged.
+        """
         model = self.session.exec(
             select(Property).where(Property.id == property_id)
         ).first()
-        
+
         if not model:
             return None
 
@@ -206,7 +252,10 @@ class SQLModelPropertyRepository(PropertyRepository):
             select(PropertyReview).where(PropertyReview.property_id == property_id)
         ).all()
 
-        return _to_response(model, images, reviews)
+        override = self._resolve_seasonal_overrides(
+            [property_id], check_in, check_out
+        ).get(property_id)
+        return _to_response(model, images, reviews, price_override=override)
 
     def list_all(
         self, owner_id: UUID | None = None
@@ -291,19 +340,9 @@ class SQLModelPropertyRepository(PropertyRepository):
         models = self.session.exec(statement).all()
         items: list[PropertyListResponse] = []
 
-        # Load seasonal pricing overrides if check_in/check_out are provided
-        seasonal_override: dict[UUID, float] = {}
-        if filters.check_in and filters.check_out:
-            seasonal_rows = self.session.exec(
-                select(PropertySeasonalPrice)
-                .where(PropertySeasonalPrice.property_id.in_([m.id for m in models]))
-                .where(PropertySeasonalPrice.season_start <= filters.check_in)
-                .where(PropertySeasonalPrice.season_end >= filters.check_out)
-                .where(PropertySeasonalPrice.integrity_locked == False)
-            ).all()
-            for row in seasonal_rows:
-                if row.property_id not in seasonal_override:
-                    seasonal_override[row.property_id] = row.price_per_night
+        seasonal_override = self._resolve_seasonal_overrides(
+            [m.id for m in models], filters.check_in, filters.check_out
+        )
 
         for model in models:
             images = self.session.exec(
