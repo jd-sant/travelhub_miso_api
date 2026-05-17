@@ -21,7 +21,16 @@ class CachedPropertyRepository(PropertyRepository):
         self._repository = repository
         self._cache = cache
 
-    def get_by_id(self, property_id: UUID) -> Optional[PropertyResponse]:
+    def get_by_id(
+        self,
+        property_id: UUID,
+        check_in=None,  # date | None
+        check_out=None,  # date | None
+    ) -> Optional[PropertyResponse]:
+        
+        if check_in is not None or check_out is not None:
+            return self._repository.get_by_id(property_id, check_in, check_out)
+
         key = f"properties:detail:{property_id}"
         cached = self._get_cached(key, PropertyResponse)
         if cached is not None:

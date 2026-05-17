@@ -128,38 +128,15 @@ class Settings:
         return "dev-pricing-secret-change-me"
 
     @property
-    def pricing_signature_algo(self) -> str:
-        return os.getenv("PRICING_SIGNATURE_ALGO", "HMAC-SHA256")
-
-    @property
-    def jwt_secret_key(self) -> str:
-        value = os.getenv("JWT_SECRET_KEY")
-        if value:
-            return value
-        if not self.is_local_dev:
-            raise RuntimeError(
-                "JWT_SECRET_KEY debe estar configurado en entornos de producción."
-            )
-        return "travelhub-jwt-secret-change-in-prod"
-
-    @property
-    def jwt_algorithm(self) -> str:
-        return os.getenv("JWT_ALGORITHM", "HS256")
-
-    @property
     def search_service_url(self) -> str:
         return os.getenv("SEARCH_SERVICE_URL", "http://search:8000").rstrip("/")
 
     @property
-    def internal_api_key(self) -> str:
-        value = os.getenv("INTERNAL_API_KEY")
-        if value:
-            return value
-        if not self.is_local_dev:
-            raise RuntimeError(
-                "INTERNAL_API_KEY debe estar configurado en entornos de producción."
-            )
-        return "dev-internal-key-change-me"
+    def security_service_url(self) -> str:
+        # Inter-container traffic uses the in-image port (8000), not the host
+        # mapping (8001 in docker-compose). Each microservice listens on 8000
+        # internally; the *.compose only changes how the host reaches them.
+        return os.getenv("SECURITY_SERVICE_URL", "http://security:8000").rstrip("/")
 
     def load(self):
         pass

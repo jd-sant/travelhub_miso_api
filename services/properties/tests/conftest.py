@@ -1,9 +1,8 @@
 import os
 import sys
-from uuid import UUID
 from pathlib import Path
+from uuid import UUID
 
-import jwt
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
@@ -16,19 +15,35 @@ SRC_PATH = Path(__file__).resolve().parents[1] / "src"
 if str(SRC_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_PATH))
 
-from core.config import settings
-from db.session import get_session
-from db.seed import sync_demo_properties_seed
-from entrypoints.api.main import app
+from adapters.services.security_client import SecurityClient, TokenClaims  # noqa: E402
+from assembly import get_security_client  # noqa: E402
+from db.seed import sync_demo_properties_seed  # noqa: E402
+from db.session import get_session  # noqa: E402
+from entrypoints.api.main import app  # noqa: E402
 
 
-def jwt_for_admin(admin_id: str | UUID) -> str:
-    """Generate a valid JWT for a given admin ID for testing."""
-    return jwt.encode(
-        {"sub": str(admin_id)},
-        settings.jwt_secret_key,
-        algorithm=settings.jwt_algorithm,
-    )
+def bearer_for_admin(admin_id: str | UUID) -> str:
+    """Build the Authorization header value used by tests.
+
+    The bearer payload is just the admin UUID; the FakeSecurityClient below
+    interprets it as the user_id for token validation. This keeps the JWT
+    secret out of properties entirely.
+    """
+    return f"Bearer {admin_id}"
+
+
+class FakeSecurityClient(SecurityClient):
+    """Test double that treats the bearer string as the admin UUID."""
+
+    def __init__(self):  # type: ignore[no-untyped-def]
+        pass
+
+    def validate_token(self, token: str) -> TokenClaims | None:
+        try:
+            user_id = UUID(token.strip())
+        except (ValueError, AttributeError):
+            return None
+        return TokenClaims(user_id=user_id, email="admin@test", role="admin")
 
 
 @pytest.fixture(name="session")
@@ -40,27 +55,28 @@ def session_fixture():
         poolclass=StaticPool,
     )
     SQLModel.metadata.create_all(engine)
-    
+
     # Seed database with sample data
     with Session(engine) as session:
         sync_demo_properties_seed(session)
-    
+
     with Session(engine) as session:
         yield session
 
 
 @pytest.fixture(name="client")
 def client_fixture(session: Session):
-    """Create a test client with the app"""
+    """Create a test client with the app and a fake security client wired in."""
+
     def get_session_override():
         return session
 
-    from fastapi.testclient import TestClient
-    from assembly import get_property_repository
+    def get_security_client_override():
+        return FakeSecurityClient()
 
     app.dependency_overrides[get_session] = get_session_override
+    app.dependency_overrides[get_security_client] = get_security_client_override
 
     client = TestClient(app)
     yield client
     app.dependency_overrides.clear()
-

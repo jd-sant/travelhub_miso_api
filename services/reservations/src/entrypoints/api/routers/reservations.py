@@ -27,10 +27,11 @@ from assembly import (
     get_compute_host_metrics_use_case,
     get_compute_revenue_trends_use_case,
     get_create_reservation_use_case,
+    get_generate_checkin_qr_use_case,
     get_list_host_reservations_use_case,
     get_reservation_repository,
 )
-from core.auth import AuthenticatedUser, get_current_hotel_user
+from core.auth import AuthenticatedUser, get_current_hotel_user, get_current_traveler_user
 from core.config import settings
 from core.telemetry import resolve_correlation_id
 from db.session import get_session
@@ -42,6 +43,7 @@ from domain.schemas.reservation import (
     HostMetrics,
     HostReservationsPage,
     HostRevenueTrends,
+    CheckInQrResponse,
     ReservationCancellationConfirmRequest,
     ReservationCancellationPreviewResponse,
     ReservationConfirmResponse,
@@ -67,6 +69,7 @@ from domain.use_cases.confirm_reservation_modification import (
 from domain.use_cases.create_reservation import CreateReservationUseCase
 from domain.use_cases.list_host_reservations import ListHostReservationsUseCase
 from domain.use_cases.get_reservation_history import GetReservationHistoryUseCase
+from domain.use_cases.generate_checkin_qr import GenerateCheckInQrUseCase
 from domain.use_cases.preview_reservation_cancellation import (
     PreviewReservationCancellationUseCase,
 )
@@ -216,6 +219,12 @@ def get_reservation_history_use_case(
     event_repository=Depends(get_reservation_event_repository),
 ):
     return GetReservationHistoryUseCase(repository, event_repository)
+
+
+def get_checkin_qr_use_case(
+    use_case: GenerateCheckInQrUseCase = Depends(get_generate_checkin_qr_use_case),
+):
+    return use_case
 
 
 def _get_actor_user_id(x_traveler_id: str = Header(default=None)) -> UUID:
@@ -587,6 +596,36 @@ def get_reservation_history(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ReservationOwnershipError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+
+
+@router.get(
+    "/{reservation_id}/checkin-qr",
+    response_model=CheckInQrResponse,
+    status_code=status.HTTP_200_OK,
+)
+def get_checkin_qr(
+    reservation_id: str,
+    user: AuthenticatedUser = Depends(get_current_traveler_user),
+    use_case: GenerateCheckInQrUseCase = Depends(get_generate_checkin_qr_use_case),
+):
+    try:
+        reservation_uuid = UUID(reservation_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid reservation ID format",
+        )
+
+    try:
+        return use_case.execute(reservation_uuid, actor_user_id=user.id)
+    except ReservationNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ReservationOwnershipError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except InvalidReservationOperationError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except ServiceUnavailableError as e:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
 
 
 @router.get("/{reservation_id}", response_model=ReservationResponse)

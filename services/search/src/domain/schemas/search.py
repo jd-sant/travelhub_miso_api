@@ -14,6 +14,8 @@ class PropertySearchItem(BaseModel):
     main_image_url: str | None
     rating: float | None
     price_from: Decimal
+    base_price_from: Decimal | None = None
+    has_seasonal_discount: bool = False
     currency: str
     amenities: list[str] = Field(default_factory=list)
     latitude: float | None = None

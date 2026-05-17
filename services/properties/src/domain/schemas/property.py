@@ -32,6 +32,8 @@ class PropertyResponse(BaseModel):
     latitude: float | None = None
     longitude: float | None = None
     price_per_night: float
+    base_price_per_night: float | None = None
+    has_seasonal_discount: bool = False
     currency: str
     rating: float = Field(ge=0.0, le=5.0)
     review_count: int = Field(ge=0)
@@ -57,6 +59,8 @@ class PropertyListResponse(BaseModel):
     latitude: float | None = None
     longitude: float | None = None
     price_per_night: float
+    base_price_per_night: float | None = None
+    has_seasonal_discount: bool = False
     currency: str
     rating: float = Field(ge=0.0, le=5.0)
     review_count: int = Field(ge=0)
@@ -94,8 +98,8 @@ class PropertyFilters(BaseModel):
     min_lng: float | None = Field(default=None, ge=-180, le=180)
     max_lng: float | None = Field(default=None, ge=-180, le=180)
     status: int | None = Field(default=1, ge=0, le=1)
-    check_in: str | None = Field(default=None, description="ISO date YYYY-MM-DD for seasonal pricing lookup")
-    check_out: str | None = Field(default=None, description="ISO date YYYY-MM-DD for seasonal pricing lookup")
+    check_in: date | None = Field(default=None, description="Seasonal pricing lookup start (inclusive)")
+    check_out: date | None = Field(default=None, description="Seasonal pricing lookup end (inclusive)")
     page: int = Field(default=1, ge=1)
     page_size: int = Field(default=20, ge=1, le=100)
     sort_by: PropertySortBy = PropertySortBy.PRICE
@@ -116,18 +120,38 @@ class PropertySearchResponse(BaseModel):
 
 # ===== Seasonal Pricing Schemas (Firmado) =====
 
+
 class SeasonalPricingCreateRequest(BaseModel):
     """Request para crear pricing estacional firmado"""
-    season_start: str = Field(..., description="Fecha inicio YYYY-MM-DD")
-    season_end: str = Field(..., description="Fecha fin YYYY-MM-DD")
+    season_start: date = Field(..., description="Fecha inicio (ISO YYYY-MM-DD)")
+    season_end: date = Field(..., description="Fecha fin (ISO YYYY-MM-DD)")
     price_per_night: float = Field(..., ge=0)
     currency: str = Field(default="COP", min_length=3, max_length=3)
     tax_rate: float = Field(default=0.0, ge=0.0)
     cleaning_fee: float = Field(default=0.0, ge=0.0)
 
 
+class SeasonalPricingUpdateRequest(BaseModel):
+    """PATCH parcial: solo los campos enviados se aplican."""
+    season_start: date | None = None
+    season_end: date | None = None
+    price_per_night: float | None = Field(default=None, ge=0)
+    currency: str | None = Field(default=None, min_length=3, max_length=3)
+    tax_rate: float | None = Field(default=None, ge=0.0)
+    cleaning_fee: float | None = Field(default=None, ge=0.0)
+
+
+class SeasonalUnlockRequest(BaseModel):
+    """Request para desbloquear un registro de pricing tras revisión manual."""
+    reason: str = Field(..., min_length=10, max_length=500)
+
+
 class SeasonalPricingResponse(BaseModel):
-    """Response de pricing estacional con estado de integridad"""
+    """Response de pricing estacional con estado de integridad.
+
+    Las fechas se serializan como ISO YYYY-MM-DD (str) y los timestamps como ISO 8601
+    para preservar el contrato consumido por el frontend.
+    """
     id: UUID
     property_id: UUID
     season_start: str
@@ -142,18 +166,10 @@ class SeasonalPricingResponse(BaseModel):
     integrity_checked_at: str | None = None
     created_at: str
     updated_at: str
-    integrity_valid: bool = True  # Resultado de verificacion en lectura
+    integrity_valid: bool = True
 
 
 class SeasonalPricingListResponse(BaseModel):
     """Lista de precios estacionales de una propiedad"""
     items: list[SeasonalPricingResponse]
     total: int
-
-
-class IntegrityCheckResult(BaseModel):
-    """Resultado de verificacion de integridad"""
-    is_valid: bool
-    signature_hash: str
-    locked: bool
-    message: str

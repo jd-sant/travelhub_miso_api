@@ -31,6 +31,18 @@ services:
       DB_ECHO: "False"
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
       DEMO_SEED_ENABLED: ${DEMO_SEED_ENABLED:-false}
+      PRIVACY_COMPLIANCE_MODE: ${PRIVACY_COMPLIANCE_MODE:-false}
+      USERS_PII_ENCRYPTION_ENABLED: ${USERS_PII_ENCRYPTION_ENABLED:-false}
+      USERS_PII_ENCRYPTION_KEY: ${USERS_PII_ENCRYPTION_KEY:-dev-users-pii-encryption-key-change-me}
+      USERS_EMAIL_LOOKUP_HASH_SECRET: ${USERS_EMAIL_LOOKUP_HASH_SECRET:-dev-users-email-lookup-hash-secret-change-me}
+      DEFAULT_DATA_REGION: ${DEFAULT_DATA_REGION:-aws-us-east-1}
+      DATA_RESIDENCY_POLICIES: ${DATA_RESIDENCY_POLICIES:-}
+      SECURITY_SERVICE_URL: http://security:8000
+      PRIVACY_AUDIT_ENABLED: ${PRIVACY_AUDIT_ENABLED:-false}
+      ENFORCE_TLS_HEADER: ${ENFORCE_TLS_HEADER:-false}
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY:-}
+      NEW_RELIC_APP_NAME: users
+
     ports:
       - "8000:8000"
     depends_on:
@@ -61,6 +73,13 @@ services:
       DEMO_SEED_ENABLED: ${DEMO_SEED_ENABLED:-false}
       DEMO_HOTEL_EMAILS: ${DEMO_HOTEL_EMAILS:-}
       DEMO_OTP_CODE: ${DEMO_OTP_CODE:-}
+      PRIVACY_COMPLIANCE_MODE: ${PRIVACY_COMPLIANCE_MODE:-false}
+      PII_DATA_ENCRYPTION_KEY: ${PII_DATA_ENCRYPTION_KEY:-dev-pii-encryption-key-change-me}
+      DEFAULT_DATA_REGION: ${DEFAULT_DATA_REGION:-aws-us-east-1}
+      DATA_RESIDENCY_POLICIES: ${DATA_RESIDENCY_POLICIES:-}
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY:-}
+      NEW_RELIC_APP_NAME: security
+
     ports:
       - "8001:8000"
     depends_on:
@@ -99,8 +118,12 @@ services:
       DATABASE_URL: postgresql://travelhub_user:travelhub_pass@postgres:5432/travelhub
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-travelhub-jwt-secret-change-in-prod}
+      CHECKIN_QR_SECRET_KEY: ${CHECKIN_QR_SECRET_KEY:-dev-checkin-qr-secret-key-change-me}
       USERS_SERVICE_URL: http://users:8000
       NOTIFICATIONS_SERVICE_URL: http://notifications:8000
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY:-}
+      NEW_RELIC_APP_NAME: reservations
+
     ports:
       - "8002:8000"
     depends_on:
@@ -140,6 +163,9 @@ services:
       NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-}
       NOTIFICATIONS_DISPATCH_MODE: ${NOTIFICATIONS_DISPATCH_MODE:-}
       DEFAULT_CANCELLATION_POLICY: ${DEFAULT_CANCELLATION_POLICY:-Cancelacion gratuita hasta 48 horas antes del check-in. Despues se cobra la primera noche.}
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY:-}
+      NEW_RELIC_APP_NAME: payments
+
     ports:
       - "8003:8000"
     depends_on:
@@ -178,6 +204,9 @@ services:
       NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-}
       FCM_PROJECT_ID: ${FCM_PROJECT_ID:-}
       FCM_SERVICE_ACCOUNT_JSON: ${FCM_SERVICE_ACCOUNT_JSON:-}
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY:-}
+      NEW_RELIC_APP_NAME: notifications
+
     ports:
       - "8004:8000"
     depends_on:
@@ -212,6 +241,9 @@ services:
       SES_FROM_ADDRESS: ${SES_FROM_ADDRESS:-}
       SES_REGION: ${SES_REGION:-}
       NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-}
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY:-}
+      NEW_RELIC_APP_NAME: notifications-worker
+
     depends_on:
       postgres:
         condition: service_healthy
@@ -235,8 +267,12 @@ services:
       REDIS_CACHE_ENABLED: "true"
       REDIS_CACHE_TTL_SECONDS: "300"
       SEED_MAP_CLUSTERS: "true"
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-travelhub-jwt-secret-change-in-prod}
+      PRICING_INTEGRITY_SECRET: ${PRICING_INTEGRITY_SECRET:-dev-pricing-secret-change-me}
+      SECURITY_SERVICE_URL: ${SECURITY_SERVICE_URL:-http://security:8000}
       SEARCH_SERVICE_URL: ${SEARCH_SERVICE_URL:-http://search:8000}
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY:-}
+      NEW_RELIC_APP_NAME: properties
+
     ports:
       - "8005:8000"
     depends_on:
@@ -260,6 +296,9 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       REDIS_CACHE_ENABLED: "true"
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY:-}
+      NEW_RELIC_APP_NAME: search
+
     ports:
       - "8006:8000"
     depends_on:

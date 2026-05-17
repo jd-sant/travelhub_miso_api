@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
+from core.health import health_router
 from db.session import create_db_and_tables, engine
 from core.config import settings
 from entrypoints.api.routers.internal import router as internal_router
@@ -28,6 +29,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(health_router)
 app.include_router(router, prefix="/api/v1/reservations", tags=["reservations"])
 app.include_router(hotel_router, prefix="/api/v1", tags=["hotel-reservations"])
 app.include_router(internal_router, prefix="/api/v1", tags=["internal"])

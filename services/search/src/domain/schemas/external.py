@@ -17,6 +17,8 @@ class PropertyMetadata(BaseModel):
     name: str
     location: str
     price_per_night: Decimal
+    base_price_per_night: Decimal | None = None
+    has_seasonal_discount: bool = False
     currency: str
     rating: float = 0.0
     max_guests: int = 0

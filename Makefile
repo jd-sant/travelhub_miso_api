@@ -148,3 +148,8 @@ search-logs:
 
 search-perf:
 	npx --yes newman run postman/e2e/search-p95/search_p95.postman_collection.json --env-var base_url=http://localhost:8006 --iteration-count 130 --reporters cli
+
+# New Relic Dashboard
+dashboard-deploy:
+	@echo "=== Desplegando dashboard New Relic ==="
+	@newrelic/deploy-dashboard.sh

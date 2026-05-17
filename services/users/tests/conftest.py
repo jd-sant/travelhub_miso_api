@@ -56,6 +56,8 @@ def session(test_engine):
 def client(test_engine):
     os.environ["INTERNAL_API_KEY"] = INTERNAL_API_KEY
     os.environ["JWT_SECRET_KEY"] = "test-secret-key"
+    os.environ["USERS_EMAIL_LOOKUP_HASH_SECRET"] = "test-users-email-lookup-hash-secret"
+    os.environ["USERS_PII_ENCRYPTION_KEY"] = "test-users-pii-key"
 
     app = FastAPI()
     
