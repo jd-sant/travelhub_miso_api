@@ -45,16 +45,78 @@ pip install -r requirements.txt
 
 ## Prueba de humo local (docker-compose)
 
+Local cada servicio está expuesto en su propio puerto (`users:8000`, `security:8001`, `reservations:8002`, `payments:8003`, `notifications:8004`, `properties:8005`, `search:8006`) — no hay ALB que enrute por path. Para que el mix de Locust funcione contra un host único, levanta un mini-gateway nginx que reproduce el path-routing del ALB:
+
 ```bash
 make docker-up
+
+cat > /tmp/loadtest-nginx.conf <<'CONF'
+events { worker_connections 4096; }
+http {
+  upstream users        { server host.docker.internal:8000; }
+  upstream security     { server host.docker.internal:8001; }
+  upstream reservations { server host.docker.internal:8002; }
+  upstream payments     { server host.docker.internal:8003; }
+  upstream notifications{ server host.docker.internal:8004; }
+  upstream properties   { server host.docker.internal:8005; }
+  upstream search       { server host.docker.internal:8006; }
+  server {
+    listen 80;
+    location /api/v1/users         { proxy_pass http://users; }
+    location /api/v1/auth          { proxy_pass http://security; }
+    location /api/v1/reservations  { proxy_pass http://reservations; }
+    location /api/v1/payments      { proxy_pass http://payments; }
+    location /api/v1/notifications { proxy_pass http://notifications; }
+    location /api/v1/properties    { proxy_pass http://properties; }
+    location /api/v1/search        { proxy_pass http://search; }
+  }
+}
+CONF
+
+docker run -d --name loadtest-gw \
+  --add-host=host.docker.internal:host-gateway \
+  -p 127.0.0.1:8080:80 \
+  -v /tmp/loadtest-nginx.conf:/etc/nginx/nginx.conf:ro \
+  nginx:1.27-alpine
+
 cd services/load-tests
 export LOADTEST_PROPERTY_ID=<uuid-de-propiedad-seed>
 export LOADTEST_JWT_SECRET=$(grep ^JWT_SECRET_KEY ../../.env | cut -d= -f2)
-locust -f locustfile.py --host http://localhost \
-  --users 10 --spawn-rate 1 --run-time 1m --headless
+# Acorta el escenario para humo local (ver "Duración: --run-time vs LoadTestShape" abajo)
+export LOADTEST_RAMP_SECONDS=20 LOADTEST_PEAK_SECONDS=40
+export LOADTEST_PEAK_USERS=10 LOADTEST_START_USERS=2
+mkdir -p ../../docs/load-tests/MPF-74/local-smoke
+locust -f locustfile.py --host http://localhost:8080 --headless \
+  --html ../../docs/load-tests/MPF-74/local-smoke/report.html \
+  --csv ../../docs/load-tests/MPF-74/local-smoke/stats
 ```
 
-Si la prueba de humo local falla, no continuar con AWS.
+Los artefactos del humo quedan en `docs/load-tests/MPF-74/local-smoke/` (ignorado por git vía `.gitignore`). El reporte HTML se abre con `xdg-open docs/load-tests/MPF-74/local-smoke/report.html`.
+
+Al terminar: `docker rm -f loadtest-gw`.
+
+### Duración: `--run-time` vs `LoadTestShape`
+
+`locustfile.py` define una `LoadTestShape` (`RampThenPeak`). **Cuando hay shape, Locust ignora `--run-time`** — la duración se controla por las env vars `LOADTEST_RAMP_SECONDS` (default `300`) y `LOADTEST_PEAK_SECONDS` (default `900`). Si invocas con `--run-time 60s` sin overrides, la corrida durará los 20 min del escenario completo y tendrás que matarla con Ctrl-C.
+
+### Limitación del OTP / envío de correo bajo carga
+
+El servicio `security` envía el OTP por **Gmail SMTP** (`SmtpOtpSender` cuando `SMTP_HOST` está configurado, único modo soportado hoy tanto en local como en AWS dev). Gmail desconecta sesiones cuando varios `auth/login` autentican concurrentemente desde la misma cuenta/IP, lo que produce `500` esporádicos en `POST /api/v1/auth/login` bajo carga sostenida. **No es un bug del código** — es la cuota del provider SMTP.
+
+Migrar este flujo a AWS SES no resuelve el problema de inmediato porque la cuenta SES está en **Sandbox**: solo admite enviar a destinatarios previamente verificados (los emails sintéticos `loadtest+<uuid>@…` del test no lo están) y tope de ~200 correos/día. Migrar requiere solicitar Production Access a AWS — pendiente como deuda técnica fuera del alcance de MPF-74.
+
+**Cómo se sortea para validar MPF-74 sin tocar el provider de correo:**
+
+El locustfile expone `LOADTEST_REAL_LOGIN_RATIO` (default `0.3`). Es la fracción de tasks `auth_login` que usan credenciales propias del VU (path 200 → envía OTP) vs un email aleatorio (path 401 → escribe `login_attempt` pero **no toca SMTP**). Poniéndolo en `0.0` el load test sigue ejercitando el path crítico de auth (verificación de credenciales, escritura concurrente sobre `login_attempt`, evaluación de IP-block distribuido) sin generar correos:
+
+```bash
+export LOADTEST_REAL_LOGIN_RATIO=0.0
+locust -f locustfile.py --host http://<dns-del-alb> ...
+```
+
+La AC2 ("almacenamiento de sesiones distribuido") se valida por separado con el **procedimiento manual** documentado más abajo (sección "Validación manual de sesión distribuida"): un único usuario hace `login` → recibe OTP → `verify-otp` desde otro task → 200 con `access_token`. Eso demuestra que el OTP persistido por el task A se lee desde el task B porque vive en Postgres compartido, sin depender de la capacidad del provider de correo.
+
+Para humo local sin SMTP ruido (alternativa): deja vacías `SMTP_HOST/SMTP_USER/SMTP_PASSWORD` en `.env` y `security` cae a `LogOtpSender` (loguea el OTP a stdout, responde 200). En AWS dev esa misma combinación se logra dejando vacíos los campos SMTP del `data` tfvars antes de un `terraform apply` puntual; no se recomienda para uso normal.
 
 ## Ejecución en AWS (corrida real)
 
@@ -62,15 +124,19 @@ Si la prueba de humo local falla, no continuar con AWS.
 cd services/load-tests
 export LOADTEST_PROPERTY_ID=<uuid>
 export LOADTEST_JWT_SECRET=<secreto-de-secrets-manager>
+# SES está en sandbox y Gmail tiene cuota baja → desactivar logins reales
+# para que el SMTP no se vuelva el cuello de botella. La AC2 se demuestra
+# con el procedimiento manual al final de este README.
+export LOADTEST_REAL_LOGIN_RATIO=0.0
 
 locust -f locustfile.py --host http://<dns-del-alb> \
   --processes 4 \
-  --users 60 --spawn-rate 0.2 --run-time 20m \
+  --users 60 --spawn-rate 0.2 \
   --headless --html ../../docs/load-tests/MPF-74/report.html \
   --csv ../../docs/load-tests/MPF-74/stats
 ```
 
-`--processes 4` distribuye los VUs entre 4 procesos worker locales (evita el GIL de Python).
+`--processes 4` distribuye los VUs entre 4 procesos worker locales (evita el GIL de Python). `--run-time` se omite porque la `LoadTestShape` (5 min ramp + 15 min peak) controla la duración.
 
 ## Escenario
 

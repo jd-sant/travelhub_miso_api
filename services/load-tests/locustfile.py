@@ -46,6 +46,12 @@ PEAK_DURATION_S = int(os.getenv("LOADTEST_PEAK_SECONDS", "900"))
 PEAK_USERS = int(os.getenv("LOADTEST_PEAK_USERS", "60"))
 START_USERS = int(os.getenv("LOADTEST_START_USERS", "10"))
 
+# Fracción de logins con credenciales reales (los que disparan envío de OTP por
+# SMTP). En AWS con SES en sandbox o cuotas Gmail bajas el envío real falla bajo
+# carga; poner 0.0 ejercita solo el path 401 (sin SMTP) y deja la verificación
+# real de "sesión distribuida" para el procedimiento manual del README (AC2).
+REAL_LOGIN_RATIO = float(os.getenv("LOADTEST_REAL_LOGIN_RATIO", "0.3"))
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -143,7 +149,7 @@ class TravelHubUser(HttpUser):
 
     @task(15)
     def auth_login(self):
-        if random.random() < 0.3:
+        if REAL_LOGIN_RATIO > 0 and random.random() < REAL_LOGIN_RATIO:
             payload = {"email": self.email, "password": self.password}
         else:
             payload = {
@@ -186,12 +192,12 @@ class TravelHubUser(HttpUser):
 
     @task(20)
     def booking_charge(self):
-        if not (self.token and PROPERTY_ID):
+        if not (self.token and self.user_id):
             return
 
         payload = {
             "reservation_id": str(uuid.uuid4()),
-            "property_id": PROPERTY_ID,
+            "traveler_id": self.user_id,
             "amount_in_cents": random.randint(50_000, 500_000),
             "currency": "COP",
             "payment_method_token": "pm_loadtest_success",
@@ -248,6 +254,10 @@ def _on_test_start(environment, **_kwargs):
     print(
         f"[MPF-74] Starting load test: ramp {RAMP_DURATION_S}s "
         f"(VUs {START_USERS}->{PEAK_USERS}) + peak {PEAK_DURATION_S}s @ {PEAK_USERS} VUs"
+    )
+    print(
+        f"[MPF-74] REAL_LOGIN_RATIO={REAL_LOGIN_RATIO:.2f} "
+        f"(0.0 = todos los login devuelven 401 sin tocar SMTP/SES)"
     )
     if not JWT_SECRET:
         print(
