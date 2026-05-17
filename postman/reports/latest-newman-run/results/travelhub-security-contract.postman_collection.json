@@ -1,19 +1,19 @@
 {
   "collection": {
     "_": {
-      "postman_id": "eff589e6-f61a-4df6-839c-9b799323c6ac"
+      "postman_id": "f80c6983-6301-4e64-bcce-04ef17f5cbbe"
     },
     "item": [
       {
-        "id": "71472dc7-3717-4f25-86e1-99d51caa9d1e",
-        "name": "Health - Search",
+        "id": "3cfeb182-83ff-4336-a791-5260003e1629",
+        "name": "Health - Security",
         "request": {
           "url": {
             "path": [
               "health"
             ],
             "host": [
-              "{{search_base_url}}"
+              "{{security_base_url}}"
             ],
             "query": [],
             "variable": []
@@ -25,124 +25,100 @@
           {
             "listen": "test",
             "script": {
-              "id": "c3261e6c-5389-46f1-bfc4-3585727495ff",
+              "id": "cee8cb95-7e8c-46b6-a2c0-ab3e971a0c66",
               "type": "text/javascript",
               "exec": [
                 "pm.test('health 200', function () { pm.response.to.have.status(200); });"
               ],
-              "_lastExecutionId": "095d9dd4-b3d4-4fb5-b688-62bc1ea4c965"
+              "_lastExecutionId": "515a685e-1eff-4dc8-9eca-60f7871b5a0e"
             }
           }
         ]
       },
       {
-        "id": "9f0a3067-83b7-4b52-a331-77ad3040d93b",
-        "name": "Search Status",
+        "id": "3587c6be-1923-42af-856c-4501005c069e",
+        "name": "Login Invalid Credentials",
         "request": {
           "url": {
             "path": [
               "api",
               "v1",
-              "search",
-              "status"
+              "auth",
+              "login"
             ],
             "host": [
-              "{{search_base_url}}"
+              "{{security_base_url}}"
             ],
             "query": [],
             "variable": []
           },
-          "method": "GET"
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"email\": \"no-existe@example.com\",\n  \"password\": \"bad-password\"\n}"
+          }
         },
         "response": [],
         "event": [
           {
             "listen": "test",
             "script": {
-              "id": "f08c1020-f53a-4b7f-837f-e9cfa00b6a01",
+              "id": "708f1bc4-1248-4d42-ae94-74b56f1fd299",
               "type": "text/javascript",
               "exec": [
-                "pm.test('status 200', function () { pm.response.to.have.status(200); });",
-                "const body = pm.response.json();",
-                "pm.test('service is search', function () { pm.expect(body.service).to.eql('search'); });"
+                "pm.test('login invalid 401', function () { pm.response.to.have.status(401); });"
               ],
-              "_lastExecutionId": "667007f6-308e-454b-a135-b9247e87cff2"
+              "_lastExecutionId": "ec77adb5-0793-4ec0-ac79-2db3f2c4d9ae"
             }
           }
         ]
       },
       {
-        "id": "f5a14777-1fdb-411d-a55e-298f8941e5be",
-        "name": "Search Query",
+        "id": "e6fd8ac0-878e-4058-bb83-6e5f85718610",
+        "name": "Validate Token Invalid",
         "request": {
           "url": {
             "path": [
               "api",
               "v1",
-              "search"
+              "auth",
+              "validate-token"
             ],
             "host": [
-              "{{search_base_url}}"
+              "{{security_base_url}}"
             ],
-            "query": [
-              {
-                "key": "city",
-                "value": "Bogota"
-              },
-              {
-                "key": "check_in",
-                "value": "{{search_check_in}}"
-              },
-              {
-                "key": "check_out",
-                "value": "{{search_check_out}}"
-              },
-              {
-                "key": "guests",
-                "value": "2"
-              },
-              {
-                "key": "page",
-                "value": "1"
-              },
-              {
-                "key": "page_size",
-                "value": "5"
-              }
-            ],
+            "query": [],
             "variable": []
           },
-          "method": "GET"
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"token\": \"invalid.jwt.token\"\n}"
+          }
         },
         "response": [],
         "event": [
           {
-            "listen": "prerequest",
-            "script": {
-              "id": "224f9d02-e6f7-463a-ac1e-8a30773af01f",
-              "type": "text/javascript",
-              "exec": [
-                "const now = new Date();",
-                "const checkIn = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);",
-                "const checkOut = new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000);",
-                "pm.collectionVariables.set('search_check_in', checkIn.toISOString().slice(0, 10));",
-                "pm.collectionVariables.set('search_check_out', checkOut.toISOString().slice(0, 10));"
-              ],
-              "_lastExecutionId": "5664407b-04d8-4eb7-9786-8dd495084d8a"
-            }
-          },
-          {
             "listen": "test",
             "script": {
-              "id": "30d11912-bc3a-492d-8f81-c8bf556ef36a",
+              "id": "4be8efda-0d55-493a-8977-dcce4c482879",
               "type": "text/javascript",
               "exec": [
-                "pm.test('search 200', function () { pm.response.to.have.status(200); });",
-                "const body = pm.response.json();",
-                "pm.test('items array exists', function () { pm.expect(body.items).to.be.an('array'); });",
-                "pm.test('pagination exists', function () { pm.expect(body.pagination).to.be.an('object'); });"
+                "pm.test('validate invalid 401', function () { pm.response.to.have.status(401); });"
               ],
-              "_lastExecutionId": "d731c8c5-eeb1-4249-9639-e7617fab7e1e"
+              "_lastExecutionId": "db06bd86-816e-4cf4-8612-6fcb18edb63a"
             }
           }
         ]
@@ -151,11 +127,11 @@
     "event": [],
     "variable": [],
     "info": {
-      "_postman_id": "eff589e6-f61a-4df6-839c-9b799323c6ac",
-      "name": "TravelHub Search Contract",
+      "_postman_id": "f80c6983-6301-4e64-bcce-04ef17f5cbbe",
+      "name": "TravelHub Security Contract",
       "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
       "description": {
-        "content": "Validaciones contract/smoke para Search service.",
+        "content": "Validaciones contract/smoke para Security service.",
         "type": "text/plain"
       }
     }
@@ -203,6 +179,11 @@
         "type": "any",
         "value": "http://localhost:8006",
         "key": "search_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8007",
+        "key": "inventory_base_url"
       },
       {
         "type": "any",
@@ -347,7 +328,7 @@
     ]
   },
   "globals": {
-    "id": "60563d1a-eb87-4c46-80fe-a5ae2bf0ff3b",
+    "id": "4bf350f2-d482-4df7-9575-546e92952d86",
     "values": []
   },
   "run": {
@@ -363,7 +344,7 @@
         "failed": 0
       },
       "scripts": {
-        "total": 4,
+        "total": 3,
         "pending": 0,
         "failed": 0
       },
@@ -383,7 +364,7 @@
         "failed": 0
       },
       "assertions": {
-        "total": 6,
+        "total": 3,
         "pending": 0,
         "failed": 0
       },
@@ -393,16 +374,16 @@
         "failed": 0
       },
       "prerequestScripts": {
-        "total": 1,
+        "total": 0,
         "pending": 0,
         "failed": 0
       }
     },
     "timings": {
-      "responseAverage": 18.666666666666668,
-      "responseMin": 3,
+      "responseAverage": 17,
+      "responseMin": 4,
       "responseMax": 30,
-      "responseSd": 11.440668201153676,
+      "responseSd": 10.614455552060438,
       "dnsAverage": 0,
       "dnsMin": 0,
       "dnsMax": 0,
@@ -411,8 +392,8 @@
       "firstByteMin": 0,
       "firstByteMax": 0,
       "firstByteSd": 0,
-      "started": 1777254737771,
-      "completed": 1777254738069
+      "started": 1779056082477,
+      "completed": 1779056082803
     },
     "executions": [
       {
@@ -425,19 +406,19 @@
           "eof": false,
           "bof": true,
           "cr": false,
-          "ref": "50f4208b-a989-46a5-8034-d69f25ebb358",
-          "httpRequestId": "62b334e3-42f4-406a-a4e2-a8a892603de1"
+          "ref": "66934f32-ef48-4c9d-8cad-623e925286f6",
+          "httpRequestId": "b69dd85b-d4f6-4857-afbe-9252a8ad9970"
         },
         "item": {
-          "id": "71472dc7-3717-4f25-86e1-99d51caa9d1e",
-          "name": "Health - Search",
+          "id": "3cfeb182-83ff-4336-a791-5260003e1629",
+          "name": "Health - Security",
           "request": {
             "url": {
               "path": [
                 "health"
               ],
               "host": [
-                "{{search_base_url}}"
+                "{{security_base_url}}"
               ],
               "query": [],
               "variable": []
@@ -449,12 +430,12 @@
             {
               "listen": "test",
               "script": {
-                "id": "c3261e6c-5389-46f1-bfc4-3585727495ff",
+                "id": "cee8cb95-7e8c-46b6-a2c0-ab3e971a0c66",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('health 200', function () { pm.response.to.have.status(200); });"
                 ],
-                "_lastExecutionId": "095d9dd4-b3d4-4fb5-b688-62bc1ea4c965"
+                "_lastExecutionId": "515a685e-1eff-4dc8-9eca-60f7871b5a0e"
               }
             }
           ]
@@ -462,7 +443,7 @@
         "request": {
           "url": {
             "protocol": "http",
-            "port": "8006",
+            "port": "8001",
             "path": [
               "health"
             ],
@@ -490,12 +471,12 @@
             },
             {
               "key": "Postman-Token",
-              "value": "8bbff60a-0946-4df5-b3b0-8acbb6eeb8ba",
+              "value": "6a8a9452-2feb-4cfd-aef3-b8314ba695b1",
               "system": true
             },
             {
               "key": "Host",
-              "value": "localhost:8006",
+              "value": "localhost:8001",
               "system": true
             },
             {
@@ -512,13 +493,13 @@
           "method": "GET"
         },
         "response": {
-          "id": "80f6e1d3-0683-4cd4-a74e-21c7e3a31585",
+          "id": "925e0637-ef67-4d0d-92fe-49cd78d07871",
           "status": "OK",
           "code": 200,
           "header": [
             {
               "key": "date",
-              "value": "Mon, 27 Apr 2026 01:52:17 GMT"
+              "value": "Sun, 17 May 2026 22:14:42 GMT"
             },
             {
               "key": "server",
@@ -559,10 +540,10 @@
             ]
           },
           "cookie": [],
-          "responseTime": 23,
+          "responseTime": 17,
           "responseSize": 20
         },
-        "id": "71472dc7-3717-4f25-86e1-99d51caa9d1e",
+        "id": "3cfeb182-83ff-4336-a791-5260003e1629",
         "assertions": [
           {
             "assertion": "health 200",
@@ -572,45 +553,53 @@
       },
       {
         "cursor": {
-          "ref": "1bff1970-6310-4467-b138-79e5b78e4fb6",
+          "ref": "59f0c635-d941-4d42-879c-b0b2ea80690e",
           "length": 3,
           "cycles": 1,
           "position": 1,
           "iteration": 0,
-          "httpRequestId": "3f4dd283-0a17-4fc7-a378-13ad94ff12a5"
+          "httpRequestId": "02cf2d16-980b-46e2-9961-4db05602579f"
         },
         "item": {
-          "id": "9f0a3067-83b7-4b52-a331-77ad3040d93b",
-          "name": "Search Status",
+          "id": "3587c6be-1923-42af-856c-4501005c069e",
+          "name": "Login Invalid Credentials",
           "request": {
             "url": {
               "path": [
                 "api",
                 "v1",
-                "search",
-                "status"
+                "auth",
+                "login"
               ],
               "host": [
-                "{{search_base_url}}"
+                "{{security_base_url}}"
               ],
               "query": [],
               "variable": []
             },
-            "method": "GET"
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"no-existe@example.com\",\n  \"password\": \"bad-password\"\n}"
+            }
           },
           "response": [],
           "event": [
             {
               "listen": "test",
               "script": {
-                "id": "f08c1020-f53a-4b7f-837f-e9cfa00b6a01",
+                "id": "708f1bc4-1248-4d42-ae94-74b56f1fd299",
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('status 200', function () { pm.response.to.have.status(200); });",
-                  "const body = pm.response.json();",
-                  "pm.test('service is search', function () { pm.expect(body.service).to.eql('search'); });"
+                  "pm.test('login invalid 401', function () { pm.response.to.have.status(401); });"
                 ],
-                "_lastExecutionId": "667007f6-308e-454b-a135-b9247e87cff2"
+                "_lastExecutionId": "ec77adb5-0793-4ec0-ac79-2db3f2c4d9ae"
               }
             }
           ]
@@ -618,12 +607,12 @@
         "request": {
           "url": {
             "protocol": "http",
-            "port": "8006",
+            "port": "8001",
             "path": [
               "api",
               "v1",
-              "search",
-              "status"
+              "auth",
+              "login"
             ],
             "host": [
               "localhost"
@@ -633,6 +622,10 @@
           },
           "header": [
             {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
               "key": "User-Agent",
               "value": "PostmanRuntime/7.39.1",
               "system": true
@@ -649,12 +642,12 @@
             },
             {
               "key": "Postman-Token",
-              "value": "3579a963-6522-4879-b000-69daf8ff5c6f",
+              "value": "345a47e6-eabe-4a17-acea-ade7cc2ffa1e",
               "system": true
             },
             {
               "key": "Host",
-              "value": "localhost:8006",
+              "value": "localhost:8001",
               "system": true
             },
             {
@@ -666,18 +659,27 @@
               "key": "Connection",
               "value": "keep-alive",
               "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "68",
+              "system": true
             }
           ],
-          "method": "GET"
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"email\": \"no-existe@example.com\",\n  \"password\": \"bad-password\"\n}"
+          }
         },
         "response": {
-          "id": "f06b5eab-e82d-454e-ae5d-4708cda66c45",
-          "status": "OK",
-          "code": 200,
+          "id": "5fe4c582-2627-459c-9147-a21af7b6b70e",
+          "status": "Unauthorized",
+          "code": 401,
           "header": [
             {
               "key": "date",
-              "value": "Mon, 27 Apr 2026 01:52:17 GMT"
+              "value": "Sun, 17 May 2026 22:14:42 GMT"
             },
             {
               "key": "server",
@@ -685,7 +687,7 @@
             },
             {
               "key": "content-length",
-              "value": "34"
+              "value": "36"
             },
             {
               "key": "content-type",
@@ -697,137 +699,103 @@
             "data": [
               123,
               34,
-              115,
+              100,
               101,
-              114,
-              118,
+              116,
+              97,
               105,
-              99,
-              101,
+              108,
               34,
               58,
               34,
-              115,
-              101,
-              97,
+              67,
               114,
+              101,
+              100,
+              101,
+              110,
               99,
-              104,
-              34,
-              44,
-              34,
-              115,
-              116,
+              105,
               97,
-              116,
-              117,
+              108,
+              101,
               115,
-              34,
-              58,
-              34,
-              111,
-              107,
+              32,
+              105,
+              110,
+              118,
+              195,
+              161,
+              108,
+              105,
+              100,
+              97,
+              115,
               34,
               125
             ]
           },
           "cookie": [],
-          "responseTime": 3,
-          "responseSize": 34
+          "responseTime": 30,
+          "responseSize": 36
         },
-        "id": "9f0a3067-83b7-4b52-a331-77ad3040d93b",
+        "id": "3587c6be-1923-42af-856c-4501005c069e",
         "assertions": [
           {
-            "assertion": "status 200",
-            "skipped": false
-          },
-          {
-            "assertion": "service is search",
+            "assertion": "login invalid 401",
             "skipped": false
           }
         ]
       },
       {
         "cursor": {
-          "ref": "fbd8bcce-2651-4443-9bc1-85b8775a2cb6",
+          "ref": "45fec74b-f794-45f1-814c-6b3df25eea42",
           "length": 3,
           "cycles": 1,
           "position": 2,
           "iteration": 0,
-          "httpRequestId": "3fab3c2e-fefc-45de-a134-fc72d856e9e7"
+          "httpRequestId": "726fb698-4abc-4c7a-9d87-a00a4c3ca4c6"
         },
         "item": {
-          "id": "f5a14777-1fdb-411d-a55e-298f8941e5be",
-          "name": "Search Query",
+          "id": "e6fd8ac0-878e-4058-bb83-6e5f85718610",
+          "name": "Validate Token Invalid",
           "request": {
             "url": {
               "path": [
                 "api",
                 "v1",
-                "search"
+                "auth",
+                "validate-token"
               ],
               "host": [
-                "{{search_base_url}}"
+                "{{security_base_url}}"
               ],
-              "query": [
-                {
-                  "key": "city",
-                  "value": "Bogota"
-                },
-                {
-                  "key": "check_in",
-                  "value": "{{search_check_in}}"
-                },
-                {
-                  "key": "check_out",
-                  "value": "{{search_check_out}}"
-                },
-                {
-                  "key": "guests",
-                  "value": "2"
-                },
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "page_size",
-                  "value": "5"
-                }
-              ],
+              "query": [],
               "variable": []
             },
-            "method": "GET"
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"invalid.jwt.token\"\n}"
+            }
           },
           "response": [],
           "event": [
             {
-              "listen": "prerequest",
-              "script": {
-                "id": "224f9d02-e6f7-463a-ac1e-8a30773af01f",
-                "type": "text/javascript",
-                "exec": [
-                  "const now = new Date();",
-                  "const checkIn = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);",
-                  "const checkOut = new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000);",
-                  "pm.collectionVariables.set('search_check_in', checkIn.toISOString().slice(0, 10));",
-                  "pm.collectionVariables.set('search_check_out', checkOut.toISOString().slice(0, 10));"
-                ],
-                "_lastExecutionId": "5664407b-04d8-4eb7-9786-8dd495084d8a"
-              }
-            },
-            {
               "listen": "test",
               "script": {
-                "id": "30d11912-bc3a-492d-8f81-c8bf556ef36a",
+                "id": "4be8efda-0d55-493a-8977-dcce4c482879",
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('search 200', function () { pm.response.to.have.status(200); });",
-                  "const body = pm.response.json();",
-                  "pm.test('items array exists', function () { pm.expect(body.items).to.be.an('array'); });",
-                  "pm.test('pagination exists', function () { pm.expect(body.pagination).to.be.an('object'); });"
+                  "pm.test('validate invalid 401', function () { pm.response.to.have.status(401); });"
                 ],
-                "_lastExecutionId": "d731c8c5-eeb1-4249-9639-e7617fab7e1e"
+                "_lastExecutionId": "db06bd86-816e-4cf4-8612-6fcb18edb63a"
               }
             }
           ]
@@ -835,44 +803,24 @@
         "request": {
           "url": {
             "protocol": "http",
-            "port": "8006",
+            "port": "8001",
             "path": [
               "api",
               "v1",
-              "search"
+              "auth",
+              "validate-token"
             ],
             "host": [
               "localhost"
             ],
-            "query": [
-              {
-                "key": "city",
-                "value": "Bogota"
-              },
-              {
-                "key": "check_in",
-                "value": "2026-04-29"
-              },
-              {
-                "key": "check_out",
-                "value": "2026-05-01"
-              },
-              {
-                "key": "guests",
-                "value": "2"
-              },
-              {
-                "key": "page",
-                "value": "1"
-              },
-              {
-                "key": "page_size",
-                "value": "5"
-              }
-            ],
+            "query": [],
             "variable": []
           },
           "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
             {
               "key": "User-Agent",
               "value": "PostmanRuntime/7.39.1",
@@ -890,12 +838,12 @@
             },
             {
               "key": "Postman-Token",
-              "value": "43172522-d9d5-45d9-901f-df1f2024e4b1",
+              "value": "8d6d2832-2645-41ba-b360-fc13dfe9a26a",
               "system": true
             },
             {
               "key": "Host",
-              "value": "localhost:8006",
+              "value": "localhost:8001",
               "system": true
             },
             {
@@ -907,18 +855,27 @@
               "key": "Connection",
               "value": "keep-alive",
               "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "34",
+              "system": true
             }
           ],
-          "method": "GET"
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"token\": \"invalid.jwt.token\"\n}"
+          }
         },
         "response": {
-          "id": "0e68f700-6e2b-40ef-b247-cde8e8d27f1b",
-          "status": "OK",
-          "code": 200,
+          "id": "c190df7a-0c9c-4a35-8116-81fc9d7ea093",
+          "status": "Unauthorized",
+          "code": 401,
           "header": [
             {
               "key": "date",
-              "value": "Mon, 27 Apr 2026 01:52:17 GMT"
+              "value": "Sun, 17 May 2026 22:14:42 GMT"
             },
             {
               "key": "server",
@@ -926,7 +883,7 @@
             },
             {
               "key": "content-length",
-              "value": "305"
+              "value": "28"
             },
             {
               "key": "content-type",
@@ -938,334 +895,49 @@
             "data": [
               123,
               34,
-              105,
-              116,
+              100,
               101,
-              109,
-              115,
-              34,
-              58,
-              91,
-              93,
-              44,
-              34,
-              112,
+              116,
               97,
-              103,
               105,
-              110,
-              97,
-              116,
-              105,
-              111,
-              110,
-              34,
-              58,
-              123,
-              34,
-              116,
-              111,
-              116,
-              97,
               108,
               34,
               58,
-              48,
-              44,
-              34,
-              112,
-              97,
-              103,
-              101,
-              34,
-              58,
-              49,
-              44,
-              34,
-              112,
-              97,
-              103,
-              101,
-              95,
-              115,
-              105,
-              122,
-              101,
-              34,
-              58,
-              53,
-              44,
-              34,
-              116,
-              111,
-              116,
-              97,
-              108,
-              95,
-              112,
-              97,
-              103,
-              101,
-              115,
-              34,
-              58,
-              48,
-              125,
-              44,
-              34,
-              101,
-              109,
-              112,
-              116,
-              121,
-              95,
-              115,
-              116,
-              97,
-              116,
-              101,
-              34,
-              58,
-              91,
-              123,
-              34,
-              99,
-              111,
-              100,
-              101,
-              34,
-              58,
               34,
               84,
-              82,
-              89,
-              95,
-              79,
-              84,
-              72,
-              69,
-              82,
-              95,
-              67,
-              73,
-              84,
-              89,
-              34,
-              44,
-              34,
-              109,
-              101,
-              115,
-              115,
-              97,
-              103,
-              101,
-              34,
-              58,
-              34,
-              78,
               111,
-              32,
-              101,
-              110,
-              99,
-              111,
-              110,
-              116,
-              114,
-              97,
-              109,
-              111,
-              115,
-              32,
-              114,
-              101,
-              115,
-              117,
-              108,
-              116,
-              97,
-              100,
-              111,
-              115,
-              32,
+              107,
               101,
               110,
               32,
-              101,
-              115,
-              97,
-              32,
-              99,
               105,
-              117,
-              100,
-              97,
-              100,
-              46,
-              32,
-              73,
               110,
-              116,
-              101,
-              110,
-              116,
-              97,
-              32,
-              111,
-              116,
-              114,
-              97,
-              32,
-              99,
-              105,
-              117,
-              100,
-              97,
-              100,
-              32,
-              99,
-              101,
-              114,
-              99,
-              97,
-              110,
-              97,
-              46,
-              34,
-              125,
-              44,
-              123,
-              34,
-              99,
-              111,
-              100,
-              101,
-              34,
-              58,
-              34,
-              84,
-              82,
-              89,
-              95,
-              79,
-              84,
-              72,
-              69,
-              82,
-              95,
-              68,
-              65,
-              84,
-              69,
-              83,
-              34,
-              44,
-              34,
-              109,
-              101,
-              115,
-              115,
-              97,
-              103,
-              101,
-              34,
-              58,
-              34,
-              80,
-              114,
-              117,
-              101,
-              98,
-              97,
-              32,
-              99,
-              111,
-              110,
-              32,
-              102,
-              101,
-              99,
-              104,
-              97,
-              115,
-              32,
-              100,
-              105,
-              102,
-              101,
-              114,
-              101,
-              110,
-              116,
-              101,
-              115,
-              32,
-              112,
-              97,
-              114,
-              97,
-              32,
-              101,
-              110,
-              99,
-              111,
-              110,
-              116,
-              114,
-              97,
-              114,
-              32,
-              109,
-              97,
-              121,
-              111,
-              114,
-              32,
-              100,
-              105,
-              115,
-              112,
-              111,
-              110,
-              105,
-              98,
-              105,
+              118,
+              195,
+              161,
               108,
               105,
               100,
-              97,
-              100,
-              46,
+              111,
               34,
-              125,
-              93,
               125
             ]
           },
           "cookie": [],
-          "responseTime": 30,
-          "responseSize": 305
+          "responseTime": 4,
+          "responseSize": 28
         },
-        "id": "f5a14777-1fdb-411d-a55e-298f8941e5be",
+        "id": "e6fd8ac0-878e-4058-bb83-6e5f85718610",
         "assertions": [
           {
-            "assertion": "search 200",
-            "skipped": false
-          },
-          {
-            "assertion": "items array exists",
-            "skipped": false
-          },
-          {
-            "assertion": "pagination exists",
+            "assertion": "validate invalid 401",
             "skipped": false
           }
         ]
       }
     ],
     "transfers": {
-      "responseTotal": 359
+      "responseTotal": 84
     },
     "failures": [],
     "error": null

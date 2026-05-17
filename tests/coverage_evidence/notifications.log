@@ -1,98 +1,152 @@
-﻿============================= test session starts =============================
+# pytest
+============================= test session starts =============================
 platform win32 -- Python 3.13.2, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\CLIENTE\AppData\Local\Programs\Python\Python313\python.exe
 cachedir: .pytest_cache
 rootdir: C:\Users\CLIENTE\Documents\MISO\PROYECTO-FINAL-2\travelhub_miso\services\notifications
 plugins: anyio-4.10.0, Faker-40.5.1, langsmith-0.5.2, asyncio-1.1.0, cov-7.0.0
 asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collecting ... collected 27 items
+collecting ... collected 56 items
 
-tests/test_infra_coverage.py::test_internal_router_maps_domain_errors_to_http[exc0-409] PASSED [  3%]
-tests/test_infra_coverage.py::test_internal_router_maps_domain_errors_to_http[exc1-404] PASSED [  7%]
-tests/test_infra_coverage.py::test_internal_router_maps_domain_errors_to_http[exc2-503] PASSED [ 11%]
-tests/test_infra_coverage.py::test_internal_router_schedules_background_task_for_pending_notification PASSED [ 14%]
-tests/test_infra_coverage.py::test_payment_confirmation_client_success PASSED [ 18%]
-tests/test_infra_coverage.py::test_payment_confirmation_client_maps_404_and_transport_errors PASSED [ 22%]
-tests/test_infra_coverage.py::test_privacy_helpers_cover_sensitive_paths PASSED [ 25%]
-tests/test_notifications_api.py::test_create_payment_confirmation_persists_notification_and_audit PASSED [ 29%]
-tests/test_notifications_api.py::test_get_notification_returns_created_notification PASSED [ 33%]
-tests/test_notifications_api.py::test_get_notification_requires_internal_api_key PASSED [ 37%]
-tests/test_notifications_api.py::test_create_payment_confirmation_is_idempotent_by_payment_id PASSED [ 40%]
-tests/test_notifications_api.py::test_create_reservation_event_notification_persists_payload PASSED [ 44%]
-tests/test_notifications_api.py::test_create_reservation_event_notification_requires_internal_api_key PASSED [ 48%]
-tests/test_notifications_api.py::test_create_reservation_update_persists_reason_code_and_note PASSED [ 51%]
-tests/test_notifications_security_posture.py::test_mask_email_obfuscates_local_part PASSED [ 55%]
-tests/test_notifications_security_posture.py::test_sanitize_sensitive_data_redacts_known_financial_fields PASSED [ 59%]
-tests/test_notifications_security_posture.py::test_settings_require_https_internal_urls_in_non_dev PASSED [ 62%]
-tests/test_notifications_security_posture.py::test_backend_source_has_no_hardcoded_pan_literals PASSED [ 66%]
-tests/test_payment_confirmation_template.py::test_template_renderiza_las_cuatro_lineas_del_breakdown_canonico PASSED [ 70%]
-tests/test_payment_confirmation_template.py::test_template_cae_en_legacy_nightly_rate_si_falta_accommodation PASSED [ 74%]
-tests/test_payment_confirmation_template.py::test_template_omite_lineas_opcionales_cuando_son_cero_o_ausentes PASSED [ 77%]
-tests/test_reservation_update_template.py::test_cancellation_template_uses_card_layout_and_refund_block_in_spanish PASSED [ 81%]
-tests/test_reservation_update_template.py::test_confirmation_template_keeps_same_visual_language_without_refund PASSED [ 85%]
-tests/test_ses_and_consumer.py::test_ses_sender_envia_html PASSED        [ 88%]
-tests/test_ses_and_consumer.py::test_ses_sender_falla_sin_from_address PASSED [ 92%]
-tests/test_ses_and_consumer.py::test_send_payment_confirmation_registra_latencia PASSED [ 96%]
+tests/test_create_reservation_event_with_push.py::test_dispatches_push_to_all_active_devices_for_status_change PASSED [  1%]
+tests/test_create_reservation_event_with_push.py::test_skips_push_when_status_changes_preference_disabled PASSED [  3%]
+tests/test_create_reservation_event_with_push.py::test_skips_push_when_arrival_reminder_preference_disabled PASSED [  5%]
+tests/test_create_reservation_event_with_push.py::test_arrival_reminder_uses_arrival_channel_id PASSED [  7%]
+tests/test_create_reservation_event_with_push.py::test_status_change_uses_reservation_status_channel_id PASSED [  8%]
+tests/test_create_reservation_event_with_push.py::test_failed_send_records_audit_with_failed_status PASSED [ 10%]
+tests/test_create_reservation_event_with_push.py::test_no_push_when_device_repository_is_none PASSED [ 12%]
+tests/test_create_reservation_event_with_push.py::test_no_push_when_user_has_no_active_devices PASSED [ 14%]
+tests/test_create_reservation_event_with_push.py::test_revoked_devices_are_filtered_out PASSED [ 16%]
+tests/test_create_reservation_event_with_push.py::test_deep_link_targets_reservation_detail PASSED [ 17%]
+tests/test_health.py::TestHealthEndpoints::test_legacy_health PASSED     [ 19%]
+tests/test_health.py::TestHealthEndpoints::test_liveness PASSED          [ 21%]
+tests/test_health.py::TestHealthEndpoints::test_readiness PASSED         [ 23%]
+tests/test_infra_coverage.py::test_internal_router_maps_domain_errors_to_http[exc0-409] PASSED [ 25%]
+tests/test_infra_coverage.py::test_internal_router_maps_domain_errors_to_http[exc1-404] PASSED [ 26%]
+tests/test_infra_coverage.py::test_internal_router_maps_domain_errors_to_http[exc2-503] PASSED [ 28%]
+tests/test_infra_coverage.py::test_internal_router_schedules_background_task_for_pending_notification PASSED [ 30%]
+tests/test_infra_coverage.py::test_payment_confirmation_client_success PASSED [ 32%]
+tests/test_infra_coverage.py::test_payment_confirmation_client_maps_404_and_transport_errors PASSED [ 33%]
+tests/test_infra_coverage.py::test_privacy_helpers_cover_sensitive_paths PASSED [ 35%]
+tests/test_me_endpoints.py::test_register_device_returns_401_without_authorization PASSED [ 37%]
+tests/test_me_endpoints.py::test_register_device_returns_401_with_invalid_token PASSED [ 39%]
+tests/test_me_endpoints.py::test_register_device_persists_token PASSED   [ 41%]
+tests/test_me_endpoints.py::test_register_device_is_idempotent PASSED    [ 42%]
+tests/test_me_endpoints.py::test_revoke_device_marks_revoked_at PASSED   [ 44%]
+tests/test_me_endpoints.py::test_get_preferences_returns_defaults_when_missing PASSED [ 46%]
+tests/test_me_endpoints.py::test_patch_preferences_persists_and_returns_updated_values PASSED [ 48%]
+tests/test_me_endpoints.py::test_list_notifications_returns_only_user_push_audits PASSED [ 50%]
+tests/test_me_endpoints.py::test_list_notifications_unread_filter_excludes_opened PASSED [ 51%]
+tests/test_me_endpoints.py::test_mark_opened_sets_opened_at_and_is_idempotent PASSED [ 53%]
+tests/test_me_endpoints.py::test_mark_opened_returns_404_when_audit_belongs_to_another_user PASSED [ 55%]
+tests/test_notifications_api.py::test_create_payment_confirmation_persists_notification_and_audit PASSED [ 57%]
+tests/test_notifications_api.py::test_get_notification_returns_created_notification PASSED [ 58%]
+tests/test_notifications_api.py::test_get_notification_requires_internal_api_key PASSED [ 60%]
+tests/test_notifications_api.py::test_create_payment_confirmation_is_idempotent_by_payment_id PASSED [ 62%]
+tests/test_notifications_api.py::test_create_reservation_event_notification_persists_payload PASSED [ 64%]
+tests/test_notifications_api.py::test_create_reservation_event_notification_requires_internal_api_key PASSED [ 66%]
+tests/test_notifications_api.py::test_create_reservation_update_persists_reason_code_and_note PASSED [ 67%]
+tests/test_notifications_security_posture.py::test_mask_email_obfuscates_local_part PASSED [ 69%]
+tests/test_notifications_security_posture.py::test_sanitize_sensitive_data_redacts_known_financial_fields PASSED [ 71%]
+tests/test_notifications_security_posture.py::test_settings_require_https_internal_urls_in_non_dev PASSED [ 73%]
+tests/test_notifications_security_posture.py::test_backend_source_has_no_hardcoded_pan_literals PASSED [ 75%]
+tests/test_payment_confirmation_template.py::test_template_renderiza_las_cuatro_lineas_del_breakdown_canonico PASSED [ 76%]
+tests/test_payment_confirmation_template.py::test_template_cae_en_legacy_nightly_rate_si_falta_accommodation PASSED [ 78%]
+tests/test_payment_confirmation_template.py::test_template_omite_lineas_opcionales_cuando_son_cero_o_ausentes PASSED [ 80%]
+tests/test_push_sender_fcm.py::test_send_success_parses_provider_message_id PASSED [ 82%]
+tests/test_push_sender_fcm.py::test_send_payload_includes_android_channel_and_click_action PASSED [ 83%]
+tests/test_push_sender_fcm.py::test_send_http_4xx_returns_failure_result PASSED [ 85%]
+tests/test_push_sender_fcm.py::test_send_transport_error_returns_failure_result PASSED [ 87%]
+tests/test_push_sender_fcm.py::test_constructor_requires_project_id PASSED [ 89%]
+tests/test_reservation_update_template.py::test_cancellation_template_uses_card_layout_and_refund_block_in_spanish PASSED [ 91%]
+tests/test_reservation_update_template.py::test_confirmation_template_keeps_same_visual_language_without_refund PASSED [ 92%]
+tests/test_ses_and_consumer.py::test_ses_sender_envia_html PASSED        [ 94%]
+tests/test_ses_and_consumer.py::test_ses_sender_falla_sin_from_address PASSED [ 96%]
+tests/test_ses_and_consumer.py::test_send_payment_confirmation_registra_latencia PASSED [ 98%]
 tests/test_ses_and_consumer.py::test_sqs_consumer_procesa_mensaje_y_lo_elimina PASSED [100%]
 
-============================= 27 passed in 1.47s ==============================
+============================= 56 passed in 2.11s ==============================
 
+
+# coverage
 Name                                                               Stmts   Miss  Cover   Missing
 ------------------------------------------------------------------------------------------------
 src\adapters\__init__.py                                               0      0   100%
+src\adapters\auth\__init__.py                                          0      0   100%
+src\adapters\auth\jwt_auth.py                                         19      3    84%   30, 36-37
 src\adapters\models\__init__.py                                        0      0   100%
+src\adapters\models\device_token.py                                   12      0   100%
 src\adapters\models\notification.py                                   18      0   100%
-src\adapters\models\notification_audit_log.py                         14      0   100%
+src\adapters\models\notification_audit_log.py                         18      0   100%
 src\adapters\models\notification_delivery_attempt.py                  11      0   100%
+src\adapters\models\notification_preference.py                         8      0   100%
 src\adapters\repositories\__init__.py                                  0      0   100%
 src\adapters\repositories\delivery_attempt_repository.py              11      0   100%
+src\adapters\repositories\device_token_repository.py                  30      1    97%   56
 src\adapters\repositories\notification_audit_repository.py            12      0   100%
+src\adapters\repositories\notification_preference_repository.py       26      2    92%   25, 48
 src\adapters\repositories\notification_repository.py                  37      1    97%   58
 src\adapters\services\__init__.py                                      0      0   100%
+src\adapters\services\fcm_push_sender.py                              45      5    89%   44-47, 51
 src\adapters\services\in_process_notification_delivery_runner.py      18      0   100%
 src\adapters\services\log_email_sender.py                             10      0   100%
+src\adapters\services\log_push_sender.py                              10      4    60%   18-30
 src\adapters\services\payment_confirmation_client.py                  20      1    95%   22
 src\adapters\services\payment_event_client.py                         25     16    36%   13-23, 33-43
 src\adapters\services\ses_email_sender.py                             23      0   100%
-src\adapters\services\sqs_notification_consumer.py                    71     21    70%   45, 49-50, 53-63, 81-82, 91-94, 98-99, 112
+src\adapters\services\sqs_notification_consumer.py                    83     23    72%   43-45, 64, 68-69, 72-82, 100-101, 110-113, 117-118, 143
 src\adapters\services\traveler_profile_client.py                      18     10    44%   13-31
-src\assembly.py                                                       60     16    73%   40, 50-62, 66, 70-72, 76, 125, 142
+src\assembly.py                                                       78     18    77%   50, 60-72, 76, 80-82, 86, 103-105, 185, 202
 src\core\__init__.py                                                   0      0   100%
-src\core\config.py                                                   101     17    83%   33, 39, 51, 55, 59, 63, 67, 73, 75, 88-90, 98, 102, 110, 115, 128
+src\core\config.py                                                   118     26    78%   13, 17, 21, 25, 29, 33, 40, 51, 55, 59, 63, 67, 73, 75, 88-90, 98, 102, 110, 115, 123, 130-132, 149
+src\core\health.py                                                    21      4    81%   15-16, 28-29
 src\core\privacy.py                                                   43      0   100%
 src\db\__init__.py                                                     0      0   100%
-src\db\session.py                                                     49     32    35%   25-30, 34-38, 42-48, 52-78, 82-83
+src\db\session.py                                                     49     36    27%   22-38, 42-48, 52-78, 82-83
 src\domain\__init__.py                                                 0      0   100%
 src\domain\ports\__init__.py                                           0      0   100%
 src\domain\ports\delivery_attempt_repository.py                        6      1    83%   9
+src\domain\ports\device_token_repository.py                           22      3    86%   27, 31, 35
 src\domain\ports\email_sender.py                                       5      1    80%   7
 src\domain\ports\notification_audit_repository.py                      6      1    83%   9
 src\domain\ports\notification_delivery_runner.py                       7      1    86%   15
+src\domain\ports\notification_preference_repository.py                15      2    87%   17, 27
 src\domain\ports\notification_repository.py                           19      5    74%   10, 14, 18, 22, 31
 src\domain\ports\payment_confirmation_source.py                        7      1    86%   10
 src\domain\ports\payment_event_source.py                              10      2    80%   10, 14
+src\domain\ports\push_sender.py                                       11      1    91%   22
 src\domain\ports\traveler_profile_source.py                            7      1    86%   10
 src\domain\schemas\__init__.py                                         0      0   100%
-src\domain\schemas\notification.py                                   124      0   100%
+src\domain\schemas\notification.py                                   132      0   100%
+src\domain\services\__init__.py                                        0      0   100%
+src\domain\services\push_notifier.py                                  36     12    67%   73-87, 95-113, 139-141
 src\domain\use_cases\__init__.py                                       0      0   100%
 src\domain\use_cases\base.py                                           8      1    88%   11
-src\domain\use_cases\create_payment_confirmation.py                   38      2    95%   79, 83
-src\domain\use_cases\create_reservation_event_notification.py         50      8    84%   43-44, 50-51, 97, 102-104
-src\domain\use_cases\create_reservation_update.py                     42      5    88%   20, 24-26, 72
+src\domain\use_cases\create_payment_confirmation.py                   42      2    95%   89, 93
+src\domain\use_cases\create_reservation_event_notification.py         86      8    91%   64-65, 71-72, 242, 247-249
+src\domain\use_cases\create_reservation_update.py                     47      5    89%   21, 25-27, 75
 src\domain\use_cases\get_notification.py                              14      1    93%   17
 src\domain\use_cases\send_payment_confirmation.py                     94     16    83%   126, 129, 142-145, 274, 278-280, 283-293
 src\entrypoints\__init__.py                                            0      0   100%
 src\entrypoints\api\__init__.py                                        0      0   100%
-src\entrypoints\api\main.py                                           20      2    90%   14, 25
+src\entrypoints\api\main.py                                           24      1    96%   16
 src\entrypoints\api\routers\__init__.py                                0      0   100%
 src\entrypoints\api\routers\internal_notifications.py                 47      6    87%   49, 83, 94-97
+src\entrypoints\api\routers\me.py                                     68     15    78%   146-160
 src\entrypoints\api\routers\notifications.py                          16      2    88%   24-25
+src\entrypoints\api\schemas\__init__.py                                0      0   100%
+src\entrypoints\api\schemas\me.py                                     26      0   100%
 src\errors.py                                                          8      0   100%
 tests\__init__.py                                                      0      0   100%
+tests\test_create_reservation_event_with_push.py                     141      0   100%
+tests\test_health.py                                                  22      0   100%
 tests\test_infra_coverage.py                                          78      0   100%
+tests\test_me_endpoints.py                                           131      0   100%
 tests\test_notifications_api.py                                      131      0   100%
-tests\test_notifications_security_posture.py                          26      1    96%   57
+tests\test_notifications_security_posture.py                          27      1    96%   58
 tests\test_payment_confirmation_template.py                           36      0   100%
+tests\test_push_sender_fcm.py                                         62      0   100%
 tests\test_reservation_update_template.py                             22      0   100%
 tests\test_ses_and_consumer.py                                        75      0   100%
 ------------------------------------------------------------------------------------------------
-TOTAL                                                               1437    171    88%
+TOTAL                                                               2251    239    89%
+

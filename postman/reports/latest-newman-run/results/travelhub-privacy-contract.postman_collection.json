@@ -1,0 +1,2359 @@
+{
+  "collection": {
+    "_": {
+      "postman_id": "b7b8a53f-5b8d-4b9f-83b0-7eeb7a1e2fd3"
+    },
+    "item": [
+      {
+        "id": "e7457b72-6712-4654-bb33-97ea6b0bbd01",
+        "name": "01 - Create User With Residency Data",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "users"
+            ],
+            "host": [
+              "{{users_base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "X-Forwarded-Proto",
+              "value": "https"
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"email\": \"{{privacy_email}}\",\n  \"phone\": \"{{privacy_phone}}\",\n  \"password\": \"Travelhub123!\",\n  \"full_name\": \"Privacy Demo User\",\n  \"hotel_name\": \"Privacy Demo Hotel\",\n  \"country_code\": \"CO\",\n  \"role\": \"traveler\",\n  \"status\": 1\n}"
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "prerequest",
+            "script": {
+              "id": "f0724183-ce8f-4c94-ab2c-f1637d502e1c",
+              "type": "text/javascript",
+              "exec": [
+                "const suffix = Date.now().toString();",
+                "pm.collectionVariables.set('privacy_email', `privacy-${suffix}@travelhub.demo`);",
+                "pm.collectionVariables.set('privacy_phone', `300${suffix.slice(-7)}`);"
+              ],
+              "_lastExecutionId": "5a9ac9ed-0e6e-4713-be8c-4e50b85b8585"
+            }
+          },
+          {
+            "listen": "test",
+            "script": {
+              "id": "959afb9d-b55b-48c6-94bd-0225b2a2ff09",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('create user returns 201', function () { pm.response.to.have.status(201); });",
+                "const body = pm.response.json();",
+                "pm.test('response has user id', function () { pm.expect(body.id).to.be.ok; });",
+                "pm.test('response carries country code', function () { pm.expect(body.country_code).to.equal('CO'); });",
+                "pm.test('response carries data region', function () { pm.expect(body.data_region).to.be.a('string').and.not.empty; });",
+                "pm.collectionVariables.set('privacy_user_id', body.id);"
+              ],
+              "_lastExecutionId": "4a7c8f35-fbb3-4e36-ab69-3d4a60a48b29"
+            }
+          }
+        ]
+      },
+      {
+        "id": "abb8ee3c-9cfb-42c8-a942-b21be638819e",
+        "name": "02 - Get User By Id And Audit Access",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "internal",
+              "users",
+              "{{privacy_user_id}}"
+            ],
+            "host": [
+              "{{users_base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "X-Internal-Api-Key",
+              "value": "{{internal_api_key}}"
+            },
+            {
+              "key": "X-Actor-User-Id",
+              "value": "{{privacy_user_id}}"
+            },
+            {
+              "key": "X-Forwarded-Proto",
+              "value": "https"
+            }
+          ],
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "fe2675eb-8503-40bb-88f2-8b3c56f1abda",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('get user returns 200', function () { pm.response.to.have.status(200); });",
+                "const body = pm.response.json();",
+                "pm.test('returned user id matches', function () { pm.expect(body.id).to.equal(pm.collectionVariables.get('privacy_user_id')); });",
+                "pm.test('returned country code matches', function () { pm.expect(body.country_code).to.equal('CO'); });"
+              ],
+              "_lastExecutionId": "25efffc4-35e6-4834-85d0-32bbabb855a7"
+            }
+          }
+        ]
+      },
+      {
+        "id": "273797fd-347c-478b-8f2f-2a65c72ac500",
+        "name": "03 - Resolve Residency Policy",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "internal",
+              "privacy",
+              "residency"
+            ],
+            "host": [
+              "{{security_base_url}}"
+            ],
+            "query": [
+              {
+                "key": "country_code",
+                "value": "CO"
+              }
+            ],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "X-Internal-Api-Key",
+              "value": "{{internal_api_key}}"
+            }
+          ],
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "3e2daef9-e1c3-4112-aa0a-119b1cd260a6",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('residency policy returns 200', function () { pm.response.to.have.status(200); });",
+                "const body = pm.response.json();",
+                "pm.test('country code is normalized', function () { pm.expect(body.country_code).to.equal('CO'); });",
+                "pm.test('storage policy references pii', function () { pm.expect(body.storage_policy).to.include('pii:CO'); });"
+              ],
+              "_lastExecutionId": "f4628c4a-ef09-4a56-b5c8-6e6be02e402e"
+            }
+          }
+        ]
+      },
+      {
+        "id": "235cbd18-ed72-42c1-8f28-e5d89e61b120",
+        "name": "04 - Record Sensitive Data Audit",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "internal",
+              "privacy",
+              "audit"
+            ],
+            "host": [
+              "{{security_base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "X-Internal-Api-Key",
+              "value": "{{internal_api_key}}"
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"actor_user_id\": \"{{privacy_user_id}}\",\n  \"action\": \"user.pii.accessed\",\n  \"resource_type\": \"user\",\n  \"resource_id\": \"{{privacy_user_id}}\",\n  \"pii_fields\": [\"email\", \"phone\", \"full_name\"],\n  \"source_ip\": \"127.0.0.1\",\n  \"country_code\": \"CO\",\n  \"metadata\": {\n    \"channel\": \"postman\",\n    \"scenario\": \"hu036\"\n  }\n}"
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "45d3338c-8400-4585-af3b-c04308969a97",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('audit record returns 201', function () { pm.response.to.have.status(201); });",
+                "const body = pm.response.json();",
+                "pm.test('audit has entry hash', function () { pm.expect(body.entry_hash).to.be.a('string').and.not.empty; });",
+                "pm.test('audit keeps country code', function () { pm.expect(body.country_code).to.equal('CO'); });",
+                "pm.test('audit keeps data region', function () { pm.expect(body.data_region).to.be.a('string').and.not.empty; });",
+                "pm.collectionVariables.set('privacy_audit_entry_id', body.id);"
+              ],
+              "_lastExecutionId": "6441d75e-22c5-40ef-8a8c-3f6ca7363f30"
+            }
+          }
+        ]
+      }
+    ],
+    "event": [],
+    "variable": [
+      {
+        "type": "any",
+        "value": "privacy-demo@travelhub.demo",
+        "key": "privacy_email"
+      },
+      {
+        "type": "any",
+        "value": "3000000000",
+        "key": "privacy_phone"
+      },
+      {
+        "type": "any",
+        "value": "00000000-0000-0000-0000-000000000000",
+        "key": "privacy_user_id"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "privacy_audit_entry_id"
+      }
+    ],
+    "info": {
+      "_postman_id": "b7b8a53f-5b8d-4b9f-83b0-7eeb7a1e2fd3",
+      "name": "TravelHub Privacy Contract",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+      "description": {
+        "content": "Validaciones contract/smoke para HU036 - Proteger datos sensibles.",
+        "type": "text/plain"
+      }
+    }
+  },
+  "environment": {
+    "_": {
+      "postman_variable_scope": "environment",
+      "postman_exported_at": "2026-04-11T00:00:00.000Z",
+      "postman_exported_using": "Codex"
+    },
+    "id": "1f3a5f3e-6c97-4fe2-b4db-1bbf62d8468f",
+    "name": "TravelHub Microservices Local",
+    "values": [
+      {
+        "type": "any",
+        "value": "http://localhost:8000",
+        "key": "users_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8001",
+        "key": "security_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8002",
+        "key": "reservations_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8003",
+        "key": "payments_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8004",
+        "key": "notifications_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8005",
+        "key": "properties_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8006",
+        "key": "search_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8007",
+        "key": "inventory_base_url"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-internal-secret-key",
+        "key": "internal_api_key"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-internal-secret-key",
+        "key": "INTERNAL_API_KEY"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-jwt-secret-change-in-prod",
+        "key": "JWT_SECRET_KEY"
+      },
+      {
+        "type": "any",
+        "value": "development",
+        "key": "ENV"
+      },
+      {
+        "type": "any",
+        "value": "development",
+        "key": "APP_ENV"
+      },
+      {
+        "type": "any",
+        "value": "smtp.gmail.com",
+        "key": "SMTP_HOST"
+      },
+      {
+        "type": "any",
+        "value": "587",
+        "key": "SMTP_PORT"
+      },
+      {
+        "type": "any",
+        "value": "tu-email@gmail.com",
+        "key": "SMTP_USER"
+      },
+      {
+        "type": "any",
+        "value": "tu-app-password",
+        "key": "SMTP_PASSWORD"
+      },
+      {
+        "type": "any",
+        "value": "tu-email@gmail.com",
+        "key": "SMTP_FROM"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-payments-secret-change-in-prod",
+        "key": "PAYMENT_INTEGRITY_SECRET"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-payments-encryption-key-change-in-prod",
+        "key": "PAYMENTS_DATA_ENCRYPTION_KEY"
+      },
+      {
+        "type": "any",
+        "value": "false",
+        "key": "PAYMENTS_COMPLIANCE_MODE"
+      },
+      {
+        "type": "any",
+        "value": "true",
+        "key": "ENFORCE_TLS_HEADER"
+      },
+      {
+        "type": "any",
+        "value": "fake_stripe",
+        "key": "PAYMENT_PROVIDER"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "STRIPE_SECRET_KEY"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "STRIPE_PUBLISHABLE_KEY"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "STRIPE_WEBHOOK_SECRET"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:3000,http://127.0.0.1:3000",
+        "key": "ALLOWED_CORS_ORIGIN"
+      },
+      {
+        "type": "any",
+        "value": "us-east-1",
+        "key": "AWS_REGION"
+      },
+      {
+        "type": "any",
+        "value": "XXXX",
+        "key": "AWS_ACCESS_KEY_ID"
+      },
+      {
+        "type": "any",
+        "value": "XXXX",
+        "key": "AWS_SECRET_ACCESS_KEY"
+      },
+      {
+        "type": "any",
+        "value": "XXXX",
+        "key": "AWS_SESSION_TOKEN"
+      },
+      {
+        "type": "any",
+        "value": "arn:aws:lambda:us-east-1:ACC_ID:function:reservation-checker",
+        "key": "LAMBDA_ARN"
+      },
+      {
+        "type": "any",
+        "value": "arn:aws:iam::ACC_ID:role/EventBridgeSchedulerRole",
+        "key": "SCHEDULER_ROLE_ARN"
+      },
+      {
+        "type": "any",
+        "value": "http://reservations:8006",
+        "key": "API_BASE_URL"
+      },
+      {
+        "type": "any",
+        "value": "true",
+        "key": "RESERVATION_SCHEDULER_ENABLED"
+      },
+      {
+        "type": "any",
+        "value": "15",
+        "key": "RESERVATION_SCHEDULER_DELAY_MINUTES"
+      }
+    ]
+  },
+  "globals": {
+    "id": "d2cfd818-6c9f-4bcb-beca-68a7de4e8634",
+    "values": []
+  },
+  "run": {
+    "stats": {
+      "iterations": {
+        "total": 1,
+        "pending": 0,
+        "failed": 0
+      },
+      "items": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "scripts": {
+        "total": 5,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequests": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "requests": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "tests": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "assertions": {
+        "total": 14,
+        "pending": 0,
+        "failed": 0
+      },
+      "testScripts": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequestScripts": {
+        "total": 1,
+        "pending": 0,
+        "failed": 0
+      }
+    },
+    "timings": {
+      "responseAverage": 24.25,
+      "responseMin": 6,
+      "responseMax": 71,
+      "responseSd": 27.123559869604136,
+      "dnsAverage": 0,
+      "dnsMin": 0,
+      "dnsMax": 0,
+      "dnsSd": 0,
+      "firstByteAverage": 0,
+      "firstByteMin": 0,
+      "firstByteMax": 0,
+      "firstByteSd": 0,
+      "started": 1779056065140,
+      "completed": 1779056065596
+    },
+    "executions": [
+      {
+        "cursor": {
+          "position": 0,
+          "iteration": 0,
+          "length": 4,
+          "cycles": 1,
+          "empty": false,
+          "eof": false,
+          "bof": true,
+          "cr": false,
+          "ref": "2cd09451-877e-4d7c-a7a5-c76407c5b277",
+          "httpRequestId": "a7a10884-60eb-4039-8ed8-32c176c4edc2"
+        },
+        "item": {
+          "id": "e7457b72-6712-4654-bb33-97ea6b0bbd01",
+          "name": "01 - Create User With Residency Data",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ],
+              "host": [
+                "{{users_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Forwarded-Proto",
+                "value": "https"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{privacy_email}}\",\n  \"phone\": \"{{privacy_phone}}\",\n  \"password\": \"Travelhub123!\",\n  \"full_name\": \"Privacy Demo User\",\n  \"hotel_name\": \"Privacy Demo Hotel\",\n  \"country_code\": \"CO\",\n  \"role\": \"traveler\",\n  \"status\": 1\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "f0724183-ce8f-4c94-ab2c-f1637d502e1c",
+                "type": "text/javascript",
+                "exec": [
+                  "const suffix = Date.now().toString();",
+                  "pm.collectionVariables.set('privacy_email', `privacy-${suffix}@travelhub.demo`);",
+                  "pm.collectionVariables.set('privacy_phone', `300${suffix.slice(-7)}`);"
+                ],
+                "_lastExecutionId": "5a9ac9ed-0e6e-4713-be8c-4e50b85b8585"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "959afb9d-b55b-48c6-94bd-0225b2a2ff09",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('create user returns 201', function () { pm.response.to.have.status(201); });",
+                  "const body = pm.response.json();",
+                  "pm.test('response has user id', function () { pm.expect(body.id).to.be.ok; });",
+                  "pm.test('response carries country code', function () { pm.expect(body.country_code).to.equal('CO'); });",
+                  "pm.test('response carries data region', function () { pm.expect(body.data_region).to.be.a('string').and.not.empty; });",
+                  "pm.collectionVariables.set('privacy_user_id', body.id);"
+                ],
+                "_lastExecutionId": "4a7c8f35-fbb3-4e36-ab69-3d4a60a48b29"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8000",
+            "path": [
+              "api",
+              "v1",
+              "users"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "X-Forwarded-Proto",
+              "value": "https"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "0a7c1e39-b6dd-4ee7-baf6-4dbf46ba4c04",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8000",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "244",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"email\": \"privacy-1779056065180@travelhub.demo\",\n  \"phone\": \"3006065180\",\n  \"password\": \"Travelhub123!\",\n  \"full_name\": \"Privacy Demo User\",\n  \"hotel_name\": \"Privacy Demo Hotel\",\n  \"country_code\": \"CO\",\n  \"role\": \"traveler\",\n  \"status\": 1\n}"
+          }
+        },
+        "response": {
+          "id": "eeb94111-dd24-40d1-9dad-cec1386c6825",
+          "status": "Created",
+          "code": 201,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sun, 17 May 2026 22:14:24 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "240"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              105,
+              100,
+              34,
+              58,
+              34,
+              56,
+              48,
+              50,
+              100,
+              97,
+              100,
+              57,
+              56,
+              45,
+              51,
+              101,
+              56,
+              98,
+              45,
+              52,
+              55,
+              55,
+              98,
+              45,
+              57,
+              99,
+              48,
+              97,
+              45,
+              48,
+              101,
+              100,
+              56,
+              98,
+              99,
+              99,
+              100,
+              48,
+              50,
+              53,
+              102,
+              34,
+              44,
+              34,
+              101,
+              109,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              112,
+              114,
+              105,
+              118,
+              97,
+              99,
+              121,
+              45,
+              49,
+              55,
+              55,
+              57,
+              48,
+              53,
+              54,
+              48,
+              54,
+              53,
+              49,
+              56,
+              48,
+              64,
+              116,
+              114,
+              97,
+              118,
+              101,
+              108,
+              104,
+              117,
+              98,
+              46,
+              100,
+              101,
+              109,
+              111,
+              34,
+              44,
+              34,
+              112,
+              104,
+              111,
+              110,
+              101,
+              34,
+              58,
+              34,
+              51,
+              48,
+              48,
+              54,
+              48,
+              54,
+              53,
+              49,
+              56,
+              48,
+              34,
+              44,
+              34,
+              102,
+              117,
+              108,
+              108,
+              95,
+              110,
+              97,
+              109,
+              101,
+              34,
+              58,
+              34,
+              80,
+              114,
+              105,
+              118,
+              97,
+              99,
+              121,
+              32,
+              68,
+              101,
+              109,
+              111,
+              32,
+              85,
+              115,
+              101,
+              114,
+              34,
+              44,
+              34,
+              104,
+              111,
+              116,
+              101,
+              108,
+              95,
+              110,
+              97,
+              109,
+              101,
+              34,
+              58,
+              34,
+              80,
+              114,
+              105,
+              118,
+              97,
+              99,
+              121,
+              32,
+              68,
+              101,
+              109,
+              111,
+              32,
+              72,
+              111,
+              116,
+              101,
+              108,
+              34,
+              44,
+              34,
+              99,
+              111,
+              117,
+              110,
+              116,
+              114,
+              121,
+              95,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              67,
+              79,
+              34,
+              44,
+              34,
+              100,
+              97,
+              116,
+              97,
+              95,
+              114,
+              101,
+              103,
+              105,
+              111,
+              110,
+              34,
+              58,
+              34,
+              97,
+              119,
+              115,
+              45,
+              117,
+              115,
+              45,
+              101,
+              97,
+              115,
+              116,
+              45,
+              49,
+              34,
+              44,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              49,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 71,
+          "responseSize": 240
+        },
+        "id": "e7457b72-6712-4654-bb33-97ea6b0bbd01",
+        "assertions": [
+          {
+            "assertion": "create user returns 201",
+            "skipped": false
+          },
+          {
+            "assertion": "response has user id",
+            "skipped": false
+          },
+          {
+            "assertion": "response carries country code",
+            "skipped": false
+          },
+          {
+            "assertion": "response carries data region",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "8f6406fc-9487-4e15-a440-b9d67f2e2895",
+          "length": 4,
+          "cycles": 1,
+          "position": 1,
+          "iteration": 0,
+          "httpRequestId": "f46ff045-7411-47a1-b617-3d0d09447f92"
+        },
+        "item": {
+          "id": "abb8ee3c-9cfb-42c8-a942-b21be638819e",
+          "name": "02 - Get User By Id And Audit Access",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "internal",
+                "users",
+                "{{privacy_user_id}}"
+              ],
+              "host": [
+                "{{users_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "X-Internal-Api-Key",
+                "value": "{{internal_api_key}}"
+              },
+              {
+                "key": "X-Actor-User-Id",
+                "value": "{{privacy_user_id}}"
+              },
+              {
+                "key": "X-Forwarded-Proto",
+                "value": "https"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "fe2675eb-8503-40bb-88f2-8b3c56f1abda",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('get user returns 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test('returned user id matches', function () { pm.expect(body.id).to.equal(pm.collectionVariables.get('privacy_user_id')); });",
+                  "pm.test('returned country code matches', function () { pm.expect(body.country_code).to.equal('CO'); });"
+                ],
+                "_lastExecutionId": "25efffc4-35e6-4834-85d0-32bbabb855a7"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8000",
+            "path": [
+              "api",
+              "v1",
+              "internal",
+              "users",
+              "802dad98-3e8b-477b-9c0a-0ed8bccd025f"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "X-Internal-Api-Key",
+              "value": "travelhub-internal-secret-key"
+            },
+            {
+              "key": "X-Actor-User-Id",
+              "value": "802dad98-3e8b-477b-9c0a-0ed8bccd025f"
+            },
+            {
+              "key": "X-Forwarded-Proto",
+              "value": "https"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "db2b18e3-4794-406f-b370-20796b41002d",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8000",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "5c7ce5ae-38ae-45f7-939d-5e3f6f65befd",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sun, 17 May 2026 22:14:24 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "240"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              105,
+              100,
+              34,
+              58,
+              34,
+              56,
+              48,
+              50,
+              100,
+              97,
+              100,
+              57,
+              56,
+              45,
+              51,
+              101,
+              56,
+              98,
+              45,
+              52,
+              55,
+              55,
+              98,
+              45,
+              57,
+              99,
+              48,
+              97,
+              45,
+              48,
+              101,
+              100,
+              56,
+              98,
+              99,
+              99,
+              100,
+              48,
+              50,
+              53,
+              102,
+              34,
+              44,
+              34,
+              101,
+              109,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              112,
+              114,
+              105,
+              118,
+              97,
+              99,
+              121,
+              45,
+              49,
+              55,
+              55,
+              57,
+              48,
+              53,
+              54,
+              48,
+              54,
+              53,
+              49,
+              56,
+              48,
+              64,
+              116,
+              114,
+              97,
+              118,
+              101,
+              108,
+              104,
+              117,
+              98,
+              46,
+              100,
+              101,
+              109,
+              111,
+              34,
+              44,
+              34,
+              112,
+              104,
+              111,
+              110,
+              101,
+              34,
+              58,
+              34,
+              51,
+              48,
+              48,
+              54,
+              48,
+              54,
+              53,
+              49,
+              56,
+              48,
+              34,
+              44,
+              34,
+              102,
+              117,
+              108,
+              108,
+              95,
+              110,
+              97,
+              109,
+              101,
+              34,
+              58,
+              34,
+              80,
+              114,
+              105,
+              118,
+              97,
+              99,
+              121,
+              32,
+              68,
+              101,
+              109,
+              111,
+              32,
+              85,
+              115,
+              101,
+              114,
+              34,
+              44,
+              34,
+              104,
+              111,
+              116,
+              101,
+              108,
+              95,
+              110,
+              97,
+              109,
+              101,
+              34,
+              58,
+              34,
+              80,
+              114,
+              105,
+              118,
+              97,
+              99,
+              121,
+              32,
+              68,
+              101,
+              109,
+              111,
+              32,
+              72,
+              111,
+              116,
+              101,
+              108,
+              34,
+              44,
+              34,
+              99,
+              111,
+              117,
+              110,
+              116,
+              114,
+              121,
+              95,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              67,
+              79,
+              34,
+              44,
+              34,
+              100,
+              97,
+              116,
+              97,
+              95,
+              114,
+              101,
+              103,
+              105,
+              111,
+              110,
+              34,
+              58,
+              34,
+              97,
+              119,
+              115,
+              45,
+              117,
+              115,
+              45,
+              101,
+              97,
+              115,
+              116,
+              45,
+              49,
+              34,
+              44,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              49,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 6,
+          "responseSize": 240
+        },
+        "id": "abb8ee3c-9cfb-42c8-a942-b21be638819e",
+        "assertions": [
+          {
+            "assertion": "get user returns 200",
+            "skipped": false
+          },
+          {
+            "assertion": "returned user id matches",
+            "skipped": false
+          },
+          {
+            "assertion": "returned country code matches",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "05080546-92c7-455b-ae8b-fe9724b88cd0",
+          "length": 4,
+          "cycles": 1,
+          "position": 2,
+          "iteration": 0,
+          "httpRequestId": "b90867c5-da7b-47c4-8aeb-39c301c02567"
+        },
+        "item": {
+          "id": "273797fd-347c-478b-8f2f-2a65c72ac500",
+          "name": "03 - Resolve Residency Policy",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "internal",
+                "privacy",
+                "residency"
+              ],
+              "host": [
+                "{{security_base_url}}"
+              ],
+              "query": [
+                {
+                  "key": "country_code",
+                  "value": "CO"
+                }
+              ],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "X-Internal-Api-Key",
+                "value": "{{internal_api_key}}"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "3e2daef9-e1c3-4112-aa0a-119b1cd260a6",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('residency policy returns 200', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test('country code is normalized', function () { pm.expect(body.country_code).to.equal('CO'); });",
+                  "pm.test('storage policy references pii', function () { pm.expect(body.storage_policy).to.include('pii:CO'); });"
+                ],
+                "_lastExecutionId": "f4628c4a-ef09-4a56-b5c8-6e6be02e402e"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8001",
+            "path": [
+              "api",
+              "v1",
+              "internal",
+              "privacy",
+              "residency"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [
+              {
+                "key": "country_code",
+                "value": "CO"
+              }
+            ],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "X-Internal-Api-Key",
+              "value": "travelhub-internal-secret-key"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "14c09c23-dce1-44cc-aa8b-3468f2953992",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8001",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "8008faa5-991d-4028-b7c2-dedc0b7d1e09",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sun, 17 May 2026 22:14:25 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "91"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              99,
+              111,
+              117,
+              110,
+              116,
+              114,
+              121,
+              95,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              67,
+              79,
+              34,
+              44,
+              34,
+              100,
+              97,
+              116,
+              97,
+              95,
+              114,
+              101,
+              103,
+              105,
+              111,
+              110,
+              34,
+              58,
+              34,
+              97,
+              119,
+              115,
+              45,
+              117,
+              115,
+              45,
+              101,
+              97,
+              115,
+              116,
+              45,
+              49,
+              34,
+              44,
+              34,
+              115,
+              116,
+              111,
+              114,
+              97,
+              103,
+              101,
+              95,
+              112,
+              111,
+              108,
+              105,
+              99,
+              121,
+              34,
+              58,
+              34,
+              112,
+              105,
+              105,
+              58,
+              67,
+              79,
+              58,
+              97,
+              119,
+              115,
+              45,
+              117,
+              115,
+              45,
+              101,
+              97,
+              115,
+              116,
+              45,
+              49,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 7,
+          "responseSize": 91
+        },
+        "id": "273797fd-347c-478b-8f2f-2a65c72ac500",
+        "assertions": [
+          {
+            "assertion": "residency policy returns 200",
+            "skipped": false
+          },
+          {
+            "assertion": "country code is normalized",
+            "skipped": false
+          },
+          {
+            "assertion": "storage policy references pii",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "28b1c589-348c-417b-99e9-25f27e981f2a",
+          "length": 4,
+          "cycles": 1,
+          "position": 3,
+          "iteration": 0,
+          "httpRequestId": "21873c37-60fa-4130-9a89-7a8a8a9ce3dd"
+        },
+        "item": {
+          "id": "235cbd18-ed72-42c1-8f28-e5d89e61b120",
+          "name": "04 - Record Sensitive Data Audit",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "internal",
+                "privacy",
+                "audit"
+              ],
+              "host": [
+                "{{security_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Internal-Api-Key",
+                "value": "{{internal_api_key}}"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actor_user_id\": \"{{privacy_user_id}}\",\n  \"action\": \"user.pii.accessed\",\n  \"resource_type\": \"user\",\n  \"resource_id\": \"{{privacy_user_id}}\",\n  \"pii_fields\": [\"email\", \"phone\", \"full_name\"],\n  \"source_ip\": \"127.0.0.1\",\n  \"country_code\": \"CO\",\n  \"metadata\": {\n    \"channel\": \"postman\",\n    \"scenario\": \"hu036\"\n  }\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "45d3338c-8400-4585-af3b-c04308969a97",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('audit record returns 201', function () { pm.response.to.have.status(201); });",
+                  "const body = pm.response.json();",
+                  "pm.test('audit has entry hash', function () { pm.expect(body.entry_hash).to.be.a('string').and.not.empty; });",
+                  "pm.test('audit keeps country code', function () { pm.expect(body.country_code).to.equal('CO'); });",
+                  "pm.test('audit keeps data region', function () { pm.expect(body.data_region).to.be.a('string').and.not.empty; });",
+                  "pm.collectionVariables.set('privacy_audit_entry_id', body.id);"
+                ],
+                "_lastExecutionId": "6441d75e-22c5-40ef-8a8c-3f6ca7363f30"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8001",
+            "path": [
+              "api",
+              "v1",
+              "internal",
+              "privacy",
+              "audit"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "X-Internal-Api-Key",
+              "value": "travelhub-internal-secret-key"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "fa9b35d2-1d79-4f8e-8e1c-1496a6fc0fb0",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8001",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "350",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"actor_user_id\": \"802dad98-3e8b-477b-9c0a-0ed8bccd025f\",\n  \"action\": \"user.pii.accessed\",\n  \"resource_type\": \"user\",\n  \"resource_id\": \"802dad98-3e8b-477b-9c0a-0ed8bccd025f\",\n  \"pii_fields\": [\"email\", \"phone\", \"full_name\"],\n  \"source_ip\": \"127.0.0.1\",\n  \"country_code\": \"CO\",\n  \"metadata\": {\n    \"channel\": \"postman\",\n    \"scenario\": \"hu036\"\n  }\n}"
+          }
+        },
+        "response": {
+          "id": "faf44488-5434-47c7-aed0-5b57ee12760d",
+          "status": "Created",
+          "code": 201,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sun, 17 May 2026 22:14:25 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "527"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              105,
+              100,
+              34,
+              58,
+              34,
+              50,
+              101,
+              51,
+              54,
+              102,
+              98,
+              102,
+              101,
+              45,
+              101,
+              53,
+              52,
+              99,
+              45,
+              52,
+              50,
+              52,
+              54,
+              45,
+              57,
+              97,
+              56,
+              102,
+              45,
+              48,
+              55,
+              51,
+              54,
+              52,
+              53,
+              57,
+              50,
+              99,
+              48,
+              54,
+              50,
+              34,
+              44,
+              34,
+              97,
+              99,
+              116,
+              111,
+              114,
+              95,
+              117,
+              115,
+              101,
+              114,
+              95,
+              105,
+              100,
+              34,
+              58,
+              34,
+              56,
+              48,
+              50,
+              100,
+              97,
+              100,
+              57,
+              56,
+              45,
+              51,
+              101,
+              56,
+              98,
+              45,
+              52,
+              55,
+              55,
+              98,
+              45,
+              57,
+              99,
+              48,
+              97,
+              45,
+              48,
+              101,
+              100,
+              56,
+              98,
+              99,
+              99,
+              100,
+              48,
+              50,
+              53,
+              102,
+              34,
+              44,
+              34,
+              97,
+              99,
+              116,
+              105,
+              111,
+              110,
+              34,
+              58,
+              34,
+              117,
+              115,
+              101,
+              114,
+              46,
+              112,
+              105,
+              105,
+              46,
+              97,
+              99,
+              99,
+              101,
+              115,
+              115,
+              101,
+              100,
+              34,
+              44,
+              34,
+              114,
+              101,
+              115,
+              111,
+              117,
+              114,
+              99,
+              101,
+              95,
+              116,
+              121,
+              112,
+              101,
+              34,
+              58,
+              34,
+              117,
+              115,
+              101,
+              114,
+              34,
+              44,
+              34,
+              114,
+              101,
+              115,
+              111,
+              117,
+              114,
+              99,
+              101,
+              95,
+              105,
+              100,
+              34,
+              58,
+              34,
+              56,
+              48,
+              50,
+              100,
+              97,
+              100,
+              57,
+              56,
+              45,
+              51,
+              101,
+              56,
+              98,
+              45,
+              52,
+              55,
+              55,
+              98,
+              45,
+              57,
+              99,
+              48,
+              97,
+              45,
+              48,
+              101,
+              100,
+              56,
+              98,
+              99,
+              99,
+              100,
+              48,
+              50,
+              53,
+              102,
+              34,
+              44,
+              34,
+              112,
+              105,
+              105,
+              95,
+              102,
+              105,
+              101,
+              108,
+              100,
+              115,
+              34,
+              58,
+              91,
+              34,
+              101,
+              109,
+              97,
+              105,
+              108,
+              34,
+              44,
+              34,
+              102,
+              117,
+              108,
+              108,
+              95,
+              110,
+              97,
+              109,
+              101,
+              34,
+              44,
+              34,
+              112,
+              104,
+              111,
+              110,
+              101,
+              34,
+              93,
+              44,
+              34,
+              115,
+              111,
+              117,
+              114,
+              99,
+              101,
+              95,
+              105,
+              112,
+              34,
+              58,
+              34,
+              49,
+              50,
+              55,
+              46,
+              48,
+              46,
+              48,
+              46,
+              49,
+              34,
+              44,
+              34,
+              99,
+              111,
+              117,
+              110,
+              116,
+              114,
+              121,
+              95,
+              99,
+              111,
+              100,
+              101,
+              34,
+              58,
+              34,
+              67,
+              79,
+              34,
+              44,
+              34,
+              100,
+              97,
+              116,
+              97,
+              95,
+              114,
+              101,
+              103,
+              105,
+              111,
+              110,
+              34,
+              58,
+              34,
+              97,
+              119,
+              115,
+              45,
+              117,
+              115,
+              45,
+              101,
+              97,
+              115,
+              116,
+              45,
+              49,
+              34,
+              44,
+              34,
+              112,
+              114,
+              101,
+              118,
+              105,
+              111,
+              117,
+              115,
+              95,
+              104,
+              97,
+              115,
+              104,
+              34,
+              58,
+              34,
+              100,
+              98,
+              100,
+              101,
+              97,
+              101,
+              48,
+              50,
+              102,
+              54,
+              100,
+              54,
+              100,
+              54,
+              101,
+              99,
+              48,
+              57,
+              55,
+              98,
+              49,
+              97,
+              55,
+              51,
+              50,
+              98,
+              98,
+              99,
+              52,
+              53,
+              52,
+              49,
+              97,
+              49,
+              54,
+              97,
+              56,
+              56,
+              102,
+              98,
+              101,
+              56,
+              50,
+              54,
+              57,
+              101,
+              56,
+              48,
+              101,
+              57,
+              55,
+              102,
+              52,
+              98,
+              56,
+              57,
+              97,
+              52,
+              98,
+              51,
+              101,
+              100,
+              49,
+              53,
+              34,
+              44,
+              34,
+              101,
+              110,
+              116,
+              114,
+              121,
+              95,
+              104,
+              97,
+              115,
+              104,
+              34,
+              58,
+              34,
+              52,
+              98,
+              98,
+              57,
+              98,
+              56,
+              56,
+              54,
+              99,
+              55,
+              99,
+              97,
+              53,
+              101,
+              49,
+              57,
+              49,
+              98,
+              56,
+              52,
+              102,
+              57,
+              48,
+              98,
+              49,
+              100,
+              102,
+              99,
+              97,
+              55,
+              50,
+              57,
+              51,
+              101,
+              57,
+              98,
+              51,
+              55,
+              56,
+              55,
+              100,
+              55,
+              52,
+              100,
+              54,
+              48,
+              50,
+              57,
+              50,
+              49,
+              51,
+              48,
+              102,
+              51,
+              51,
+              52,
+              101,
+              97,
+              52,
+              57,
+              57,
+              51,
+              99,
+              55,
+              34,
+              44,
+              34,
+              99,
+              114,
+              101,
+              97,
+              116,
+              101,
+              100,
+              95,
+              97,
+              116,
+              34,
+              58,
+              34,
+              50,
+              48,
+              50,
+              54,
+              45,
+              48,
+              53,
+              45,
+              49,
+              55,
+              84,
+              50,
+              50,
+              58,
+              49,
+              52,
+              58,
+              50,
+              53,
+              46,
+              53,
+              53,
+              54,
+              56,
+              55,
+              55,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 13,
+          "responseSize": 527
+        },
+        "id": "235cbd18-ed72-42c1-8f28-e5d89e61b120",
+        "assertions": [
+          {
+            "assertion": "audit record returns 201",
+            "skipped": false
+          },
+          {
+            "assertion": "audit has entry hash",
+            "skipped": false
+          },
+          {
+            "assertion": "audit keeps country code",
+            "skipped": false
+          },
+          {
+            "assertion": "audit keeps data region",
+            "skipped": false
+          }
+        ]
+      }
+    ],
+    "transfers": {
+      "responseTotal": 1098
+    },
+    "failures": [],
+    "error": null
+  }
+}

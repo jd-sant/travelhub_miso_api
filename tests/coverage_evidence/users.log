@@ -1,50 +1,59 @@
-﻿============================= test session starts =============================
+# pytest
+============================= test session starts =============================
 platform win32 -- Python 3.13.2, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\CLIENTE\AppData\Local\Programs\Python\Python313\python.exe
 cachedir: .pytest_cache
 rootdir: C:\Users\CLIENTE\Documents\MISO\PROYECTO-FINAL-2\travelhub_miso\services\users
 plugins: anyio-4.10.0, Faker-40.5.1, langsmith-0.5.2, asyncio-1.1.0, cov-7.0.0
 asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collecting ... collected 36 items
+collecting ... collected 42 items
 
 tests/test_create_user_extended.py::test_create_traveler_user_with_full_name PASSED [  2%]
-tests/test_create_user_extended.py::test_create_hotel_partner_with_hotel_name PASSED [  5%]
-tests/test_create_user_extended.py::test_create_user_defaults_to_traveler_role PASSED [  8%]
-tests/test_create_user_extended.py::test_create_user_without_full_name_returns_422 PASSED [ 11%]
-tests/test_create_user_extended.py::test_create_user_with_invalid_role_returns_422 PASSED [ 13%]
-tests/test_internal_api.py::test_verify_credentials_returns_user_with_roles PASSED [ 16%]
-tests/test_internal_api.py::test_verify_credentials_wrong_password_returns_401 PASSED [ 19%]
-tests/test_internal_api.py::test_verify_credentials_unknown_email_returns_401 PASSED [ 22%]
-tests/test_internal_api.py::test_verify_credentials_no_api_key_returns_403 PASSED [ 25%]
-tests/test_internal_api.py::test_verify_credentials_wrong_api_key_returns_403 PASSED [ 27%]
-tests/test_internal_api.py::test_verify_credentials_generic_message_no_user_enumeration PASSED [ 30%]
-tests/test_internal_user_lookup.py::test_internal_get_user_by_id_returns_public_profile PASSED [ 33%]
-tests/test_internal_user_lookup.py::test_internal_get_user_by_id_requires_api_key PASSED [ 36%]
-tests/test_internal_user_search.py::test_search_by_name_matches_substring PASSED [ 38%]
-tests/test_internal_user_search.py::test_search_by_name_requires_api_key PASSED [ 41%]
-tests/test_internal_user_search.py::test_search_by_name_validates_query PASSED [ 44%]
+tests/test_create_user_extended.py::test_create_hotel_partner_with_hotel_name PASSED [  4%]
+tests/test_create_user_extended.py::test_create_user_defaults_to_traveler_role PASSED [  7%]
+tests/test_create_user_extended.py::test_create_user_without_full_name_returns_422 PASSED [  9%]
+tests/test_create_user_extended.py::test_create_user_with_invalid_role_returns_422 PASSED [ 11%]
+tests/test_health.py::TestHealthEndpoints::test_legacy_health PASSED     [ 14%]
+tests/test_health.py::TestHealthEndpoints::test_liveness PASSED          [ 16%]
+tests/test_health.py::TestHealthEndpoints::test_readiness PASSED         [ 19%]
+tests/test_internal_api.py::test_verify_credentials_returns_user_with_roles PASSED [ 21%]
+tests/test_internal_api.py::test_verify_credentials_wrong_password_returns_401 PASSED [ 23%]
+tests/test_internal_api.py::test_verify_credentials_unknown_email_returns_401 PASSED [ 26%]
+tests/test_internal_api.py::test_verify_credentials_no_api_key_returns_403 PASSED [ 28%]
+tests/test_internal_api.py::test_verify_credentials_wrong_api_key_returns_403 PASSED [ 30%]
+tests/test_internal_api.py::test_verify_credentials_generic_message_no_user_enumeration PASSED [ 33%]
+tests/test_internal_user_lookup.py::test_internal_get_user_by_id_returns_public_profile PASSED [ 35%]
+tests/test_internal_user_lookup.py::test_internal_get_user_by_id_requires_api_key PASSED [ 38%]
+tests/test_internal_user_search.py::test_search_by_name_matches_substring PASSED [ 40%]
+tests/test_internal_user_search.py::test_search_by_name_requires_api_key PASSED [ 42%]
+tests/test_internal_user_search.py::test_search_by_name_validates_query PASSED [ 45%]
 tests/test_internal_user_search.py::test_list_by_ids_returns_only_matching_users PASSED [ 47%]
 tests/test_internal_user_search.py::test_list_by_ids_empty_input PASSED  [ 50%]
-tests/test_role_authorization.py::test_anyone_can_register_without_token PASSED [ 52%]
-tests/test_role_authorization.py::test_traveler_cannot_list_users_403 PASSED [ 55%]
-tests/test_role_authorization.py::test_admin_can_create_user_201 PASSED  [ 58%]
-tests/test_role_authorization.py::test_admin_can_list_users_200 PASSED   [ 61%]
-tests/test_role_authorization.py::test_missing_token_returns_401 PASSED  [ 63%]
-tests/test_role_authorization.py::test_invalid_jwt_token_returns_401 PASSED [ 66%]
-tests/test_role_authorization.py::test_manipulated_jwt_token_rejected_401 PASSED [ 69%]
-tests/test_role_authorization.py::test_hotel_role_receives_403_on_admin_endpoints PASSED [ 72%]
-tests/test_role_authorization.py::test_no_token_on_protected_endpoint_401 PASSED [ 75%]
-tests/test_roles.py::test_role_model_persists PASSED                     [ 77%]
-tests/test_roles.py::test_role_name_is_unique PASSED                     [ 80%]
-tests/test_roles.py::test_user_role_association PASSED                   [ 83%]
-tests/test_security.py::test_verify_password_accepts_valid_hash PASSED   [ 86%]
-tests/test_security.py::test_verify_password_rejects_low_iterations PASSED [ 88%]
-tests/test_security.py::test_verify_password_rejects_high_iterations PASSED [ 91%]
-tests/test_users_api.py::test_create_user_hashes_password_and_returns_public_fields PASSED [ 94%]
+tests/test_privacy_controls.py::test_create_user_encrypts_pii_when_enabled PASSED [ 52%]
+tests/test_privacy_controls.py::test_duplicate_email_uses_lookup_hash_when_pii_is_encrypted PASSED [ 54%]
+tests/test_privacy_controls.py::test_duplicate_plaintext_email_is_rejected_when_lookup_hash_is_backfilled PASSED [ 57%]
+tests/test_role_authorization.py::test_anyone_can_register_without_token PASSED [ 59%]
+tests/test_role_authorization.py::test_traveler_cannot_list_users_403 PASSED [ 61%]
+tests/test_role_authorization.py::test_admin_can_create_user_201 PASSED  [ 64%]
+tests/test_role_authorization.py::test_admin_can_list_users_200 PASSED   [ 66%]
+tests/test_role_authorization.py::test_missing_token_returns_401 PASSED  [ 69%]
+tests/test_role_authorization.py::test_invalid_jwt_token_returns_401 PASSED [ 71%]
+tests/test_role_authorization.py::test_manipulated_jwt_token_rejected_401 PASSED [ 73%]
+tests/test_role_authorization.py::test_hotel_role_receives_403_on_admin_endpoints PASSED [ 76%]
+tests/test_role_authorization.py::test_no_token_on_protected_endpoint_401 PASSED [ 78%]
+tests/test_roles.py::test_role_model_persists PASSED                     [ 80%]
+tests/test_roles.py::test_role_name_is_unique PASSED                     [ 83%]
+tests/test_roles.py::test_user_role_association PASSED                   [ 85%]
+tests/test_security.py::test_verify_password_accepts_valid_hash PASSED   [ 88%]
+tests/test_security.py::test_verify_password_rejects_low_iterations PASSED [ 90%]
+tests/test_security.py::test_verify_password_rejects_high_iterations PASSED [ 92%]
+tests/test_users_api.py::test_create_user_hashes_password_and_returns_public_fields PASSED [ 95%]
 tests/test_users_api.py::test_get_users_returns_created_users PASSED     [ 97%]
 tests/test_users_api.py::test_create_user_returns_409_on_duplicate_email PASSED [100%]
 
-============================= 36 passed in 5.34s ==============================
+============================= 42 passed in 6.68s ==============================
 
+
+# coverage
 Name                                                                                   Stmts   Miss  Cover   Missing
 --------------------------------------------------------------------------------------------------------------------
 C:\Users\CLIENTE\Documents\MISO\PROYECTO-FINAL-2\travelhub_miso\services\__init__.py       0      0   100%
@@ -52,25 +61,31 @@ __init__.py                                                                     
 src\adapters\__init__.py                                                                   0      0   100%
 src\adapters\models\__init__.py                                                            0      0   100%
 src\adapters\models\role.py                                                                5      0   100%
-src\adapters\models\user.py                                                               11      0   100%
+src\adapters\models\user.py                                                               16      0   100%
 src\adapters\models\user_role.py                                                           5      0   100%
 src\adapters\repositories\__init__.py                                                      0      0   100%
-src\adapters\repositories\user_repository.py                                              63      4    94%   48-50, 108
+src\adapters\repositories\user_repository.py                                              82      6    93%   69, 103-105, 167, 169
+src\adapters\services\__init__.py                                                          0      0   100%
+src\adapters\services\privacy_audit_client.py                                             15      7    53%   24-44
 src\assembly.py                                                                           16      0   100%
 src\core\__init__.py                                                                       0      0   100%
 src\core\auth_middleware.py                                                               21      3    86%   37-39, 52
-src\core\config.py                                                                        58     11    81%   28, 34, 46-50, 62, 69-74
+src\core\config.py                                                                       114     18    84%   16, 47, 61, 75, 82-87, 101-105, 112-116, 130, 135, 139, 145
 src\core\decorators.py                                                                    44     21    52%   32-68, 80-83, 86, 113
+src\core\health.py                                                                        21      4    81%   15-16, 28-29
 src\core\jwt_handler.py                                                                   10      1    90%   20
+src\core\privacy.py                                                                       51      6    88%   51-52, 65, 78-79, 81
 src\core\roles.py                                                                         11      1    91%   17
 src\core\security.py                                                                      29      3    90%   30, 38-39
+src\core\transport.py                                                                      5      1    80%   12
 src\db\__init__.py                                                                         0      0   100%
-src\db\session.py                                                                         23     11    52%   26-31, 35-41, 45-46
+src\db\seed.py                                                                            30     19    37%   41-75
+src\db\session.py                                                                         59     33    44%   47-55, 59-108, 113, 118-119
 src\domain\__init__.py                                                                     0      0   100%
 src\domain\ports\__init__.py                                                               0      0   100%
 src\domain\ports\user_repository.py                                                       29      8    72%   16, 20, 24, 28, 34, 38, 42, 46
 src\domain\schemas\__init__.py                                                             0      0   100%
-src\domain\schemas\user.py                                                                40      0   100%
+src\domain\schemas\user.py                                                                43      0   100%
 src\domain\use_cases\__init__.py                                                           0      0   100%
 src\domain\use_cases\base.py                                                               8      1    88%   11
 src\domain\use_cases\create_user.py                                                       20      0   100%
@@ -78,20 +93,24 @@ src\domain\use_cases\list_users.py                                              
 src\domain\use_cases\verify_credentials.py                                                15      0   100%
 src\entrypoints\__init__.py                                                                0      0   100%
 src\entrypoints\api\__init__.py                                                            0      0   100%
+src\entrypoints\api\main.py                                                               30      6    80%   17-23
 src\entrypoints\api\routers\__init__.py                                                    0      0   100%
-src\entrypoints\api\routers\internal.py                                                   30      1    97%   65
-src\entrypoints\api\routers\users.py                                                      21      0   100%
-src\errors.py                                                                             10      0   100%
+src\entrypoints\api\routers\internal.py                                                   56      8    86%   27, 77, 110-111, 156-159
+src\entrypoints\api\routers\users.py                                                      44      4    91%   21, 28, 32-33
+src\errors.py                                                                             12      0   100%
 tests\__init__.py                                                                          0      0   100%
-tests\conftest.py                                                                         65      0   100%
+tests\conftest.py                                                                         67      0   100%
 tests\helpers.py                                                                          21      0   100%
 tests\test_create_user_extended.py                                                        60      0   100%
+tests\test_health.py                                                                      21      0   100%
 tests\test_internal_api.py                                                                36      0   100%
 tests\test_internal_user_lookup.py                                                        14      0   100%
 tests\test_internal_user_search.py                                                        30      0   100%
+tests\test_privacy_controls.py                                                            42      0   100%
 tests\test_role_authorization.py                                                          58      0   100%
 tests\test_roles.py                                                                       38      0   100%
 tests\test_security.py                                                                    18      0   100%
 tests\test_users_api.py                                                                   46      0   100%
 --------------------------------------------------------------------------------------------------------------------
-TOTAL                                                                                    863     65    92%
+TOTAL                                                                                   1250    150    88%
+

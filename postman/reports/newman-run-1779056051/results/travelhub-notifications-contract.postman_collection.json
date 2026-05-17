@@ -1,0 +1,1595 @@
+{
+  "collection": {
+    "_": {
+      "postman_id": "ab696fa2-d65b-4ecc-b0a5-53822c769f65"
+    },
+    "item": [
+      {
+        "id": "44eb63f8-f038-4e46-8824-b72fdd7bcafd",
+        "name": "Health - Notifications",
+        "request": {
+          "url": {
+            "path": [
+              "health"
+            ],
+            "host": [
+              "{{notifications_base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "0d1dd386-997d-49f4-9ea4-41c759187eac",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('health 200', function () { pm.response.to.have.status(200); });"
+              ],
+              "_lastExecutionId": "48fcea1c-8998-42ea-802b-2116fcdff781"
+            }
+          }
+        ]
+      },
+      {
+        "id": "4fa22a28-015a-4ca4-a531-89247041a5ef",
+        "name": "Get Notification Wrong Key",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "notifications",
+              "{{notif_random_id}}"
+            ],
+            "host": [
+              "{{notifications_base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "X-Internal-Api-Key",
+              "value": "invalid-key"
+            }
+          ],
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "prerequest",
+            "script": {
+              "id": "24764578-486d-4c13-9144-99c54939fe39",
+              "type": "text/javascript",
+              "exec": [
+                "pm.collectionVariables.set('notif_random_id', pm.variables.replaceIn('{{$randomUUID}}'));"
+              ],
+              "_lastExecutionId": "537adc51-072f-4a12-90a0-ac642ff9a745"
+            }
+          },
+          {
+            "listen": "test",
+            "script": {
+              "id": "aa2e5576-58b1-4b08-86ed-2bc2f691a57d",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('forbidden 403', function () { pm.response.to.have.status(403); });"
+              ],
+              "_lastExecutionId": "bdedbfbc-d0ca-4f9b-addd-6969e8f971b8"
+            }
+          }
+        ]
+      },
+      {
+        "id": "573eee7a-3a96-40ab-9134-5a50c27b3b49",
+        "name": "Get Notification Valid Key Not Found",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "notifications",
+              "{{notif_random_id}}"
+            ],
+            "host": [
+              "{{notifications_base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "X-Internal-Api-Key",
+              "value": "{{internal_api_key}}"
+            }
+          ],
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "b290cc52-7dcb-421e-801c-5e5b62028d8a",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('not found 404', function () { pm.response.to.have.status(404); });"
+              ],
+              "_lastExecutionId": "251cd397-5921-438d-a861-94a003a18020"
+            }
+          }
+        ]
+      },
+      {
+        "id": "fe898f9f-151f-49f9-af1a-2c95f0551b0f",
+        "name": "Create Reservation Event Notification",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "internal",
+              "reservation-events"
+            ],
+            "host": [
+              "{{notifications_base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "X-Internal-Api-Key",
+              "value": "{{internal_api_key}}"
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"reservation_id\": \"{{reservation_id}}\",\n  \"traveler_id\": \"{{traveler_id}}\",\n  \"event_type\": \"refund_succeeded\",\n  \"payment_id\": \"{{payment_id}}\",\n  \"refund_id\": \"{{refund_id}}\",\n  \"source_ip\": \"127.0.0.1\"\n}"
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "prerequest",
+            "script": {
+              "id": "b6e29b04-0006-4c42-9fc1-fcf6449c114a",
+              "type": "text/javascript",
+              "exec": [
+                "pm.collectionVariables.set('reservation_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                "pm.collectionVariables.set('traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                "pm.collectionVariables.set('payment_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                "pm.collectionVariables.set('refund_id', pm.variables.replaceIn('{{$randomUUID}}'));"
+              ],
+              "_lastExecutionId": "528195ac-7c93-4a6c-b066-d41a59be5ab9"
+            }
+          },
+          {
+            "listen": "test",
+            "script": {
+              "id": "d4b9cda7-c398-4f7e-b61b-efae11e222ee",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('created 201', function () { pm.response.to.have.status(201); });",
+                "const body = pm.response.json();",
+                "pm.test('response includes pending status', function () { pm.expect(body.status).to.eql('pending'); });",
+                "pm.test('response echoes payment id', function () { pm.expect(body.payment_id).to.eql(pm.collectionVariables.get('payment_id')); });",
+                "pm.collectionVariables.set('notification_id', body.notification_id);"
+              ],
+              "_lastExecutionId": "0f6c1076-3835-40e6-8bd2-1b8559c256a0"
+            }
+          }
+        ]
+      }
+    ],
+    "event": [],
+    "variable": [],
+    "info": {
+      "_postman_id": "ab696fa2-d65b-4ecc-b0a5-53822c769f65",
+      "name": "TravelHub Notifications Contract",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+      "description": {
+        "content": "Validaciones contract/smoke para Notifications service.",
+        "type": "text/plain"
+      }
+    }
+  },
+  "environment": {
+    "_": {
+      "postman_variable_scope": "environment",
+      "postman_exported_at": "2026-04-11T00:00:00.000Z",
+      "postman_exported_using": "Codex"
+    },
+    "id": "1f3a5f3e-6c97-4fe2-b4db-1bbf62d8468f",
+    "name": "TravelHub Microservices Local",
+    "values": [
+      {
+        "type": "any",
+        "value": "http://localhost:8000",
+        "key": "users_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8001",
+        "key": "security_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8002",
+        "key": "reservations_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8003",
+        "key": "payments_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8004",
+        "key": "notifications_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8005",
+        "key": "properties_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8006",
+        "key": "search_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8007",
+        "key": "inventory_base_url"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-internal-secret-key",
+        "key": "internal_api_key"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-internal-secret-key",
+        "key": "INTERNAL_API_KEY"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-jwt-secret-change-in-prod",
+        "key": "JWT_SECRET_KEY"
+      },
+      {
+        "type": "any",
+        "value": "development",
+        "key": "ENV"
+      },
+      {
+        "type": "any",
+        "value": "development",
+        "key": "APP_ENV"
+      },
+      {
+        "type": "any",
+        "value": "smtp.gmail.com",
+        "key": "SMTP_HOST"
+      },
+      {
+        "type": "any",
+        "value": "587",
+        "key": "SMTP_PORT"
+      },
+      {
+        "type": "any",
+        "value": "tu-email@gmail.com",
+        "key": "SMTP_USER"
+      },
+      {
+        "type": "any",
+        "value": "tu-app-password",
+        "key": "SMTP_PASSWORD"
+      },
+      {
+        "type": "any",
+        "value": "tu-email@gmail.com",
+        "key": "SMTP_FROM"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-payments-secret-change-in-prod",
+        "key": "PAYMENT_INTEGRITY_SECRET"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-payments-encryption-key-change-in-prod",
+        "key": "PAYMENTS_DATA_ENCRYPTION_KEY"
+      },
+      {
+        "type": "any",
+        "value": "false",
+        "key": "PAYMENTS_COMPLIANCE_MODE"
+      },
+      {
+        "type": "any",
+        "value": "true",
+        "key": "ENFORCE_TLS_HEADER"
+      },
+      {
+        "type": "any",
+        "value": "fake_stripe",
+        "key": "PAYMENT_PROVIDER"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "STRIPE_SECRET_KEY"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "STRIPE_PUBLISHABLE_KEY"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "STRIPE_WEBHOOK_SECRET"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:3000,http://127.0.0.1:3000",
+        "key": "ALLOWED_CORS_ORIGIN"
+      },
+      {
+        "type": "any",
+        "value": "us-east-1",
+        "key": "AWS_REGION"
+      },
+      {
+        "type": "any",
+        "value": "XXXX",
+        "key": "AWS_ACCESS_KEY_ID"
+      },
+      {
+        "type": "any",
+        "value": "XXXX",
+        "key": "AWS_SECRET_ACCESS_KEY"
+      },
+      {
+        "type": "any",
+        "value": "XXXX",
+        "key": "AWS_SESSION_TOKEN"
+      },
+      {
+        "type": "any",
+        "value": "arn:aws:lambda:us-east-1:ACC_ID:function:reservation-checker",
+        "key": "LAMBDA_ARN"
+      },
+      {
+        "type": "any",
+        "value": "arn:aws:iam::ACC_ID:role/EventBridgeSchedulerRole",
+        "key": "SCHEDULER_ROLE_ARN"
+      },
+      {
+        "type": "any",
+        "value": "http://reservations:8006",
+        "key": "API_BASE_URL"
+      },
+      {
+        "type": "any",
+        "value": "true",
+        "key": "RESERVATION_SCHEDULER_ENABLED"
+      },
+      {
+        "type": "any",
+        "value": "15",
+        "key": "RESERVATION_SCHEDULER_DELAY_MINUTES"
+      }
+    ]
+  },
+  "globals": {
+    "id": "244cadb3-1e24-4906-9186-8a048e64a249",
+    "values": []
+  },
+  "run": {
+    "stats": {
+      "iterations": {
+        "total": 1,
+        "pending": 0,
+        "failed": 0
+      },
+      "items": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "scripts": {
+        "total": 6,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequests": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "requests": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "tests": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "assertions": {
+        "total": 6,
+        "pending": 0,
+        "failed": 0
+      },
+      "testScripts": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequestScripts": {
+        "total": 2,
+        "pending": 0,
+        "failed": 0
+      }
+    },
+    "timings": {
+      "responseAverage": 20.25,
+      "responseMin": 5,
+      "responseMax": 50,
+      "responseSd": 18.376275465937052,
+      "dnsAverage": 0,
+      "dnsMin": 0,
+      "dnsMax": 0,
+      "dnsSd": 0,
+      "firstByteAverage": 0,
+      "firstByteMin": 0,
+      "firstByteMax": 0,
+      "firstByteSd": 0,
+      "started": 1779056055017,
+      "completed": 1779056055440
+    },
+    "executions": [
+      {
+        "cursor": {
+          "position": 0,
+          "iteration": 0,
+          "length": 4,
+          "cycles": 1,
+          "empty": false,
+          "eof": false,
+          "bof": true,
+          "cr": false,
+          "ref": "e0bf0713-0ef5-44a2-b013-59ac55050326",
+          "httpRequestId": "df91eb44-4142-4374-a2f2-4a82e4bc6b4d"
+        },
+        "item": {
+          "id": "44eb63f8-f038-4e46-8824-b72fdd7bcafd",
+          "name": "Health - Notifications",
+          "request": {
+            "url": {
+              "path": [
+                "health"
+              ],
+              "host": [
+                "{{notifications_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "0d1dd386-997d-49f4-9ea4-41c759187eac",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('health 200', function () { pm.response.to.have.status(200); });"
+                ],
+                "_lastExecutionId": "48fcea1c-8998-42ea-802b-2116fcdff781"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8004",
+            "path": [
+              "health"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "4edee8a6-5918-4c56-bc70-3e73bdaf146e",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8004",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "c04a9841-04ee-4817-b166-13562bb31557",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sun, 17 May 2026 22:14:14 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "20"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              104,
+              101,
+              97,
+              108,
+              116,
+              104,
+              121,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 21,
+          "responseSize": 20
+        },
+        "id": "44eb63f8-f038-4e46-8824-b72fdd7bcafd",
+        "assertions": [
+          {
+            "assertion": "health 200",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "7f00bf67-2c87-4b8d-a69e-2c002c80c9ee",
+          "length": 4,
+          "cycles": 1,
+          "position": 1,
+          "iteration": 0,
+          "httpRequestId": "1285db27-e2f9-40cc-b782-41df1b159a79"
+        },
+        "item": {
+          "id": "4fa22a28-015a-4ca4-a531-89247041a5ef",
+          "name": "Get Notification Wrong Key",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "{{notif_random_id}}"
+              ],
+              "host": [
+                "{{notifications_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "X-Internal-Api-Key",
+                "value": "invalid-key"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "24764578-486d-4c13-9144-99c54939fe39",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('notif_random_id', pm.variables.replaceIn('{{$randomUUID}}'));"
+                ],
+                "_lastExecutionId": "537adc51-072f-4a12-90a0-ac642ff9a745"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "aa2e5576-58b1-4b08-86ed-2bc2f691a57d",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('forbidden 403', function () { pm.response.to.have.status(403); });"
+                ],
+                "_lastExecutionId": "bdedbfbc-d0ca-4f9b-addd-6969e8f971b8"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8004",
+            "path": [
+              "api",
+              "v1",
+              "notifications",
+              "5c82a7c8-5d58-442c-a65e-cb541e5de609"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "X-Internal-Api-Key",
+              "value": "invalid-key"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "16dca7d4-4593-4eb7-8274-8a057097ff4b",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8004",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "0c2b33a2-94cc-4101-8900-f7f3df8f60ca",
+          "status": "Forbidden",
+          "code": 403,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sun, 17 May 2026 22:14:14 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "22"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              100,
+              101,
+              116,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              70,
+              111,
+              114,
+              98,
+              105,
+              100,
+              100,
+              101,
+              110,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 5,
+          "responseSize": 22
+        },
+        "id": "4fa22a28-015a-4ca4-a531-89247041a5ef",
+        "assertions": [
+          {
+            "assertion": "forbidden 403",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "9d4db040-8add-4cc5-8de7-758108701dc9",
+          "length": 4,
+          "cycles": 1,
+          "position": 2,
+          "iteration": 0,
+          "httpRequestId": "c0e1bd4a-1658-464c-b387-04c504f5fe84"
+        },
+        "item": {
+          "id": "573eee7a-3a96-40ab-9134-5a50c27b3b49",
+          "name": "Get Notification Valid Key Not Found",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "{{notif_random_id}}"
+              ],
+              "host": [
+                "{{notifications_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "X-Internal-Api-Key",
+                "value": "{{internal_api_key}}"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "b290cc52-7dcb-421e-801c-5e5b62028d8a",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('not found 404', function () { pm.response.to.have.status(404); });"
+                ],
+                "_lastExecutionId": "251cd397-5921-438d-a861-94a003a18020"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8004",
+            "path": [
+              "api",
+              "v1",
+              "notifications",
+              "5c82a7c8-5d58-442c-a65e-cb541e5de609"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "X-Internal-Api-Key",
+              "value": "travelhub-internal-secret-key"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "2a435a73-7849-4c5b-a53a-0ef03cc4e5fb",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8004",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "cfa909a3-818d-4649-810b-06f16fa82b1a",
+          "status": "Not Found",
+          "code": 404,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sun, 17 May 2026 22:14:14 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "40"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              100,
+              101,
+              116,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              78,
+              111,
+              116,
+              105,
+              102,
+              105,
+              99,
+              97,
+              99,
+              105,
+              111,
+              110,
+              32,
+              110,
+              111,
+              32,
+              101,
+              110,
+              99,
+              111,
+              110,
+              116,
+              114,
+              97,
+              100,
+              97,
+              46,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 5,
+          "responseSize": 40
+        },
+        "id": "573eee7a-3a96-40ab-9134-5a50c27b3b49",
+        "assertions": [
+          {
+            "assertion": "not found 404",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "3695cbe5-24a5-477b-bfa5-7a5446ce9edb",
+          "length": 4,
+          "cycles": 1,
+          "position": 3,
+          "iteration": 0,
+          "httpRequestId": "9d3eda60-8f9b-49b0-82bf-6e41d888fefb"
+        },
+        "item": {
+          "id": "fe898f9f-151f-49f9-af1a-2c95f0551b0f",
+          "name": "Create Reservation Event Notification",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "internal",
+                "reservation-events"
+              ],
+              "host": [
+                "{{notifications_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Internal-Api-Key",
+                "value": "{{internal_api_key}}"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservation_id\": \"{{reservation_id}}\",\n  \"traveler_id\": \"{{traveler_id}}\",\n  \"event_type\": \"refund_succeeded\",\n  \"payment_id\": \"{{payment_id}}\",\n  \"refund_id\": \"{{refund_id}}\",\n  \"source_ip\": \"127.0.0.1\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "b6e29b04-0006-4c42-9fc1-fcf6449c114a",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('reservation_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('payment_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+                  "pm.collectionVariables.set('refund_id', pm.variables.replaceIn('{{$randomUUID}}'));"
+                ],
+                "_lastExecutionId": "528195ac-7c93-4a6c-b066-d41a59be5ab9"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "d4b9cda7-c398-4f7e-b61b-efae11e222ee",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created 201', function () { pm.response.to.have.status(201); });",
+                  "const body = pm.response.json();",
+                  "pm.test('response includes pending status', function () { pm.expect(body.status).to.eql('pending'); });",
+                  "pm.test('response echoes payment id', function () { pm.expect(body.payment_id).to.eql(pm.collectionVariables.get('payment_id')); });",
+                  "pm.collectionVariables.set('notification_id', body.notification_id);"
+                ],
+                "_lastExecutionId": "0f6c1076-3835-40e6-8bd2-1b8559c256a0"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8004",
+            "path": [
+              "api",
+              "v1",
+              "internal",
+              "reservation-events"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "X-Internal-Api-Key",
+              "value": "travelhub-internal-secret-key"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "003d3f24-378e-4832-8fea-94a2d8eb0d53",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8004",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "294",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"reservation_id\": \"7369836e-5cf1-438d-99ed-e882fcc1fd6d\",\n  \"traveler_id\": \"61668847-3a87-47f1-ac88-f52b185d5486\",\n  \"event_type\": \"refund_succeeded\",\n  \"payment_id\": \"7f838581-17ac-43f6-a38a-0f5827aeeab8\",\n  \"refund_id\": \"429b8411-5749-4a20-9744-df4505c87fdc\",\n  \"source_ip\": \"127.0.0.1\"\n}"
+          }
+        },
+        "response": {
+          "id": "4bc9c72a-22aa-4847-8229-f874fbf21e3b",
+          "status": "Created",
+          "code": 201,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sun, 17 May 2026 22:14:14 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "404"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              110,
+              111,
+              116,
+              105,
+              102,
+              105,
+              99,
+              97,
+              116,
+              105,
+              111,
+              110,
+              95,
+              105,
+              100,
+              34,
+              58,
+              34,
+              51,
+              55,
+              55,
+              51,
+              100,
+              99,
+              99,
+              100,
+              45,
+              53,
+              55,
+              50,
+              101,
+              45,
+              52,
+              98,
+              52,
+              51,
+              45,
+              56,
+              56,
+              97,
+              57,
+              45,
+              53,
+              52,
+              99,
+              101,
+              54,
+              101,
+              51,
+              48,
+              48,
+              99,
+              51,
+              100,
+              34,
+              44,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              112,
+              101,
+              110,
+              100,
+              105,
+              110,
+              103,
+              34,
+              44,
+              34,
+              114,
+              101,
+              99,
+              105,
+              112,
+              105,
+              101,
+              110,
+              116,
+              95,
+              101,
+              109,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              116,
+              42,
+              42,
+              42,
+              54,
+              64,
+              112,
+              108,
+              97,
+              99,
+              101,
+              104,
+              111,
+              108,
+              100,
+              101,
+              114,
+              46,
+              108,
+              111,
+              99,
+              97,
+              108,
+              34,
+              44,
+              34,
+              115,
+              117,
+              98,
+              106,
+              101,
+              99,
+              116,
+              34,
+              58,
+              34,
+              84,
+              117,
+              32,
+              114,
+              101,
+              101,
+              109,
+              98,
+              111,
+              108,
+              115,
+              111,
+              32,
+              100,
+              101,
+              32,
+              108,
+              97,
+              32,
+              114,
+              101,
+              115,
+              101,
+              114,
+              118,
+              97,
+              32,
+              55,
+              51,
+              54,
+              57,
+              56,
+              51,
+              54,
+              101,
+              45,
+              53,
+              99,
+              102,
+              49,
+              45,
+              52,
+              51,
+              56,
+              100,
+              45,
+              57,
+              57,
+              101,
+              100,
+              45,
+              101,
+              56,
+              56,
+              50,
+              102,
+              99,
+              99,
+              49,
+              102,
+              100,
+              54,
+              100,
+              32,
+              102,
+              117,
+              101,
+              32,
+              99,
+              111,
+              109,
+              112,
+              108,
+              101,
+              116,
+              97,
+              100,
+              111,
+              34,
+              44,
+              34,
+              112,
+              97,
+              121,
+              109,
+              101,
+              110,
+              116,
+              95,
+              105,
+              100,
+              34,
+              58,
+              34,
+              55,
+              102,
+              56,
+              51,
+              56,
+              53,
+              56,
+              49,
+              45,
+              49,
+              55,
+              97,
+              99,
+              45,
+              52,
+              51,
+              102,
+              54,
+              45,
+              97,
+              51,
+              56,
+              97,
+              45,
+              48,
+              102,
+              53,
+              56,
+              50,
+              55,
+              97,
+              101,
+              101,
+              97,
+              98,
+              56,
+              34,
+              44,
+              34,
+              114,
+              101,
+              115,
+              101,
+              114,
+              118,
+              97,
+              116,
+              105,
+              111,
+              110,
+              95,
+              105,
+              100,
+              34,
+              58,
+              34,
+              55,
+              51,
+              54,
+              57,
+              56,
+              51,
+              54,
+              101,
+              45,
+              53,
+              99,
+              102,
+              49,
+              45,
+              52,
+              51,
+              56,
+              100,
+              45,
+              57,
+              57,
+              101,
+              100,
+              45,
+              101,
+              56,
+              56,
+              50,
+              102,
+              99,
+              99,
+              49,
+              102,
+              100,
+              54,
+              100,
+              34,
+              44,
+              34,
+              99,
+              114,
+              101,
+              97,
+              116,
+              101,
+              100,
+              95,
+              97,
+              116,
+              34,
+              58,
+              34,
+              50,
+              48,
+              50,
+              54,
+              45,
+              48,
+              53,
+              45,
+              49,
+              55,
+              84,
+              50,
+              50,
+              58,
+              49,
+              52,
+              58,
+              49,
+              53,
+              46,
+              51,
+              53,
+              49,
+              57,
+              48,
+              53,
+              34,
+              44,
+              34,
+              117,
+              112,
+              100,
+              97,
+              116,
+              101,
+              100,
+              95,
+              97,
+              116,
+              34,
+              58,
+              34,
+              50,
+              48,
+              50,
+              54,
+              45,
+              48,
+              53,
+              45,
+              49,
+              55,
+              84,
+              50,
+              50,
+              58,
+              49,
+              52,
+              58,
+              49,
+              53,
+              46,
+              51,
+              53,
+              49,
+              57,
+              48,
+              53,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 50,
+          "responseSize": 404
+        },
+        "id": "fe898f9f-151f-49f9-af1a-2c95f0551b0f",
+        "assertions": [
+          {
+            "assertion": "created 201",
+            "skipped": false
+          },
+          {
+            "assertion": "response includes pending status",
+            "skipped": false
+          },
+          {
+            "assertion": "response echoes payment id",
+            "skipped": false
+          }
+        ]
+      }
+    ],
+    "transfers": {
+      "responseTotal": 486
+    },
+    "failures": [],
+    "error": null
+  }
+}

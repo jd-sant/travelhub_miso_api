@@ -5,7 +5,7 @@
     },
     "item": [
       {
-        "id": "9b492afd-cbeb-4b21-a6e3-3f01574d1313",
+        "id": "75dcb70a-ae04-4cde-94d6-b9287c1fd448",
         "name": "Health - Users",
         "request": {
           "url": {
@@ -25,18 +25,18 @@
           {
             "listen": "test",
             "script": {
-              "id": "ed738402-36ff-482d-9df7-b86688fddcdd",
+              "id": "8650c6f3-a3eb-459b-b0aa-e55f82d44983",
               "type": "text/javascript",
               "exec": [
                 "pm.test('health 200', function () { pm.response.to.have.status(200); });"
               ],
-              "_lastExecutionId": "9f4f32a4-4ade-4182-9a27-9a272664a499"
+              "_lastExecutionId": "695367d6-275d-4a09-b584-f0f425b5c59e"
             }
           }
         ]
       },
       {
-        "id": "ea6fcf83-0c6a-4824-a082-d1412e16a174",
+        "id": "b3297a82-ac23-416f-a64d-37e5b8ffeccd",
         "name": "Internal Verify Credentials - Wrong API Key",
         "request": {
           "url": {
@@ -73,12 +73,12 @@
           {
             "listen": "test",
             "script": {
-              "id": "38dcd4d6-1a80-4efb-bd19-d45d6d3147dd",
+              "id": "8584c1b7-e54f-4c66-bed3-20bea7b4e436",
               "type": "text/javascript",
               "exec": [
                 "pm.test('verify credentials forbidden 403', function () { pm.response.to.have.status(403); });"
               ],
-              "_lastExecutionId": "9321973e-73f0-4fe7-8e71-7150ceff8ab1"
+              "_lastExecutionId": "df0dd555-8fe0-47f7-9872-138550e35f35"
             }
           }
         ]
@@ -139,6 +139,11 @@
         "type": "any",
         "value": "http://localhost:8006",
         "key": "search_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8007",
+        "key": "inventory_base_url"
       },
       {
         "type": "any",
@@ -283,7 +288,7 @@
     ]
   },
   "globals": {
-    "id": "13b053c8-ef52-40eb-9726-d4d724164890",
+    "id": "b2a082d0-6bb3-47f7-894f-ff2c2d7d4165",
     "values": []
   },
   "run": {
@@ -336,9 +341,9 @@
     },
     "timings": {
       "responseAverage": 11.5,
-      "responseMin": 6,
-      "responseMax": 17,
-      "responseSd": 5.5,
+      "responseMin": 5,
+      "responseMax": 18,
+      "responseSd": 6.5,
       "dnsAverage": 0,
       "dnsMin": 0,
       "dnsMax": 0,
@@ -347,8 +352,8 @@
       "firstByteMin": 0,
       "firstByteMax": 0,
       "firstByteSd": 0,
-      "started": 1777254741087,
-      "completed": 1777254741301
+      "started": 1779056084186,
+      "completed": 1779056084404
     },
     "executions": [
       {
@@ -361,11 +366,11 @@
           "eof": false,
           "bof": true,
           "cr": false,
-          "ref": "e6b1d185-ae84-418a-acc9-f8f5f35f5073",
-          "httpRequestId": "05a52be4-0c48-486c-9c94-e35b6e1715d6"
+          "ref": "ca63fea6-2b3e-4141-8264-4432d8b6cfe7",
+          "httpRequestId": "de36e840-d4a3-4e83-b150-654985e5f6a5"
         },
         "item": {
-          "id": "9b492afd-cbeb-4b21-a6e3-3f01574d1313",
+          "id": "75dcb70a-ae04-4cde-94d6-b9287c1fd448",
           "name": "Health - Users",
           "request": {
             "url": {
@@ -385,12 +390,12 @@
             {
               "listen": "test",
               "script": {
-                "id": "ed738402-36ff-482d-9df7-b86688fddcdd",
+                "id": "8650c6f3-a3eb-459b-b0aa-e55f82d44983",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('health 200', function () { pm.response.to.have.status(200); });"
                 ],
-                "_lastExecutionId": "9f4f32a4-4ade-4182-9a27-9a272664a499"
+                "_lastExecutionId": "695367d6-275d-4a09-b584-f0f425b5c59e"
               }
             }
           ]
@@ -426,7 +431,7 @@
             },
             {
               "key": "Postman-Token",
-              "value": "ac10f50e-3aa6-4f88-94bb-80317e966fcc",
+              "value": "c9466e48-8345-463c-9511-0b2fb5a9674a",
               "system": true
             },
             {
@@ -448,13 +453,13 @@
           "method": "GET"
         },
         "response": {
-          "id": "5a4f3331-ba12-49b1-9599-38d13cbe637a",
+          "id": "52a36e78-cfd3-4a2e-bca4-4c775697839b",
           "status": "OK",
           "code": 200,
           "header": [
             {
               "key": "date",
-              "value": "Mon, 27 Apr 2026 01:52:20 GMT"
+              "value": "Sun, 17 May 2026 22:14:43 GMT"
             },
             {
               "key": "server",
@@ -495,10 +500,10 @@
             ]
           },
           "cookie": [],
-          "responseTime": 17,
+          "responseTime": 18,
           "responseSize": 20
         },
-        "id": "9b492afd-cbeb-4b21-a6e3-3f01574d1313",
+        "id": "75dcb70a-ae04-4cde-94d6-b9287c1fd448",
         "assertions": [
           {
             "assertion": "health 200",
@@ -508,15 +513,15 @@
       },
       {
         "cursor": {
-          "ref": "b68a6d03-c771-4657-b1d1-6121450a383d",
+          "ref": "bb996bf2-635e-4163-a28b-01d76b486a57",
           "length": 2,
           "cycles": 1,
           "position": 1,
           "iteration": 0,
-          "httpRequestId": "2428ac4a-05f2-4f11-9048-2992ff2ab66e"
+          "httpRequestId": "c8f77e73-4dba-44e8-b8c0-17b721e630f6"
         },
         "item": {
-          "id": "ea6fcf83-0c6a-4824-a082-d1412e16a174",
+          "id": "b3297a82-ac23-416f-a64d-37e5b8ffeccd",
           "name": "Internal Verify Credentials - Wrong API Key",
           "request": {
             "url": {
@@ -553,12 +558,12 @@
             {
               "listen": "test",
               "script": {
-                "id": "38dcd4d6-1a80-4efb-bd19-d45d6d3147dd",
+                "id": "8584c1b7-e54f-4c66-bed3-20bea7b4e436",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('verify credentials forbidden 403', function () { pm.response.to.have.status(403); });"
                 ],
-                "_lastExecutionId": "9321973e-73f0-4fe7-8e71-7150ceff8ab1"
+                "_lastExecutionId": "df0dd555-8fe0-47f7-9872-138550e35f35"
               }
             }
           ]
@@ -605,7 +610,7 @@
             },
             {
               "key": "Postman-Token",
-              "value": "936237ed-d69e-449c-ac3d-88e19fcfbe49",
+              "value": "655e0e0f-aa5b-4cbe-bd14-12cecb1a8c9b",
               "system": true
             },
             {
@@ -636,13 +641,13 @@
           }
         },
         "response": {
-          "id": "56471b97-152e-490d-9050-f9b9bf450689",
+          "id": "0a895887-dc91-4549-9b9d-cb45b948cefb",
           "status": "Forbidden",
           "code": 403,
           "header": [
             {
               "key": "date",
-              "value": "Mon, 27 Apr 2026 01:52:20 GMT"
+              "value": "Sun, 17 May 2026 22:14:43 GMT"
             },
             {
               "key": "server",
@@ -685,10 +690,10 @@
             ]
           },
           "cookie": [],
-          "responseTime": 6,
+          "responseTime": 5,
           "responseSize": 22
         },
-        "id": "ea6fcf83-0c6a-4824-a082-d1412e16a174",
+        "id": "b3297a82-ac23-416f-a64d-37e5b8ffeccd",
         "assertions": [
           {
             "assertion": "verify credentials forbidden 403",

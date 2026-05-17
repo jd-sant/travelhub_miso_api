@@ -1,8 +1,9 @@
-service	pytest_summary	coverage_percent	stmts	miss	exit_code
-users	36 passed in 5.34s	92	863	65	0
-security	26 passed in 1.74s	92	936	78	0
-reservations	110 passed in 14.69s	89	3988	450	0
-payments	75 passed in 3.48s	89	3780	434	0
-notifications	27 passed in 1.47s	88	1437	171	0
-properties	34 passed in 1.87s	92	1210	100	0
-search	54 passed, 2 skipped in 1.26s	93	1301	88	0
+"service"	"pytest_summary"	"coverage_percent"	"stmts"	"miss"	"exit_code"	"coverage_exit_code"
+"users"	"42 passed in 6.68s"	"88"	"1250"	"150"	"0"	"0"
+"security"	"33 passed in 3.89s"	"91"	"1248"	"110"	"0"	"0"
+"reservations"	"145 passed in 12.97s"	"90"	"4686"	"488"	"0"	"0"
+"payments"	"78 passed in 4.92s"	"89"	"3829"	"428"	"0"	"0"
+"notifications"	"56 passed in 2.11s"	"89"	"2251"	"239"	"0"	"0"
+"properties"	"1 failed, 112 passed, 7 warnings in 142.92s (0:02:22)"	"93"	"2446"	"173"	"1"	"0"
+"search"	"74 passed in 0.69s"	"93"	"1367"	"90"	"0"	"0"
+"inventory"	"no tests ran in 0.01s"	"N/A"	"N/A"	"N/A"	"5"	"1"

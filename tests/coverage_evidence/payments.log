@@ -1,79 +1,83 @@
-﻿============================= test session starts =============================
+# pytest
+============================= test session starts =============================
 platform win32 -- Python 3.13.2, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\CLIENTE\AppData\Local\Programs\Python\Python313\python.exe
 cachedir: .pytest_cache
 rootdir: C:\Users\CLIENTE\Documents\MISO\PROYECTO-FINAL-2\travelhub_miso\services\payments
 plugins: anyio-4.10.0, Faker-40.5.1, langsmith-0.5.2, asyncio-1.1.0, cov-7.0.0
 asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collecting ... collected 75 items
+collecting ... collected 78 items
 
 tests/test_canonical_breakdown.py::test_parse_breakdown_acepta_todos_los_campos PASSED [  1%]
 tests/test_canonical_breakdown.py::test_parse_breakdown_devuelve_none_si_payload_invalido PASSED [  2%]
-tests/test_canonical_breakdown.py::test_parse_breakdown_tolera_campos_faltantes_con_zero_default PASSED [  4%]
+tests/test_canonical_breakdown.py::test_parse_breakdown_tolera_campos_faltantes_con_zero_default PASSED [  3%]
 tests/test_canonical_breakdown.py::test_enrichment_service_propaga_el_breakdown_canonico PASSED [  5%]
 tests/test_canonical_breakdown.py::test_summary_use_case_prefiere_breakdown_canonico_sobre_calculo_derivado PASSED [  6%]
-tests/test_canonical_breakdown.py::test_summary_use_case_cae_en_calculo_derivado_si_reservation_no_trae_breakdown PASSED [  8%]
-tests/test_internal_payments_by_reservations.py::test_by_reservations_requires_internal_api_key PASSED [  9%]
-tests/test_internal_payments_by_reservations.py::test_by_reservations_rejects_invalid_internal_api_key PASSED [ 10%]
-tests/test_internal_payments_by_reservations.py::test_by_reservations_returns_empty_when_no_ids PASSED [ 12%]
-tests/test_internal_payments_by_reservations.py::test_by_reservations_aggregates_amounts_per_reservation_and_currency PASSED [ 13%]
-tests/test_internal_payments_by_reservations.py::test_by_reservations_filters_by_status PASSED [ 14%]
-tests/test_payments_api.py::test_create_payment_success_generates_receipt_and_events PASSED [ 16%]
-tests/test_payments_api.py::test_create_payment_failure_returns_clear_reason PASSED [ 17%]
-tests/test_payments_api.py::test_create_payment_success_dispatches_notification_request PASSED [ 18%]
-tests/test_payments_api.py::test_create_payment_success_dispatches_reservation_confirmation PASSED [ 20%]
-tests/test_payments_api.py::test_create_payment_success_does_not_fail_when_notification_dispatch_fails PASSED [ 21%]
-tests/test_payments_api.py::test_create_payment_success_does_not_fail_when_reservation_update_fails PASSED [ 22%]
-tests/test_payments_api.py::test_retry_reservation_confirmations_processes_pending_outbox PASSED [ 24%]
-tests/test_payments_api.py::test_retry_reservation_confirmations_requires_internal_api_key PASSED [ 25%]
-tests/test_payments_api.py::test_create_payment_card_declined_returns_clear_reason PASSED [ 26%]
-tests/test_payments_api.py::test_create_payment_rejects_raw_card_fields PASSED [ 28%]
-tests/test_payments_api.py::test_create_payment_rejects_duplicate_within_two_seconds PASSED [ 29%]
-tests/test_payments_api.py::test_create_payment_rejects_reused_idempotency_key PASSED [ 30%]
-tests/test_payments_api.py::test_create_payment_rejects_invalid_checksum PASSED [ 32%]
-tests/test_payments_api.py::test_create_payment_accepts_valid_checksum PASSED [ 33%]
-tests/test_payments_api.py::test_get_payment_by_id_returns_created_payment PASSED [ 34%]
-tests/test_payments_api.py::test_list_events_returns_created_events PASSED [ 36%]
-tests/test_payments_api.py::test_list_events_returns_404_for_unknown_payment PASSED [ 37%]
-tests/test_payments_api.py::test_tls_header_can_be_enforced PASSED       [ 38%]
-tests/test_payments_api.py::test_cors_allows_frontend_origin PASSED      [ 40%]
-tests/test_payments_api.py::test_get_payments_config_returns_current_provider PASSED [ 41%]
-tests/test_payments_api.py::test_create_checkout_session_returns_transaction_metadata PASSED [ 42%]
-tests/test_payments_api.py::test_create_charge_is_disabled_when_provider_is_not_fake_stripe PASSED [ 44%]
-tests/test_payments_api.py::test_finalize_stripe_payment_materializes_confirmed_payment PASSED [ 45%]
-tests/test_payments_api.py::test_get_payment_confirmation_returns_checkout_summary PASSED [ 46%]
-tests/test_payments_api.py::test_webhook_can_complete_requires_action_checkout PASSED [ 48%]
-tests/test_payments_api.py::test_finalize_stripe_payment_returns_failed_response_for_card_error PASSED [ 49%]
-tests/test_payments_api.py::test_finalize_stripe_payment_returns_failed_response_for_insufficient_funds PASSED [ 50%]
-tests/test_payments_api.py::test_create_refund_returns_pending_status PASSED [ 52%]
-tests/test_payments_api.py::test_create_refund_records_correlation_id_and_metrics_audit PASSED [ 53%]
-tests/test_payments_api.py::test_create_refund_is_idempotent_for_same_key PASSED [ 54%]
-tests/test_payments_api.py::test_create_refund_rejects_failed_payment PASSED [ 56%]
-tests/test_payments_api.py::test_get_refund_returns_created_refund PASSED [ 57%]
-tests/test_payments_api.py::test_get_refund_returns_404_for_unknown_refund PASSED [ 58%]
-tests/test_payments_api.py::test_retry_payment_refunds_succeeds_pending_refund PASSED [ 60%]
-tests/test_payments_api.py::test_retry_payment_refunds_requires_internal_api_key PASSED [ 61%]
-tests/test_payments_api.py::test_retry_payment_refunds_can_reach_terminal_failed PASSED [ 62%]
-tests/test_payments_api.py::test_internal_create_refund_for_reservation_uses_latest_confirmed_payment PASSED [ 64%]
-tests/test_payments_api.py::test_internal_create_reservation_refund_accepts_simple_payload PASSED [ 65%]
-tests/test_payments_api.py::test_internal_additional_charge_endpoint_creates_charge PASSED [ 66%]
-tests/test_payments_security_posture.py::test_encrypt_sensitive_value_roundtrip PASSED [ 68%]
-tests/test_payments_security_posture.py::test_sanitize_sensitive_data_redacts_known_financial_fields PASSED [ 69%]
-tests/test_payments_security_posture.py::test_payment_audit_repository_sanitizes_payload PASSED [ 70%]
-tests/test_payments_security_posture.py::test_settings_require_stripe_provider_in_compliance_mode PASSED [ 72%]
-tests/test_payments_security_posture.py::test_settings_require_encryption_key_in_compliance_mode PASSED [ 73%]
-tests/test_payments_security_posture.py::test_settings_require_notifications_service_url_in_compliance_mode PASSED [ 74%]
+tests/test_canonical_breakdown.py::test_summary_use_case_cae_en_calculo_derivado_si_reservation_no_trae_breakdown PASSED [  7%]
+tests/test_health.py::TestHealthEndpoints::test_legacy_health PASSED     [  8%]
+tests/test_health.py::TestHealthEndpoints::test_liveness PASSED          [ 10%]
+tests/test_health.py::TestHealthEndpoints::test_readiness PASSED         [ 11%]
+tests/test_internal_payments_by_reservations.py::test_by_reservations_requires_internal_api_key PASSED [ 12%]
+tests/test_internal_payments_by_reservations.py::test_by_reservations_rejects_invalid_internal_api_key PASSED [ 14%]
+tests/test_internal_payments_by_reservations.py::test_by_reservations_returns_empty_when_no_ids PASSED [ 15%]
+tests/test_internal_payments_by_reservations.py::test_by_reservations_aggregates_amounts_per_reservation_and_currency PASSED [ 16%]
+tests/test_internal_payments_by_reservations.py::test_by_reservations_filters_by_status PASSED [ 17%]
+tests/test_payments_api.py::test_create_payment_success_generates_receipt_and_events PASSED [ 19%]
+tests/test_payments_api.py::test_create_payment_failure_returns_clear_reason PASSED [ 20%]
+tests/test_payments_api.py::test_create_payment_success_dispatches_notification_request PASSED [ 21%]
+tests/test_payments_api.py::test_create_payment_success_dispatches_reservation_confirmation PASSED [ 23%]
+tests/test_payments_api.py::test_create_payment_success_does_not_fail_when_notification_dispatch_fails PASSED [ 24%]
+tests/test_payments_api.py::test_create_payment_success_does_not_fail_when_reservation_update_fails PASSED [ 25%]
+tests/test_payments_api.py::test_retry_reservation_confirmations_processes_pending_outbox PASSED [ 26%]
+tests/test_payments_api.py::test_retry_reservation_confirmations_requires_internal_api_key PASSED [ 28%]
+tests/test_payments_api.py::test_create_payment_card_declined_returns_clear_reason PASSED [ 29%]
+tests/test_payments_api.py::test_create_payment_rejects_raw_card_fields PASSED [ 30%]
+tests/test_payments_api.py::test_create_payment_rejects_duplicate_within_two_seconds PASSED [ 32%]
+tests/test_payments_api.py::test_create_payment_rejects_reused_idempotency_key PASSED [ 33%]
+tests/test_payments_api.py::test_create_payment_rejects_invalid_checksum PASSED [ 34%]
+tests/test_payments_api.py::test_create_payment_accepts_valid_checksum PASSED [ 35%]
+tests/test_payments_api.py::test_get_payment_by_id_returns_created_payment PASSED [ 37%]
+tests/test_payments_api.py::test_list_events_returns_created_events PASSED [ 38%]
+tests/test_payments_api.py::test_list_events_returns_404_for_unknown_payment PASSED [ 39%]
+tests/test_payments_api.py::test_tls_header_can_be_enforced PASSED       [ 41%]
+tests/test_payments_api.py::test_cors_allows_frontend_origin PASSED      [ 42%]
+tests/test_payments_api.py::test_get_payments_config_returns_current_provider PASSED [ 43%]
+tests/test_payments_api.py::test_create_checkout_session_returns_transaction_metadata PASSED [ 44%]
+tests/test_payments_api.py::test_create_charge_is_disabled_when_provider_is_not_fake_stripe PASSED [ 46%]
+tests/test_payments_api.py::test_finalize_stripe_payment_materializes_confirmed_payment PASSED [ 47%]
+tests/test_payments_api.py::test_get_payment_confirmation_returns_checkout_summary PASSED [ 48%]
+tests/test_payments_api.py::test_webhook_can_complete_requires_action_checkout PASSED [ 50%]
+tests/test_payments_api.py::test_finalize_stripe_payment_returns_failed_response_for_card_error PASSED [ 51%]
+tests/test_payments_api.py::test_finalize_stripe_payment_returns_failed_response_for_insufficient_funds PASSED [ 52%]
+tests/test_payments_api.py::test_create_refund_returns_pending_status PASSED [ 53%]
+tests/test_payments_api.py::test_create_refund_records_correlation_id_and_metrics_audit PASSED [ 55%]
+tests/test_payments_api.py::test_create_refund_is_idempotent_for_same_key PASSED [ 56%]
+tests/test_payments_api.py::test_create_refund_rejects_failed_payment PASSED [ 57%]
+tests/test_payments_api.py::test_get_refund_returns_created_refund PASSED [ 58%]
+tests/test_payments_api.py::test_get_refund_returns_404_for_unknown_refund PASSED [ 60%]
+tests/test_payments_api.py::test_retry_payment_refunds_succeeds_pending_refund PASSED [ 61%]
+tests/test_payments_api.py::test_retry_payment_refunds_requires_internal_api_key PASSED [ 62%]
+tests/test_payments_api.py::test_retry_payment_refunds_can_reach_terminal_failed PASSED [ 64%]
+tests/test_payments_api.py::test_internal_create_refund_for_reservation_uses_latest_confirmed_payment PASSED [ 65%]
+tests/test_payments_api.py::test_internal_create_reservation_refund_accepts_simple_payload PASSED [ 66%]
+tests/test_payments_api.py::test_internal_additional_charge_endpoint_creates_charge PASSED [ 67%]
+tests/test_payments_security_posture.py::test_encrypt_sensitive_value_roundtrip PASSED [ 69%]
+tests/test_payments_security_posture.py::test_sanitize_sensitive_data_redacts_known_financial_fields PASSED [ 70%]
+tests/test_payments_security_posture.py::test_payment_audit_repository_sanitizes_payload PASSED [ 71%]
+tests/test_payments_security_posture.py::test_settings_require_stripe_provider_in_compliance_mode PASSED [ 73%]
+tests/test_payments_security_posture.py::test_settings_require_encryption_key_in_compliance_mode PASSED [ 74%]
+tests/test_payments_security_posture.py::test_settings_require_notifications_service_url_in_compliance_mode PASSED [ 75%]
 tests/test_payments_security_posture.py::test_settings_require_reservations_service_url_in_compliance_mode PASSED [ 76%]
-tests/test_payments_security_posture.py::test_backend_source_has_no_hardcoded_pan_literals PASSED [ 77%]
-tests/test_price_breakdown.py::test_calculate_con_iva_y_noches PASSED    [ 78%]
+tests/test_payments_security_posture.py::test_backend_source_has_no_hardcoded_pan_literals PASSED [ 78%]
+tests/test_price_breakdown.py::test_calculate_con_iva_y_noches PASSED    [ 79%]
 tests/test_price_breakdown.py::test_calculate_sin_fechas_devuelve_nights_none PASSED [ 80%]
-tests/test_price_breakdown.py::test_calculate_currency_desconocida_usa_cero_impuestos PASSED [ 81%]
-tests/test_price_breakdown.py::test_calculate_checkout_anterior_a_checkin_ignora_noches PASSED [ 82%]
+tests/test_price_breakdown.py::test_calculate_currency_desconocida_usa_cero_impuestos PASSED [ 82%]
+tests/test_price_breakdown.py::test_calculate_checkout_anterior_a_checkin_ignora_noches PASSED [ 83%]
 tests/test_sqs_notification_dispatcher.py::test_sqs_dispatcher_publica_mensaje_con_payment_confirmed_at PASSED [ 84%]
 tests/test_sqs_notification_dispatcher.py::test_sqs_dispatcher_falla_sin_queue_url PASSED [ 85%]
-tests/test_unit_coverage_boost.py::test_finalize_raises_when_stripe_not_configured PASSED [ 86%]
+tests/test_unit_coverage_boost.py::test_finalize_raises_when_stripe_not_configured PASSED [ 87%]
 tests/test_unit_coverage_boost.py::test_finalize_raises_when_checkout_session_not_found PASSED [ 88%]
 tests/test_unit_coverage_boost.py::test_finalize_returns_existing_session_when_payment_already_created PASSED [ 89%]
-tests/test_unit_coverage_boost.py::test_finalize_creates_pending_payment_and_queue PASSED [ 90%]
+tests/test_unit_coverage_boost.py::test_finalize_creates_pending_payment_and_queue PASSED [ 91%]
 tests/test_unit_coverage_boost.py::test_process_queued_payments_confirms_pending_payment PASSED [ 92%]
 tests/test_unit_coverage_boost.py::test_process_queued_payments_retries_on_unexpected_gateway_error PASSED [ 93%]
 tests/test_unit_coverage_boost.py::test_process_queued_payments_materializes_terminal_failure_on_max_attempts PASSED [ 94%]
@@ -82,8 +86,10 @@ tests/test_unit_coverage_boost.py::test_security_helpers_cover_encryption_checks
 tests/test_unit_coverage_boost.py::test_http_dispatchers_cover_no_url_and_success PASSED [ 98%]
 tests/test_unit_coverage_boost.py::test_stripe_gateway_extract_card_error_payload_branches PASSED [100%]
 
-============================= 75 passed in 3.48s ==============================
+============================= 78 passed in 4.92s ==============================
 
+
+# coverage
 Name                                                               Stmts   Miss  Cover   Missing
 ------------------------------------------------------------------------------------------------
 src\adapters\__init__.py                                               0      0   100%
@@ -111,11 +117,12 @@ src\adapters\services\reservation_details_client.py                   75     33 
 src\adapters\services\reservation_updater.py                          35     13    63%   42, 82-105, 116-139
 src\assembly.py                                                      100      6    94%   85, 91, 93, 99, 199, 216
 src\core\__init__.py                                                   0      0   100%
-src\core\config.py                                                   234     51    78%   42, 48, 63, 82, 92, 105, 107, 116, 161-164, 168-171, 175-178, 184, 191, 196, 207, 209, 211, 227-230, 234-237, 243, 248-251, 257, 264, 271, 278, 285, 292, 294, 302-306
+src\core\config.py                                                   234     50    79%   48, 63, 82, 92, 105, 107, 116, 161-164, 168-171, 175-178, 184, 191, 196, 207, 209, 211, 227-230, 234-237, 243, 248-251, 257, 264, 271, 278, 285, 292, 294, 302-306
+src\core\health.py                                                    21      4    81%   15-16, 28-29
 src\core\security.py                                                  71      1    99%   116
 src\core\telemetry.py                                                 17      0   100%
 src\db\__init__.py                                                     0      0   100%
-src\db\session.py                                                     32     17    47%   28-33, 37-43, 47-54, 58-59
+src\db\session.py                                                     32      9    72%   30, 47-54, 58-59
 src\domain\__init__.py                                                 0      0   100%
 src\domain\ports\__init__.py                                           0      0   100%
 src\domain\ports\notification_dispatcher.py                           16      4    75%   13, 24, 36, 48
@@ -154,19 +161,21 @@ src\domain\use_cases\retry_payment_refunds.py                         53      2 
 src\domain\use_cases\retry_reservation_confirmations.py               37      8    78%   62-79
 src\entrypoints\__init__.py                                            0      0   100%
 src\entrypoints\api\__init__.py                                        0      0   100%
-src\entrypoints\api\main.py                                           22      2    91%   15, 33
+src\entrypoints\api\main.py                                           24      1    96%   16
 src\entrypoints\api\routers\__init__.py                                0      0   100%
 src\entrypoints\api\routers\internal.py                               62     12    81%   61, 91, 140-143, 195-206
 src\entrypoints\api\routers\payments.py                              169     60    64%   91, 94, 102-115, 142-143, 171-176, 190-191, 205-206, 271, 276, 285-286, 313-314, 325-382, 405-406
 src\errors.py                                                         35      0   100%
 tests\__init__.py                                                      0      0   100%
-tests\conftest.py                                                     93      8    91%   51, 61, 78, 123, 128-138, 217
+tests\conftest.py                                                     93      8    91%   51, 61, 78, 123, 128-138, 215
 tests\test_canonical_breakdown.py                                     82      0   100%
+tests\test_health.py                                                  22      0   100%
 tests\test_internal_payments_by_reservations.py                       53      0   100%
 tests\test_payments_api.py                                           460      0   100%
-tests\test_payments_security_posture.py                               75      1    99%   147
+tests\test_payments_security_posture.py                               79      1    99%   151
 tests\test_price_breakdown.py                                         25      0   100%
 tests\test_sqs_notification_dispatcher.py                             24      0   100%
 tests\test_unit_coverage_boost.py                                    282     13    95%   34, 42, 65, 68, 84, 87, 90, 93, 96, 99, 123, 177, 188
 ------------------------------------------------------------------------------------------------
-TOTAL                                                               3780    434    89%
+TOTAL                                                               3829    428    89%
+

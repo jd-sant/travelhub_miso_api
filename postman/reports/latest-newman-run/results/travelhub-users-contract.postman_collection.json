@@ -1,19 +1,19 @@
 {
   "collection": {
     "_": {
-      "postman_id": "f80c6983-6301-4e64-bcce-04ef17f5cbbe"
+      "postman_id": "92b91a02-6de5-4f77-b20f-8d4e7ee3046c"
     },
     "item": [
       {
-        "id": "378388ab-42bd-4c89-9abe-27ce6823710d",
-        "name": "Health - Security",
+        "id": "75dcb70a-ae04-4cde-94d6-b9287c1fd448",
+        "name": "Health - Users",
         "request": {
           "url": {
             "path": [
               "health"
             ],
             "host": [
-              "{{security_base_url}}"
+              "{{users_base_url}}"
             ],
             "query": [],
             "variable": []
@@ -25,29 +25,29 @@
           {
             "listen": "test",
             "script": {
-              "id": "01d0734c-5016-43fc-a17f-2b65c61cdbc3",
+              "id": "8650c6f3-a3eb-459b-b0aa-e55f82d44983",
               "type": "text/javascript",
               "exec": [
                 "pm.test('health 200', function () { pm.response.to.have.status(200); });"
               ],
-              "_lastExecutionId": "a68ce395-0ec3-4c73-8535-f5591bab7bfb"
+              "_lastExecutionId": "695367d6-275d-4a09-b584-f0f425b5c59e"
             }
           }
         ]
       },
       {
-        "id": "bd066b40-dada-40ef-9194-24e604fb2aa9",
-        "name": "Login Invalid Credentials",
+        "id": "b3297a82-ac23-416f-a64d-37e5b8ffeccd",
+        "name": "Internal Verify Credentials - Wrong API Key",
         "request": {
           "url": {
             "path": [
               "api",
               "v1",
-              "auth",
-              "login"
+              "internal",
+              "verify-credentials"
             ],
             "host": [
-              "{{security_base_url}}"
+              "{{users_base_url}}"
             ],
             "query": [],
             "variable": []
@@ -56,56 +56,16 @@
             {
               "key": "Content-Type",
               "value": "application/json"
-            }
-          ],
-          "method": "POST",
-          "body": {
-            "mode": "raw",
-            "raw": "{\n  \"email\": \"no-existe@example.com\",\n  \"password\": \"bad-password\"\n}"
-          }
-        },
-        "response": [],
-        "event": [
-          {
-            "listen": "test",
-            "script": {
-              "id": "c5bef83a-a423-401f-af0c-41130dc5203c",
-              "type": "text/javascript",
-              "exec": [
-                "pm.test('login invalid 401', function () { pm.response.to.have.status(401); });"
-              ],
-              "_lastExecutionId": "7109ca5c-d7db-481e-8f74-b35dfc63fcb9"
-            }
-          }
-        ]
-      },
-      {
-        "id": "297dccbc-9e16-4174-9690-54e015740a6c",
-        "name": "Validate Token Invalid",
-        "request": {
-          "url": {
-            "path": [
-              "api",
-              "v1",
-              "auth",
-              "validate-token"
-            ],
-            "host": [
-              "{{security_base_url}}"
-            ],
-            "query": [],
-            "variable": []
-          },
-          "header": [
+            },
             {
-              "key": "Content-Type",
-              "value": "application/json"
+              "key": "X-Internal-Api-Key",
+              "value": "invalid-key"
             }
           ],
           "method": "POST",
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"token\": \"invalid.jwt.token\"\n}"
+            "raw": "{\n  \"email\": \"no-user@example.com\",\n  \"password\": \"bad-pass\"\n}"
           }
         },
         "response": [],
@@ -113,12 +73,12 @@
           {
             "listen": "test",
             "script": {
-              "id": "9baecaab-9e03-471c-b333-d9e8bdecea08",
+              "id": "8584c1b7-e54f-4c66-bed3-20bea7b4e436",
               "type": "text/javascript",
               "exec": [
-                "pm.test('validate invalid 401', function () { pm.response.to.have.status(401); });"
+                "pm.test('verify credentials forbidden 403', function () { pm.response.to.have.status(403); });"
               ],
-              "_lastExecutionId": "1e0d420e-48df-48e9-987d-265efa3daf9f"
+              "_lastExecutionId": "df0dd555-8fe0-47f7-9872-138550e35f35"
             }
           }
         ]
@@ -127,11 +87,11 @@
     "event": [],
     "variable": [],
     "info": {
-      "_postman_id": "f80c6983-6301-4e64-bcce-04ef17f5cbbe",
-      "name": "TravelHub Security Contract",
+      "_postman_id": "92b91a02-6de5-4f77-b20f-8d4e7ee3046c",
+      "name": "TravelHub Users Contract",
       "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
       "description": {
-        "content": "Validaciones contract/smoke para Security service.",
+        "content": "Validaciones contract/smoke para Users service.",
         "type": "text/plain"
       }
     }
@@ -179,6 +139,11 @@
         "type": "any",
         "value": "http://localhost:8006",
         "key": "search_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8007",
+        "key": "inventory_base_url"
       },
       {
         "type": "any",
@@ -323,7 +288,7 @@
     ]
   },
   "globals": {
-    "id": "2fa927c3-842a-428a-bcad-2594ff8d3b28",
+    "id": "b2a082d0-6bb3-47f7-894f-ff2c2d7d4165",
     "values": []
   },
   "run": {
@@ -334,37 +299,37 @@
         "failed": 0
       },
       "items": {
-        "total": 3,
+        "total": 2,
         "pending": 0,
         "failed": 0
       },
       "scripts": {
-        "total": 3,
+        "total": 2,
         "pending": 0,
         "failed": 0
       },
       "prerequests": {
-        "total": 3,
+        "total": 2,
         "pending": 0,
         "failed": 0
       },
       "requests": {
-        "total": 3,
+        "total": 2,
         "pending": 0,
         "failed": 0
       },
       "tests": {
-        "total": 3,
+        "total": 2,
         "pending": 0,
         "failed": 0
       },
       "assertions": {
-        "total": 3,
+        "total": 2,
         "pending": 0,
         "failed": 0
       },
       "testScripts": {
-        "total": 3,
+        "total": 2,
         "pending": 0,
         "failed": 0
       },
@@ -375,10 +340,10 @@
       }
     },
     "timings": {
-      "responseAverage": 36,
-      "responseMin": 4,
-      "responseMax": 52,
-      "responseSd": 22.627416997969522,
+      "responseAverage": 11.5,
+      "responseMin": 5,
+      "responseMax": 18,
+      "responseSd": 6.5,
       "dnsAverage": 0,
       "dnsMin": 0,
       "dnsMax": 0,
@@ -387,33 +352,33 @@
       "firstByteMin": 0,
       "firstByteMax": 0,
       "firstByteSd": 0,
-      "started": 1777254739398,
-      "completed": 1777254739778
+      "started": 1779056084186,
+      "completed": 1779056084404
     },
     "executions": [
       {
         "cursor": {
           "position": 0,
           "iteration": 0,
-          "length": 3,
+          "length": 2,
           "cycles": 1,
           "empty": false,
           "eof": false,
           "bof": true,
           "cr": false,
-          "ref": "ed93bff7-1b5d-423b-802d-8fc69ae9853a",
-          "httpRequestId": "370eabd9-8102-4144-b3e1-7351a8128c41"
+          "ref": "ca63fea6-2b3e-4141-8264-4432d8b6cfe7",
+          "httpRequestId": "de36e840-d4a3-4e83-b150-654985e5f6a5"
         },
         "item": {
-          "id": "378388ab-42bd-4c89-9abe-27ce6823710d",
-          "name": "Health - Security",
+          "id": "75dcb70a-ae04-4cde-94d6-b9287c1fd448",
+          "name": "Health - Users",
           "request": {
             "url": {
               "path": [
                 "health"
               ],
               "host": [
-                "{{security_base_url}}"
+                "{{users_base_url}}"
               ],
               "query": [],
               "variable": []
@@ -425,12 +390,12 @@
             {
               "listen": "test",
               "script": {
-                "id": "01d0734c-5016-43fc-a17f-2b65c61cdbc3",
+                "id": "8650c6f3-a3eb-459b-b0aa-e55f82d44983",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('health 200', function () { pm.response.to.have.status(200); });"
                 ],
-                "_lastExecutionId": "a68ce395-0ec3-4c73-8535-f5591bab7bfb"
+                "_lastExecutionId": "695367d6-275d-4a09-b584-f0f425b5c59e"
               }
             }
           ]
@@ -438,7 +403,7 @@
         "request": {
           "url": {
             "protocol": "http",
-            "port": "8001",
+            "port": "8000",
             "path": [
               "health"
             ],
@@ -466,12 +431,12 @@
             },
             {
               "key": "Postman-Token",
-              "value": "bbb4703e-541e-4822-990f-e964034a39ac",
+              "value": "c9466e48-8345-463c-9511-0b2fb5a9674a",
               "system": true
             },
             {
               "key": "Host",
-              "value": "localhost:8001",
+              "value": "localhost:8000",
               "system": true
             },
             {
@@ -488,13 +453,13 @@
           "method": "GET"
         },
         "response": {
-          "id": "dbbaf957-ef50-48b4-be0c-63e07bebe6ba",
+          "id": "52a36e78-cfd3-4a2e-bca4-4c775697839b",
           "status": "OK",
           "code": 200,
           "header": [
             {
               "key": "date",
-              "value": "Mon, 27 Apr 2026 01:52:18 GMT"
+              "value": "Sun, 17 May 2026 22:14:43 GMT"
             },
             {
               "key": "server",
@@ -535,10 +500,10 @@
             ]
           },
           "cookie": [],
-          "responseTime": 52,
+          "responseTime": 18,
           "responseSize": 20
         },
-        "id": "378388ab-42bd-4c89-9abe-27ce6823710d",
+        "id": "75dcb70a-ae04-4cde-94d6-b9287c1fd448",
         "assertions": [
           {
             "assertion": "health 200",
@@ -548,26 +513,26 @@
       },
       {
         "cursor": {
-          "ref": "b30d934f-5325-4e2b-9e64-89ae7c8a32bc",
-          "length": 3,
+          "ref": "bb996bf2-635e-4163-a28b-01d76b486a57",
+          "length": 2,
           "cycles": 1,
           "position": 1,
           "iteration": 0,
-          "httpRequestId": "a93343cb-3c85-4ea8-9379-5be5977dd93a"
+          "httpRequestId": "c8f77e73-4dba-44e8-b8c0-17b721e630f6"
         },
         "item": {
-          "id": "bd066b40-dada-40ef-9194-24e604fb2aa9",
-          "name": "Login Invalid Credentials",
+          "id": "b3297a82-ac23-416f-a64d-37e5b8ffeccd",
+          "name": "Internal Verify Credentials - Wrong API Key",
           "request": {
             "url": {
               "path": [
                 "api",
                 "v1",
-                "auth",
-                "login"
+                "internal",
+                "verify-credentials"
               ],
               "host": [
-                "{{security_base_url}}"
+                "{{users_base_url}}"
               ],
               "query": [],
               "variable": []
@@ -576,12 +541,16 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "X-Internal-Api-Key",
+                "value": "invalid-key"
               }
             ],
             "method": "POST",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"no-existe@example.com\",\n  \"password\": \"bad-password\"\n}"
+              "raw": "{\n  \"email\": \"no-user@example.com\",\n  \"password\": \"bad-pass\"\n}"
             }
           },
           "response": [],
@@ -589,12 +558,12 @@
             {
               "listen": "test",
               "script": {
-                "id": "c5bef83a-a423-401f-af0c-41130dc5203c",
+                "id": "8584c1b7-e54f-4c66-bed3-20bea7b4e436",
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('login invalid 401', function () { pm.response.to.have.status(401); });"
+                  "pm.test('verify credentials forbidden 403', function () { pm.response.to.have.status(403); });"
                 ],
-                "_lastExecutionId": "7109ca5c-d7db-481e-8f74-b35dfc63fcb9"
+                "_lastExecutionId": "df0dd555-8fe0-47f7-9872-138550e35f35"
               }
             }
           ]
@@ -602,12 +571,12 @@
         "request": {
           "url": {
             "protocol": "http",
-            "port": "8001",
+            "port": "8000",
             "path": [
               "api",
               "v1",
-              "auth",
-              "login"
+              "internal",
+              "verify-credentials"
             ],
             "host": [
               "localhost"
@@ -619,6 +588,10 @@
             {
               "key": "Content-Type",
               "value": "application/json"
+            },
+            {
+              "key": "X-Internal-Api-Key",
+              "value": "invalid-key"
             },
             {
               "key": "User-Agent",
@@ -637,12 +610,12 @@
             },
             {
               "key": "Postman-Token",
-              "value": "a8205b52-df04-4283-a20c-a618c55185f4",
+              "value": "655e0e0f-aa5b-4cbe-bd14-12cecb1a8c9b",
               "system": true
             },
             {
               "key": "Host",
-              "value": "localhost:8001",
+              "value": "localhost:8000",
               "system": true
             },
             {
@@ -657,24 +630,24 @@
             },
             {
               "key": "Content-Length",
-              "value": "68",
+              "value": "62",
               "system": true
             }
           ],
           "method": "POST",
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"email\": \"no-existe@example.com\",\n  \"password\": \"bad-password\"\n}"
+            "raw": "{\n  \"email\": \"no-user@example.com\",\n  \"password\": \"bad-pass\"\n}"
           }
         },
         "response": {
-          "id": "e93ebd2e-e100-4235-ad66-7ca1ec1cd4ec",
-          "status": "Unauthorized",
-          "code": 401,
+          "id": "0a895887-dc91-4549-9b9d-cb45b948cefb",
+          "status": "Forbidden",
+          "code": 403,
           "header": [
             {
               "key": "date",
-              "value": "Mon, 27 Apr 2026 01:52:18 GMT"
+              "value": "Sun, 17 May 2026 22:14:43 GMT"
             },
             {
               "key": "server",
@@ -682,7 +655,7 @@
             },
             {
               "key": "content-length",
-              "value": "36"
+              "value": "22"
             },
             {
               "key": "content-type",
@@ -703,236 +676,34 @@
               34,
               58,
               34,
-              67,
+              70,
+              111,
               114,
-              101,
+              98,
+              105,
+              100,
               100,
               101,
               110,
-              99,
-              105,
-              97,
-              108,
-              101,
-              115,
-              32,
-              105,
-              110,
-              118,
-              195,
-              161,
-              108,
-              105,
-              100,
-              97,
-              115,
               34,
               125
             ]
           },
           "cookie": [],
-          "responseTime": 52,
-          "responseSize": 36
+          "responseTime": 5,
+          "responseSize": 22
         },
-        "id": "bd066b40-dada-40ef-9194-24e604fb2aa9",
+        "id": "b3297a82-ac23-416f-a64d-37e5b8ffeccd",
         "assertions": [
           {
-            "assertion": "login invalid 401",
-            "skipped": false
-          }
-        ]
-      },
-      {
-        "cursor": {
-          "ref": "2f6154c2-e6c5-43a1-95d3-846c154bc65b",
-          "length": 3,
-          "cycles": 1,
-          "position": 2,
-          "iteration": 0,
-          "httpRequestId": "457d3fd4-ec09-4853-a69d-d321b2eecb2d"
-        },
-        "item": {
-          "id": "297dccbc-9e16-4174-9690-54e015740a6c",
-          "name": "Validate Token Invalid",
-          "request": {
-            "url": {
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "validate-token"
-              ],
-              "host": [
-                "{{security_base_url}}"
-              ],
-              "query": [],
-              "variable": []
-            },
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "method": "POST",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"token\": \"invalid.jwt.token\"\n}"
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "id": "9baecaab-9e03-471c-b333-d9e8bdecea08",
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('validate invalid 401', function () { pm.response.to.have.status(401); });"
-                ],
-                "_lastExecutionId": "1e0d420e-48df-48e9-987d-265efa3daf9f"
-              }
-            }
-          ]
-        },
-        "request": {
-          "url": {
-            "protocol": "http",
-            "port": "8001",
-            "path": [
-              "api",
-              "v1",
-              "auth",
-              "validate-token"
-            ],
-            "host": [
-              "localhost"
-            ],
-            "query": [],
-            "variable": []
-          },
-          "header": [
-            {
-              "key": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "key": "User-Agent",
-              "value": "PostmanRuntime/7.39.1",
-              "system": true
-            },
-            {
-              "key": "Accept",
-              "value": "*/*",
-              "system": true
-            },
-            {
-              "key": "Cache-Control",
-              "value": "no-cache",
-              "system": true
-            },
-            {
-              "key": "Postman-Token",
-              "value": "ba6afae8-4f31-42fc-a8b1-49c4ed5ac42e",
-              "system": true
-            },
-            {
-              "key": "Host",
-              "value": "localhost:8001",
-              "system": true
-            },
-            {
-              "key": "Accept-Encoding",
-              "value": "gzip, deflate, br",
-              "system": true
-            },
-            {
-              "key": "Connection",
-              "value": "keep-alive",
-              "system": true
-            },
-            {
-              "key": "Content-Length",
-              "value": "34",
-              "system": true
-            }
-          ],
-          "method": "POST",
-          "body": {
-            "mode": "raw",
-            "raw": "{\n  \"token\": \"invalid.jwt.token\"\n}"
-          }
-        },
-        "response": {
-          "id": "ddc63236-84b7-4c4d-973e-6c310f980d11",
-          "status": "Unauthorized",
-          "code": 401,
-          "header": [
-            {
-              "key": "date",
-              "value": "Mon, 27 Apr 2026 01:52:18 GMT"
-            },
-            {
-              "key": "server",
-              "value": "uvicorn"
-            },
-            {
-              "key": "content-length",
-              "value": "28"
-            },
-            {
-              "key": "content-type",
-              "value": "application/json"
-            }
-          ],
-          "stream": {
-            "type": "Buffer",
-            "data": [
-              123,
-              34,
-              100,
-              101,
-              116,
-              97,
-              105,
-              108,
-              34,
-              58,
-              34,
-              84,
-              111,
-              107,
-              101,
-              110,
-              32,
-              105,
-              110,
-              118,
-              195,
-              161,
-              108,
-              105,
-              100,
-              111,
-              34,
-              125
-            ]
-          },
-          "cookie": [],
-          "responseTime": 4,
-          "responseSize": 28
-        },
-        "id": "297dccbc-9e16-4174-9690-54e015740a6c",
-        "assertions": [
-          {
-            "assertion": "validate invalid 401",
+            "assertion": "verify credentials forbidden 403",
             "skipped": false
           }
         ]
       }
     ],
     "transfers": {
-      "responseTotal": 84
+      "responseTotal": 42
     },
     "failures": [],
     "error": null

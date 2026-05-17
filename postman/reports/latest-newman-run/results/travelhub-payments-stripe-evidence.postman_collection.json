@@ -5,11 +5,11 @@
     },
     "item": [
       {
-        "id": "04fbb3e8-584f-421a-8081-b30ab7daa9ed",
+        "id": "c555b21e-f7f0-46a2-8724-b160e4869b12",
         "name": "01 - Config",
         "item": [
           {
-            "id": "00b12f7d-8d1f-46d4-81f9-3d84fed2fc70",
+            "id": "45ef4bff-9b9e-4412-a2ff-87cb48d9fed0",
             "name": "Get Payments Config",
             "request": {
               "url": {
@@ -32,7 +32,7 @@
               {
                 "listen": "test",
                 "script": {
-                  "id": "3b2e8749-0259-4723-8c70-5bb7a3bdec6d",
+                  "id": "9c15cd90-fb27-410c-a553-864550da07ee",
                   "type": "text/javascript",
                   "exec": [
                     "pm.test('Config responde 200', function () {",
@@ -51,7 +51,7 @@
                     "  if (body.provider === 'fake_stripe') { pm.expect(body.publishable_key).to.eql(''); }",
                     "});"
                   ],
-                  "_lastExecutionId": "0b7a4d7f-8c25-4019-a8e7-c4f13f43f423"
+                  "_lastExecutionId": "4ab220f1-7dee-4750-a001-50618df05af7"
                 }
               }
             ]
@@ -60,11 +60,11 @@
         "event": []
       },
       {
-        "id": "afcbb3f0-18d3-46dd-a8d6-6d7288c45e53",
+        "id": "4bb94ae0-c622-42bb-aa52-e63c414e4ef6",
         "name": "02 - Create Intent",
         "item": [
           {
-            "id": "fd7f0180-237d-4220-a469-157353914f10",
+            "id": "f56ebd68-fef3-422a-bbc3-8a15ffd254c2",
             "name": "Create Intent",
             "request": {
               "url": {
@@ -101,19 +101,19 @@
               {
                 "listen": "prerequest",
                 "script": {
-                  "id": "04b27fcc-07cb-459a-962c-1bbd09d58ffd",
+                  "id": "05b6b28a-3adb-49e9-8565-c6e854c89f3b",
                   "type": "text/javascript",
                   "exec": [
                     "pm.collectionVariables.set('checkout_reservation_id', pm.variables.replaceIn('{{$randomUUID}}'));",
                     "pm.collectionVariables.set('checkout_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));"
                   ],
-                  "_lastExecutionId": "d14660e1-3873-4b03-903a-e2786f47a30d"
+                  "_lastExecutionId": "c52b745d-c393-4141-ae15-ea05939e6e5d"
                 }
               },
               {
                 "listen": "test",
                 "script": {
-                  "id": "33cefdbe-c61e-442e-8fa1-216454f11d72",
+                  "id": "351af597-ad7b-479e-b3ae-dbee1f79727f",
                   "type": "text/javascript",
                   "exec": [
                     "pm.test('Create intent responde 201', function () {",
@@ -128,7 +128,7 @@
                     "});",
                     "pm.collectionVariables.set('payment_transaction_id', body.payment_transaction_id);"
                   ],
-                  "_lastExecutionId": "be01ce60-06d0-4659-a1bd-29fc9fd74b3c"
+                  "_lastExecutionId": "54329a61-1190-4cee-b36f-906b54fb42ee"
                 }
               }
             ]
@@ -137,11 +137,11 @@
         "event": []
       },
       {
-        "id": "6393ef99-8049-4d21-9cc1-158e394a8cd4",
+        "id": "71c06def-2796-456b-bc27-a5d2af6f01fb",
         "name": "03 - Manual Evidence Guide",
         "item": [
           {
-            "id": "023b5a09-9938-4a45-8009-7ca4b6487b21",
+            "id": "1e796389-1329-4ecc-9fed-00a15f2bbd07",
             "name": "Read Manual Stripe Evidence Note",
             "request": {
               "url": {
@@ -164,7 +164,7 @@
                 "_": {
                   "postman_previewlanguage": "json"
                 },
-                "id": "08a254f5-85fe-4167-926f-2cd08d51ea5e",
+                "id": "8901c612-e734-4295-b1fe-a10fcf98e788",
                 "name": "Manual Stripe evidence",
                 "originalRequest": {
                   "url": {
@@ -193,14 +193,14 @@
               {
                 "listen": "test",
                 "script": {
-                  "id": "f9dd7ec4-d741-4b60-8b35-96dc30a23aaf",
+                  "id": "7cb28c0e-b860-40d6-bb1d-fc7ca7a56209",
                   "type": "text/javascript",
                   "exec": [
                     "pm.test('La nota de alcance es visible', function () {",
                     "  pm.response.to.have.status(200);",
                     "});"
                   ],
-                  "_lastExecutionId": "5063fbfe-9128-4464-a01a-126bf73abd5a"
+                  "_lastExecutionId": "87662f0a-90ae-4cb4-9969-6b49c4a8e208"
                 }
               }
             ]
@@ -280,6 +280,11 @@
         "type": "any",
         "value": "http://localhost:8006",
         "key": "search_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8007",
+        "key": "inventory_base_url"
       },
       {
         "type": "any",
@@ -424,7 +429,7 @@
     ]
   },
   "globals": {
-    "id": "88cf05be-cc59-41e3-99b0-e1524b582fbc",
+    "id": "b33644af-006c-4890-8246-5a2e5af1c8ba",
     "values": []
   },
   "run": {
@@ -476,10 +481,10 @@
       }
     },
     "timings": {
-      "responseAverage": 11,
+      "responseAverage": 12.333333333333334,
       "responseMin": 3,
       "responseMax": 17,
-      "responseSd": 5.887840577551898,
+      "responseSd": 6.599663291074444,
       "dnsAverage": 0,
       "dnsMin": 0,
       "dnsMax": 0,
@@ -488,8 +493,8 @@
       "firstByteMin": 0,
       "firstByteMax": 0,
       "firstByteSd": 0,
-      "started": 1777254731309,
-      "completed": 1777254731600
+      "started": 1779056063415,
+      "completed": 1779056063713
     },
     "executions": [
       {
@@ -502,11 +507,11 @@
           "eof": false,
           "bof": true,
           "cr": false,
-          "ref": "30b088ff-79a0-4a4b-818b-03f554cf3e8c",
-          "httpRequestId": "f7204f4d-17c3-4357-8a28-17feafc80cee"
+          "ref": "0017e694-e23b-4220-a047-3dee07e003e3",
+          "httpRequestId": "247f0bfc-820b-479a-b02f-f062f1f2a340"
         },
         "item": {
-          "id": "00b12f7d-8d1f-46d4-81f9-3d84fed2fc70",
+          "id": "45ef4bff-9b9e-4412-a2ff-87cb48d9fed0",
           "name": "Get Payments Config",
           "request": {
             "url": {
@@ -529,7 +534,7 @@
             {
               "listen": "test",
               "script": {
-                "id": "3b2e8749-0259-4723-8c70-5bb7a3bdec6d",
+                "id": "9c15cd90-fb27-410c-a553-864550da07ee",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Config responde 200', function () {",
@@ -548,7 +553,7 @@
                   "  if (body.provider === 'fake_stripe') { pm.expect(body.publishable_key).to.eql(''); }",
                   "});"
                 ],
-                "_lastExecutionId": "0b7a4d7f-8c25-4019-a8e7-c4f13f43f423"
+                "_lastExecutionId": "4ab220f1-7dee-4750-a001-50618df05af7"
               }
             }
           ]
@@ -587,7 +592,7 @@
             },
             {
               "key": "Postman-Token",
-              "value": "a94e1155-9048-4193-a0d1-979cab77bccb",
+              "value": "f6036540-9651-4c00-a54c-96fd746e2b3f",
               "system": true
             },
             {
@@ -609,13 +614,13 @@
           "method": "GET"
         },
         "response": {
-          "id": "d219f366-9369-4e10-9e5f-41a70bd64426",
+          "id": "aa5a3183-6f7b-4abb-9f43-a00db219ecff",
           "status": "OK",
           "code": 200,
           "header": [
             {
               "key": "date",
-              "value": "Mon, 27 Apr 2026 01:52:10 GMT"
+              "value": "Sun, 17 May 2026 22:14:23 GMT"
             },
             {
               "key": "server",
@@ -709,7 +714,7 @@
           "responseTime": 17,
           "responseSize": 70
         },
-        "id": "00b12f7d-8d1f-46d4-81f9-3d84fed2fc70",
+        "id": "45ef4bff-9b9e-4412-a2ff-87cb48d9fed0",
         "assertions": [
           {
             "assertion": "Config responde 200",
@@ -731,15 +736,15 @@
       },
       {
         "cursor": {
-          "ref": "7a081448-e637-4958-b0a2-4b0a9231356f",
+          "ref": "9ead3fec-aa4f-4adc-a3a0-cd25c85af67f",
           "length": 3,
           "cycles": 1,
           "position": 1,
           "iteration": 0,
-          "httpRequestId": "69d5f250-c966-4ed9-ad3c-ebb420eb92e7"
+          "httpRequestId": "68ed5e82-456c-4230-926b-9f5a234fe590"
         },
         "item": {
-          "id": "fd7f0180-237d-4220-a469-157353914f10",
+          "id": "f56ebd68-fef3-422a-bbc3-8a15ffd254c2",
           "name": "Create Intent",
           "request": {
             "url": {
@@ -776,19 +781,19 @@
             {
               "listen": "prerequest",
               "script": {
-                "id": "04b27fcc-07cb-459a-962c-1bbd09d58ffd",
+                "id": "05b6b28a-3adb-49e9-8565-c6e854c89f3b",
                 "type": "text/javascript",
                 "exec": [
                   "pm.collectionVariables.set('checkout_reservation_id', pm.variables.replaceIn('{{$randomUUID}}'));",
                   "pm.collectionVariables.set('checkout_traveler_id', pm.variables.replaceIn('{{$randomUUID}}'));"
                 ],
-                "_lastExecutionId": "d14660e1-3873-4b03-903a-e2786f47a30d"
+                "_lastExecutionId": "c52b745d-c393-4141-ae15-ea05939e6e5d"
               }
             },
             {
               "listen": "test",
               "script": {
-                "id": "33cefdbe-c61e-442e-8fa1-216454f11d72",
+                "id": "351af597-ad7b-479e-b3ae-dbee1f79727f",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Create intent responde 201', function () {",
@@ -803,7 +808,7 @@
                   "});",
                   "pm.collectionVariables.set('payment_transaction_id', body.payment_transaction_id);"
                 ],
-                "_lastExecutionId": "be01ce60-06d0-4659-a1bd-29fc9fd74b3c"
+                "_lastExecutionId": "54329a61-1190-4cee-b36f-906b54fb42ee"
               }
             }
           ]
@@ -850,7 +855,7 @@
             },
             {
               "key": "Postman-Token",
-              "value": "4b165b39-e73a-453a-b540-2ed59d32d97c",
+              "value": "7daf7c70-2f32-4e3d-ac39-8e2abd122833",
               "system": true
             },
             {
@@ -877,17 +882,17 @@
           "method": "POST",
           "body": {
             "mode": "raw",
-            "raw": "{\n  \"reservation_id\": \"22b8eab3-1adf-4b84-8e5f-c05ddff62a12\",\n  \"traveler_id\": \"2c74a7ac-41dc-4316-827c-9892fba42bf3\",\n  \"amount_in_cents\": 287650,\n  \"currency\": \"COP\",\n  \"property_name\": \"Renaissance Estate & Private Vineyard\",\n  \"check_in_date\": \"2026-10-12\",\n  \"check_out_date\": \"2026-10-17\"\n}"
+            "raw": "{\n  \"reservation_id\": \"249e4d6f-eeb7-49dd-b03a-656115f438c7\",\n  \"traveler_id\": \"ecdfd9b4-7224-4193-b066-7ec1236f30c9\",\n  \"amount_in_cents\": 287650,\n  \"currency\": \"COP\",\n  \"property_name\": \"Renaissance Estate & Private Vineyard\",\n  \"check_in_date\": \"2026-10-12\",\n  \"check_out_date\": \"2026-10-17\"\n}"
           }
         },
         "response": {
-          "id": "ae3bbca1-c73d-4977-b488-d5a528efc723",
+          "id": "48759fa1-296d-4860-b7b9-ee32516333b4",
           "status": "Created",
           "code": 201,
           "header": [
             {
               "key": "date",
-              "value": "Mon, 27 Apr 2026 01:52:10 GMT"
+              "value": "Sun, 17 May 2026 22:14:23 GMT"
             },
             {
               "key": "server",
@@ -932,42 +937,42 @@
               34,
               58,
               34,
-              49,
-              102,
+              54,
+              100,
               101,
-              101,
+              51,
+              51,
               57,
-              100,
-              100,
-              52,
-              45,
-              50,
+              48,
               101,
+              45,
+              54,
+              49,
               99,
-              100,
+              53,
               45,
               52,
+              56,
+              54,
+              50,
+              45,
               57,
-              101,
+              98,
+              102,
+              57,
+              45,
+              54,
+              100,
+              55,
+              51,
               52,
-              45,
-              98,
-              54,
-              53,
-              100,
-              45,
+              56,
+              56,
               101,
+              56,
               55,
-              101,
-              98,
-              51,
-              98,
-              51,
-              55,
-              100,
-              49,
-              54,
-              53,
+              97,
+              57,
               34,
               44,
               34,
@@ -1089,10 +1094,10 @@
             ]
           },
           "cookie": [],
-          "responseTime": 13,
+          "responseTime": 17,
           "responseSize": 181
         },
-        "id": "fd7f0180-237d-4220-a469-157353914f10",
+        "id": "f56ebd68-fef3-422a-bbc3-8a15ffd254c2",
         "assertions": [
           {
             "assertion": "Create intent responde 201",
@@ -1110,15 +1115,15 @@
       },
       {
         "cursor": {
-          "ref": "c1dacf5e-5878-4313-adeb-aa1a8040c24f",
+          "ref": "b7519281-0a36-42be-9c21-fec1b15cbff0",
           "length": 3,
           "cycles": 1,
           "position": 2,
           "iteration": 0,
-          "httpRequestId": "0e971f35-48d5-464b-8e5e-559ed272fe10"
+          "httpRequestId": "82f3a1b8-ee43-4fa9-97b8-f201cf91c18c"
         },
         "item": {
-          "id": "023b5a09-9938-4a45-8009-7ca4b6487b21",
+          "id": "1e796389-1329-4ecc-9fed-00a15f2bbd07",
           "name": "Read Manual Stripe Evidence Note",
           "request": {
             "url": {
@@ -1141,7 +1146,7 @@
               "_": {
                 "postman_previewlanguage": "json"
               },
-              "id": "08a254f5-85fe-4167-926f-2cd08d51ea5e",
+              "id": "8901c612-e734-4295-b1fe-a10fcf98e788",
               "name": "Manual Stripe evidence",
               "originalRequest": {
                 "url": {
@@ -1170,14 +1175,14 @@
             {
               "listen": "test",
               "script": {
-                "id": "f9dd7ec4-d741-4b60-8b35-96dc30a23aaf",
+                "id": "7cb28c0e-b860-40d6-bb1d-fc7ca7a56209",
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('La nota de alcance es visible', function () {",
                   "  pm.response.to.have.status(200);",
                   "});"
                 ],
-                "_lastExecutionId": "5063fbfe-9128-4464-a01a-126bf73abd5a"
+                "_lastExecutionId": "87662f0a-90ae-4cb4-9969-6b49c4a8e208"
               }
             }
           ]
@@ -1216,7 +1221,7 @@
             },
             {
               "key": "Postman-Token",
-              "value": "e7d2221d-5f05-4f55-bfd4-fcb396f8fb56",
+              "value": "aba55962-06b5-488b-b6ab-84fbe93e9a88",
               "system": true
             },
             {
@@ -1238,13 +1243,13 @@
           "method": "GET"
         },
         "response": {
-          "id": "8f239b7f-d2bc-4477-b785-601d6d8482f9",
+          "id": "a98ac759-29b5-4a7b-8075-8e6320cbfb00",
           "status": "OK",
           "code": 200,
           "header": [
             {
               "key": "date",
-              "value": "Mon, 27 Apr 2026 01:52:10 GMT"
+              "value": "Sun, 17 May 2026 22:14:23 GMT"
             },
             {
               "key": "server",
@@ -1338,7 +1343,7 @@
           "responseTime": 3,
           "responseSize": 70
         },
-        "id": "023b5a09-9938-4a45-8009-7ca4b6487b21",
+        "id": "1e796389-1329-4ecc-9fed-00a15f2bbd07",
         "assertions": [
           {
             "assertion": "La nota de alcance es visible",

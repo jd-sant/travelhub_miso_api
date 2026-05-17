@@ -1,0 +1,945 @@
+{
+  "collection": {
+    "_": {
+      "postman_id": "f80c6983-6301-4e64-bcce-04ef17f5cbbe"
+    },
+    "item": [
+      {
+        "id": "3cfeb182-83ff-4336-a791-5260003e1629",
+        "name": "Health - Security",
+        "request": {
+          "url": {
+            "path": [
+              "health"
+            ],
+            "host": [
+              "{{security_base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "method": "GET"
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "cee8cb95-7e8c-46b6-a2c0-ab3e971a0c66",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('health 200', function () { pm.response.to.have.status(200); });"
+              ],
+              "_lastExecutionId": "515a685e-1eff-4dc8-9eca-60f7871b5a0e"
+            }
+          }
+        ]
+      },
+      {
+        "id": "3587c6be-1923-42af-856c-4501005c069e",
+        "name": "Login Invalid Credentials",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "auth",
+              "login"
+            ],
+            "host": [
+              "{{security_base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"email\": \"no-existe@example.com\",\n  \"password\": \"bad-password\"\n}"
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "708f1bc4-1248-4d42-ae94-74b56f1fd299",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('login invalid 401', function () { pm.response.to.have.status(401); });"
+              ],
+              "_lastExecutionId": "ec77adb5-0793-4ec0-ac79-2db3f2c4d9ae"
+            }
+          }
+        ]
+      },
+      {
+        "id": "e6fd8ac0-878e-4058-bb83-6e5f85718610",
+        "name": "Validate Token Invalid",
+        "request": {
+          "url": {
+            "path": [
+              "api",
+              "v1",
+              "auth",
+              "validate-token"
+            ],
+            "host": [
+              "{{security_base_url}}"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"token\": \"invalid.jwt.token\"\n}"
+          }
+        },
+        "response": [],
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "id": "4be8efda-0d55-493a-8977-dcce4c482879",
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('validate invalid 401', function () { pm.response.to.have.status(401); });"
+              ],
+              "_lastExecutionId": "db06bd86-816e-4cf4-8612-6fcb18edb63a"
+            }
+          }
+        ]
+      }
+    ],
+    "event": [],
+    "variable": [],
+    "info": {
+      "_postman_id": "f80c6983-6301-4e64-bcce-04ef17f5cbbe",
+      "name": "TravelHub Security Contract",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+      "description": {
+        "content": "Validaciones contract/smoke para Security service.",
+        "type": "text/plain"
+      }
+    }
+  },
+  "environment": {
+    "_": {
+      "postman_variable_scope": "environment",
+      "postman_exported_at": "2026-04-11T00:00:00.000Z",
+      "postman_exported_using": "Codex"
+    },
+    "id": "1f3a5f3e-6c97-4fe2-b4db-1bbf62d8468f",
+    "name": "TravelHub Microservices Local",
+    "values": [
+      {
+        "type": "any",
+        "value": "http://localhost:8000",
+        "key": "users_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8001",
+        "key": "security_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8002",
+        "key": "reservations_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8003",
+        "key": "payments_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8004",
+        "key": "notifications_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8005",
+        "key": "properties_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8006",
+        "key": "search_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8007",
+        "key": "inventory_base_url"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-internal-secret-key",
+        "key": "internal_api_key"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-internal-secret-key",
+        "key": "INTERNAL_API_KEY"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-jwt-secret-change-in-prod",
+        "key": "JWT_SECRET_KEY"
+      },
+      {
+        "type": "any",
+        "value": "development",
+        "key": "ENV"
+      },
+      {
+        "type": "any",
+        "value": "development",
+        "key": "APP_ENV"
+      },
+      {
+        "type": "any",
+        "value": "smtp.gmail.com",
+        "key": "SMTP_HOST"
+      },
+      {
+        "type": "any",
+        "value": "587",
+        "key": "SMTP_PORT"
+      },
+      {
+        "type": "any",
+        "value": "tu-email@gmail.com",
+        "key": "SMTP_USER"
+      },
+      {
+        "type": "any",
+        "value": "tu-app-password",
+        "key": "SMTP_PASSWORD"
+      },
+      {
+        "type": "any",
+        "value": "tu-email@gmail.com",
+        "key": "SMTP_FROM"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-payments-secret-change-in-prod",
+        "key": "PAYMENT_INTEGRITY_SECRET"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-payments-encryption-key-change-in-prod",
+        "key": "PAYMENTS_DATA_ENCRYPTION_KEY"
+      },
+      {
+        "type": "any",
+        "value": "false",
+        "key": "PAYMENTS_COMPLIANCE_MODE"
+      },
+      {
+        "type": "any",
+        "value": "true",
+        "key": "ENFORCE_TLS_HEADER"
+      },
+      {
+        "type": "any",
+        "value": "fake_stripe",
+        "key": "PAYMENT_PROVIDER"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "STRIPE_SECRET_KEY"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "STRIPE_PUBLISHABLE_KEY"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "STRIPE_WEBHOOK_SECRET"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:3000,http://127.0.0.1:3000",
+        "key": "ALLOWED_CORS_ORIGIN"
+      },
+      {
+        "type": "any",
+        "value": "us-east-1",
+        "key": "AWS_REGION"
+      },
+      {
+        "type": "any",
+        "value": "XXXX",
+        "key": "AWS_ACCESS_KEY_ID"
+      },
+      {
+        "type": "any",
+        "value": "XXXX",
+        "key": "AWS_SECRET_ACCESS_KEY"
+      },
+      {
+        "type": "any",
+        "value": "XXXX",
+        "key": "AWS_SESSION_TOKEN"
+      },
+      {
+        "type": "any",
+        "value": "arn:aws:lambda:us-east-1:ACC_ID:function:reservation-checker",
+        "key": "LAMBDA_ARN"
+      },
+      {
+        "type": "any",
+        "value": "arn:aws:iam::ACC_ID:role/EventBridgeSchedulerRole",
+        "key": "SCHEDULER_ROLE_ARN"
+      },
+      {
+        "type": "any",
+        "value": "http://reservations:8006",
+        "key": "API_BASE_URL"
+      },
+      {
+        "type": "any",
+        "value": "true",
+        "key": "RESERVATION_SCHEDULER_ENABLED"
+      },
+      {
+        "type": "any",
+        "value": "15",
+        "key": "RESERVATION_SCHEDULER_DELAY_MINUTES"
+      }
+    ]
+  },
+  "globals": {
+    "id": "4bf350f2-d482-4df7-9575-546e92952d86",
+    "values": []
+  },
+  "run": {
+    "stats": {
+      "iterations": {
+        "total": 1,
+        "pending": 0,
+        "failed": 0
+      },
+      "items": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "scripts": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequests": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "requests": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "tests": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "assertions": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "testScripts": {
+        "total": 3,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequestScripts": {
+        "total": 0,
+        "pending": 0,
+        "failed": 0
+      }
+    },
+    "timings": {
+      "responseAverage": 17,
+      "responseMin": 4,
+      "responseMax": 30,
+      "responseSd": 10.614455552060438,
+      "dnsAverage": 0,
+      "dnsMin": 0,
+      "dnsMax": 0,
+      "dnsSd": 0,
+      "firstByteAverage": 0,
+      "firstByteMin": 0,
+      "firstByteMax": 0,
+      "firstByteSd": 0,
+      "started": 1779056082477,
+      "completed": 1779056082803
+    },
+    "executions": [
+      {
+        "cursor": {
+          "position": 0,
+          "iteration": 0,
+          "length": 3,
+          "cycles": 1,
+          "empty": false,
+          "eof": false,
+          "bof": true,
+          "cr": false,
+          "ref": "66934f32-ef48-4c9d-8cad-623e925286f6",
+          "httpRequestId": "b69dd85b-d4f6-4857-afbe-9252a8ad9970"
+        },
+        "item": {
+          "id": "3cfeb182-83ff-4336-a791-5260003e1629",
+          "name": "Health - Security",
+          "request": {
+            "url": {
+              "path": [
+                "health"
+              ],
+              "host": [
+                "{{security_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "cee8cb95-7e8c-46b6-a2c0-ab3e971a0c66",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('health 200', function () { pm.response.to.have.status(200); });"
+                ],
+                "_lastExecutionId": "515a685e-1eff-4dc8-9eca-60f7871b5a0e"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8001",
+            "path": [
+              "health"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "6a8a9452-2feb-4cfd-aef3-b8314ba695b1",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8001",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "925e0637-ef67-4d0d-92fe-49cd78d07871",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sun, 17 May 2026 22:14:42 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "20"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              104,
+              101,
+              97,
+              108,
+              116,
+              104,
+              121,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 17,
+          "responseSize": 20
+        },
+        "id": "3cfeb182-83ff-4336-a791-5260003e1629",
+        "assertions": [
+          {
+            "assertion": "health 200",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "59f0c635-d941-4d42-879c-b0b2ea80690e",
+          "length": 3,
+          "cycles": 1,
+          "position": 1,
+          "iteration": 0,
+          "httpRequestId": "02cf2d16-980b-46e2-9961-4db05602579f"
+        },
+        "item": {
+          "id": "3587c6be-1923-42af-856c-4501005c069e",
+          "name": "Login Invalid Credentials",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ],
+              "host": [
+                "{{security_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"no-existe@example.com\",\n  \"password\": \"bad-password\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "708f1bc4-1248-4d42-ae94-74b56f1fd299",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('login invalid 401', function () { pm.response.to.have.status(401); });"
+                ],
+                "_lastExecutionId": "ec77adb5-0793-4ec0-ac79-2db3f2c4d9ae"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8001",
+            "path": [
+              "api",
+              "v1",
+              "auth",
+              "login"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "345a47e6-eabe-4a17-acea-ade7cc2ffa1e",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8001",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "68",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"email\": \"no-existe@example.com\",\n  \"password\": \"bad-password\"\n}"
+          }
+        },
+        "response": {
+          "id": "5fe4c582-2627-459c-9147-a21af7b6b70e",
+          "status": "Unauthorized",
+          "code": 401,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sun, 17 May 2026 22:14:42 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "36"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              100,
+              101,
+              116,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              67,
+              114,
+              101,
+              100,
+              101,
+              110,
+              99,
+              105,
+              97,
+              108,
+              101,
+              115,
+              32,
+              105,
+              110,
+              118,
+              195,
+              161,
+              108,
+              105,
+              100,
+              97,
+              115,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 30,
+          "responseSize": 36
+        },
+        "id": "3587c6be-1923-42af-856c-4501005c069e",
+        "assertions": [
+          {
+            "assertion": "login invalid 401",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "45fec74b-f794-45f1-814c-6b3df25eea42",
+          "length": 3,
+          "cycles": 1,
+          "position": 2,
+          "iteration": 0,
+          "httpRequestId": "726fb698-4abc-4c7a-9d87-a00a4c3ca4c6"
+        },
+        "item": {
+          "id": "e6fd8ac0-878e-4058-bb83-6e5f85718610",
+          "name": "Validate Token Invalid",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "validate-token"
+              ],
+              "host": [
+                "{{security_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"invalid.jwt.token\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "4be8efda-0d55-493a-8977-dcce4c482879",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('validate invalid 401', function () { pm.response.to.have.status(401); });"
+                ],
+                "_lastExecutionId": "db06bd86-816e-4cf4-8612-6fcb18edb63a"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8001",
+            "path": [
+              "api",
+              "v1",
+              "auth",
+              "validate-token"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "8d6d2832-2645-41ba-b360-fc13dfe9a26a",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8001",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "34",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"token\": \"invalid.jwt.token\"\n}"
+          }
+        },
+        "response": {
+          "id": "c190df7a-0c9c-4a35-8116-81fc9d7ea093",
+          "status": "Unauthorized",
+          "code": 401,
+          "header": [
+            {
+              "key": "date",
+              "value": "Sun, 17 May 2026 22:14:42 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "28"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              100,
+              101,
+              116,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              84,
+              111,
+              107,
+              101,
+              110,
+              32,
+              105,
+              110,
+              118,
+              195,
+              161,
+              108,
+              105,
+              100,
+              111,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 4,
+          "responseSize": 28
+        },
+        "id": "e6fd8ac0-878e-4058-bb83-6e5f85718610",
+        "assertions": [
+          {
+            "assertion": "validate invalid 401",
+            "skipped": false
+          }
+        ]
+      }
+    ],
+    "transfers": {
+      "responseTotal": 84
+    },
+    "failures": [],
+    "error": null
+  }
+}

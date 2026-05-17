@@ -1,97 +1,340 @@
-﻿============================= test session starts =============================
+# pytest
+============================= test session starts =============================
 platform win32 -- Python 3.13.2, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\CLIENTE\AppData\Local\Programs\Python\Python313\python.exe
 cachedir: .pytest_cache
 rootdir: C:\Users\CLIENTE\Documents\MISO\PROYECTO-FINAL-2\travelhub_miso\services\properties
 configfile: pytest.ini
 plugins: anyio-4.10.0, Faker-40.5.1, langsmith-0.5.2, asyncio-1.1.0, cov-7.0.0
 asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collecting ... collected 34 items
+collecting ... collected 113 items
 
-tests/test_asset_cdn.py::test_rewrite_asset_url_returns_original_when_cdn_disabled PASSED [  2%]
-tests/test_asset_cdn.py::test_rewrite_asset_url_swaps_host_to_cdn PASSED [  5%]
-tests/test_cache.py::test_property_detail_uses_cache_after_first_load PASSED [  8%]
-tests/test_cache.py::test_property_list_uses_cache_after_first_load PASSED [ 11%]
-tests/test_cache.py::test_property_policy_uses_cache_after_first_load PASSED [ 14%]
-tests/test_cache.py::test_invalid_cached_detail_is_treated_as_miss PASSED [ 17%]
-tests/test_get_detail.py::test_list_properties_success PASSED            [ 20%]
-tests/test_get_detail.py::test_get_property_detail_with_images_and_reviews PASSED [ 23%]
-tests/test_get_detail.py::test_get_property_detail_not_found PASSED      [ 26%]
-tests/test_get_detail.py::test_property_detail_has_all_fields PASSED     [ 29%]
-tests/test_performance.py::test_detail_p95_bajo_500ms PASSED             [ 32%]
-tests/test_property_api.py::test_list_properties_endpoint_success PASSED [ 35%]
-tests/test_property_api.py::test_list_properties_endpoint_empty_filter PASSED [ 38%]
-tests/test_property_api.py::test_get_property_endpoint_with_seeded_data PASSED [ 41%]
-tests/test_property_api.py::test_get_property_endpoint_not_found PASSED  [ 44%]
-tests/test_property_api.py::test_get_property_endpoint_multiple_properties PASSED [ 47%]
-tests/test_property_api.py::test_health_check PASSED                     [ 50%]
-tests/test_property_api.py::test_list_properties_filter_by_owner PASSED  [ 52%]
-tests/test_property_api.py::test_list_properties_filter_by_owner_isolation PASSED [ 55%]
-tests/test_property_api.py::test_list_properties_filter_by_unknown_owner PASSED [ 58%]
-tests/test_property_api.py::test_list_properties_includes_id_owner_in_payload PASSED [ 61%]
-tests/test_property_policy.py::test_repository_returns_seeded_cancellation_policy PASSED [ 64%]
-tests/test_property_policy.py::test_repository_returns_none_for_unknown_property_policy PASSED [ 67%]
-tests/test_property_policy.py::test_internal_policy_endpoint_returns_policy PASSED [ 70%]
-tests/test_property_policy.py::test_internal_policy_endpoint_forbids_invalid_key PASSED [ 73%]
-tests/test_seed.py::test_seed_includes_cikos_property_for_demo_hotel_a PASSED [ 76%]
-tests/test_seed.py::test_seed_adds_missing_demo_property_even_when_database_is_not_empty PASSED [ 79%]
-tests/test_seed.py::test_seed_updates_existing_demo_review_and_image_text PASSED [ 82%]
-tests/test_seeded_data.py::test_list_properties_returns_seeded_data PASSED [ 85%]
-tests/test_seeded_data.py::test_get_renaissance_estate PASSED            [ 88%]
-tests/test_seeded_data.py::test_get_beachfront_penthouse PASSED          [ 91%]
-tests/test_seeded_data.py::test_get_alpine_lodge PASSED                  [ 94%]
-tests/test_seeded_data.py::test_get_tropical_villa PASSED                [ 97%]
+tests/test_asset_cdn.py::test_rewrite_asset_url_returns_original_when_cdn_disabled PASSED [  0%]
+tests/test_asset_cdn.py::test_rewrite_asset_url_swaps_host_to_cdn PASSED [  1%]
+tests/test_cache.py::test_property_detail_uses_cache_after_first_load PASSED [  2%]
+tests/test_cache.py::test_property_list_uses_cache_after_first_load PASSED [  3%]
+tests/test_cache.py::test_property_policy_uses_cache_after_first_load PASSED [  4%]
+tests/test_cache.py::test_invalid_cached_detail_is_treated_as_miss PASSED [  5%]
+tests/test_cache_invalidation.py::TestCacheInvalidation::test_invalidate_property_caches_exists PASSED [  6%]
+tests/test_cache_invalidation.py::TestCacheInvalidation::test_invalidate_property_caches_no_cache PASSED [  7%]
+tests/test_cache_invalidation.py::TestCacheInvalidation::test_invalidate_property_caches_with_cache PASSED [  7%]
+tests/test_cache_invalidation.py::TestCacheInvalidation::test_invalidate_multiple_properties PASSED [  8%]
+tests/test_get_detail.py::test_list_properties_success PASSED            [  9%]
+tests/test_get_detail.py::test_get_property_detail_with_images_and_reviews PASSED [ 10%]
+tests/test_get_detail.py::test_get_property_detail_not_found PASSED      [ 11%]
+tests/test_get_detail.py::test_property_detail_has_all_fields PASSED     [ 12%]
+tests/test_health.py::TestHealthEndpoints::test_legacy_health PASSED     [ 13%]
+tests/test_health.py::TestHealthEndpoints::test_liveness PASSED          [ 14%]
+tests/test_health.py::TestHealthEndpoints::test_readiness PASSED         [ 15%]
+tests/test_performance.py::test_detail_p95_bajo_500ms PASSED             [ 15%]
+tests/test_performance.py::test_seasonal_pricing_signature_p95_under_300ms FAILED [ 16%]
+tests/test_pricing_signature.py::TestCanonicalPayload::test_deterministic_payload PASSED [ 17%]
+tests/test_pricing_signature.py::TestCanonicalPayload::test_canonical_format PASSED [ 18%]
+tests/test_pricing_signature.py::TestCanonicalPayload::test_currency_normalized_to_uppercase PASSED [ 19%]
+tests/test_pricing_signature.py::TestCanonicalPayload::test_numeric_normalization PASSED [ 20%]
+tests/test_pricing_signature.py::TestSignatureGeneration::test_build_pricing_signature PASSED [ 21%]
+tests/test_pricing_signature.py::TestSignatureGeneration::test_signature_deterministic PASSED [ 22%]
+tests/test_pricing_signature.py::TestSignatureGeneration::test_signature_changes_with_payload PASSED [ 23%]
+tests/test_pricing_signature.py::TestSignatureGeneration::test_signature_changes_with_secret PASSED [ 23%]
+tests/test_pricing_signature.py::TestSignatureGeneration::test_unsupported_algorithm PASSED [ 24%]
+tests/test_pricing_signature.py::TestSignatureVerification::test_verify_valid_signature PASSED [ 25%]
+tests/test_pricing_signature.py::TestSignatureVerification::test_verify_invalid_signature PASSED [ 26%]
+tests/test_pricing_signature.py::TestSignatureVerification::test_verify_signature_wrong_secret PASSED [ 27%]
+tests/test_pricing_signature.py::TestSignatureVerification::test_verify_signature_tampered_payload PASSED [ 28%]
+tests/test_pricing_signature.py::TestSignatureVerification::test_verify_uses_constant_time_comparison PASSED [ 29%]
+tests/test_pricing_signature.py::TestIntegrationPayloadToSignature::test_full_flow_success PASSED [ 30%]
+tests/test_pricing_signature.py::TestIntegrationPayloadToSignature::test_full_flow_with_tampering PASSED [ 30%]
+tests/test_property_api.py::test_list_properties_endpoint_success PASSED [ 31%]
+tests/test_property_api.py::test_list_properties_endpoint_empty_filter PASSED [ 32%]
+tests/test_property_api.py::test_get_property_endpoint_with_seeded_data PASSED [ 33%]
+tests/test_property_api.py::test_get_property_endpoint_not_found PASSED  [ 34%]
+tests/test_property_api.py::test_get_property_endpoint_multiple_properties PASSED [ 35%]
+tests/test_property_api.py::test_health_check PASSED                     [ 36%]
+tests/test_property_api.py::test_list_properties_filter_by_owner PASSED  [ 37%]
+tests/test_property_api.py::test_list_properties_filter_by_owner_isolation PASSED [ 38%]
+tests/test_property_api.py::test_list_properties_filter_by_unknown_owner PASSED [ 38%]
+tests/test_property_api.py::test_list_properties_includes_id_owner_in_payload PASSED [ 39%]
+tests/test_property_policy.py::test_repository_returns_seeded_cancellation_policy PASSED [ 40%]
+tests/test_property_policy.py::test_repository_returns_none_for_unknown_property_policy PASSED [ 41%]
+tests/test_property_policy.py::test_internal_policy_endpoint_returns_policy PASSED [ 42%]
+tests/test_property_policy.py::test_internal_policy_endpoint_forbids_invalid_key PASSED [ 43%]
+tests/test_search_bbox.py::test_bbox_filters_to_geographic_zone PASSED   [ 44%]
+tests/test_search_bbox.py::test_bbox_excludes_outside_properties PASSED  [ 45%]
+tests/test_search_bbox.py::test_bbox_combined_with_city_filter PASSED    [ 46%]
+tests/test_search_bbox.py::test_bbox_alone_around_renaissance_returns_renaissance PASSED [ 46%]
+tests/test_search_bbox.py::test_lat_lng_present_in_search_response PASSED [ 47%]
+tests/test_search_bbox.py::test_out_of_range_lat_returns_422 PASSED      [ 48%]
+tests/test_search_endpoint.py::test_search_returns_paginated_envelope PASSED [ 49%]
+tests/test_search_endpoint.py::test_search_default_returns_all_active_seeded PASSED [ 50%]
+tests/test_search_endpoint.py::test_search_filter_by_city_partial_case_insensitive PASSED [ 51%]
+tests/test_search_endpoint.py::test_search_filter_by_city_no_match PASSED [ 52%]
+tests/test_search_endpoint.py::test_search_filter_by_min_price PASSED    [ 53%]
+tests/test_search_endpoint.py::test_search_filter_by_max_price PASSED    [ 53%]
+tests/test_search_endpoint.py::test_search_filter_by_price_range PASSED  [ 54%]
+tests/test_search_endpoint.py::test_search_filter_by_min_guests PASSED   [ 55%]
+tests/test_search_endpoint.py::test_search_filter_by_amenity_wifi PASSED [ 56%]
+tests/test_search_endpoint.py::test_search_filter_by_amenity_piscina PASSED [ 57%]
+tests/test_search_endpoint.py::test_search_filter_by_multiple_amenities_anded PASSED [ 58%]
+tests/test_search_endpoint.py::test_search_filter_by_ids PASSED          [ 59%]
+tests/test_search_endpoint.py::test_search_filter_by_unknown_id_returns_empty PASSED [ 60%]
+tests/test_search_endpoint.py::test_search_pagination PASSED             [ 61%]
+tests/test_search_endpoint.py::test_search_sort_by_price_asc PASSED      [ 61%]
+tests/test_search_endpoint.py::test_search_sort_by_price_desc PASSED     [ 62%]
+tests/test_search_endpoint.py::test_search_sort_by_rating_desc PASSED    [ 63%]
+tests/test_search_endpoint.py::test_search_sort_by_name_asc PASSED       [ 64%]
+tests/test_search_endpoint.py::test_search_city_filter_combined_with_price_asc PASSED [ 65%]
+tests/test_search_endpoint.py::test_search_city_filter_combined_with_price_desc PASSED [ 66%]
+tests/test_search_endpoint.py::test_search_city_filter_combined_with_rating_desc PASSED [ 67%]
+tests/test_search_endpoint.py::test_search_city_filter_combined_with_name_asc PASSED [ 68%]
+tests/test_search_endpoint.py::test_search_invalid_page_returns_422 PASSED [ 69%]
+tests/test_search_endpoint.py::test_search_invalid_page_size_returns_422 PASSED [ 69%]
+tests/test_search_endpoint.py::test_search_includes_paginated_metadata PASSED [ 70%]
+tests/test_search_endpoint.py::test_search_combined_filters PASSED       [ 71%]
+tests/test_search_endpoint.py::test_search_route_does_not_collide_with_detail_uuid PASSED [ 72%]
+tests/test_search_seasonal_overrides.py::test_search_picks_lowest_overlapping_seasonal_price PASSED [ 73%]
+tests/test_search_seasonal_overrides.py::test_search_skips_locked_seasonal_rules PASSED [ 74%]
+tests/test_search_seasonal_overrides.py::test_search_rejects_partial_date_range PASSED [ 75%]
+tests/test_search_seasonal_overrides.py::test_search_rejects_inverted_date_range PASSED [ 76%]
+tests/test_seasonal_pricing_api.py::test_create_seasonal_pricing_success PASSED [ 76%]
+tests/test_seasonal_pricing_api.py::test_create_seasonal_pricing_missing_property PASSED [ 77%]
+tests/test_seasonal_pricing_api.py::test_create_seasonal_pricing_ownership_check PASSED [ 78%]
+tests/test_seasonal_pricing_api.py::test_create_seasonal_pricing_unauthenticated PASSED [ 79%]
+tests/test_seasonal_pricing_api.py::test_create_seasonal_pricing_invalid_token PASSED [ 80%]
+tests/test_seasonal_pricing_api.py::test_get_seasonal_pricing_list PASSED [ 81%]
+tests/test_seasonal_pricing_api.py::test_get_seasonal_pricing_single PASSED [ 82%]
+tests/test_seasonal_pricing_api.py::test_update_seasonal_pricing_full_payload PASSED [ 83%]
+tests/test_seasonal_pricing_api.py::test_update_seasonal_pricing_partial_payload PASSED [ 84%]
+tests/test_seasonal_pricing_api.py::test_get_seasonal_pricing_not_found PASSED [ 84%]
+tests/test_seasonal_pricing_api.py::test_audit_log_created_on_pricing_write PASSED [ 85%]
+tests/test_seasonal_pricing_api.py::test_audit_log_records_x_forwarded_for PASSED [ 86%]
+tests/test_seasonal_pricing_api.py::test_all_reads_validate_signature PASSED [ 87%]
+tests/test_seasonal_pricing_api.py::test_get_locks_record_when_tampered PASSED [ 88%]
+tests/test_seasonal_pricing_api.py::test_locked_record_rejects_update_with_423 PASSED [ 89%]
+tests/test_seasonal_pricing_api.py::test_unlock_endpoint_clears_lock_and_records_audit PASSED [ 90%]
+tests/test_seasonal_pricing_api.py::test_unlock_requires_reason_min_length PASSED [ 91%]
+tests/test_seasonal_pricing_api.py::test_unlock_enforces_ownership PASSED [ 92%]
+tests/test_seed.py::test_seed_includes_cikos_property_for_demo_hotel_a PASSED [ 92%]
+tests/test_seed.py::test_seed_adds_missing_demo_property_even_when_database_is_not_empty PASSED [ 93%]
+tests/test_seed.py::test_seed_updates_existing_demo_review_and_image_text PASSED [ 94%]
+tests/test_seeded_data.py::test_list_properties_returns_seeded_data PASSED [ 95%]
+tests/test_seeded_data.py::test_get_renaissance_estate PASSED            [ 96%]
+tests/test_seeded_data.py::test_get_beachfront_penthouse PASSED          [ 97%]
+tests/test_seeded_data.py::test_get_alpine_lodge PASSED                  [ 98%]
+tests/test_seeded_data.py::test_get_tropical_villa PASSED                [ 99%]
 tests/test_seeded_data.py::test_property_amenities_loaded_correctly PASSED [100%]
 
-============================= 34 passed in 1.87s ==============================
+================================== FAILURES ===================================
+_______________ test_seasonal_pricing_signature_p95_under_300ms _______________
 
+client = <starlette.testclient.TestClient object at 0x000001AF1ABA1310>
+
+    @pytest.mark.performance
+    def test_seasonal_pricing_signature_p95_under_300ms(client: TestClient):
+        """
+        HU CA: P95 latency for seasonal pricing signature generation/verification
+        must be under 300ms (goal: <300ms extremo a extremo).
+        """
+        admin_bearer = bearer_for_admin(DEMO_HOTEL_A_OWNER_ID)
+        payload = {
+            "season_start": "2026-06-01",
+            "season_end": "2026-08-31",
+            "price_per_night": 150.0,
+            "currency": "COP",
+            "tax_rate": 0.19,
+            "cleaning_fee": 50.0,
+        }
+    
+        ITERATIONS = 30
+        write_latencies = []
+        read_latencies = []
+    
+        # Create initial pricing
+        create_response = client.post(
+            f"/api/v1/properties/{RENAISSANCE_ESTATE_ID}/seasonal-pricing",
+            json=payload,
+            headers={"Authorization": admin_bearer},
+        )
+        assert create_response.status_code == 201
+        pricing_id = create_response.json()["id"]
+    
+        # Measure write (create/update) latency with signature generation
+        for i in range(ITERATIONS):
+            payload_variant = {
+                **payload,
+                "price_per_night": 150.0 + i,  # Vary to avoid exact caching
+            }
+            start = time.perf_counter()
+            response = client.post(
+                f"/api/v1/properties/{RENAISSANCE_ESTATE_ID}/seasonal-pricing",
+                json=payload_variant,
+                headers={"Authorization": admin_bearer},
+            )
+            elapsed_ms = (time.perf_counter() - start) * 1000
+            assert response.status_code == 201
+            write_latencies.append(elapsed_ms)
+    
+        # Measure read (list/get) latency with signature verification
+        for _ in range(ITERATIONS):
+            start = time.perf_counter()
+            response = client.get(
+                f"/api/v1/properties/{RENAISSANCE_ESTATE_ID}/seasonal-pricing/{pricing_id}"
+            )
+            elapsed_ms = (time.perf_counter() - start) * 1000
+            assert response.status_code == 200
+            read_latencies.append(elapsed_ms)
+    
+        # Analyze percentiles
+        write_latencies.sort()
+        read_latencies.sort()
+    
+        write_p95 = write_latencies[int(ITERATIONS * 0.95) - 1]
+        read_p95 = read_latencies[int(ITERATIONS * 0.95) - 1]
+        combined_p95 = max(write_p95, read_p95)
+    
+        print(f"\n[PERF] Seasonal pricing signature flow over {ITERATIONS} iterations:")
+        print(f"  Write (create) P95 = {write_p95:.2f} ms (min={min(write_latencies):.2f}, max={max(write_latencies):.2f})")
+        print(f"  Read (get) P95    = {read_p95:.2f} ms (min={min(read_latencies):.2f}, max={max(read_latencies):.2f})")
+        print(f"  Combined P95      = {combined_p95:.2f} ms")
+    
+        # Assertion: both write and read must be under 300ms p95
+>       assert write_p95 < 300, f"Write P95 latency {write_p95:.2f}ms exceeds 300ms threshold"
+E       AssertionError: Write P95 latency 2926.13ms exceeds 300ms threshold
+E       assert 2926.134400011506 < 300
+
+tests\test_performance.py:109: AssertionError
+---------------------------- Captured stdout call -----------------------------
+
+[PERF] Seasonal pricing signature flow over 30 iterations:
+  Write (create) P95 = 2926.13 ms (min=2890.35, max=2934.26)
+  Read (get) P95    = 3.83 ms (min=2.93, max=5.93)
+  Combined P95      = 2926.13 ms
+------------------------------ Captured log call ------------------------------
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+WARNING  adapters.services.search_client:search_client.py:31 search invalidation http error: [Errno 11001] getaddrinfo failed
+============================== warnings summary ===============================
+tests/test_seasonal_pricing_api.py::test_audit_log_created_on_pricing_write
+  C:\\Users\\CLIENTE\\Documents\\MISO\\PROYECTO-FINAL-2\\travelhub_miso\\services\\properties\\tests\\test_seasonal_pricing_api.py:179: DeprecationWarning: \n          \U0001f6a8 You probably want to use `session.exec()` instead of `session.query()`.\n  \n          `session.exec()` is SQLModel's own short version with increased type\n          annotations.\n  \n          Or otherwise you might want to use `session.execute()` instead of\n          `session.query()`.\n          \n    audit_logs = session.query(PropertyPricingAuditLog).filter(
+
+tests/test_seasonal_pricing_api.py::test_audit_log_records_x_forwarded_for
+  C:\\Users\\CLIENTE\\Documents\\MISO\\PROYECTO-FINAL-2\\travelhub_miso\\services\\properties\\tests\\test_seasonal_pricing_api.py:201: DeprecationWarning: \n          \U0001f6a8 You probably want to use `session.exec()` instead of `session.query()`.\n  \n          `session.exec()` is SQLModel's own short version with increased type\n          annotations.\n  \n          Or otherwise you might want to use `session.execute()` instead of\n          `session.query()`.\n          \n    latest = session.query(PropertyPricingAuditLog).order_by(
+
+tests/test_seasonal_pricing_api.py::test_get_locks_record_when_tampered
+  C:\\Users\\CLIENTE\\Documents\\MISO\\PROYECTO-FINAL-2\\travelhub_miso\\services\\properties\\tests\\test_seasonal_pricing_api.py:241: DeprecationWarning: \n          \U0001f6a8 You probably want to use `session.exec()` instead of `session.query()`.\n  \n          `session.exec()` is SQLModel's own short version with increased type\n          annotations.\n  \n          Or otherwise you might want to use `session.execute()` instead of\n          `session.query()`.\n          \n    row = session.query(PropertySeasonalPrice).filter(
+
+tests/test_seasonal_pricing_api.py::test_get_locks_record_when_tampered
+  C:\\Users\\CLIENTE\\Documents\\MISO\\PROYECTO-FINAL-2\\travelhub_miso\\services\\properties\\tests\\test_seasonal_pricing_api.py:257: DeprecationWarning: \n          \U0001f6a8 You probably want to use `session.exec()` instead of `session.query()`.\n  \n          `session.exec()` is SQLModel's own short version with increased type\n          annotations.\n  \n          Or otherwise you might want to use `session.execute()` instead of\n          `session.query()`.\n          \n    failed_events = session.query(PropertyPricingAuditLog).filter(
+
+tests/test_seasonal_pricing_api.py::test_locked_record_rejects_update_with_423
+  C:\\Users\\CLIENTE\\Documents\\MISO\\PROYECTO-FINAL-2\\travelhub_miso\\services\\properties\\tests\\test_seasonal_pricing_api.py:273: DeprecationWarning: \n          \U0001f6a8 You probably want to use `session.exec()` instead of `session.query()`.\n  \n          `session.exec()` is SQLModel's own short version with increased type\n          annotations.\n  \n          Or otherwise you might want to use `session.execute()` instead of\n          `session.query()`.\n          \n    row = session.query(PropertySeasonalPrice).filter(
+
+tests/test_seasonal_pricing_api.py::test_unlock_endpoint_clears_lock_and_records_audit
+  C:\\Users\\CLIENTE\\Documents\\MISO\\PROYECTO-FINAL-2\\travelhub_miso\\services\\properties\\tests\\test_seasonal_pricing_api.py:298: DeprecationWarning: \n          \U0001f6a8 You probably want to use `session.exec()` instead of `session.query()`.\n  \n          `session.exec()` is SQLModel's own short version with increased type\n          annotations.\n  \n          Or otherwise you might want to use `session.execute()` instead of\n          `session.query()`.\n          \n    row = session.query(PropertySeasonalPrice).filter(
+
+tests/test_seasonal_pricing_api.py::test_unlock_endpoint_clears_lock_and_records_audit
+  C:\\Users\\CLIENTE\\Documents\\MISO\\PROYECTO-FINAL-2\\travelhub_miso\\services\\properties\\tests\\test_seasonal_pricing_api.py:325: DeprecationWarning: \n          \U0001f6a8 You probably want to use `session.exec()` instead of `session.query()`.\n  \n          `session.exec()` is SQLModel's own short version with increased type\n          annotations.\n  \n          Or otherwise you might want to use `session.execute()` instead of\n          `session.query()`.\n          \n    audit = session.query(PropertyPricingAuditLog).filter(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_performance.py::test_seasonal_pricing_signature_p95_under_300ms
+============ 1 failed, 112 passed, 7 warnings in 142.92s (0:02:22) ============
+
+
+# coverage
 Name                                                       Stmts   Miss  Cover   Missing
 ----------------------------------------------------------------------------------------
 src\adapters\__init__.py                                       0      0   100%
 src\adapters\cache\__init__.py                                 2      0   100%
 src\adapters\cache\redis_cache.py                             36     23    36%   20-21, 24-33, 36-40, 43-47, 50
-src\adapters\models\__init__.py                                5      0   100%
+src\adapters\models\__init__.py                                7      0   100%
 src\adapters\models\property.py                               23      0   100%
 src\adapters\models\property_cancellation_policy.py           15      0   100%
 src\adapters\models\property_image.py                         13      0   100%
+src\adapters\models\property_pricing_audit_log.py             15      0   100%
 src\adapters\models\property_review.py                        13      0   100%
+src\adapters\models\property_seasonal_price.py                19      0   100%
 src\adapters\repositories\__init__.py                          2      0   100%
-src\adapters\repositories\cached_property_repository.py       65      3    95%   74-76
-src\adapters\repositories\property_repository.py              63      5    92%   33, 57-58, 120-121
-src\assembly.py                                               29      1    97%   32
+src\adapters\repositories\cached_property_repository.py       74      4    95%   32, 91-93
+src\adapters\repositories\property_repository.py             130      7    95%   41, 66-67, 137-138, 293, 338
+src\adapters\services\__init__.py                              0      0   100%
+src\adapters\services\search_client.py                        17      3    82%   22-23, 29
+src\adapters\services\security_client.py                      35     20    43%   29-30, 33-59
+src\assembly.py                                               44      2    95%   37, 50
 src\core\__init__.py                                           0      0   100%
-src\core\config.py                                            87     14    84%   16, 18, 45, 53-56, 62, 72, 76, 80, 88, 92, 108
+src\core\config.py                                           104     16    85%   16, 18, 53-56, 71, 81, 85, 89, 97, 101, 120, 122, 136, 139
+src\core\health.py                                            21      4    81%   15-16, 28-29
+src\core\security.py                                          17      2    88%   72-81
 src\db\__init__.py                                             0      0   100%
 src\db\redis.py                                               42     23    45%   21-44, 55-56, 60-71
-src\db\seed.py                                                95      5    95%   323-325, 330, 394
-src\db\session.py                                             29     15    48%   28-33, 37-49, 53-54
+src\db\seed.py                                               129     27    79%   402-504, 508, 605-607, 612, 690-697, 713
+src\db\session.py                                             29     11    62%   44-63, 67-68
 src\domain\__init__.py                                         0      0   100%
 src\domain\ports\__init__.py                                   2      0   100%
 src\domain\ports\cache_port.py                                11      0   100%
-src\domain\ports\property_repository.py                       15      3    80%   13, 20, 27
+src\domain\ports\property_repository.py                       21      5    76%   29, 36, 41, 48, 52
 src\domain\schemas\__init__.py                                 0      0   100%
-src\domain\schemas\property.py                                60      0   100%
+src\domain\schemas\property.py                               133      0   100%
 src\domain\schemas\property_policy.py                         21      0   100%
 src\domain\use_cases\__init__.py                               0      0   100%
 src\domain\use_cases\base.py                                   8      1    88%   11
 src\domain\use_cases\get_properties_list.py                    9      0   100%
 src\domain\use_cases\get_property_cancellation_policy.py      13      1    92%   18
 src\domain\use_cases\get_property_detail.py                   13      0   100%
+src\domain\use_cases\get_seasonal_pricing.py                  41      0   100%
+src\domain\use_cases\search_properties.py                      8      0   100%
+src\domain\use_cases\unlock_seasonal_pricing.py               38      2    95%   70, 82
+src\domain\use_cases\upsert_seasonal_pricing.py               65      2    97%   151, 229
 src\entrypoints\__init__.py                                    0      0   100%
 src\entrypoints\api\__init__.py                                0      0   100%
-src\entrypoints\api\main.py                                   21      2    90%   16-17
+src\entrypoints\api\main.py                                   23      2    91%   17-18
 src\entrypoints\api\routers\__init__.py                        0      0   100%
 src\entrypoints\api\routers\internal.py                       18      2    89%   41-42
-src\entrypoints\api\routers\properties.py                     17      0   100%
-src\errors.py                                                  2      0   100%
+src\entrypoints\api\routers\properties.py                    109     11    90%   196, 201, 245-246, 278, 280, 282, 285-286, 318, 320
+src\errors.py                                                 12      0   100%
 tests\__init__.py                                              0      0   100%
-tests\conftest.py                                             32      1    97%   15
+tests\conftest.py                                             47      1    98%   16
 tests\test_asset_cdn.py                                       17      0   100%
-tests\test_cache.py                                           91      1    99%   49
-tests\test_get_detail.py                                      56      0   100%
-tests\test_performance.py                                     25      0   100%
+tests\test_cache.py                                           94      3    97%   49, 53-55
+tests\test_cache_invalidation.py                              40      0   100%
+tests\test_get_detail.py                                      58      0   100%
+tests\test_health.py                                          21      0   100%
+tests\test_performance.py                                     60      1    98%   110
+tests\test_pricing_signature.py                              105      0   100%
 tests\test_property_api.py                                    83      0   100%
 tests\test_property_policy.py                                 27      0   100%
+tests\test_search_bbox.py                                     36      0   100%
+tests\test_search_endpoint.py                                173      0   100%
+tests\test_search_seasonal_overrides.py                       38      0   100%
+tests\test_seasonal_pricing_api.py                           162      0   100%
 tests\test_seed.py                                            58      0   100%
-tests\test_seeded_data.py                                     92      0   100%
+tests\test_seeded_data.py                                     95      0   100%
 ----------------------------------------------------------------------------------------
-TOTAL                                                       1210    100    92%
+TOTAL                                                       2446    173    93%
+

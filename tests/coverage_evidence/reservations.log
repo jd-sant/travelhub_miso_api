@@ -1,125 +1,163 @@
-﻿============================= test session starts =============================
+# pytest
+============================= test session starts =============================
 platform win32 -- Python 3.13.2, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\CLIENTE\AppData\Local\Programs\Python\Python313\python.exe
 cachedir: .pytest_cache
 rootdir: C:\Users\CLIENTE\Documents\MISO\PROYECTO-FINAL-2\travelhub_miso\services\reservations
 configfile: pytest.ini
 plugins: anyio-4.10.0, Faker-40.5.1, langsmith-0.5.2, asyncio-1.1.0, cov-7.0.0
 asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collecting ... collected 110 items
+collecting ... collected 145 items
 
-tests/test_command_log_repository.py::TestReservationCommandLogRepository::test_add_and_get_by_idempotency PASSED [  0%]
-tests/test_endpoints.py::TestReservationEndpoints::test_create_reservation_successfully PASSED [  1%]
-tests/test_endpoints.py::TestReservationEndpoints::test_create_reservation_returns_400_if_checkout_before_checkin PASSED [  2%]
-tests/test_endpoints.py::TestReservationEndpoints::test_create_reservation_returns_400_if_room_not_available PASSED [  3%]
-tests/test_endpoints.py::TestReservationEndpoints::test_get_reservation_successfully PASSED [  4%]
-tests/test_endpoints.py::TestReservationEndpoints::test_get_reservation_returns_404_if_not_found PASSED [  5%]
-tests/test_endpoints.py::TestReservationEndpoints::test_get_reservation_returns_400_for_invalid_id_format PASSED [  6%]
-tests/test_endpoints.py::TestReservationEndpoints::test_get_reservations_by_user_returns_reservation_ids PASSED [  7%]
-tests/test_endpoints.py::TestReservationEndpoints::test_get_reservations_by_user_sorted_by_check_in_asc PASSED [  8%]
-tests/test_endpoints.py::TestReservationEndpoints::test_get_reservations_by_user_filter_cancelled PASSED [  9%]
-tests/test_endpoints.py::TestReservationEndpoints::test_get_reservations_by_user_returns_empty_array_when_no_reservations PASSED [ 10%]
-tests/test_endpoints.py::TestReservationEndpoints::test_get_reservations_by_user_returns_400_for_invalid_id_format PASSED [ 10%]
-tests/test_endpoints.py::TestReservationEndpoints::test_cancellation_confirm_preflight_allows_traveler_header PASSED [ 11%]
-tests/test_endpoints.py::TestReservationEndpoints::test_checkstatus_cancels_pending_payment_reservation PASSED [ 12%]
-tests/test_endpoints.py::TestReservationEndpoints::test_checkstatus_does_not_change_non_pending_status PASSED [ 13%]
-tests/test_endpoints.py::TestReservationEndpoints::test_checkstatus_returns_404_if_not_found PASSED [ 14%]
-tests/test_endpoints.py::TestReservationEndpoints::test_checkstatus_returns_400_for_invalid_id_format PASSED [ 15%]
-tests/test_endpoints.py::TestReservationEndpoints::test_checkstatus_returns_403_without_api_key PASSED [ 16%]
-tests/test_endpoints.py::TestReservationEndpoints::test_internal_patch_status_updates_reservation PASSED [ 17%]
-tests/test_endpoints.py::TestReservationEndpoints::test_internal_patch_status_returns_403_with_invalid_key PASSED [ 18%]
-tests/test_endpoints.py::TestReservationEndpoints::test_internal_patch_status_returns_422_for_invalid_status PASSED [ 19%]
-tests/test_endpoints.py::TestReservationEndpoints::test_health_check_endpoint PASSED [ 20%]
-tests/test_endpoints.py::TestReservationEndpoints::test_create_reservation_with_different_currencies PASSED [ 20%]
-tests/test_endpoints.py::TestReservationEndpoints::test_hotel_can_list_property_reservations PASSED [ 21%]
-tests/test_endpoints.py::TestReservationEndpoints::test_hotel_can_confirm_pending_reservation PASSED [ 22%]
-tests/test_endpoints.py::TestReservationEndpoints::test_hotel_can_cancel_confirmed_reservation PASSED [ 23%]
-tests/test_endpoints.py::TestReservationEndpoints::test_hotel_cancellation_still_notifies_when_refund_fails PASSED [ 24%]
-tests/test_endpoints.py::TestReservationEndpoints::test_hotel_cancellation_requests_full_refund_according_to_policy PASSED [ 25%]
-tests/test_endpoints.py::TestReservationEndpoints::test_hotel_cancellation_requests_partial_refund_according_to_policy PASSED [ 26%]
-tests/test_endpoints.py::TestReservationEndpoints::test_hotel_cancellation_skips_refund_for_non_refundable_policy PASSED [ 27%]
-tests/test_endpoints.py::TestReservationEndpoints::test_hotel_cannot_confirm_cancelled_reservation PASSED [ 28%]
-tests/test_endpoints.py::TestReservationEndpoints::test_hotel_endpoints_return_401_for_invalid_token PASSED [ 29%]
-tests/test_endpoints.py::TestReservationEndpoints::test_hotel_cancel_reason_is_truncated_for_long_other_note PASSED [ 30%]
-tests/test_endpoints.py::TestReservationEndpoints::test_preview_modification_returns_preview PASSED [ 30%]
-tests/test_endpoints.py::TestReservationEndpoints::test_preview_cancellation_returns_preview PASSED [ 31%]
-tests/test_endpoints.py::TestReservationEndpoints::test_preview_cancellation_rejects_unconfirmed_reservation PASSED [ 32%]
-tests/test_endpoints.py::TestReservationEndpoints::test_confirm_modification_is_idempotent PASSED [ 33%]
-tests/test_endpoints.py::TestReservationEndpoints::test_confirm_endpoints_enforce_reservation_ownership PASSED [ 34%]
-tests/test_endpoints.py::TestReservationEndpoints::test_history_returns_confirm_event_with_actor_and_source_ip PASSED [ 35%]
-tests/test_endpoints.py::TestReservationEndpoints::test_internal_refund_result_callback_updates_cancel_requested_to_refund_completed PASSED [ 36%]
-tests/test_endpoints.py::TestReservationEndpoints::test_internal_additional_charge_result_callback_updates_modification_pending PASSED [ 37%]
-tests/test_endpoints.py::TestReservationEndpoints::test_internal_refund_result_returns_409_on_concurrency_conflict PASSED [ 38%]
-tests/test_event_repository.py::TestReservationEventRepository::test_add_persists_event PASSED [ 39%]
-tests/test_event_repository.py::TestReservationEventRepository::test_list_by_reservation_returns_ordered_events PASSED [ 40%]
-tests/test_host_endpoints.py::test_host_listing_requires_auth PASSED     [ 40%]
-tests/test_host_endpoints.py::test_host_listing_rejects_traveler_role PASSED [ 41%]
-tests/test_host_endpoints.py::test_host_listing_returns_only_my_properties PASSED [ 42%]
-tests/test_host_endpoints.py::test_host_listing_filter_by_status_and_guest PASSED [ 43%]
-tests/test_host_endpoints.py::test_host_listing_pagination_and_sort PASSED [ 44%]
-tests/test_host_endpoints.py::test_host_metrics_uses_payments_aggregate PASSED [ 45%]
-tests/test_host_endpoints.py::test_host_revenue_trends_returns_buckets PASSED [ 46%]
-tests/test_hotel_reservation_detail.py::test_available_actions_pending_payment_has_confirm_and_cancel PASSED [ 47%]
-tests/test_hotel_reservation_detail.py::test_available_actions_confirmed_has_only_cancel PASSED [ 48%]
-tests/test_hotel_reservation_detail.py::test_available_actions_cancelled_is_empty PASSED [ 49%]
-tests/test_hotel_reservation_detail.py::test_available_actions_completed_is_empty PASSED [ 50%]
-tests/test_hotel_reservation_detail.py::test_available_actions_modification_confirmed_has_confirm_and_cancel PASSED [ 50%]
-tests/test_hotel_reservation_detail.py::test_available_actions_refund_completed_is_empty PASSED [ 51%]
-tests/test_hotel_reservation_detail.py::test_get_detail_returns_full_response PASSED [ 52%]
-tests/test_hotel_reservation_detail.py::test_get_detail_not_found_returns_404 PASSED [ 53%]
-tests/test_hotel_reservation_detail.py::test_get_detail_requires_hotel_role PASSED [ 54%]
-tests/test_hotel_reservation_detail.py::test_get_detail_includes_change_history PASSED [ 55%]
-tests/test_hotel_reservation_detail.py::test_add_note_creates_note_and_returns_201 PASSED [ 56%]
-tests/test_hotel_reservation_detail.py::test_add_note_to_nonexistent_reservation_returns_404 PASSED [ 57%]
-tests/test_hotel_reservation_detail.py::test_get_detail_includes_internal_notes PASSED [ 58%]
-tests/test_hotel_reservation_detail.py::test_add_note_requires_hotel_role PASSED [ 59%]
-tests/test_hotel_reservation_detail.py::test_add_note_empty_content_returns_422 PASSED [ 60%]
-tests/test_hotel_reservation_detail.py::test_get_detail_price_breakdown_present PASSED [ 60%]
-tests/test_hotel_reservation_detail.py::test_detail_p95_below_1000ms PASSED [ 61%]
-tests/test_hotel_reservation_detail.py::test_get_detail_from_other_hotel_returns_403 PASSED [ 62%]
-tests/test_infra_coverage.py::test_scheduler_create_and_cancel_success_paths PASSED [ 63%]
-tests/test_infra_coverage.py::test_scheduler_raises_runtime_error_on_create_failure PASSED [ 64%]
-tests/test_infra_coverage.py::test_scheduler_cancel_ignores_not_found_and_raises_other_errors PASSED [ 65%]
-tests/test_infra_coverage.py::test_create_reservation_rolls_back_schedule_when_repository_add_fails PASSED [ 66%]
-tests/test_infra_coverage.py::test_create_reservation_wraps_scheduler_errors PASSED [ 67%]
-tests/test_infra_coverage.py::test_settings_validate_scheduler_config PASSED [ 68%]
-tests/test_infra_coverage.py::test_reservation_scheduler_uses_noop_in_local_dev PASSED [ 69%]
-tests/test_infra_coverage.py::test_lifespan_invokes_bootstrap_hooks PASSED [ 70%]
-tests/test_performance.py::test_list_reservations_p95_bajo_1s PASSED     [ 70%]
-tests/test_preview_use_cases.py::TestPreviewReservationModificationUseCase::test_execute_returns_allowed_preview_and_records_event PASSED [ 71%]
-tests/test_preview_use_cases.py::TestPreviewReservationModificationUseCase::test_execute_rejects_preview_when_capacity_is_exceeded PASSED [ 72%]
-tests/test_preview_use_cases.py::TestPreviewReservationCancellationUseCase::test_execute_returns_full_refund_preview_and_records_event PASSED [ 73%]
-tests/test_preview_use_cases.py::TestPreviewReservationCancellationUseCase::test_execute_rejects_preview_when_window_expired PASSED [ 74%]
-tests/test_repository.py::TestReservationRepository::test_add_creates_reservation_successfully PASSED [ 75%]
-tests/test_repository.py::TestReservationRepository::test_get_by_id_returns_reservation PASSED [ 76%]
-tests/test_repository.py::TestReservationRepository::test_get_by_id_returns_none_for_nonexistent_reservation PASSED [ 77%]
-tests/test_repository.py::TestReservationRepository::test_list_by_traveler_returns_all_traveler_reservations PASSED [ 78%]
-tests/test_repository.py::TestReservationRepository::test_check_room_availability_returns_true_if_available PASSED [ 79%]
-tests/test_repository.py::TestReservationRepository::test_check_room_availability_returns_false_if_overlapping_reservation PASSED [ 80%]
-tests/test_repository.py::TestReservationRepository::test_check_room_availability_ignores_cancelled_reservations PASSED [ 80%]
-tests/test_repository.py::TestReservationRepository::test_check_room_availability_can_ignore_same_reservation PASSED [ 81%]
-tests/test_repository.py::TestReservationRepository::test_update_status_changes_reservation_status PASSED [ 82%]
-tests/test_repository.py::TestReservationRepository::test_update_status_raises_concurrency_error_on_version_mismatch PASSED [ 83%]
-tests/test_repository.py::TestReservationRepository::test_apply_updates_raises_concurrency_error_on_version_mismatch PASSED [ 84%]
-tests/test_repository.py::TestReservationRepository::test_apply_updates_rejects_stale_expected_version_after_successful_update PASSED [ 85%]
-tests/test_repository.py::TestReservationRepository::test_add_raises_error_if_room_not_available PASSED [ 86%]
-tests/test_reservation_schemas.py::test_modification_preview_request_validates_guest_count PASSED [ 87%]
-tests/test_reservation_schemas.py::test_cancellation_preview_schema_accepts_expected_values PASSED [ 88%]
-tests/test_reservation_schemas.py::test_event_create_request_defaults_result_to_success PASSED [ 89%]
-tests/test_use_cases.py::TestCreateReservationUseCase::test_execute_creates_reservation_with_calculated_price PASSED [ 90%]
-tests/test_use_cases.py::TestCreateReservationUseCase::test_execute_validates_dates PASSED [ 90%]
-tests/test_use_cases.py::TestCreateReservationUseCase::test_execute_raises_error_if_dates_are_equal PASSED [ 91%]
-tests/test_use_cases.py::TestCreateReservationUseCase::test_execute_calculates_correct_price_for_single_night PASSED [ 92%]
-tests/test_use_cases.py::TestCreateReservationUseCase::test_execute_preserves_currency_for_each_supported_code PASSED [ 93%]
-tests/test_use_cases.py::TestCreateReservationUseCase::test_execute_uses_unknown_currency_tax_rate PASSED [ 94%]
-tests/test_use_cases.py::TestCreateReservationUseCase::test_execute_handles_timezone_aware_datetimes PASSED [ 95%]
-tests/test_use_cases.py::TestCreateReservationUseCase::test_execute_uses_property_pricing_for_canonical_breakdown PASSED [ 96%]
+tests/test_arrival_reminder_scheduler.py::test_schedule_arrival_reminder_sends_correct_input PASSED [  0%]
+tests/test_arrival_reminder_scheduler.py::test_schedule_arrival_reminder_with_past_fire_at_clamps_to_30_seconds PASSED [  1%]
+tests/test_arrival_reminder_scheduler.py::test_schedule_arrival_reminder_wraps_aws_errors PASSED [  2%]
+tests/test_arrival_reminder_scheduler.py::test_cancel_arrival_reminder_swallows_resource_not_found PASSED [  2%]
+tests/test_arrival_reminder_scheduler.py::test_cancel_arrival_reminder_propagates_other_errors PASSED [  3%]
+tests/test_arrival_reminder_scheduler.py::test_noop_scheduler_is_safe_to_use_in_dev PASSED [  4%]
+tests/test_availability_check.py::test_availability_check_requires_api_key PASSED [  4%]
+tests/test_availability_check.py::test_availability_check_rejects_wrong_api_key PASSED [  5%]
+tests/test_availability_check.py::test_availability_check_with_no_reservations_returns_all_available PASSED [  6%]
+tests/test_availability_check.py::test_availability_check_marks_property_with_overlapping_reservation_as_blocked PASSED [  6%]
+tests/test_availability_check.py::test_availability_check_ignores_cancelled_reservations PASSED [  7%]
+tests/test_availability_check.py::test_availability_check_treats_pending_payment_as_blocking PASSED [  8%]
+tests/test_availability_check.py::test_availability_check_non_overlapping_reservation_does_not_block PASSED [  8%]
+tests/test_availability_check.py::test_availability_check_partial_overlap_blocks PASSED [  9%]
+tests/test_availability_check.py::test_availability_check_invalid_dates_returns_400 PASSED [ 10%]
+tests/test_availability_check.py::test_availability_check_empty_property_ids_returns_422 PASSED [ 11%]
+tests/test_availability_check.py::test_availability_check_preserves_input_order PASSED [ 11%]
+tests/test_checkin_qr.py::test_generate_checkin_qr_use_case_encrypts_payload_and_includes_metadata PASSED [ 12%]
+tests/test_checkin_qr.py::test_get_checkin_qr_route_returns_payload_for_authenticated_traveler PASSED [ 13%]
+tests/test_command_log_repository.py::TestReservationCommandLogRepository::test_add_and_get_by_idempotency PASSED [ 13%]
+tests/test_create_reservation_schedules_reminder.py::test_create_reservation_calls_schedule_arrival_reminder PASSED [ 14%]
+tests/test_create_reservation_schedules_reminder.py::test_arrival_reminder_uses_parametrizable_lead_minutes PASSED [ 15%]
+tests/test_create_reservation_schedules_reminder.py::test_arrival_reminder_failure_does_not_break_reservation_creation PASSED [ 15%]
+tests/test_endpoints.py::TestReservationEndpoints::test_create_reservation_successfully PASSED [ 16%]
+tests/test_endpoints.py::TestReservationEndpoints::test_create_reservation_returns_400_if_checkout_before_checkin PASSED [ 17%]
+tests/test_endpoints.py::TestReservationEndpoints::test_create_reservation_returns_400_if_room_not_available PASSED [ 17%]
+tests/test_endpoints.py::TestReservationEndpoints::test_get_reservation_successfully PASSED [ 18%]
+tests/test_endpoints.py::TestReservationEndpoints::test_get_reservation_returns_404_if_not_found PASSED [ 19%]
+tests/test_endpoints.py::TestReservationEndpoints::test_get_reservation_returns_400_for_invalid_id_format PASSED [ 20%]
+tests/test_endpoints.py::TestReservationEndpoints::test_get_reservations_by_user_returns_reservation_ids PASSED [ 20%]
+tests/test_endpoints.py::TestReservationEndpoints::test_get_reservations_by_user_sorted_by_check_in_asc PASSED [ 21%]
+tests/test_endpoints.py::TestReservationEndpoints::test_get_reservations_by_user_filter_cancelled PASSED [ 22%]
+tests/test_endpoints.py::TestReservationEndpoints::test_get_reservations_by_user_returns_empty_array_when_no_reservations PASSED [ 22%]
+tests/test_endpoints.py::TestReservationEndpoints::test_get_reservations_by_user_returns_400_for_invalid_id_format PASSED [ 23%]
+tests/test_endpoints.py::TestReservationEndpoints::test_cancellation_confirm_preflight_allows_traveler_header PASSED [ 24%]
+tests/test_endpoints.py::TestReservationEndpoints::test_checkstatus_cancels_pending_payment_reservation PASSED [ 24%]
+tests/test_endpoints.py::TestReservationEndpoints::test_checkstatus_does_not_change_non_pending_status PASSED [ 25%]
+tests/test_endpoints.py::TestReservationEndpoints::test_checkstatus_returns_404_if_not_found PASSED [ 26%]
+tests/test_endpoints.py::TestReservationEndpoints::test_checkstatus_returns_400_for_invalid_id_format PASSED [ 26%]
+tests/test_endpoints.py::TestReservationEndpoints::test_checkstatus_returns_403_without_api_key PASSED [ 27%]
+tests/test_endpoints.py::TestReservationEndpoints::test_internal_patch_status_updates_reservation PASSED [ 28%]
+tests/test_endpoints.py::TestReservationEndpoints::test_internal_patch_status_returns_403_with_invalid_key PASSED [ 28%]
+tests/test_endpoints.py::TestReservationEndpoints::test_internal_patch_status_returns_422_for_invalid_status PASSED [ 29%]
+tests/test_endpoints.py::TestReservationEndpoints::test_health_check_endpoint PASSED [ 30%]
+tests/test_endpoints.py::TestReservationEndpoints::test_create_reservation_with_different_currencies PASSED [ 31%]
+tests/test_endpoints.py::TestReservationEndpoints::test_hotel_can_list_property_reservations PASSED [ 31%]
+tests/test_endpoints.py::TestReservationEndpoints::test_hotel_can_confirm_pending_reservation PASSED [ 32%]
+tests/test_endpoints.py::TestReservationEndpoints::test_hotel_can_cancel_confirmed_reservation PASSED [ 33%]
+tests/test_endpoints.py::TestReservationEndpoints::test_hotel_cancellation_still_notifies_when_refund_fails PASSED [ 33%]
+tests/test_endpoints.py::TestReservationEndpoints::test_hotel_cancellation_requests_full_refund_according_to_policy PASSED [ 34%]
+tests/test_endpoints.py::TestReservationEndpoints::test_hotel_cancellation_requests_partial_refund_according_to_policy PASSED [ 35%]
+tests/test_endpoints.py::TestReservationEndpoints::test_hotel_cancellation_skips_refund_for_non_refundable_policy PASSED [ 35%]
+tests/test_endpoints.py::TestReservationEndpoints::test_hotel_cannot_confirm_cancelled_reservation PASSED [ 36%]
+tests/test_endpoints.py::TestReservationEndpoints::test_hotel_endpoints_return_401_for_invalid_token PASSED [ 37%]
+tests/test_endpoints.py::TestReservationEndpoints::test_hotel_cancel_reason_is_truncated_for_long_other_note PASSED [ 37%]
+tests/test_endpoints.py::TestReservationEndpoints::test_preview_modification_returns_preview PASSED [ 38%]
+tests/test_endpoints.py::TestReservationEndpoints::test_preview_cancellation_returns_preview PASSED [ 39%]
+tests/test_endpoints.py::TestReservationEndpoints::test_preview_cancellation_rejects_unconfirmed_reservation PASSED [ 40%]
+tests/test_endpoints.py::TestReservationEndpoints::test_confirm_modification_is_idempotent PASSED [ 40%]
+tests/test_endpoints.py::TestReservationEndpoints::test_confirm_endpoints_enforce_reservation_ownership PASSED [ 41%]
+tests/test_endpoints.py::TestReservationEndpoints::test_history_returns_confirm_event_with_actor_and_source_ip PASSED [ 42%]
+tests/test_endpoints.py::TestReservationEndpoints::test_internal_refund_result_callback_updates_cancel_requested_to_refund_completed PASSED [ 42%]
+tests/test_endpoints.py::TestReservationEndpoints::test_internal_additional_charge_result_callback_updates_modification_pending PASSED [ 43%]
+tests/test_endpoints.py::TestReservationEndpoints::test_internal_refund_result_returns_409_on_concurrency_conflict PASSED [ 44%]
+tests/test_event_repository.py::TestReservationEventRepository::test_add_persists_event PASSED [ 44%]
+tests/test_event_repository.py::TestReservationEventRepository::test_list_by_reservation_returns_ordered_events PASSED [ 45%]
+tests/test_fire_arrival_reminder_endpoint.py::test_fire_arrival_reminder_requires_internal_api_key PASSED [ 46%]
+tests/test_fire_arrival_reminder_endpoint.py::test_fire_arrival_reminder_returns_404_for_unknown_reservation PASSED [ 46%]
+tests/test_fire_arrival_reminder_endpoint.py::test_fire_arrival_reminder_returns_400_for_invalid_uuid PASSED [ 47%]
+tests/test_fire_arrival_reminder_endpoint.py::test_fire_arrival_reminder_skips_when_notifications_url_not_configured PASSED [ 48%]
+tests/test_fire_arrival_reminder_endpoint.py::test_fire_arrival_reminder_dispatches_to_notifications_service PASSED [ 48%]
+tests/test_fire_arrival_reminder_endpoint.py::test_fire_arrival_reminder_skips_when_reservation_cancelled PASSED [ 49%]
+tests/test_health.py::TestHealthEndpoints::test_legacy_health PASSED     [ 50%]
+tests/test_health.py::TestHealthEndpoints::test_liveness PASSED          [ 51%]
+tests/test_health.py::TestHealthEndpoints::test_readiness PASSED         [ 51%]
+tests/test_host_endpoints.py::test_host_listing_requires_auth PASSED     [ 52%]
+tests/test_host_endpoints.py::test_host_listing_rejects_traveler_role PASSED [ 53%]
+tests/test_host_endpoints.py::test_host_listing_returns_only_my_properties PASSED [ 53%]
+tests/test_host_endpoints.py::test_host_listing_filter_by_status_and_guest PASSED [ 54%]
+tests/test_host_endpoints.py::test_host_listing_pagination_and_sort PASSED [ 55%]
+tests/test_host_endpoints.py::test_host_metrics_defaults_to_confirmed_reservations_amount PASSED [ 55%]
+tests/test_host_endpoints.py::test_host_metrics_supports_collected_payments_mode PASSED [ 56%]
+tests/test_host_endpoints.py::test_host_revenue_trends_defaults_to_confirmed_reservation_amounts PASSED [ 57%]
+tests/test_host_endpoints.py::test_host_revenue_trends_supports_collected_payments_mode PASSED [ 57%]
+tests/test_hotel_reservation_detail.py::test_available_actions_pending_payment_has_confirm_and_cancel PASSED [ 58%]
+tests/test_hotel_reservation_detail.py::test_available_actions_confirmed_has_only_cancel PASSED [ 59%]
+tests/test_hotel_reservation_detail.py::test_available_actions_cancelled_is_empty PASSED [ 60%]
+tests/test_hotel_reservation_detail.py::test_available_actions_completed_is_empty PASSED [ 60%]
+tests/test_hotel_reservation_detail.py::test_available_actions_modification_confirmed_has_confirm_and_cancel PASSED [ 61%]
+tests/test_hotel_reservation_detail.py::test_available_actions_modification_pending_payment_has_confirm PASSED [ 62%]
+tests/test_hotel_reservation_detail.py::test_available_actions_refund_completed_is_empty PASSED [ 62%]
+tests/test_hotel_reservation_detail.py::test_get_detail_returns_full_response PASSED [ 63%]
+tests/test_hotel_reservation_detail.py::test_get_detail_modification_pending_payment_exposes_confirm_action PASSED [ 64%]
+tests/test_hotel_reservation_detail.py::test_get_detail_not_found_returns_404 PASSED [ 64%]
+tests/test_hotel_reservation_detail.py::test_get_detail_requires_hotel_role PASSED [ 65%]
+tests/test_hotel_reservation_detail.py::test_get_detail_includes_change_history PASSED [ 66%]
+tests/test_hotel_reservation_detail.py::test_add_note_creates_note_and_returns_201 PASSED [ 66%]
+tests/test_hotel_reservation_detail.py::test_add_note_to_nonexistent_reservation_returns_404 PASSED [ 67%]
+tests/test_hotel_reservation_detail.py::test_get_detail_includes_internal_notes PASSED [ 68%]
+tests/test_hotel_reservation_detail.py::test_add_note_requires_hotel_role PASSED [ 68%]
+tests/test_hotel_reservation_detail.py::test_add_note_empty_content_returns_422 PASSED [ 69%]
+tests/test_hotel_reservation_detail.py::test_get_detail_price_breakdown_present PASSED [ 70%]
+tests/test_hotel_reservation_detail.py::test_detail_p95_below_1000ms PASSED [ 71%]
+tests/test_hotel_reservation_detail.py::test_get_detail_from_other_hotel_returns_403 PASSED [ 71%]
+tests/test_infra_coverage.py::test_scheduler_create_and_cancel_success_paths PASSED [ 72%]
+tests/test_infra_coverage.py::test_scheduler_raises_runtime_error_on_create_failure PASSED [ 73%]
+tests/test_infra_coverage.py::test_scheduler_cancel_ignores_not_found_and_raises_other_errors PASSED [ 73%]
+tests/test_infra_coverage.py::test_create_reservation_rolls_back_schedule_when_repository_add_fails PASSED [ 74%]
+tests/test_infra_coverage.py::test_create_reservation_wraps_scheduler_errors PASSED [ 75%]
+tests/test_infra_coverage.py::test_settings_validate_scheduler_config PASSED [ 75%]
+tests/test_infra_coverage.py::test_reservation_scheduler_uses_noop_in_local_dev PASSED [ 76%]
+tests/test_infra_coverage.py::test_lifespan_invokes_bootstrap_hooks PASSED [ 77%]
+tests/test_performance.py::test_list_reservations_p95_bajo_1s PASSED     [ 77%]
+tests/test_preview_use_cases.py::TestPreviewReservationModificationUseCase::test_execute_returns_allowed_preview_and_records_event PASSED [ 78%]
+tests/test_preview_use_cases.py::TestPreviewReservationModificationUseCase::test_execute_rejects_preview_when_capacity_is_exceeded PASSED [ 79%]
+tests/test_preview_use_cases.py::TestPreviewReservationCancellationUseCase::test_execute_returns_full_refund_preview_and_records_event PASSED [ 80%]
+tests/test_preview_use_cases.py::TestPreviewReservationCancellationUseCase::test_execute_rejects_preview_when_window_expired PASSED [ 80%]
+tests/test_repository.py::TestReservationRepository::test_add_creates_reservation_successfully PASSED [ 81%]
+tests/test_repository.py::TestReservationRepository::test_get_by_id_returns_reservation PASSED [ 82%]
+tests/test_repository.py::TestReservationRepository::test_get_by_id_returns_none_for_nonexistent_reservation PASSED [ 82%]
+tests/test_repository.py::TestReservationRepository::test_list_by_traveler_returns_all_traveler_reservations PASSED [ 83%]
+tests/test_repository.py::TestReservationRepository::test_check_room_availability_returns_true_if_available PASSED [ 84%]
+tests/test_repository.py::TestReservationRepository::test_check_room_availability_returns_false_if_overlapping_reservation PASSED [ 84%]
+tests/test_repository.py::TestReservationRepository::test_check_room_availability_ignores_cancelled_reservations PASSED [ 85%]
+tests/test_repository.py::TestReservationRepository::test_check_room_availability_can_ignore_same_reservation PASSED [ 86%]
+tests/test_repository.py::TestReservationRepository::test_update_status_changes_reservation_status PASSED [ 86%]
+tests/test_repository.py::TestReservationRepository::test_update_status_raises_concurrency_error_on_version_mismatch PASSED [ 87%]
+tests/test_repository.py::TestReservationRepository::test_apply_updates_raises_concurrency_error_on_version_mismatch PASSED [ 88%]
+tests/test_repository.py::TestReservationRepository::test_apply_updates_rejects_stale_expected_version_after_successful_update PASSED [ 88%]
+tests/test_repository.py::TestReservationRepository::test_add_raises_error_if_room_not_available PASSED [ 89%]
+tests/test_reservation_schemas.py::test_modification_preview_request_validates_guest_count PASSED [ 90%]
+tests/test_reservation_schemas.py::test_cancellation_preview_schema_accepts_expected_values PASSED [ 91%]
+tests/test_reservation_schemas.py::test_event_create_request_defaults_result_to_success PASSED [ 91%]
+tests/test_use_cases.py::TestCreateReservationUseCase::test_execute_creates_reservation_with_calculated_price PASSED [ 92%]
+tests/test_use_cases.py::TestCreateReservationUseCase::test_execute_validates_dates PASSED [ 93%]
+tests/test_use_cases.py::TestCreateReservationUseCase::test_execute_raises_error_if_dates_are_equal PASSED [ 93%]
+tests/test_use_cases.py::TestCreateReservationUseCase::test_execute_calculates_correct_price_for_single_night PASSED [ 94%]
+tests/test_use_cases.py::TestCreateReservationUseCase::test_execute_preserves_currency_for_each_supported_code PASSED [ 95%]
+tests/test_use_cases.py::TestCreateReservationUseCase::test_execute_uses_unknown_currency_tax_rate PASSED [ 95%]
+tests/test_use_cases.py::TestCreateReservationUseCase::test_execute_handles_timezone_aware_datetimes PASSED [ 96%]
+tests/test_use_cases.py::TestCreateReservationUseCase::test_execute_uses_property_pricing_for_canonical_breakdown PASSED [ 97%]
 tests/test_use_cases.py::TestCreateReservationUseCase::test_execute_checks_room_availability PASSED [ 97%]
 tests/test_use_cases.py::TestCheckReservationStatusUseCase::test_execute_cancels_pending_payment_reservation PASSED [ 98%]
 tests/test_use_cases.py::TestCheckReservationStatusUseCase::test_execute_keeps_non_pending_payment_reservation PASSED [ 99%]
 tests/test_use_cases.py::TestUpdateReservationStatusUseCase::test_execute_updates_status_and_returns_transition PASSED [100%]
 
-============================ 110 passed in 14.69s =============================
+============================ 145 passed in 12.97s =============================
 
+
+# coverage
 Name                                                              Stmts   Miss  Cover   Missing
 -----------------------------------------------------------------------------------------------
 src\adapters\__init__.py                                              0      0   100%
@@ -132,19 +170,21 @@ src\adapters\models\reservation_internal_note.py                     11      0  
 src\adapters\repositories\__init__.py                                 4      0   100%
 src\adapters\repositories\reservation_command_log_repository.py      20      3    85%   47-49
 src\adapters\repositories\reservation_event_repository.py            20      0   100%
-src\adapters\repositories\reservation_repository.py                 214     17    92%   42, 45, 160-162, 189, 206, 258, 314, 337, 349, 351, 358, 373, 394, 415, 425
+src\adapters\repositories\reservation_repository.py                 241     20    92%   43, 46, 162-164, 191, 208, 241, 263, 294, 350, 373, 385, 387, 394, 409, 430, 451, 480, 490
 src\adapters\services\__init__.py                                     2      0   100%
 src\adapters\services\hotel_side_effects.py                          27     11    59%   32, 48-66, 84, 95-109
 src\adapters\services\payment_service_client.py                      20     12    40%   20-35, 49-65
 src\adapters\services\payments_client.py                             20     13    35%   13-14, 22-45
 src\adapters\services\properties_client.py                           28     19    32%   13-14, 17-33, 36, 39-51
 src\adapters\services\property_service_client.py                     38     14    63%   24-51, 77, 83-89
-src\adapters\services\scheduler_service.py                           37      8    78%   14, 28-35
+src\adapters\services\scheduler_service.py                           62      1    98%   14
 src\adapters\services\users_client.py                                32     21    34%   17, 20-38, 41-59
-src\assembly.py                                                      48     11    77%   37-50, 57, 61, 65, 69, 78
+src\assembly.py                                                      54     12    78%   41-54, 61, 65, 69, 73, 82, 136
 src\core\__init__.py                                                  0      0   100%
-src\core\auth.py                                                     41      4    90%   30, 56, 62-63
-src\core\config.py                                                  120     19    84%   8, 15-19, 45, 61, 65, 69, 73, 77, 81, 85, 89, 93, 101-104, 125, 127
+src\core\auth.py                                                     48      5    90%   31, 57, 63-64, 92
+src\core\checkin_qr.py                                               29      1    97%   30
+src\core\config.py                                                  131     21    84%   8, 15-19, 53, 69, 73, 77, 81, 85, 89, 93, 97, 101, 109-112, 133, 135, 144, 146
+src\core\health.py                                                   21      4    81%   15-16, 28-29
 src\core\security.py                                                 12      1    92%   22
 src\core\telemetry.py                                                 6      1    83%   8
 src\db\__init__.py                                                    0      0   100%
@@ -156,11 +196,11 @@ src\domain\ports\payment_service_client.py                           10      2  
 src\domain\ports\property_service_client.py                          10      2    80%   13, 19
 src\domain\ports\reservation_command_log_repository.py               11      2    82%   16, 26
 src\domain\ports\reservation_event_repository.py                     10      2    80%   13, 17
-src\domain\ports\reservation_repository.py                           52     15    71%   24, 28, 36, 45, 55, 65, 82, 98, 108, 118, 128, 132, 136, 146, 150
-src\domain\ports\reservation_scheduler.py                             6      0   100%
+src\domain\ports\reservation_repository.py                           58     17    71%   24, 28, 36, 45, 55, 69, 79, 96, 112, 122, 132, 142, 152, 156, 160, 170, 174
+src\domain\ports\reservation_scheduler.py                            11      0   100%
 src\domain\schemas\__init__.py                                        0      0   100%
 src\domain\schemas\property_service.py                               22      0   100%
-src\domain\schemas\reservation.py                                   284      0   100%
+src\domain\schemas\reservation.py                                   313      0   100%
 src\domain\services\cancellation_policy_refund.py                    25      1    96%   10
 src\domain\use_cases\__init__.py                                      0      0   100%
 src\domain\use_cases\add_internal_note.py                            12      0   100%
@@ -168,32 +208,40 @@ src\domain\use_cases\apply_additional_charge_result.py               58     12  
 src\domain\use_cases\apply_refund_result.py                          59     30    49%   31-36, 39-53, 60-65, 76, 94-110, 116
 src\domain\use_cases\base.py                                          8      1    88%   11
 src\domain\use_cases\cancel_hotel_reservation.py                     30      4    87%   47, 50, 54, 62
+src\domain\use_cases\check_properties_availability.py                14      0   100%
 src\domain\use_cases\check_reservation_status.py                     19      0   100%
-src\domain\use_cases\compute_host_metrics.py                         93     14    85%   38, 62, 66, 127, 138, 154, 158, 163, 167, 200-204
+src\domain\use_cases\compute_host_metrics.py                        133     20    85%   42, 121, 171, 175, 189, 193, 216, 232, 236, 241, 245, 280, 290, 294, 299, 330-334
 src\domain\use_cases\confirm_hotel_reservation.py                    26      4    85%   30, 37, 41, 49
 src\domain\use_cases\confirm_reservation_cancellation.py             60     11    82%   66, 70, 76, 95, 107-109, 144-152
 src\domain\use_cases\confirm_reservation_modification.py             64     17    73%   70, 72, 83, 131, 144-157, 196-204
-src\domain\use_cases\create_reservation.py                           82      3    96%   112-113, 120
+src\domain\use_cases\create_reservation.py                           89      3    97%   112-113, 136
+src\domain\use_cases\generate_checkin_qr.py                          46      8    83%   33, 35, 37, 74-75, 80, 88-89
 src\domain\use_cases\get_hotel_reservation_detail.py                 30      2    93%   51-52
 src\domain\use_cases\get_reservation_history.py                      17      2    88%   26, 28
-src\domain\use_cases\list_host_reservations.py                       31      2    94%   37, 44
+src\domain\use_cases\list_host_reservations.py                       31      2    94%   41, 48
 src\domain\use_cases\list_hotel_reservations.py                       9      0   100%
 src\domain\use_cases\preview_reservation_cancellation.py             27      0   100%
 src\domain\use_cases\preview_reservation_modification.py             38      4    89%   29, 31, 42, 51
 src\domain\use_cases\reservation_preview_base.py                     55      6    89%   39, 67, 98, 106-107, 110
 src\domain\use_cases\update_reservation.py                           21      4    81%   19-20, 24, 33
 src\entrypoints\__init__.py                                           0      0   100%
-src\entrypoints\api\main.py                                          21      0   100%
+src\entrypoints\api\main.py                                          23      0   100%
 src\entrypoints\api\routers\hotel_reservations.py                   117      9    92%   78, 98, 105, 112, 247, 290-293
-src\entrypoints\api\routers\internal.py                              82     25    70%   95-96, 118-119, 126-138, 158-159, 171, 177-178, 200-201, 212-227
-src\entrypoints\api\routers\reservations.py                         223     77    65%   105, 113-123, 211, 217-218, 264-270, 291-292, 316-317, 350-351, 371-372, 379-386, 405-406, 413-420, 443-444, 458-476, 499-500, 515, 518-532, 550-551, 558-561
+src\entrypoints\api\routers\internal.py                             109     27    75%   123-124, 146-147, 154-166, 186-187, 199, 205-206, 259-260, 284-285, 296-311
+src\entrypoints\api\routers\reservations.py                         251     89    65%   113, 119, 128-138, 227, 232, 238-239, 285-291, 314-315, 341-342, 375-376, 396-397, 404-411, 430-431, 438-445, 468-469, 483-501, 527-528, 552, 555-569, 587-588, 595-598, 613-614, 621-628
 src\errors.py                                                        32      0   100%
 tests\conftest.py                                                    69      1    99%   21
+tests\test_arrival_reminder_scheduler.py                             59      0   100%
+tests\test_availability_check.py                                     71      0   100%
+tests\test_checkin_qr.py                                             60      1    98%   20
 tests\test_command_log_repository.py                                 13      0   100%
-tests\test_endpoints.py                                             582      0   100%
+tests\test_create_reservation_schedules_reminder.py                  58      2    97%   28, 37
+tests\test_endpoints.py                                             583      0   100%
 tests\test_event_repository.py                                       26      0   100%
-tests\test_host_endpoints.py                                        132      0   100%
-tests\test_hotel_reservation_detail.py                              187      1    99%   67
+tests\test_fire_arrival_reminder_endpoint.py                         55      0   100%
+tests\test_health.py                                                 21      0   100%
+tests\test_host_endpoints.py                                        159      0   100%
+tests\test_hotel_reservation_detail.py                              203      1    99%   67
 tests\test_infra_coverage.py                                        132      2    98%   148, 155
 tests\test_performance.py                                            54      2    96%   26-27
 tests\test_preview_use_cases.py                                      76      0   100%
@@ -201,4 +249,5 @@ tests\test_repository.py                                            101      0  
 tests\test_reservation_schemas.py                                    16      0   100%
 tests\test_use_cases.py                                             121      0   100%
 -----------------------------------------------------------------------------------------------
-TOTAL                                                              3988    450    89%
+TOTAL                                                              4686    488    90%
+
