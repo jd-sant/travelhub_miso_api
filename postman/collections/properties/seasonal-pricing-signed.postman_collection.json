@@ -1,0 +1,388 @@
+{
+  "info": {
+    "name": "TravelHub Seasonal Pricing with Digital Signature",
+    "description": "Collection for testing seasonal pricing endpoints with HMAC-SHA256 signature verification",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "seasonal-pricing-collection-2026"
+  },
+  "item": [
+    {
+      "name": "Create Seasonal Pricing",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Set test property ID (Renaissance Estate from seeded data)",
+              "pm.environment.set('property_id', '11111111-1111-1111-1111-111111111111');",
+              "pm.environment.set('admin_id', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');",
+              "pm.environment.set('base_url', 'http://localhost:8005');"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 201 Created', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test('Response contains signature_hash', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.signature_hash).to.exist;",
+              "    pm.expect(jsonData.signature_hash.length).to.equal(64);",
+              "});",
+              "",
+              "pm.test('Response indicates integrity_valid=true', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.integrity_valid).to.equal(true);",
+              "    pm.expect(jsonData.integrity_locked).to.equal(false);",
+              "});",
+              "",
+              "pm.test('Store pricing ID for subsequent tests', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.environment.set('seasonal_price_id', jsonData.id);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_id}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"season_start\": \"2026-06-01\",\n  \"season_end\": \"2026-08-31\",\n  \"price_per_night\": 1500.0,\n  \"currency\": \"COP\",\n  \"tax_rate\": 0.19,\n  \"cleaning_fee\": 500.0\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/properties/{{property_id}}/seasonal-pricing",
+          "host": ["{{base_url}}"],
+          "path": [
+            "api",
+            "v1",
+            "properties",
+            "{{property_id}}",
+            "seasonal-pricing"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get Seasonal Pricing (Single)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response has integrity_valid=true', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.integrity_valid).to.equal(true);",
+              "});",
+              "",
+              "pm.test('Signature hash matches created price', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.signature_hash).to.exist;",
+              "    pm.expect(jsonData.price_per_night).to.equal(1500.0);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/properties/{{property_id}}/seasonal-pricing/{{seasonal_price_id}}",
+          "host": ["{{base_url}}"],
+          "path": [
+            "api",
+            "v1",
+            "properties",
+            "{{property_id}}",
+            "seasonal-pricing",
+            "{{seasonal_price_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "List Seasonal Pricing",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response is paginated list', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.items).to.be.an('array');",
+              "    pm.expect(jsonData.total).to.be.a('number');",
+              "});",
+              "",
+              "pm.test('All items have integrity_valid field', function () {",
+              "    var jsonData = pm.response.json();",
+              "    jsonData.items.forEach(function(item) {",
+              "        pm.expect(item.integrity_valid).to.exist;",
+              "    });",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/properties/{{property_id}}/seasonal-pricing",
+          "host": ["{{base_url}}"],
+          "path": [
+            "api",
+            "v1",
+            "properties",
+            "{{property_id}}",
+            "seasonal-pricing"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Update Seasonal Pricing",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Price has been updated', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.price_per_night).to.equal(2000.0);",
+              "});",
+              "",
+              "pm.test('Signature has changed after update', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.signature_hash).to.exist;",
+              "    pm.expect(jsonData.integrity_valid).to.equal(true);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_id}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"season_start\": \"2026-06-01\",\n  \"season_end\": \"2026-08-31\",\n  \"price_per_night\": 2000.0,\n  \"currency\": \"COP\",\n  \"tax_rate\": 0.19,\n  \"cleaning_fee\": 500.0\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/properties/{{property_id}}/seasonal-pricing/{{seasonal_price_id}}",
+          "host": ["{{base_url}}"],
+          "path": [
+            "api",
+            "v1",
+            "properties",
+            "{{property_id}}",
+            "seasonal-pricing",
+            "{{seasonal_price_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Create with Ownership Check (Should Fail)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Use different admin ID to fail ownership check",
+              "pm.environment.set('wrong_admin_id', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 403 Forbidden', function () {",
+              "    pm.response.to.have.status(403);",
+              "});",
+              "",
+              "pm.test('Response indicates ownership error', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.detail).to.include('does not own');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{wrong_admin_id}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"season_start\": \"2026-09-01\",\n  \"season_end\": \"2026-09-30\",\n  \"price_per_night\": 1200.0,\n  \"currency\": \"COP\",\n  \"tax_rate\": 0.19,\n  \"cleaning_fee\": 500.0\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/properties/{{property_id}}/seasonal-pricing",
+          "host": ["{{base_url}}"],
+          "path": [
+            "api",
+            "v1",
+            "properties",
+            "{{property_id}}",
+            "seasonal-pricing"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get Non-Existent Pricing (404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 404 Not Found', function () {",
+              "    pm.response.to.have.status(404);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/properties/{{property_id}}/seasonal-pricing/00000000-0000-0000-0000-000000000000",
+          "host": ["{{base_url}}"],
+          "path": [
+            "api",
+            "v1",
+            "properties",
+            "{{property_id}}",
+            "seasonal-pricing",
+            "00000000-0000-0000-0000-000000000000"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Create Multiple Seasons",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 201 Created', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test('Pricing for different season created', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.season_start).to.equal('2026-12-01');",
+              "    pm.expect(jsonData.season_end).to.equal('2026-12-31');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{admin_id}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"season_start\": \"2026-12-01\",\n  \"season_end\": \"2026-12-31\",\n  \"price_per_night\": 3000.0,\n  \"currency\": \"COP\",\n  \"tax_rate\": 0.19,\n  \"cleaning_fee\": 750.0\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/properties/{{property_id}}/seasonal-pricing",
+          "host": ["{{base_url}}"],
+          "path": [
+            "api",
+            "v1",
+            "properties",
+            "{{property_id}}",
+            "seasonal-pricing"
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8005",
+      "type": "string"
+    },
+    {
+      "key": "property_id",
+      "value": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "type": "string"
+    },
+    {
+      "key": "admin_id",
+      "value": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "type": "string"
+    },
+    {
+      "key": "seasonal_price_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

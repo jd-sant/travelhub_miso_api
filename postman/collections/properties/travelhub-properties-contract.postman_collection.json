@@ -1,0 +1,33 @@
+{
+  "info": {
+    "_postman_id": "522f70c8-67af-46b4-9229-8615d22dbf8c",
+    "name": "TravelHub Properties Contract",
+    "description": "Validaciones contract/smoke para Properties service.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health - Properties",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('health 200', function () { pm.response.to.have.status(200); });"]}}],
+      "request": {"method": "GET", "header": [], "url": {"raw": "{{properties_base_url}}/health", "host": ["{{properties_base_url}}"], "path": ["health"]}}
+    },
+    {
+      "name": "List Properties",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('list properties 200', function () { pm.response.to.have.status(200); });", "const body = pm.response.json();", "pm.test('properties array', function () { pm.expect(body).to.be.an('array'); });", "if (body.length > 0) { pm.collectionVariables.set('property_id', body[0].id); }"]}}],
+      "request": {"method": "GET", "header": [], "url": {"raw": "{{properties_base_url}}/api/v1/properties", "host": ["{{properties_base_url}}"], "path": ["api", "v1", "properties"]}}
+    },
+    {
+      "name": "Get Property Detail",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('detail returns 200 or 404', function () { pm.expect([200,404]).to.include(pm.response.code); });"]}}],
+      "request": {"method": "GET", "header": [], "url": {"raw": "{{properties_base_url}}/api/v1/properties/{{property_id}}", "host": ["{{properties_base_url}}"], "path": ["api", "v1", "properties", "{{property_id}}"]}}
+    },
+    {
+      "name": "Get Cancellation Policy",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('policy 200', function () { pm.response.to.have.status(200); });", "const body = pm.response.json();", "pm.test('policy type present', function () { pm.expect(body.policy_type).to.be.oneOf(['non_refundable', 'partial_refund', 'full_refund']); });"]}}],
+      "request": {"method": "GET", "header": [{"key": "X-Internal-Api-Key", "value": "{{internal_api_key}}"}], "url": {"raw": "{{properties_base_url}}/api/v1/internal/properties/{{property_id}}/cancellation-policy", "host": ["{{properties_base_url}}"], "path": ["api", "v1", "internal", "properties", "{{property_id}}", "cancellation-policy"]}}
+    }
+  ],
+  "variable": [
+    {"key": "property_id", "value": "00000000-0000-0000-0000-000000000000"}
+  ]
+}

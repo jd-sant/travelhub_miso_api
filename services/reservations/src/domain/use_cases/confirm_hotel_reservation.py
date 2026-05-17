@@ -1,0 +1,74 @@
+from datetime import UTC, datetime
+from uuid import UUID, uuid4
+
+from domain.ports.reservation_repository import ReservationRepository
+from domain.schemas.reservation import (
+    HotelReservationActionResponse,
+    ReservationChangeRecord,
+    ReservationStatus,
+)
+from domain.use_cases.base import BaseUseCase
+from errors import ReservationNotFoundError, ReservationStateConflictError
+
+
+class ConfirmHotelReservationUseCase(
+    BaseUseCase[tuple[UUID, UUID | None, str | None, str | None], HotelReservationActionResponse]
+):
+    def __init__(self, repository: ReservationRepository):
+        self.repository = repository
+
+    def execute(
+        self,
+        reservation_id: UUID,
+        *,
+        actor_user_id: UUID | None,
+        source_ip: str | None,
+        reason: str | None = None,
+    ) -> HotelReservationActionResponse:
+        reservation = self.repository.get_by_id(reservation_id)
+        if reservation is None:
+            raise ReservationNotFoundError("Reservation not found")
+
+        if reservation.status == ReservationStatus.cancelled.value:
+            raise ReservationStateConflictError(
+                "No se puede confirmar una reserva cancelada."
+            )
+        if reservation.status == ReservationStatus.completed.value:
+            raise ReservationStateConflictError(
+                "No se puede confirmar una reserva completada."
+            )
+        if reservation.status == ReservationStatus.confirmed.value:
+            raise ReservationStateConflictError(
+                "La reserva ya se encuentra confirmada."
+            )
+
+        updated = self.repository.update_status(
+            reservation_id, ReservationStatus.confirmed.value
+        )
+        if updated is None:
+            raise ReservationNotFoundError("Reservation not found")
+
+        now = datetime.now(UTC)
+        normalized_reason = (reason or "hotel_confirmation").strip()
+        self.repository.add_change(
+            ReservationChangeRecord(
+                id=uuid4(),
+                reservation_id=reservation_id,
+                action="hotel.confirm",
+                previous_status=reservation.status,
+                new_status=updated.status,
+                reason=normalized_reason,
+                actor_user_id=actor_user_id,
+                source_ip=source_ip,
+                created_at=now,
+            )
+        )
+
+        return HotelReservationActionResponse(
+            reservation=updated,
+            status_before=reservation.status,
+            status_after=updated.status,
+            action_applied="confirmed",
+            reason=normalized_reason,
+            refund_requested=False,
+        )

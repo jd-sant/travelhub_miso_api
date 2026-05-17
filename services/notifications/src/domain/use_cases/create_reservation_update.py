@@ -1,0 +1,150 @@
+from datetime import datetime, timezone
+from uuid import uuid4
+
+from domain.ports.notification_audit_repository import NotificationAuditRepository
+from domain.ports.notification_repository import NotificationRepository
+from domain.ports.traveler_profile_source import TravelerProfileSource
+from domain.services.push_notifier import PushNotifier
+from core.privacy import mask_email
+from domain.schemas.notification import (
+    NotificationAuditLogRecord,
+    NotificationRecord,
+    NotificationResponse,
+    NotificationStatus,
+    ReservationUpdateRequest,
+)
+from domain.use_cases.base import BaseUseCase
+
+
+def _normalize_locale(locale: str | None) -> str:
+    if not locale:
+        return "es"
+    lowered = locale.strip().lower()
+    if lowered.startswith("en"):
+        return "en"
+    if lowered.startswith("pt"):
+        return "pt"
+    return "es"
+
+
+def _build_subject(status: str, locale: str | None, reservation_id) -> str:
+    normalized = _normalize_locale(locale)
+    subject_map = {
+        "cancelled": {
+            "es": "Reserva cancelada",
+            "en": "Reservation cancelled",
+            "pt": "Reserva cancelada",
+        },
+        "confirmed": {
+            "es": "Reserva confirmada",
+            "en": "Reservation confirmed",
+            "pt": "Reserva confirmada",
+        },
+    }
+    event_key = "cancelled" if status == "cancelled" else "confirmed"
+    prefix = subject_map[event_key][normalized]
+    return f"{prefix} {reservation_id}"
+
+
+class CreateReservationUpdateUseCase(
+    BaseUseCase[ReservationUpdateRequest, NotificationResponse]
+):
+    def __init__(
+        self,
+        notification_repository: NotificationRepository,
+        audit_repository: NotificationAuditRepository,
+        traveler_profile_source: TravelerProfileSource,
+        push_notifier: PushNotifier | None = None,
+    ):
+        self.notification_repository = notification_repository
+        self.audit_repository = audit_repository
+        self.traveler_profile_source = traveler_profile_source
+        self.push_notifier = push_notifier
+
+    def execute(self, payload: ReservationUpdateRequest) -> NotificationResponse:
+        template_code = (
+            "reservation_cancelled_v1"
+            if payload.status == "cancelled"
+            else "reservation_confirmed_v1"
+        )
+        existing = self.notification_repository.get_by_reservation_and_template(
+            reservation_id=payload.reservation_id,
+            template_code=template_code,
+        )
+        if existing is not None:
+            return self._to_response(existing)
+
+        traveler = self.traveler_profile_source.get_traveler(payload.traveler_id)
+        now = datetime.now(timezone.utc)
+        subject = _build_subject(payload.status, payload.locale, payload.reservation_id)
+        notification = NotificationRecord(
+            notification_id=uuid4(),
+            traveler_id=payload.traveler_id,
+            reservation_id=payload.reservation_id,
+            payment_id=None,
+            channel="email",
+            template_code=template_code,
+            status=NotificationStatus.pending,
+            subject=subject,
+            recipient_email=traveler.email,
+            recipient_name=traveler.full_name,
+            payload={
+                "reservation_update": {
+                    "reservation_id": str(payload.reservation_id),
+                    "status": payload.status,
+                    "reason": payload.reason,
+                    "locale": payload.locale,
+                    "reason_code": payload.reason_code,
+                    "reason_note": payload.reason_note,
+                    "refund_requested": payload.refund_requested,
+                    "refund_amount_in_cents": payload.refund_amount_in_cents,
+                },
+                "recipient": {
+                    "email_masked": mask_email(traveler.email),
+                },
+            },
+            created_at=now,
+            updated_at=now,
+        )
+        stored = self.notification_repository.create(notification)
+        self.audit_repository.add_log(
+            NotificationAuditLogRecord(
+                notification_id=stored.notification_id,
+                traveler_id=stored.traveler_id,
+                entity_type="notification",
+                entity_id=str(stored.notification_id),
+                action=(
+                    "notification.reservation_cancelled.created"
+                    if payload.status == "cancelled"
+                    else "notification.reservation_confirmed.created"
+                ),
+                ip_address=payload.source_ip,
+                payload=stored.payload,
+                created_at=stored.created_at,
+            )
+        )
+        if self.push_notifier is not None:
+            event_type = (
+                "cancellation_confirmed"
+                if payload.status == "cancelled"
+                else "booking_confirmed"
+            )
+            self.push_notifier.dispatch(
+                notification=stored,
+                event_type=event_type,
+                source_ip=payload.source_ip,
+                now=now,
+            )
+        return self._to_response(stored)
+
+    def _to_response(self, notification: NotificationRecord) -> NotificationResponse:
+        return NotificationResponse(
+            notification_id=notification.notification_id,
+            status=notification.status,
+            recipient_email=mask_email(notification.recipient_email),
+            subject=notification.subject,
+            payment_id=notification.payment_id,
+            reservation_id=notification.reservation_id,
+            created_at=notification.created_at,
+            updated_at=notification.updated_at,
+        )

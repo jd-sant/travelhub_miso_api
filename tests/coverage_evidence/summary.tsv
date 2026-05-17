@@ -1,0 +1,8 @@
+service	pytest_summary	coverage_percent	stmts	miss	exit_code
+users	36 passed in 5.34s	92	863	65	0
+security	26 passed in 1.74s	92	936	78	0
+reservations	110 passed in 14.69s	89	3988	450	0
+payments	75 passed in 3.48s	89	3780	434	0
+notifications	27 passed in 1.47s	88	1437	171	0
+properties	34 passed in 1.87s	92	1210	100	0
+search	54 passed, 2 skipped in 1.26s	93	1301	88	0

@@ -1,0 +1,48 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+
+      - echo Setting up Python 3.11...
+      - python3.11 --version
+
+      - echo Installing dependencies...
+      - pip install -r services/users/requirements.txt
+
+  build:
+    commands:
+      - echo Build started on `date`
+
+      - echo Running tests...
+      - PYTHONPATH=services/users/src pytest services/users/tests/ -v --tb=short
+
+      - echo Building Docker image...
+      - docker build -t travelhub-users services/users/
+      - docker tag travelhub-users:latest $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/travelhub-users:latest
+
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing Docker image...
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/travelhub-users:latest
+      - echo Writing Image Definitions file...
+      - printf '[{"name":"users","imageUri":"%s.dkr.ecr.us-east-1.amazonaws.com/travelhub-users:latest"}]' $AWS_ACCOUNT_ID > imagedefinitions.json
+      - printf '{"ImageURI":"%s.dkr.ecr.us-east-1.amazonaws.com/travelhub-users:latest"}' $AWS_ACCOUNT_ID > imageDetail.json
+
+artifacts:
+  files:
+    - imagedefinitions.json
+    - imageDetail.json
+    - services/users/appspec.json
+    - services/users/taskdef.json
+  secondary-artifacts:
+    DefinitionArtifact:
+      files:
+        - services/users/appspec.json
+        - services/users/taskdef.json
+    ImageArtifact:
+      files:
+        - imageDetail.json

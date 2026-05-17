@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Confirmación de reserva</title>
+</head>
+<body style="font-family: -apple-system, 'Plus Jakarta Sans', Segoe UI, Helvetica, Arial, sans-serif; background: #f4f6fb; margin: 0; padding: 24px; color: #0f172a;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 640px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0;">
+    <tr>
+      <td style="background: #135bec; color: #ffffff; padding: 24px;">
+        <h1 style="margin: 0; font-size: 22px;">¡Reserva confirmada!</h1>
+        <p style="margin: 4px 0 0; opacity: 0.9;">Hola {{ recipient_name }}, aquí tienes el detalle de tu reserva.</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 24px;">
+        <p style="margin: 0 0 4px; font-size: 12px; letter-spacing: 1.2px; color: #135bec; text-transform: uppercase; font-weight: 700;">Detalles de la reserva</p>
+        <h2 style="margin: 0 0 16px; font-size: 18px;">{{ property_name or 'Propiedad por confirmar' }}</h2>
+        {% if property_address %}
+        <p style="margin: 0 0 16px; color: #475569;">{{ property_address }}</p>
+        {% endif %}
+        <table role="presentation" cellspacing="0" cellpadding="0" width="100%" style="margin-bottom: 16px;">
+          <tr>
+            <td style="color: #64748b; font-size: 12px; text-transform: uppercase;">Check-in</td>
+            <td style="color: #64748b; font-size: 12px; text-transform: uppercase;">Check-out</td>
+            <td style="color: #64748b; font-size: 12px; text-transform: uppercase;">Huéspedes</td>
+          </tr>
+          <tr>
+            <td style="font-size: 14px; color: #0f172a;">{{ check_in_date or '-' }}</td>
+            <td style="font-size: 14px; color: #0f172a;">{{ check_out_date or '-' }}</td>
+            <td style="font-size: 14px; color: #0f172a;">{{ guests_count or '-' }}</td>
+          </tr>
+        </table>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+          <p style="margin: 0 0 8px; font-weight: 700; font-size: 14px;">Desglose del precio</p>
+          <table role="presentation" cellspacing="0" cellpadding="0" width="100%" style="font-size: 14px;">
+            {% if accommodation %}
+            <tr>
+              <td style="padding: 4px 0; color: #475569;">Alojamiento{% if nights %} ({{ nights }} noches){% endif %}</td>
+              <td style="padding: 4px 0; text-align: right; color: #0f172a;">{{ accommodation }} {{ currency }}</td>
+            </tr>
+            {% elif nightly_rate %}
+            <tr>
+              <td style="padding: 4px 0; color: #475569;">Tarifa por noche{% if nights %} × {{ nights }}{% endif %}</td>
+              <td style="padding: 4px 0; text-align: right; color: #0f172a;">{{ nightly_rate }} {{ currency }}</td>
+            </tr>
+            {% endif %}
+            {% if cleaning_fee %}
+            <tr>
+              <td style="padding: 4px 0; color: #475569;">Tarifa de limpieza</td>
+              <td style="padding: 4px 0; text-align: right; color: #0f172a;">{{ cleaning_fee }} {{ currency }}</td>
+            </tr>
+            {% endif %}
+            {% if service_fee %}
+            <tr>
+              <td style="padding: 4px 0; color: #475569;">Cargo de servicio TravelHub</td>
+              <td style="padding: 4px 0; text-align: right; color: #0f172a;">{{ service_fee }} {{ currency }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+              <td style="padding: 4px 0; color: #475569;">Impuestos</td>
+              <td style="padding: 4px 0; text-align: right; color: #0f172a;">{{ taxes or '0.00' }} {{ currency }}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0 0; border-top: 1px solid #e2e8f0; font-weight: 700;">Total pagado</td>
+              <td style="padding: 8px 0 0; border-top: 1px solid #e2e8f0; text-align: right; font-weight: 700;">{{ total }} {{ currency }}</td>
+            </tr>
+          </table>
+        </div>
+
+        <p style="margin: 0 0 4px; font-weight: 700; font-size: 14px;">Política de cancelación</p>
+        <p style="margin: 0 0 16px; color: #475569; font-size: 14px;">{{ cancellation_policy }}</p>
+
+        <p style="margin: 16px 0 0; font-size: 13px; color: #64748b;">Reserva <strong>{{ reservation_id }}</strong> · Recibo <strong>{{ receipt_number }}</strong></p>
+      </td>
+    </tr>
+    <tr>
+      <td style="background: #f8fafc; padding: 16px 24px; text-align: center; color: #64748b; font-size: 12px;">
+        Gracias por reservar con TravelHub.
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

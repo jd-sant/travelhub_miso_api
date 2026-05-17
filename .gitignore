@@ -103,6 +103,9 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/
+agents/
+.claude/
 
 # PyBuilder
 .pybuilder/
@@ -238,3 +241,6 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Newrelic
+.dashboard-guid

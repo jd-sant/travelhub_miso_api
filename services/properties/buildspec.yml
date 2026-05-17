@@ -1,0 +1,36 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+
+      - echo Setting up Python 3.11...
+      - python3.11 --version
+
+      - echo Installing dependencies...
+      - pip install -r services/properties/requirements.txt
+
+  build:
+    commands:
+      - echo Build started on `date`
+
+      - echo Running tests...
+      - PYTHONPATH=services/properties/src pytest services/properties/tests/ -v --tb=short
+
+      - echo Building Docker image...
+      - docker build -t travelhub-properties services/properties/
+      - docker tag travelhub-properties:latest $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/travelhub-properties:latest
+
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing Docker image...
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/travelhub-properties:latest
+      - echo Writing Image Definitions file...
+      - printf '[{"name":"properties","imageUri":"%s.dkr.ecr.us-east-1.amazonaws.com/travelhub-properties:latest"}]' $AWS_ACCOUNT_ID > imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json

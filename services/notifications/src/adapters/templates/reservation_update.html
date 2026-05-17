@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="{{ language_tag }}">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ translations.title_cancelled if is_cancelled else translations.title_confirmed }}</title>
+</head>
+<body style="font-family: -apple-system, 'Plus Jakarta Sans', Segoe UI, Helvetica, Arial, sans-serif; background: #f4f6fb; margin: 0; padding: 24px; color: #0f172a;">
+  {% set header_bg = '#dc2626' if is_cancelled else '#135bec' %}
+  {% set eyebrow_color = '#dc2626' if is_cancelled else '#135bec' %}
+  {% set status_title = translations.title_cancelled if is_cancelled else translations.title_confirmed %}
+  {% set subtitle = translations.subtitle_cancelled if is_cancelled else translations.subtitle_confirmed %}
+
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 640px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0;">
+    <tr>
+      <td style="background: {{ header_bg }}; color: #ffffff; padding: 24px;">
+        <h1 style="margin: 0; font-size: 22px;">{{ status_title }}</h1>
+        <p style="margin: 4px 0 0; opacity: 0.92;">{{ translations.greeting }} {{ recipient_name }}, {{ subtitle }}</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 24px;">
+        <p style="margin: 0 0 4px; font-size: 12px; letter-spacing: 1.2px; color: {{ eyebrow_color }}; text-transform: uppercase; font-weight: 700;">{{ translations.reservation_details }}</p>
+        <h2 style="margin: 0 0 16px; font-size: 18px;">{{ translations.reservation_label }} {{ reservation_id }}</h2>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" width="100%" style="font-size: 14px;">
+            <tr>
+              <td style="padding: 4px 0; color: #475569;">{{ translations.status_label }}</td>
+              <td style="padding: 4px 0; text-align: right; color: #0f172a; font-weight: 700; text-transform: capitalize;">{{ status }}</td>
+            </tr>
+            {% if reason %}
+            <tr>
+              <td style="padding: 4px 0; color: #475569;">{{ translations.reason_label }}</td>
+              <td style="padding: 4px 0; text-align: right; color: #0f172a; font-weight: 600;">{{ reason }}</td>
+            </tr>
+            {% endif %}
+            {% if description %}
+            <tr>
+              <td style="padding: 8px 0 0; color: #475569; vertical-align: top;">{{ translations.description_label }}</td>
+              <td style="padding: 8px 0 0; text-align: right; color: #0f172a;">{{ description }}</td>
+            </tr>
+            {% endif %}
+          </table>
+        </div>
+
+        {% if refund_requested %}
+        <div style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+          <p style="margin: 0 0 8px; font-weight: 700; font-size: 14px; color: #9a3412;">{{ translations.refund_title }}</p>
+          <p style="margin: 0; color: #9a3412; font-size: 14px;">{{ translations.refund_description }}</p>
+          {% if refund_amount %}
+          <p style="margin: 10px 0 0; color: #7c2d12; font-size: 14px;"><strong>{{ translations.refund_amount_label }}:</strong> {{ refund_amount }}</p>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <p style="margin: 0; color: #475569; font-size: 14px;">{{ translations.help_text }}</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="background: #f8fafc; padding: 16px 24px; text-align: center; color: #64748b; font-size: 12px;">
+        {{ translations.footer }}
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

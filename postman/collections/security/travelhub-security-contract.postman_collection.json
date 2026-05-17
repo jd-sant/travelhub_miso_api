@@ -1,0 +1,35 @@
+{
+  "info": {
+    "_postman_id": "f80c6983-6301-4e64-bcce-04ef17f5cbbe",
+    "name": "TravelHub Security Contract",
+    "description": "Validaciones contract/smoke para Security service.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health - Security",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('health 200', function () { pm.response.to.have.status(200); });"]}}],
+      "request": {"method": "GET", "header": [], "url": {"raw": "{{security_base_url}}/health", "host": ["{{security_base_url}}"], "path": ["health"]}}
+    },
+    {
+      "name": "Login Invalid Credentials",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('login invalid 401', function () { pm.response.to.have.status(401); });"]}}],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\n  \"email\": \"no-existe@example.com\",\n  \"password\": \"bad-password\"\n}"},
+        "url": {"raw": "{{security_base_url}}/api/v1/auth/login", "host": ["{{security_base_url}}"], "path": ["api", "v1", "auth", "login"]}
+      }
+    },
+    {
+      "name": "Validate Token Invalid",
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('validate invalid 401', function () { pm.response.to.have.status(401); });"]}}],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\n  \"token\": \"invalid.jwt.token\"\n}"},
+        "url": {"raw": "{{security_base_url}}/api/v1/auth/validate-token", "host": ["{{security_base_url}}"], "path": ["api", "v1", "auth", "validate-token"]}
+      }
+    }
+  ]
+}

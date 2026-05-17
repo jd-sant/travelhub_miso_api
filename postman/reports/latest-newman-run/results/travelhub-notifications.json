@@ -1,0 +1,1212 @@
+{
+  "collection": {
+    "_": {
+      "postman_id": "8b6bdf58-1fcb-4e65-94f1-2e5f4d9e7102"
+    },
+    "item": [
+      {
+        "id": "1b0d18f7-0dec-491d-a9ea-6d658f206f12",
+        "name": "00 - Health",
+        "item": [
+          {
+            "id": "42f76baf-9d93-4cee-8b0e-54b9b3a94342",
+            "name": "Health - Notifications",
+            "request": {
+              "url": {
+                "path": [
+                  "health"
+                ],
+                "host": [
+                  "{{notifications_base_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "53222319-62fa-4784-8195-068ddc2b8ad3",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Health responde 200', function () {",
+                    "  pm.response.to.have.status(200);",
+                    "});",
+                    "const body = pm.response.json();",
+                    "pm.test('Health reporta healthy', function () {",
+                    "  pm.expect(body.status).to.eql('healthy');",
+                    "});"
+                  ],
+                  "_lastExecutionId": "8e069811-8adc-496d-aef6-b891e0cc059b"
+                }
+              }
+            ]
+          }
+        ],
+        "event": []
+      },
+      {
+        "id": "1e7dee14-aa85-40dd-aba7-3f4bd117c272",
+        "name": "01 - Contrato Interno",
+        "item": [
+          {
+            "id": "037be9b6-de89-454a-8843-f92e111876e4",
+            "name": "Create Payment Confirmation - Wrong Key",
+            "request": {
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "internal",
+                  "payment-confirmations"
+                ],
+                "host": [
+                  "{{notifications_base_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-Internal-Api-Key",
+                  "value": "invalid-key"
+                }
+              ],
+              "method": "POST",
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"payment_id\": \"{{$randomUUID}}\",\n  \"source_ip\": \"127.0.0.1\"\n}"
+              }
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "4f9394cb-dff7-4179-9b78-0f476eb02c6b",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Create payment confirmation forbidden 403', function () {",
+                    "  pm.response.to.have.status(403);",
+                    "});"
+                  ],
+                  "_lastExecutionId": "006ceab0-7eb4-4b30-b089-dee77d8cd668"
+                }
+              }
+            ]
+          },
+          {
+            "id": "007cf445-7c97-416e-863c-ca7fcd074d0c",
+            "name": "Get Notification By Id - Wrong Key",
+            "request": {
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "notifications",
+                  "{{notification_id}}"
+                ],
+                "host": [
+                  "{{notifications_base_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "X-Internal-Api-Key",
+                  "value": "invalid-key"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "prerequest",
+                "script": {
+                  "id": "a2a0384d-bee0-4639-9a98-2e83cce40c8c",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.collectionVariables.set('notification_id', pm.variables.replaceIn('{{$randomUUID}}'));"
+                  ],
+                  "_lastExecutionId": "57d6a2fe-3443-4ae1-8ca6-b4d6644722e8"
+                }
+              },
+              {
+                "listen": "test",
+                "script": {
+                  "id": "153efab5-e8e7-4790-a443-bf95129ac263",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Get notification forbidden 403', function () {",
+                    "  pm.response.to.have.status(403);",
+                    "});"
+                  ],
+                  "_lastExecutionId": "2e6596eb-6b97-4c3f-876f-f73059f65668"
+                }
+              }
+            ]
+          },
+          {
+            "id": "aa0e586d-f10c-4343-a654-0b905f0ee98a",
+            "name": "Get Notification By Id - Not Found",
+            "request": {
+              "url": {
+                "path": [
+                  "api",
+                  "v1",
+                  "notifications",
+                  "{{notification_id}}"
+                ],
+                "host": [
+                  "{{notifications_base_url}}"
+                ],
+                "query": [],
+                "variable": []
+              },
+              "header": [
+                {
+                  "key": "X-Internal-Api-Key",
+                  "value": "{{internal_api_key}}"
+                }
+              ],
+              "method": "GET"
+            },
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "id": "02e0d3c5-d00a-4190-a562-ef98cd3c1615",
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Get notification not found 404', function () {",
+                    "  pm.response.to.have.status(404);",
+                    "});"
+                  ],
+                  "_lastExecutionId": "5419b2fc-9aae-4277-8f16-6b8a63785421"
+                }
+              }
+            ]
+          }
+        ],
+        "event": []
+      }
+    ],
+    "event": [],
+    "variable": [
+      {
+        "type": "any",
+        "value": "",
+        "key": "notification_id"
+      }
+    ],
+    "info": {
+      "_postman_id": "8b6bdf58-1fcb-4e65-94f1-2e5f4d9e7102",
+      "name": "TravelHub Notifications MVP",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+      "description": {
+        "content": "Coleccion para validar el microservicio notifications y la confirmacion de pago de MPF-15 usando users y payments como fuentes de verdad.",
+        "type": "text/plain"
+      }
+    }
+  },
+  "environment": {
+    "_": {
+      "postman_variable_scope": "environment",
+      "postman_exported_at": "2026-04-11T00:00:00.000Z",
+      "postman_exported_using": "Codex"
+    },
+    "id": "1f3a5f3e-6c97-4fe2-b4db-1bbf62d8468f",
+    "name": "TravelHub Microservices Local",
+    "values": [
+      {
+        "type": "any",
+        "value": "http://localhost:8000",
+        "key": "users_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8001",
+        "key": "security_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8002",
+        "key": "reservations_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8003",
+        "key": "payments_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8004",
+        "key": "notifications_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8005",
+        "key": "properties_base_url"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:8006",
+        "key": "search_base_url"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-internal-secret-key",
+        "key": "internal_api_key"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-internal-secret-key",
+        "key": "INTERNAL_API_KEY"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-jwt-secret-change-in-prod",
+        "key": "JWT_SECRET_KEY"
+      },
+      {
+        "type": "any",
+        "value": "development",
+        "key": "ENV"
+      },
+      {
+        "type": "any",
+        "value": "development",
+        "key": "APP_ENV"
+      },
+      {
+        "type": "any",
+        "value": "smtp.gmail.com",
+        "key": "SMTP_HOST"
+      },
+      {
+        "type": "any",
+        "value": "587",
+        "key": "SMTP_PORT"
+      },
+      {
+        "type": "any",
+        "value": "tu-email@gmail.com",
+        "key": "SMTP_USER"
+      },
+      {
+        "type": "any",
+        "value": "tu-app-password",
+        "key": "SMTP_PASSWORD"
+      },
+      {
+        "type": "any",
+        "value": "tu-email@gmail.com",
+        "key": "SMTP_FROM"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-payments-secret-change-in-prod",
+        "key": "PAYMENT_INTEGRITY_SECRET"
+      },
+      {
+        "type": "any",
+        "value": "travelhub-payments-encryption-key-change-in-prod",
+        "key": "PAYMENTS_DATA_ENCRYPTION_KEY"
+      },
+      {
+        "type": "any",
+        "value": "false",
+        "key": "PAYMENTS_COMPLIANCE_MODE"
+      },
+      {
+        "type": "any",
+        "value": "true",
+        "key": "ENFORCE_TLS_HEADER"
+      },
+      {
+        "type": "any",
+        "value": "fake_stripe",
+        "key": "PAYMENT_PROVIDER"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "STRIPE_SECRET_KEY"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "STRIPE_PUBLISHABLE_KEY"
+      },
+      {
+        "type": "any",
+        "value": "",
+        "key": "STRIPE_WEBHOOK_SECRET"
+      },
+      {
+        "type": "any",
+        "value": "http://localhost:3000,http://127.0.0.1:3000",
+        "key": "ALLOWED_CORS_ORIGIN"
+      },
+      {
+        "type": "any",
+        "value": "us-east-1",
+        "key": "AWS_REGION"
+      },
+      {
+        "type": "any",
+        "value": "XXXX",
+        "key": "AWS_ACCESS_KEY_ID"
+      },
+      {
+        "type": "any",
+        "value": "XXXX",
+        "key": "AWS_SECRET_ACCESS_KEY"
+      },
+      {
+        "type": "any",
+        "value": "XXXX",
+        "key": "AWS_SESSION_TOKEN"
+      },
+      {
+        "type": "any",
+        "value": "arn:aws:lambda:us-east-1:ACC_ID:function:reservation-checker",
+        "key": "LAMBDA_ARN"
+      },
+      {
+        "type": "any",
+        "value": "arn:aws:iam::ACC_ID:role/EventBridgeSchedulerRole",
+        "key": "SCHEDULER_ROLE_ARN"
+      },
+      {
+        "type": "any",
+        "value": "http://reservations:8006",
+        "key": "API_BASE_URL"
+      },
+      {
+        "type": "any",
+        "value": "true",
+        "key": "RESERVATION_SCHEDULER_ENABLED"
+      },
+      {
+        "type": "any",
+        "value": "15",
+        "key": "RESERVATION_SCHEDULER_DELAY_MINUTES"
+      }
+    ]
+  },
+  "globals": {
+    "id": "c65c5261-4566-4728-ac8f-00616f83833b",
+    "values": []
+  },
+  "run": {
+    "stats": {
+      "iterations": {
+        "total": 1,
+        "pending": 0,
+        "failed": 0
+      },
+      "items": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "scripts": {
+        "total": 5,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequests": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "requests": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "tests": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "assertions": {
+        "total": 5,
+        "pending": 0,
+        "failed": 0
+      },
+      "testScripts": {
+        "total": 4,
+        "pending": 0,
+        "failed": 0
+      },
+      "prerequestScripts": {
+        "total": 1,
+        "pending": 0,
+        "failed": 0
+      }
+    },
+    "timings": {
+      "responseAverage": 9.75,
+      "responseMin": 5,
+      "responseMax": 18,
+      "responseSd": 4.968651728587948,
+      "dnsAverage": 0,
+      "dnsMin": 0,
+      "dnsMax": 0,
+      "dnsSd": 0,
+      "firstByteAverage": 0,
+      "firstByteMin": 0,
+      "firstByteMax": 0,
+      "firstByteSd": 0,
+      "started": 1777254723682,
+      "completed": 1777254724041
+    },
+    "executions": [
+      {
+        "cursor": {
+          "position": 0,
+          "iteration": 0,
+          "length": 4,
+          "cycles": 1,
+          "empty": false,
+          "eof": false,
+          "bof": true,
+          "cr": false,
+          "ref": "0655c624-4cae-4746-9e74-374e4dd5602b",
+          "httpRequestId": "c7b47bae-b622-4964-b035-1f89f371163f"
+        },
+        "item": {
+          "id": "42f76baf-9d93-4cee-8b0e-54b9b3a94342",
+          "name": "Health - Notifications",
+          "request": {
+            "url": {
+              "path": [
+                "health"
+              ],
+              "host": [
+                "{{notifications_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "53222319-62fa-4784-8195-068ddc2b8ad3",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Health responde 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test('Health reporta healthy', function () {",
+                  "  pm.expect(body.status).to.eql('healthy');",
+                  "});"
+                ],
+                "_lastExecutionId": "8e069811-8adc-496d-aef6-b891e0cc059b"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8004",
+            "path": [
+              "health"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "e37d2183-71fc-4c33-afb2-73c2e0fb007b",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8004",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "bb71fe8d-949d-4637-9fde-2cc53d74b8f5",
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "date",
+              "value": "Mon, 27 Apr 2026 01:52:02 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "20"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              115,
+              116,
+              97,
+              116,
+              117,
+              115,
+              34,
+              58,
+              34,
+              104,
+              101,
+              97,
+              108,
+              116,
+              104,
+              121,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 18,
+          "responseSize": 20
+        },
+        "id": "42f76baf-9d93-4cee-8b0e-54b9b3a94342",
+        "assertions": [
+          {
+            "assertion": "Health responde 200",
+            "skipped": false
+          },
+          {
+            "assertion": "Health reporta healthy",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "cd9a1beb-341a-4aa7-8e29-5c3f96663e42",
+          "length": 4,
+          "cycles": 1,
+          "position": 1,
+          "iteration": 0,
+          "httpRequestId": "bc473f34-d5e4-4581-a0e5-6d4dcc7f4929"
+        },
+        "item": {
+          "id": "037be9b6-de89-454a-8843-f92e111876e4",
+          "name": "Create Payment Confirmation - Wrong Key",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "internal",
+                "payment-confirmations"
+              ],
+              "host": [
+                "{{notifications_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Internal-Api-Key",
+                "value": "invalid-key"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"payment_id\": \"{{$randomUUID}}\",\n  \"source_ip\": \"127.0.0.1\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "4f9394cb-dff7-4179-9b78-0f476eb02c6b",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Create payment confirmation forbidden 403', function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});"
+                ],
+                "_lastExecutionId": "006ceab0-7eb4-4b30-b089-dee77d8cd668"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8004",
+            "path": [
+              "api",
+              "v1",
+              "internal",
+              "payment-confirmations"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "X-Internal-Api-Key",
+              "value": "invalid-key"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "eea59d05-f756-4076-a783-ff41b0e4e273",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8004",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            },
+            {
+              "key": "Content-Length",
+              "value": "86",
+              "system": true
+            }
+          ],
+          "method": "POST",
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"payment_id\": \"c961f21f-90e7-48c2-82f6-608da9401ec1\",\n  \"source_ip\": \"127.0.0.1\"\n}"
+          }
+        },
+        "response": {
+          "id": "016db504-4885-4512-b761-13f00b59468f",
+          "status": "Forbidden",
+          "code": 403,
+          "header": [
+            {
+              "key": "date",
+              "value": "Mon, 27 Apr 2026 01:52:03 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "22"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              100,
+              101,
+              116,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              70,
+              111,
+              114,
+              98,
+              105,
+              100,
+              100,
+              101,
+              110,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 7,
+          "responseSize": 22
+        },
+        "id": "037be9b6-de89-454a-8843-f92e111876e4",
+        "assertions": [
+          {
+            "assertion": "Create payment confirmation forbidden 403",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "fee3f5bf-82d7-4591-a8a8-5c3c80f76760",
+          "length": 4,
+          "cycles": 1,
+          "position": 2,
+          "iteration": 0,
+          "httpRequestId": "e97841a3-f54f-43e1-b826-9ab8a7ded7fc"
+        },
+        "item": {
+          "id": "007cf445-7c97-416e-863c-ca7fcd074d0c",
+          "name": "Get Notification By Id - Wrong Key",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "{{notification_id}}"
+              ],
+              "host": [
+                "{{notifications_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "X-Internal-Api-Key",
+                "value": "invalid-key"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "a2a0384d-bee0-4639-9a98-2e83cce40c8c",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('notification_id', pm.variables.replaceIn('{{$randomUUID}}'));"
+                ],
+                "_lastExecutionId": "57d6a2fe-3443-4ae1-8ca6-b4d6644722e8"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "153efab5-e8e7-4790-a443-bf95129ac263",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get notification forbidden 403', function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});"
+                ],
+                "_lastExecutionId": "2e6596eb-6b97-4c3f-876f-f73059f65668"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8004",
+            "path": [
+              "api",
+              "v1",
+              "notifications",
+              "7ceaa825-08a8-477a-8b9e-68d57e427fdc"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "X-Internal-Api-Key",
+              "value": "invalid-key"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "ccd5375c-f6e0-4a2e-aff8-2471f301b37a",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8004",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "ab967874-7907-4dd1-8136-b637c0e09bf6",
+          "status": "Forbidden",
+          "code": 403,
+          "header": [
+            {
+              "key": "date",
+              "value": "Mon, 27 Apr 2026 01:52:03 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "22"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              100,
+              101,
+              116,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              70,
+              111,
+              114,
+              98,
+              105,
+              100,
+              100,
+              101,
+              110,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 5,
+          "responseSize": 22
+        },
+        "id": "007cf445-7c97-416e-863c-ca7fcd074d0c",
+        "assertions": [
+          {
+            "assertion": "Get notification forbidden 403",
+            "skipped": false
+          }
+        ]
+      },
+      {
+        "cursor": {
+          "ref": "96182edd-5346-4940-996a-8b289aa77823",
+          "length": 4,
+          "cycles": 1,
+          "position": 3,
+          "iteration": 0,
+          "httpRequestId": "87eef93d-039b-41d1-b228-d1ab60764b85"
+        },
+        "item": {
+          "id": "aa0e586d-f10c-4343-a654-0b905f0ee98a",
+          "name": "Get Notification By Id - Not Found",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "{{notification_id}}"
+              ],
+              "host": [
+                "{{notifications_base_url}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "X-Internal-Api-Key",
+                "value": "{{internal_api_key}}"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "02e0d3c5-d00a-4190-a562-ef98cd3c1615",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get notification not found 404', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});"
+                ],
+                "_lastExecutionId": "5419b2fc-9aae-4277-8f16-6b8a63785421"
+              }
+            }
+          ]
+        },
+        "request": {
+          "url": {
+            "protocol": "http",
+            "port": "8004",
+            "path": [
+              "api",
+              "v1",
+              "notifications",
+              "7ceaa825-08a8-477a-8b9e-68d57e427fdc"
+            ],
+            "host": [
+              "localhost"
+            ],
+            "query": [],
+            "variable": []
+          },
+          "header": [
+            {
+              "key": "X-Internal-Api-Key",
+              "value": "travelhub-internal-secret-key"
+            },
+            {
+              "key": "User-Agent",
+              "value": "PostmanRuntime/7.39.1",
+              "system": true
+            },
+            {
+              "key": "Accept",
+              "value": "*/*",
+              "system": true
+            },
+            {
+              "key": "Cache-Control",
+              "value": "no-cache",
+              "system": true
+            },
+            {
+              "key": "Postman-Token",
+              "value": "23979dd1-beee-41a5-85ec-da81ac6de9c6",
+              "system": true
+            },
+            {
+              "key": "Host",
+              "value": "localhost:8004",
+              "system": true
+            },
+            {
+              "key": "Accept-Encoding",
+              "value": "gzip, deflate, br",
+              "system": true
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "system": true
+            }
+          ],
+          "method": "GET"
+        },
+        "response": {
+          "id": "1911935d-1fc2-42c1-8bfe-da1efb2a154c",
+          "status": "Not Found",
+          "code": 404,
+          "header": [
+            {
+              "key": "date",
+              "value": "Mon, 27 Apr 2026 01:52:03 GMT"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            },
+            {
+              "key": "content-length",
+              "value": "40"
+            },
+            {
+              "key": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "stream": {
+            "type": "Buffer",
+            "data": [
+              123,
+              34,
+              100,
+              101,
+              116,
+              97,
+              105,
+              108,
+              34,
+              58,
+              34,
+              78,
+              111,
+              116,
+              105,
+              102,
+              105,
+              99,
+              97,
+              99,
+              105,
+              111,
+              110,
+              32,
+              110,
+              111,
+              32,
+              101,
+              110,
+              99,
+              111,
+              110,
+              116,
+              114,
+              97,
+              100,
+              97,
+              46,
+              34,
+              125
+            ]
+          },
+          "cookie": [],
+          "responseTime": 9,
+          "responseSize": 40
+        },
+        "id": "aa0e586d-f10c-4343-a654-0b905f0ee98a",
+        "assertions": [
+          {
+            "assertion": "Get notification not found 404",
+            "skipped": false
+          }
+        ]
+      }
+    ],
+    "transfers": {
+      "responseTotal": 104
+    },
+    "failures": [],
+    "error": null
+  }
+}

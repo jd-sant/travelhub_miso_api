@@ -1,0 +1,323 @@
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: travelhub
+      POSTGRES_USER: travelhub_user
+      POSTGRES_PASSWORD: travelhub_pass
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-schemas.sql:/docker-entrypoint-initdb.d/init-schemas.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U travelhub_user -d travelhub"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  users:
+    build:
+      context: ./services/users
+    environment:
+      PYTHONPATH: /app/src
+      ALLOWED_CORS_ORIGIN: ${ALLOWED_CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
+      RDS_HOSTNAME: postgres
+      RDS_USERNAME: travelhub_user
+      RDS_PASSWORD: travelhub_pass
+      RDS_DB_NAME: travelhub
+      RDS_PORT: "5432"
+      DB_SCHEMA: users_schema
+      DB_ECHO: "False"
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
+      DEMO_SEED_ENABLED: ${DEMO_SEED_ENABLED:-false}
+      PRIVACY_COMPLIANCE_MODE: ${PRIVACY_COMPLIANCE_MODE:-false}
+      USERS_PII_ENCRYPTION_ENABLED: ${USERS_PII_ENCRYPTION_ENABLED:-false}
+      USERS_PII_ENCRYPTION_KEY: ${USERS_PII_ENCRYPTION_KEY:-dev-users-pii-encryption-key-change-me}
+      USERS_EMAIL_LOOKUP_HASH_SECRET: ${USERS_EMAIL_LOOKUP_HASH_SECRET:-dev-users-email-lookup-hash-secret-change-me}
+      DEFAULT_DATA_REGION: ${DEFAULT_DATA_REGION:-aws-us-east-1}
+      DATA_RESIDENCY_POLICIES: ${DATA_RESIDENCY_POLICIES:-}
+      SECURITY_SERVICE_URL: http://security:8000
+      PRIVACY_AUDIT_ENABLED: ${PRIVACY_AUDIT_ENABLED:-false}
+      ENFORCE_TLS_HEADER: ${ENFORCE_TLS_HEADER:-false}
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY:-}
+      NEW_RELIC_APP_NAME: users
+
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  security:
+    build:
+      context: ./services/security
+    environment:
+      PYTHONPATH: /app/src
+      ALLOWED_CORS_ORIGIN: ${ALLOWED_CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
+      RDS_HOSTNAME: postgres
+      RDS_USERNAME: travelhub_user
+      RDS_PASSWORD: travelhub_pass
+      RDS_DB_NAME: travelhub
+      RDS_PORT: "5432"
+      DB_SCHEMA: security_schema
+      DB_ECHO: "False"
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-travelhub-jwt-secret-change-in-prod}
+      USERS_SERVICE_URL: http://users:8000
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@travelhub.com}
+      DEMO_SEED_ENABLED: ${DEMO_SEED_ENABLED:-false}
+      DEMO_HOTEL_EMAILS: ${DEMO_HOTEL_EMAILS:-}
+      DEMO_OTP_CODE: ${DEMO_OTP_CODE:-}
+      PRIVACY_COMPLIANCE_MODE: ${PRIVACY_COMPLIANCE_MODE:-false}
+      PII_DATA_ENCRYPTION_KEY: ${PII_DATA_ENCRYPTION_KEY:-dev-pii-encryption-key-change-me}
+      DEFAULT_DATA_REGION: ${DEFAULT_DATA_REGION:-aws-us-east-1}
+      DATA_RESIDENCY_POLICIES: ${DATA_RESIDENCY_POLICIES:-}
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY:-}
+      NEW_RELIC_APP_NAME: security
+
+    ports:
+      - "8001:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      users:
+        condition: service_started
+
+  reservations:
+    build:
+      context: ./services/reservations
+    environment:
+      PYTHONPATH: /app/src
+      ENV: ${ENV:-development}
+      APP_ENV: ${APP_ENV:-development}
+      ALLOWED_CORS_ORIGIN: ${ALLOWED_CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
+      RESERVATION_SCHEDULER_ENABLED: ${RESERVATION_SCHEDULER_ENABLED:-false}
+      RESERVATION_SCHEDULER_DELAY_MINUTES: ${RESERVATION_SCHEDULER_DELAY_MINUTES:-15}
+      ARRIVAL_REMINDER_LEAD_MINUTES: ${ARRIVAL_REMINDER_LEAD_MINUTES:-1440}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      LAMBDA_ARN: ${LAMBDA_ARN:-}
+      SCHEDULER_ROLE_ARN: ${SCHEDULER_ROLE_ARN:-}
+      API_BASE_URL: ${API_BASE_URL:-}
+      PROPERTIES_SERVICE_URL: ${PROPERTIES_SERVICE_URL:-http://properties:8000}
+      PAYMENTS_SERVICE_URL: ${PAYMENTS_SERVICE_URL:-http://payments:8000}
+      RDS_HOSTNAME: postgres
+      RDS_USERNAME: travelhub_user
+      RDS_PASSWORD: travelhub_pass
+      RDS_DB_NAME: travelhub
+      RDS_PORT: "5432"
+      DB_SCHEMA: reservations_schema
+      DB_ECHO: "False"
+      DATABASE_URL: postgresql://travelhub_user:travelhub_pass@postgres:5432/travelhub
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-travelhub-jwt-secret-change-in-prod}
+      CHECKIN_QR_SECRET_KEY: ${CHECKIN_QR_SECRET_KEY:-dev-checkin-qr-secret-key-change-me}
+      USERS_SERVICE_URL: http://users:8000
+      NOTIFICATIONS_SERVICE_URL: http://notifications:8000
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY:-}
+      NEW_RELIC_APP_NAME: reservations
+
+    ports:
+      - "8002:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  payments:
+    build:
+      context: ./services/payments
+    environment:
+      PYTHONPATH: /app/src
+      ALLOWED_CORS_ORIGIN: ${ALLOWED_CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
+      RDS_HOSTNAME: postgres
+      RDS_USERNAME: travelhub_user
+      RDS_PASSWORD: travelhub_pass
+      RDS_DB_NAME: travelhub
+      RDS_PORT: "5432"
+      DB_SCHEMA: payments_schema
+      DB_ECHO: "False"
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-fake_stripe}
+      PAYMENTS_COMPLIANCE_MODE: ${PAYMENTS_COMPLIANCE_MODE:-false}
+      PAYMENT_DUPLICATE_WINDOW_SECONDS: "2"
+      ENFORCE_TLS_HEADER: ${ENFORCE_TLS_HEADER:-true}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
+      PAYMENT_INTEGRITY_SECRET: ${PAYMENT_INTEGRITY_SECRET:-travelhub-payments-secret-change-in-prod}
+      PAYMENTS_DATA_ENCRYPTION_KEY: ${PAYMENTS_DATA_ENCRYPTION_KEY:-dev-payments-encryption-key-change-me}
+      NOTIFICATIONS_SERVICE_URL: http://notifications:8000
+      RESERVATIONS_SERVICE_URL: http://reservations:8000
+      PROPERTIES_SERVICE_URL: http://properties:8000
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-}
+      NOTIFICATIONS_DISPATCH_MODE: ${NOTIFICATIONS_DISPATCH_MODE:-}
+      DEFAULT_CANCELLATION_POLICY: ${DEFAULT_CANCELLATION_POLICY:-Cancelacion gratuita hasta 48 horas antes del check-in. Despues se cobra la primera noche.}
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY:-}
+      NEW_RELIC_APP_NAME: payments
+
+    ports:
+      - "8003:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  notifications:
+    build:
+      context: ./services/notifications
+    environment:
+      PYTHONPATH: /app/src
+      SERVICE_MODE: api
+      RDS_HOSTNAME: postgres
+      RDS_USERNAME: travelhub_user
+      RDS_PASSWORD: travelhub_pass
+      RDS_DB_NAME: travelhub
+      RDS_PORT: "5432"
+      DB_SCHEMA: notifications_schema
+      DB_ECHO: "False"
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-travelhub-jwt-secret-change-in-prod}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      PAYMENTS_SERVICE_URL: http://payments:8000
+      USERS_SERVICE_URL: http://users:8000
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@travelhub.com}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      SES_FROM_ADDRESS: ${SES_FROM_ADDRESS:-}
+      SES_REGION: ${SES_REGION:-}
+      NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-}
+      FCM_PROJECT_ID: ${FCM_PROJECT_ID:-}
+      FCM_SERVICE_ACCOUNT_JSON: ${FCM_SERVICE_ACCOUNT_JSON:-}
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY:-}
+      NEW_RELIC_APP_NAME: notifications
+
+    ports:
+      - "8004:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  notifications-worker:
+    build:
+      context: ./services/notifications
+    environment:
+      PYTHONPATH: /app/src
+      SERVICE_MODE: worker
+      RDS_HOSTNAME: postgres
+      RDS_USERNAME: travelhub_user
+      RDS_PASSWORD: travelhub_pass
+      RDS_DB_NAME: travelhub
+      RDS_PORT: "5432"
+      DB_SCHEMA: notifications_schema
+      DB_ECHO: "False"
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
+      PAYMENTS_SERVICE_URL: http://payments:8000
+      USERS_SERVICE_URL: http://users:8000
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@travelhub.com}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      SES_FROM_ADDRESS: ${SES_FROM_ADDRESS:-}
+      SES_REGION: ${SES_REGION:-}
+      NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-}
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY:-}
+      NEW_RELIC_APP_NAME: notifications-worker
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  properties:
+    build:
+      context: ./services/properties
+    environment:
+      PYTHONPATH: /app/src
+      ALLOWED_CORS_ORIGIN: ${ALLOWED_CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
+      RDS_HOSTNAME: postgres
+      RDS_USERNAME: travelhub_user
+      RDS_PASSWORD: travelhub_pass
+      RDS_DB_NAME: travelhub
+      RDS_PORT: "5432"
+      DB_SCHEMA: properties_schema
+      DB_ECHO: "False"
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_CACHE_ENABLED: "true"
+      REDIS_CACHE_TTL_SECONDS: "300"
+      SEED_MAP_CLUSTERS: "true"
+      PRICING_INTEGRITY_SECRET: ${PRICING_INTEGRITY_SECRET:-dev-pricing-secret-change-me}
+      SECURITY_SERVICE_URL: ${SECURITY_SERVICE_URL:-http://security:8000}
+      SEARCH_SERVICE_URL: ${SEARCH_SERVICE_URL:-http://search:8000}
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY:-}
+      NEW_RELIC_APP_NAME: properties
+
+    ports:
+      - "8005:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  search:
+    build:
+      context: ./services/search
+    environment:
+      PYTHONPATH: /app/src
+      ENV: ${ENV:-development}
+      APP_ENV: ${APP_ENV:-development}
+      ALLOWED_CORS_ORIGIN: ${ALLOWED_CORS_ORIGIN:-http://localhost:3000,http://127.0.0.1:3000}
+      PROPERTIES_SERVICE_URL: ${PROPERTIES_SERVICE_URL:-http://properties:8000}
+      RESERVATIONS_SERVICE_URL: ${RESERVATIONS_SERVICE_URL:-http://reservations:8000}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key-change-me}
+      SERVICE_REQUEST_TIMEOUT: "5.0"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_CACHE_ENABLED: "true"
+      NEW_RELIC_LICENSE_KEY: ${NEW_RELIC_LICENSE_KEY:-}
+      NEW_RELIC_APP_NAME: search
+
+    ports:
+      - "8006:8000"
+    depends_on:
+      properties:
+        condition: service_started
+      reservations:
+        condition: service_started
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: public.ecr.aws/docker/library/redis:7-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

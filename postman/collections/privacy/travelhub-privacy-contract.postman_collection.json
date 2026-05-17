@@ -1,0 +1,158 @@
+{
+  "info": {
+    "_postman_id": "b7b8a53f-5b8d-4b9f-83b0-7eeb7a1e2fd3",
+    "name": "TravelHub Privacy Contract",
+    "description": "Validaciones contract/smoke para HU036 - Proteger datos sensibles.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 - Create User With Residency Data",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const suffix = Date.now().toString();",
+              "pm.collectionVariables.set('privacy_email', `privacy-${suffix}@travelhub.demo`);",
+              "pm.collectionVariables.set('privacy_phone', `300${suffix.slice(-7)}`);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('create user returns 201', function () { pm.response.to.have.status(201); });",
+              "const body = pm.response.json();",
+              "pm.test('response has user id', function () { pm.expect(body.id).to.be.ok; });",
+              "pm.test('response carries country code', function () { pm.expect(body.country_code).to.equal('CO'); });",
+              "pm.test('response carries data region', function () { pm.expect(body.data_region).to.be.a('string').and.not.empty; });",
+              "pm.collectionVariables.set('privacy_user_id', body.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-Forwarded-Proto", "value": "https" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{privacy_email}}\",\n  \"phone\": \"{{privacy_phone}}\",\n  \"password\": \"Travelhub123!\",\n  \"full_name\": \"Privacy Demo User\",\n  \"hotel_name\": \"Privacy Demo Hotel\",\n  \"country_code\": \"CO\",\n  \"role\": \"traveler\",\n  \"status\": 1\n}"
+        },
+        "url": {
+          "raw": "{{users_base_url}}/api/v1/users",
+          "host": ["{{users_base_url}}"],
+          "path": ["api", "v1", "users"]
+        }
+      }
+    },
+    {
+      "name": "02 - Get User By Id And Audit Access",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('get user returns 200', function () { pm.response.to.have.status(200); });",
+              "const body = pm.response.json();",
+              "pm.test('returned user id matches', function () { pm.expect(body.id).to.equal(pm.collectionVariables.get('privacy_user_id')); });",
+              "pm.test('returned country code matches', function () { pm.expect(body.country_code).to.equal('CO'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "X-Internal-Api-Key", "value": "{{internal_api_key}}" },
+          { "key": "X-Actor-User-Id", "value": "{{privacy_user_id}}" },
+          { "key": "X-Forwarded-Proto", "value": "https" }
+        ],
+        "url": {
+          "raw": "{{users_base_url}}/api/v1/internal/users/{{privacy_user_id}}",
+          "host": ["{{users_base_url}}"],
+          "path": ["api", "v1", "internal", "users", "{{privacy_user_id}}"]
+        }
+      }
+    },
+    {
+      "name": "03 - Resolve Residency Policy",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('residency policy returns 200', function () { pm.response.to.have.status(200); });",
+              "const body = pm.response.json();",
+              "pm.test('country code is normalized', function () { pm.expect(body.country_code).to.equal('CO'); });",
+              "pm.test('storage policy references pii', function () { pm.expect(body.storage_policy).to.include('pii:CO'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "X-Internal-Api-Key", "value": "{{internal_api_key}}" }
+        ],
+        "url": {
+          "raw": "{{security_base_url}}/api/v1/internal/privacy/residency?country_code=CO",
+          "host": ["{{security_base_url}}"],
+          "path": ["api", "v1", "internal", "privacy", "residency"],
+          "query": [
+            { "key": "country_code", "value": "CO" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "04 - Record Sensitive Data Audit",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('audit record returns 201', function () { pm.response.to.have.status(201); });",
+              "const body = pm.response.json();",
+              "pm.test('audit has entry hash', function () { pm.expect(body.entry_hash).to.be.a('string').and.not.empty; });",
+              "pm.test('audit keeps country code', function () { pm.expect(body.country_code).to.equal('CO'); });",
+              "pm.test('audit keeps data region', function () { pm.expect(body.data_region).to.be.a('string').and.not.empty; });",
+              "pm.collectionVariables.set('privacy_audit_entry_id', body.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-Internal-Api-Key", "value": "{{internal_api_key}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"actor_user_id\": \"{{privacy_user_id}}\",\n  \"action\": \"user.pii.accessed\",\n  \"resource_type\": \"user\",\n  \"resource_id\": \"{{privacy_user_id}}\",\n  \"pii_fields\": [\"email\", \"phone\", \"full_name\"],\n  \"source_ip\": \"127.0.0.1\",\n  \"country_code\": \"CO\",\n  \"metadata\": {\n    \"channel\": \"postman\",\n    \"scenario\": \"hu036\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{security_base_url}}/api/v1/internal/privacy/audit",
+          "host": ["{{security_base_url}}"],
+          "path": ["api", "v1", "internal", "privacy", "audit"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    { "key": "privacy_email", "value": "privacy-demo@travelhub.demo" },
+    { "key": "privacy_phone", "value": "3000000000" },
+    { "key": "privacy_user_id", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "privacy_audit_entry_id", "value": "" }
+  ]
+}

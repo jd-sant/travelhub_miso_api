@@ -1,5 +1,5 @@
 name: PR Validation
-
+  
 on:
   pull_request:
     branches:
@@ -11,6 +11,10 @@ on:
       - synchronize
       - reopened
       - ready_for_review
+
+permissions:
+  contents: read
+  pull-requests: read
 
 jobs:
   validate-pr-description:
@@ -25,17 +29,56 @@ jobs:
               core.setFailed("La descripcion del PR es obligatoria y no puede estar vacia.");
             }
 
-  validate-tests:
-    concurrency:
-      group: pr-tests-${{ github.event.pull_request.number }}
-      cancel-in-progress: true
-    if: >-
-      github.event.action == 'synchronize' ||
-      (github.base_ref == 'develop' && startsWith(github.head_ref, 'feature/')) ||
-      (github.base_ref == 'release' && github.head_ref == 'develop') ||
-      (github.base_ref == 'main' && github.head_ref == 'release')
+  validate-service-ci-mapping:
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Validate service-to-CI mapping
+        run: python .github/scripts/validate_pr_ci_mapping.py
+
+  detect-changes:
+    needs: [validate-service-ci-mapping]
+    runs-on: ubuntu-latest
+    outputs:
+      users: ${{ steps.filter.outputs.users }}
+      security: ${{ steps.filter.outputs.security }}
+      reservations: ${{ steps.filter.outputs.reservations }}
+      payments: ${{ steps.filter.outputs.payments }}
+      notifications: ${{ steps.filter.outputs.notifications }}
+      properties: ${{ steps.filter.outputs.properties }}
+      search: ${{ steps.filter.outputs.search }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            users:
+              - 'services/users/**'
+            security:
+              - 'services/security/**'
+            reservations:
+              - 'services/reservations/**'
+            payments:
+              - 'services/payments/**'
+            notifications:
+              - 'services/notifications/**'
+            properties:
+              - 'services/properties/**'
+            search:
+              - 'services/search/**'
+
+  test-users:
+    needs: [validate-pr-description, detect-changes]
+    if: needs.detect-changes.outputs.users == 'true'
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -46,9 +89,223 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+        run: pip install -r services/users/requirements.txt
 
-      - name: Run tests
-        run: pytest -q
+      - name: Run users tests
+        run: PYTHONPATH=services/users/src pytest services/users/tests/ -v
+
+  test-security:
+    needs: [validate-pr-description, detect-changes]
+    if: needs.detect-changes.outputs.security == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r services/security/requirements.txt
+
+      - name: Run security tests
+        run: PYTHONPATH=services/security/src pytest services/security/tests/ -v
+
+  test-payments:
+    needs: [validate-pr-description, detect-changes]
+    if: needs.detect-changes.outputs.payments == 'true'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: travelhub
+          POSTGRES_USER: travelhub_user
+          POSTGRES_PASSWORD: travelhub_pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U travelhub_user -d travelhub"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      ENV: test
+      APP_ENV: test
+      PAYMENT_INTEGRITY_SECRET: test-payments-secret
+      PAYMENTS_DATA_ENCRYPTION_KEY: test-payments-encryption-key
+      PAYMENTS_TEST_DATABASE_URL: postgresql://travelhub_user:travelhub_pass@localhost:5432/travelhub
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r services/payments/requirements.txt
+
+      - name: Run payments tests
+        run: PYTHONPATH=services/payments/src pytest services/payments/tests/ -v
+
+      - name: Run payments security posture scan
+        run: PYTHONPATH=services/payments/src pytest services/payments/tests/test_payments_security_posture.py -v
+
+  test-reservations:
+    needs: [validate-pr-description, detect-changes]
+    if: needs.detect-changes.outputs.reservations == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r services/reservations/requirements.txt
+
+      - name: Run reservations tests
+        run: PYTHONPATH=services/reservations/src pytest services/reservations/tests/ -v
+
+  test-notifications:
+    needs: [validate-pr-description, detect-changes]
+    if: needs.detect-changes.outputs.notifications == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r services/notifications/requirements.txt
+
+      - name: Run notifications tests
+        run: PYTHONPATH=services/notifications/src pytest services/notifications/tests/ -v
+
+      - name: Run notifications security posture scan
+        run: PYTHONPATH=services/notifications/src pytest services/notifications/tests/test_notifications_security_posture.py -v
+
+  test-properties:
+    needs: [validate-pr-description, detect-changes]
+    if: needs.detect-changes.outputs.properties == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r services/properties/requirements.txt
+
+      - name: Run properties tests
+        run: PYTHONPATH=services/properties/src pytest services/properties/tests/ -v
+
+  test-search:
+    needs: [validate-pr-description, detect-changes]
+    if: needs.detect-changes.outputs.search == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r services/search/requirements.txt
+
+      - name: Run search tests
+        run: PYTHONPATH=services/search/src pytest services/search/tests/ -v
+
+  tests:
+    name: tests
+    needs:
+      - validate-pr-description
+      - validate-service-ci-mapping
+      - detect-changes
+      - test-users
+      - test-security
+      - test-payments
+      - test-reservations
+      - test-notifications
+      - test-properties
+      - test-search
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate aggregate status
+        run: |
+          echo "validate-pr-description: ${{ needs.validate-pr-description.result }}"
+          echo "validate-service-ci-mapping: ${{ needs.validate-service-ci-mapping.result }}"
+          echo "detect-changes: ${{ needs.detect-changes.result }}"
+          echo "test-users: ${{ needs.test-users.result }}"
+          echo "test-security: ${{ needs.test-security.result }}"
+          echo "test-payments: ${{ needs.test-payments.result }}"
+          echo "test-reservations: ${{ needs.test-reservations.result }}"
+          echo "test-notifications: ${{ needs.test-notifications.result }}"
+          echo "test-properties: ${{ needs.test-properties.result }}"
+          echo "test-search: ${{ needs.test-search.result }}"
+
+          if [[ "${{ needs.validate-pr-description.result }}" != "success" ]]; then
+            echo "La validacion de descripcion de PR no fue exitosa"
+            exit 1
+          fi
+
+          if [[ "${{ needs.validate-service-ci-mapping.result }}" != "success" ]]; then
+            echo "La validacion del mapeo servicio-CI no fue exitosa"
+            exit 1
+          fi
+
+          if [[ "${{ needs.test-users.result }}" == "failure" || "${{ needs.test-users.result }}" == "cancelled" ]]; then
+            echo "El job test-users termino en estado ${{ needs.test-users.result }}"
+            exit 1
+          fi
+
+          if [[ "${{ needs.test-security.result }}" == "failure" || "${{ needs.test-security.result }}" == "cancelled" ]]; then
+            echo "El job test-security termino en estado ${{ needs.test-security.result }}"
+            exit 1
+          fi
+
+          if [[ "${{ needs.test-payments.result }}" == "failure" || "${{ needs.test-payments.result }}" == "cancelled" ]]; then
+            echo "El job test-payments termino en estado ${{ needs.test-payments.result }}"
+            exit 1
+          fi
+
+          if [[ "${{ needs.test-reservations.result }}" == "failure" || "${{ needs.test-reservations.result }}" == "cancelled" ]]; then
+            echo "El job test-reservations termino en estado ${{ needs.test-reservations.result }}"
+            exit 1
+          fi
+
+          if [[ "${{ needs.test-notifications.result }}" == "failure" || "${{ needs.test-notifications.result }}" == "cancelled" ]]; then
+            echo "El job test-notifications termino en estado ${{ needs.test-notifications.result }}"
+            exit 1
+          fi
+
+          if [[ "${{ needs.test-properties.result }}" == "failure" || "${{ needs.test-properties.result }}" == "cancelled" ]]; then
+            echo "El job test-properties termino en estado ${{ needs.test-properties.result }}"
+            exit 1
+          fi
+
+          if [[ "${{ needs.test-search.result }}" == "failure" || "${{ needs.test-search.result }}" == "cancelled" ]]; then
+            echo "El job test-search termino en estado ${{ needs.test-search.result }}"
+            exit 1
+          fi
+
+          echo "Agregador de pruebas en estado exitoso"

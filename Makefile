@@ -1,0 +1,155 @@
+.PHONY: help docker-up docker-down docker-build docker-logs clean users-test users-build users-logs security-test security-build security-logs reservations-test reservations-build reservations-logs payments-test payments-security-scan payments-build payments-logs notifications-test notifications-security-scan notifications-build notifications-logs properties-test properties-build properties-logs reservations-perf search-test search-build search-logs search-perf
+
+help:
+	@echo "=== TravelHub Monorepo ==="
+	@echo ""
+	@echo "Global:"
+	@echo "  make docker-up      - Start all services"
+	@echo "  make docker-down    - Stop all services"
+	@echo "  make docker-build   - Build all images"
+	@echo "  make docker-logs    - Tail all logs"
+	@echo "  make clean          - Remove __pycache__ files"
+	@echo ""
+	@echo "Users service:"
+	@echo "  make users-test     - Run users tests"
+	@echo "  make users-build    - Build users image"
+	@echo "  make users-logs     - Tail users logs"
+	@echo ""
+	@echo "Security service:"
+	@echo "  make security-test  - Run security tests"
+	@echo "  make security-build - Build security image"
+	@echo "  make security-logs  - Tail security logs"
+	@echo ""
+	@echo "Reservations service:"
+	@echo "  make reservations-test  - Run reservations tests"
+	@echo "  make reservations-build - Build reservations image"
+	@echo "  make reservations-logs  - Tail reservations logs"
+	@echo ""
+	@echo "Payments service:"
+	@echo "  make payments-test  - Run payments tests"
+	@echo "  make payments-security-scan - Run payments security posture tests"
+	@echo "  make payments-build - Build payments image"
+	@echo "  make payments-logs  - Tail payments logs"
+	@echo ""
+	@echo "Notifications service:"
+	@echo "  make notifications-test  - Run notifications tests"
+	@echo "  make notifications-security-scan - Run notifications security posture tests"
+	@echo "  make notifications-build - Build notifications image"
+	@echo "  make notifications-logs  - Tail notifications logs"
+	@echo ""
+	@echo "Properties service:"
+	@echo "  make properties-test  - Run properties tests"
+	@echo "  make properties-build - Build properties image"
+	@echo "  make properties-logs  - Tail properties logs"
+	@echo "  make reservations-perf  - Run Newman E2E collection for checkstatus flow"
+	@echo ""
+	@echo "Search service:"
+	@echo "  make search-test   - Run search tests"
+	@echo "  make search-build  - Build search image"
+	@echo "  make search-logs   - Tail search logs"
+	@echo "  make search-perf   - Run local p95 benchmark with Newman against search API"
+
+# Global commands
+docker-up:
+	docker compose up -d
+
+docker-down:
+	docker compose down
+
+docker-build:
+	docker compose build
+
+docker-logs:
+	docker compose logs -f
+
+clean:
+	find . -type d -name "__pycache__" -exec rm -rf {} +
+	find . -type f -name "*.pyc" -delete
+
+# Users service
+users-test:
+	cd services/users && PYTHONPATH=src pytest tests/ -v
+
+users-build:
+	docker compose build users
+
+users-logs:
+	docker compose logs -f users
+
+# Security service
+security-test:
+	cd services/security && PYTHONPATH=src pytest tests/ -v
+
+security-build:
+	docker compose build security
+
+security-logs:
+	docker compose logs -f security
+
+# Reservations service
+reservations-test:
+	cd services/reservations && PYTHONPATH=src pytest tests/ -v
+
+reservations-build:
+	docker compose build reservations
+
+reservations-logs:
+	docker compose logs -f reservations
+
+# Payments service
+payments-test:
+	cd services/payments && PYTHONPATH=src pytest tests/ -v
+
+payments-security-scan:
+	cd services/payments && PYTHONPATH=src pytest tests/test_payments_security_posture.py -v
+
+payments-build:
+	docker compose build payments
+
+payments-logs:
+	docker compose logs -f payments
+
+# Notifications service
+notifications-test:
+	cd services/notifications && PYTHONPATH=src pytest tests/ -v
+
+notifications-security-scan:
+	cd services/notifications && PYTHONPATH=src pytest tests/test_notifications_security_posture.py -v
+
+notifications-build:
+	docker compose build notifications
+
+notifications-logs:
+	docker compose logs -f notifications
+
+# Properties service
+properties-test:
+	cd services/properties && PYTHONPATH=src pytest tests/ -v
+
+properties-build:
+	docker compose build properties
+
+properties-logs:
+	docker compose logs -f properties
+
+reservations-perf:
+	@set -a; [ -f .env ] && . ./.env; set +a; \
+	npx --yes newman run postman/e2e/reservations-checkstatus/reservations_checkstatus.postman_collection.json --env-var base_url=http://localhost:8002 --env-var INTERNAL_API_KEY=$${INTERNAL_API_KEY:-dev-internal-key-change-me} --reporters cli
+
+# Search service
+search-test:
+	cd services/search && PYTHONPATH=src pytest tests/ -v
+
+search-build:
+	docker compose build search
+
+search-logs:
+	docker compose logs -f search
+
+search-perf:
+	npx --yes newman run postman/e2e/search-p95/search_p95.postman_collection.json --env-var base_url=http://localhost:8006 --iteration-count 130 --reporters cli
+
+# New Relic Dashboard
+dashboard-deploy:
+	@echo "=== Desplegando dashboard New Relic ==="
+	@newrelic/deploy-dashboard.sh
