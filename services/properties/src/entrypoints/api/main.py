@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from core.config import settings
+from core.health import health_router
 from db.session import create_db_and_tables
 from entrypoints.api.routers.internal import router as internal_router
 from entrypoints.api.routers.properties import (
@@ -29,6 +30,7 @@ def create_application() -> FastAPI:
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type"],
     )
+    app.include_router(health_router)
     app.include_router(properties_router, prefix="/api/v1")
     app.include_router(internal_router, prefix="/api/v1")
 

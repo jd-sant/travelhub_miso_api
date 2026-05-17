@@ -29,6 +29,7 @@ def test_sanitize_sensitive_data_redacts_known_financial_fields() -> None:
 
 
 def test_settings_require_https_internal_urls_in_non_dev(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("ENV", raising=False)
     monkeypatch.setenv("APP_ENV", "production")
     monkeypatch.setenv("PAYMENTS_SERVICE_URL", "http://payments.internal")
 

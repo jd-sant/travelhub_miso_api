@@ -75,6 +75,7 @@ def test_payment_audit_repository_sanitizes_payload(test_engine) -> None:
 
 
 def test_settings_require_stripe_provider_in_compliance_mode(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("ENV", raising=False)
     monkeypatch.setenv("APP_ENV", "production")
     monkeypatch.setenv("PAYMENTS_COMPLIANCE_MODE", "true")
     monkeypatch.setenv("PAYMENT_PROVIDER", "fake_stripe")
@@ -84,6 +85,7 @@ def test_settings_require_stripe_provider_in_compliance_mode(monkeypatch: pytest
 
 
 def test_settings_require_encryption_key_in_compliance_mode(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("ENV", raising=False)
     monkeypatch.setenv("APP_ENV", "production")
     monkeypatch.setenv("PAYMENTS_COMPLIANCE_MODE", "true")
     monkeypatch.setenv("PAYMENT_PROVIDER", "stripe_test")
@@ -98,6 +100,7 @@ def test_settings_require_encryption_key_in_compliance_mode(monkeypatch: pytest.
 def test_settings_require_notifications_service_url_in_compliance_mode(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.delenv("ENV", raising=False)
     monkeypatch.setenv("APP_ENV", "production")
     monkeypatch.setenv("PAYMENTS_COMPLIANCE_MODE", "true")
     monkeypatch.setenv("PAYMENT_PROVIDER", "stripe_test")
@@ -113,6 +116,7 @@ def test_settings_require_notifications_service_url_in_compliance_mode(
 def test_settings_require_reservations_service_url_in_compliance_mode(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.delenv("ENV", raising=False)
     monkeypatch.setenv("APP_ENV", "production")
     monkeypatch.setenv("PAYMENTS_COMPLIANCE_MODE", "true")
     monkeypatch.setenv("PAYMENT_PROVIDER", "stripe_test")
