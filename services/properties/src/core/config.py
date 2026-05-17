@@ -74,6 +74,9 @@ class Settings:
 
     @property
     def database_url(self) -> str:
+        url = os.getenv("DATABASE_URL")
+        if url:
+            return url
         return f"postgresql://{self.rds_username}:{self.rds_password}@{self.rds_hostname}:{self.rds_port}/{self.rds_db_name}"
 
     @property
