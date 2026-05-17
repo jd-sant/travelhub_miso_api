@@ -14,7 +14,10 @@ class UsersServiceClient:
         self.timeout = timeout
 
     def _headers(self) -> dict:
-        return {"X-Internal-Api-Key": settings.internal_api_key}
+        return {
+            "X-Internal-Api-Key": settings.internal_api_key,
+            "X-Forwarded-Proto": "https",
+        }
 
     def search_by_name(self, query: str) -> list[dict]:
         if not query or not query.strip():
