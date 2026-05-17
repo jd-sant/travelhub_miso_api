@@ -7,11 +7,11 @@ pydantic-settings==2.13.1
 email-validator==2.3.0
 python-dotenv==1.2.2
 psycopg2-binary==2.9.10
-pytest==8.4.2
+pytest==9.0.3
 httpx==0.28.1
 boto3==1.40.70
 botocore==1.40.70
-jinja2==3.1.4
+jinja2==3.1.6
 google-auth==2.35.0
-requests==2.32.3
+requests==2.33.0
 PyJWT==2.10.1
