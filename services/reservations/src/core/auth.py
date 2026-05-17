@@ -7,6 +7,7 @@ from core.config import settings
 
 
 HOTEL_ROLE = "hotel"
+TRAVELER_ROLE = "traveler"
 
 
 class AuthenticatedUser:
@@ -84,3 +85,16 @@ def require_hotel(user: AuthenticatedUser) -> AuthenticatedUser:
 
 def get_current_hotel_user(request: Request) -> AuthenticatedUser:
     return require_hotel(get_current_user(request))
+
+
+def require_traveler(user: AuthenticatedUser) -> AuthenticatedUser:
+    if user.role != TRAVELER_ROLE:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Se requiere rol de viajero",
+        )
+    return user
+
+
+def get_current_traveler_user(request: Request) -> AuthenticatedUser:
+    return require_traveler(get_current_user(request))

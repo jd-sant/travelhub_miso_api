@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from adapters.services.privacy_audit_client import record_sensitive_data_event
 from assembly import get_user_repository, get_verify_credentials_use_case
 from core.config import settings
+from core.transport import assert_secure_transport
 from domain.ports.user_repository import UserRepository
 from domain.schemas.user import (
     UserBatchByIdsRequest,
@@ -15,7 +16,7 @@ from domain.schemas.user import (
     VerifyCredentialsResponse,
 )
 from domain.use_cases.verify_credentials import VerifyCredentialsUseCase
-from errors import InvalidCredentialsError
+from errors import InvalidCredentialsError, PrivacySearchUnavailableError
 
 router = APIRouter(prefix="/internal", tags=["internal"])
 
@@ -70,6 +71,7 @@ def get_user_by_id(
     x_actor_user_id: str | None = Header(default=None),
     repository: UserRepository = Depends(get_user_repository),
 ) -> UserResponse:
+    assert_secure_transport(request)
     user = repository.get_by_id(user_id)
     if user is None:
         raise HTTPException(
@@ -102,7 +104,14 @@ def search_users_by_name(
     x_actor_user_id: str | None = Header(default=None),
     repository: UserRepository = Depends(get_user_repository),
 ) -> list[UserSummary]:
-    users = repository.search_by_name(payload.query)
+    assert_secure_transport(request)
+    try:
+        users = repository.search_by_name(payload.query)
+    except PrivacySearchUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
     record_sensitive_data_event(
         action="user.pii.searched",
         resource_type="user",
@@ -127,6 +136,7 @@ def list_users_by_ids(
     x_actor_user_id: str | None = Header(default=None),
     repository: UserRepository = Depends(get_user_repository),
 ) -> list[UserSummary]:
+    assert_secure_transport(request)
     users = repository.list_by_ids(payload.ids)
     record_sensitive_data_event(
         action="user.pii.batch_accessed",

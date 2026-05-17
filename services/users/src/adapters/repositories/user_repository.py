@@ -24,7 +24,7 @@ from domain.schemas.user import (
     UserResponse,
     UserSummary,
 )
-from errors import UserConflictError
+from errors import PrivacySearchUnavailableError, UserConflictError
 
 
 def _to_response(model: User) -> UserResponse:
@@ -165,29 +165,11 @@ class SQLModelUserRepository(UserRepository):
     def search_by_name(self, query: str, limit: int = 50) -> list[UserSummary]:
         if not query.strip():
             return []
-        normalized_query = query.strip().lower()
         if settings.users_pii_encryption_enabled:
-            rows = self.session.exec(select(User)).all()
-            matches: list[UserSummary] = []
-            for user in rows:
-                full_name = decrypt_sensitive_value(
-                    user.full_name,
-                    settings.users_pii_encryption_key,
-                ) or ""
-                if normalized_query in full_name.lower():
-                    matches.append(
-                        UserSummary(
-                            id=user.id,
-                            full_name=full_name,
-                            email=decrypt_sensitive_value(
-                                user.email,
-                                settings.users_pii_encryption_key,
-                            ) or "",
-                        )
-                    )
-                if len(matches) >= limit:
-                    break
-            return matches
+            raise PrivacySearchUnavailableError(
+                "Search by name is unavailable while PII encryption is enabled"
+            )
+        normalized_query = query.strip().lower()
         pattern = f"%{normalized_query}%"
         rows = self.session.exec(
             select(User)

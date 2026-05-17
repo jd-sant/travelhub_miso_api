@@ -1,12 +1,14 @@
 import base64
+import binascii
 import json
 import os
 from hashlib import sha256
 from hmac import new as hmac_new
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.exceptions import InvalidTag
 
-_ENCRYPTED_VALUE_PREFIX = "enc:v1:"
+ENCRYPTED_VALUE_PREFIX = "enc:v1:"
 _DEFAULT_RESIDENCY_POLICIES = {
     "CO": "aws-us-east-1",
     "US": "aws-us-east-1",
@@ -21,7 +23,7 @@ _DEFAULT_RESIDENCY_POLICIES = {
 
 
 def encrypt_sensitive_value(value: str | None, secret: str) -> str | None:
-    if value is None or value.startswith(_ENCRYPTED_VALUE_PREFIX):
+    if value is None or value.startswith(ENCRYPTED_VALUE_PREFIX):
         return value
     nonce = os.urandom(12)
     ciphertext = AESGCM(_derive_encryption_key(secret)).encrypt(
@@ -30,21 +32,24 @@ def encrypt_sensitive_value(value: str | None, secret: str) -> str | None:
         None,
     )
     encoded = base64.urlsafe_b64encode(nonce + ciphertext).decode("utf-8")
-    return f"{_ENCRYPTED_VALUE_PREFIX}{encoded}"
+    return f"{ENCRYPTED_VALUE_PREFIX}{encoded}"
 
 
 def decrypt_sensitive_value(value: str | None, secret: str) -> str | None:
-    if value is None or not value.startswith(_ENCRYPTED_VALUE_PREFIX):
+    if value is None or not value.startswith(ENCRYPTED_VALUE_PREFIX):
         return value
-    encoded = value[len(_ENCRYPTED_VALUE_PREFIX) :]
-    raw = base64.urlsafe_b64decode(encoded.encode("utf-8"))
-    nonce, ciphertext = raw[:12], raw[12:]
-    plaintext = AESGCM(_derive_encryption_key(secret)).decrypt(
-        nonce,
-        ciphertext,
-        None,
-    )
-    return plaintext.decode("utf-8")
+    encoded = value[len(ENCRYPTED_VALUE_PREFIX) :]
+    try:
+        raw = base64.urlsafe_b64decode(encoded.encode("utf-8"))
+        nonce, ciphertext = raw[:12], raw[12:]
+        plaintext = AESGCM(_derive_encryption_key(secret)).decrypt(
+            nonce,
+            ciphertext,
+            None,
+        )
+        return plaintext.decode("utf-8")
+    except (binascii.Error, ValueError, TypeError, InvalidTag):
+        return None
 
 
 def build_lookup_hash(value: str, secret: str) -> str:
@@ -54,6 +59,10 @@ def build_lookup_hash(value: str, secret: str) -> str:
         normalized.encode("utf-8"),
         sha256,
     ).hexdigest()
+
+
+def is_encrypted_sensitive_value(value: str | None) -> bool:
+    return bool(value and value.startswith(ENCRYPTED_VALUE_PREFIX))
 
 
 def normalize_country_code(value: str | None) -> str:

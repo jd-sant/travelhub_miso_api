@@ -1,4 +1,5 @@
 from collections.abc import Generator
+import logging
 
 import re
 
@@ -8,7 +9,13 @@ from sqlmodel import select
 
 from adapters.models.user import User
 from core.config import settings
-from core.privacy import build_lookup_hash, decrypt_sensitive_value
+from core.privacy import (
+    build_lookup_hash,
+    decrypt_sensitive_value,
+    is_encrypted_sensitive_value,
+)
+
+logger = logging.getLogger(__name__)
 
 _is_postgres = settings.database_url.startswith("postgresql")
 
@@ -54,6 +61,10 @@ def _apply_schema_upgrades() -> None:
     quoted_schema = _quote_identifier(settings.db_schema)
     quoted_user_table = f"{quoted_schema}.\"user\""
     statements = [
+        f"ALTER TABLE IF EXISTS {quoted_user_table} ALTER COLUMN email TYPE VARCHAR(2048)",
+        f"ALTER TABLE IF EXISTS {quoted_user_table} ALTER COLUMN phone TYPE VARCHAR(2048)",
+        f"ALTER TABLE IF EXISTS {quoted_user_table} ALTER COLUMN full_name TYPE VARCHAR(2048)",
+        f"ALTER TABLE IF EXISTS {quoted_user_table} ALTER COLUMN hotel_name TYPE VARCHAR(2048)",
         f"ALTER TABLE IF EXISTS {quoted_user_table} ADD COLUMN IF NOT EXISTS email_lookup_hash VARCHAR(64)",
         f"ALTER TABLE IF EXISTS {quoted_user_table} ADD COLUMN IF NOT EXISTS country_code VARCHAR(2) DEFAULT 'CO'",
         f"ALTER TABLE IF EXISTS {quoted_user_table} ADD COLUMN IF NOT EXISTS data_region VARCHAR(80) DEFAULT 'aws-us-east-1'",
@@ -74,10 +85,19 @@ def _apply_schema_upgrades() -> None:
             select(User).where(User.email_lookup_hash.is_(None))
         ).all()
         for user in users:
-            clear_email = decrypt_sensitive_value(
-                user.email,
-                settings.users_pii_encryption_key,
-            ) or user.email
+            if is_encrypted_sensitive_value(user.email):
+                clear_email = decrypt_sensitive_value(
+                    user.email,
+                    settings.users_pii_encryption_key,
+                )
+                if not clear_email:
+                    logger.warning(
+                        "Skipping email lookup hash backfill for user %s because encrypted email could not be decoded",
+                        user.id,
+                    )
+                    continue
+            else:
+                clear_email = user.email
             if not clear_email:
                 continue
             user.email_lookup_hash = build_lookup_hash(

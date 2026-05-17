@@ -16,3 +16,7 @@ class InvalidTokenError(Exception):
 
 class TokenExpiredError(Exception):
     pass
+
+
+class PrivacySearchUnavailableError(Exception):
+    pass
